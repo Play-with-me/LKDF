@@ -1,0 +1,27 @@
+# Dependencies & build outputs
+node_modules/
+dist/
+build/
+target/
+out/
+.tauri/
+
+# Environment & secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Logs & test artifacts
+*.log
+coverage/
+TestResults/
+
+# OS & IDE files
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/*
+!.vscode/extensions.json
+.idea/
