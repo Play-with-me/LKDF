@@ -1,25 +1,25 @@
-# Project Memory — LKDF (Tam Quốc Sát Desktop Online)
+# Project Memory — LKDF (Tam Quốc Sát Windows Native Online)
 
 ## Trạng thái hiện tại
-- **Giai đoạn:** Phase 0 (Hoàn tất Discovery & Bản thiết kế đề xuất; **chưa viết mã nguồn**).
-- **Nguồn ngữ cảnh đầy đủ cho team & AI:** Đọc [`CONTEXT.md`](../CONTEXT.md) trước mọi quyết định thiết kế hoặc lập trình.
+- **Giai đoạn:** Đã chốt Ý định & Phạm vi v1 qua `/grill-me` (lưu tại [`docs/intent/v1-tam-quoc-sat.md`](../docs/intent/v1-tam-quoc-sat.md)); sẵn sàng viết **Tài liệu Đặc tả (SRS)**, **chưa viết mã nguồn**.
+- **Nguồn ngữ cảnh đầy đủ:** [`CONTEXT.md`](../CONTEXT.md) và [`docs/intent/v1-tam-quoc-sat.md`](../docs/intent/v1-tam-quoc-sat.md).
 
-## Yêu cầu cốt lõi đã chốt
-- **Thể loại:** Game thẻ bài chủ đề Tam Quốc Sát, chơi nội bộ nhóm bạn (phi thương mại).
-- **Nền tảng:** Native Desktop App (tải về mở lên chơi ngay, không bắt người chơi cấu hình mạng/VPN/môi trường).
-- **Kết nối & Sĩ số:** Online từ xa qua Internet, tối thiểu **3 người** — tối đa **8 người**.
-- **Ưu tiên hàng đầu:** **Độ ổn định** (Server-authoritative giấu bài úp/thân phận, Session Reconnect, Phase Timeout + Bot đánh hộ, Bảng Trọng Tài Chủ phòng, Auto-Updater tránh lệch phiên bản).
-- **Chế độ theo sĩ số:** 3 người (*Đấu Địa Chủ 1v2*), 4 người (*2v2 / Thân phận*), 5–8 người (*Thân phận kinh điển*).
+## Quyết định v1 đã khóa (Không tự ý mở rộng)
+- **Nền tảng & Người chơi:** 100% **Windows Native Desktop App** (`.exe`/`.msi`, tải về mở chơi ngay 0 cấu hình, có Auto-Updater), chơi **Online từ xa nội bộ 4–8 người** (tiếng Việt).
+- **Thể thức duy nhất:** **Thân Phận** cho **4–8 người** (`4 người: 1 Chủ · 2 Phản · 1 Nội` không Trung Thần; `5–8 người`: chuẩn kinh điển; Chủ Công +1 máu tối đa). Đã bỏ chế độ 3 người và 2v2.
+- **Luật & Nội dung v1:** Tự động hoàn toàn **Bộ Tiêu chuẩn thuần** + **12 Tướng Quốc Dân** + **Bảng Trọng Tài Chủ phòng** (Hoàn tác/Tạm dừng/Chỉnh ngoại lệ ghi log công khai). Chưa làm *Tửu / Quân Tranh* ở v1.
+- **Đồ họa v1:** 2D tinh gọn phong cách *Sơn Thủy Mặc & Chu Sa* (biểu tượng chất bài, chữ Việt sắc nét, âm thanh nhẹ, nháy Taskbar báo lượt; chưa làm tranh vẽ riêng từng tướng/lá bài hay 3D/WebGL).
+- **Hạ tầng 0 đồng:** Server chạy **Cloud miễn phí (0đ)** -> bắt buộc lưu trạng thái phòng/ván bền vững chống ngủ/restart và có màn hình chờ đánh thức server (~30–60s) ở ván đầu.
+- **Ổn định là ưu tiên #1:** Server-authoritative giấu bài úp/thân phận, Session Reconnect, Phase Timeout + Bot đánh hộ tạm thời, Fuzz Test >= 100 ván ở mỗi mốc 4–8 người không deadlock.
 
-## Quyết định kỹ thuật đang đề xuất (Chờ team chốt tại Mục 6 của `CONTEXT.md`)
-- Đề xuất chính: Monorepo `Tauri v2` (Desktop Native + Auto-Updater + Taskbar flash) + `Node.js/WebSocket` (Authoritative Server) + `packages/shared` (TypeScript Pure State Machine dùng chung).
-- Phương án thay thế được cân nhắc: `Godot 4` client.
-- Ràng buộc giao diện: 2D sắc nét (chưa kích hoạt 3D/WebGL), bàn 3–8 ghế cố định 1 màn hình không cuộn trang, nút bấm ghi rõ hành động cụ thể.
+## Kiến trúc đề xuất (AI chọn để tối ưu ổn định Windows)
+- `packages/shared` (Pure TypeScript Rule Engine) + `apps/server` (Node.js + WebSocket + Persistent Snapshots) + `apps/desktop` (ưu tiên Tauri v2, dự phòng Electron nếu toolchain Rust/MSVC vướng khi cài đặt — dùng chung 100% React/TS UI).
 
 ## Môi trường máy khởi tạo (2026-11-16)
 - Đã có: `Node.js v26.13.1`, `npm`, `Git`, `Python`, `gcc`, `winget`.
 - Chưa cài: `Rust/Cargo`, `MSVC Build Tools`, `Godot`, `Flutter`, `.NET`, `gh`.
 
 ## Việc tiếp theo
-1. Team thống nhất 5 câu hỏi mở trong `CONTEXT.md` (Mục 6).
-2. Cập nhật quyết định vào `CONTEXT.md` và `.agents/PROJECT_MEMORY.md`, thiết lập `.agents/gamedev-profile.json` + `DESIGN.md` rồi bắt đầu Giai đoạn 1 (Lõi luật 3–8 người + Bot stress test).
+1. Viết **Tài liệu Đặc tả chi tiết v1 (SRS)** theo `spec-driven-development`.
+2. Tạo `DESIGN.md`, `.agents/gamedev-profile.json`, `tasks/plan.md`, `tasks/todo.md`.
+3. Kiểm chứng cài đặt môi trường & bắt đầu Mốc 0–1.

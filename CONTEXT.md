@@ -1,130 +1,110 @@
-# Ngữ Cảnh Dự Án: Game Thẻ Bài Tam Quốc Sát (Desktop Native Online 3–8 Người)
+# Ngữ Cảnh Dự Án: Game Thẻ Bài Tam Quốc Sát (Windows Native Online 4–8 Người)
 
-> **Mục đích file này:** Đồng bộ 100% ngữ cảnh, các phân tích rủi ro (`/honest-advisor`, `/ultrathinking`), quyết định đã chốt và bản thiết kế đề xuất cho các thành viên trong team (cùng AI hỗ trợ của từng thành viên) để tiếp tục làm việc liền mạch mà không phải thảo luận lại từ đầu.
-> **Cập nhật lần cuối:** 2026-11-16 · **Repo:** `https://github.com/Play-with-me/LKDF.git` · **Trạng thái:** Đang ở giai đoạn Lên kế hoạch / Blueprint (**chưa viết mã nguồn**).
+> **Mục đích file này:** Đồng bộ 100% ngữ cảnh, các phân tích phản biện (`/honest-advisor`, `/ultrathinking`), bản chốt ý định (`/grill-me`) và kiến trúc đề xuất cho toàn team (cùng AI hỗ trợ của từng thành viên) để đi thẳng vào bước viết Đặc tả & triển khai mà không phải thảo luận lại từ đầu.
+> **Cập nhật lần cuối:** 2026-11-16 · **Repo:** `https://github.com/Play-with-me/LKDF.git` · **Trạng thái:** Đã chốt Ý định & Phạm vi v1 (`docs/intent/v1-tam-quoc-sat.md`) → Sẵn sàng viết **Tài liệu Đặc tả (SRS)** (**chưa viết mã nguồn**).
 
 ---
 
-## 1. Mục Tiêu Sản Phẩm Đã Chốt
+## 1. Mục Tiêu & Phạm Vi v1 Đã Chốt Chính Thức
 
-| Hạng mục | Yêu cầu đã thống nhất | Ghi chú quan trọng |
+Xem bản chốt đầy đủ tại [docs/intent/v1-tam-quoc-sat.md](./docs/intent/v1-tam-quoc-sat.md). Tóm tắt các điểm đã khóa:
+
+| Hạng mục | Quyết định đã chốt | Ghi chú quan trọng |
 | :--- | :--- | :--- |
-| **Chủ đề** | Game thẻ bài **Tam Quốc Sát** | Định hướng chơi nội bộ nhóm bạn (phi thương mại). |
-| **Nền tảng** | **Native Desktop App** (chỉ Desktop, bỏ Mobile) | Người chơi cuối **tải về là mở lên chơi ngay** — không bắt cài VPN, không cấu hình IP/port hay cài SDK. |
-| **Chế độ mạng** | **Online từ xa qua Internet** (không phải Offline/LAN thuần) | Các thành viên ngồi ở nhà riêng khác Wi-Fi vẫn vào cùng phòng qua Mã phòng. |
-| **Sĩ số bàn chơi** | Tối thiểu **3 người** — Tối đa **8 người** | Cần cơ chế chia thể thức phù hợp từng sĩ số thay vì ép 1 luật cứng. |
-| **Ưu tiên số 1** | **Bản ổn định (Stability First)** | Không kẹt pha chờ phản ứng, rớt mạng vào lại đúng bài cũ, không lệch phiên bản giữa 8 người. |
-| **Thiết lập công cụ** | Team dev sẵn sàng cài công cụ phát triển sau khi chốt thiết kế | Miễn sao sản phẩm đóng gói cuối cùng cho người chơi không cần cấu hình gì. |
+| **Chủ đề & Mục đích** | Game thẻ bài **Tam Quốc Sát** — chơi nội bộ nhóm bạn | Phi thương mại, 100% tiếng Việt. |
+| **Nền tảng** | **Native Desktop App trên Windows** (`.exe`/`.msi`) | Chỉ hỗ trợ Windows ở v1; người chơi tải về mở lên là chơi ngay (0 cấu hình VPN/IP). |
+| **Kết nối & Sĩ số** | **Online từ xa qua Internet**, **4 đến 8 người** | Nâng ngưỡng tối thiểu từ 3 lên **4 người** để bỏ chế độ phụ, tập trung độ ổn định. |
+| **Thể thức duy nhất** | **Thân Phận** thống nhất từ 4–8 người | **4 người:** `1 Chủ · 2 Phản · 1 Nội` (không Trung Thần). **5–8 người:** chuẩn kinh điển. Chủ Công có `+1` máu tối đa. |
+| **Mức tự động & Bộ bài v1** | **Tự động luật chuẩn** + **Bảng Trọng Tài Chủ phòng** | Dùng **Bộ Tiêu chuẩn thuần** + **12 Tướng Quốc Dân**. *Tửu / Quân Tranh* để bản cập nhật sau. |
+| **Mỹ thuật v1** | **2D tinh gọn** phong cách *Sơn Thủy Mặc & Chu Sa* | Ký hiệu chất bài ♠♥♣♦, chữ Việt rõ, âm thanh nhẹ, nháy Taskbar. Chưa làm tranh vẽ riêng ở v1. |
+| **Hạ tầng Server Online** | **Gói Cloud miễn phí (0 đồng)** | Bắt buộc lưu trạng thái ván đấu chống mất bài khi server nghỉ, và có màn hình chờ đánh thức (~30–60s). |
+| **Công nghệ lập trình** | Giao AI/đội ngũ chọn stack **tối ưu ổn định nhất trên Windows** | Không khóa cứng framework; ưu tiên dùng chung hợp đồng dữ liệu Client–Server và dễ kiểm thử. |
+
+### Ngoài phạm vi v1 (Out of Scope)
+- Không làm Mobile, macOS/Linux; không làm chế độ 3 người (*Đấu Địa Chủ*) hay *2v2*.
+- Chưa làm bộ *Quân Tranh* (*Tửu*, *Sát Lôi/Hỏa*, *Thiết Tác Liên Hoàn*, *Đằng Giáp*, *Hỏa Công*) ở v1.
+- Chưa làm tranh vẽ chân dung từng tướng/lá bài, không làm hiệu ứng 3D/WebGL nặng.
+- Không làm ghép trận công khai, tài khoản/shop/nạp tiền, chat giọng nói (dùng Discord/Zalo ngoài), hay phát hành Store.
 
 ---
 
-## 2. Lịch Sử Thay Đổi Định Hướng (Pivot Log)
+## 2. Lịch Sử Điều Chỉnh Định Hướng (Pivot Log)
 
-1. **Vòng 1 (Ban đầu):** Dự định làm app tối ưu cả Điện thoại + Desktop → Qua phản biện, nhận thấy làm cho màn hình dọc điện thoại gây xung đột mật độ chữ/bài, tăng độ phức tạp UI và vướng kiểm duyệt App Store/Google Play nếu phân phối rộng.
-2. **Vòng 2:** Thu gọn về **Desktop only, chơi nội bộ nhóm bạn**.
-3. **Vòng 3:** Xác định rõ **chơi từ xa, ưu tiên ổn định, 3–8 người**.
-4. **Vòng 4:** Chốt ưu tiên **Native Desktop App bản Online** (không phải Offline); người chơi chỉ tải về mở là chơi, còn công cụ phát triển team có thể cấu hình sau.
+1. **Vòng 1:** Dự định Mobile + Desktop → Loại bỏ Mobile vì xung đột mật độ chữ/bài trên màn hình dọc và rủi ro kiểm duyệt Store.
+2. **Vòng 2:** Chốt Desktop chơi nội bộ nhóm bạn.
+3. **Vòng 3:** Chốt Online từ xa, ưu tiên bản ổn định.
+4. **Vòng 4:** Chốt Native Desktop App bản Online (0 cấu hình cho người chơi cuối, công cụ dev cài đặt sau).
+5. **Vòng 5 (`/grill-me` 8 câu hỏi):** Chốt dứt điểm 100% Windows, tự động luật Bộ Tiêu chuẩn thuần + 12 Tướng + Trọng Tài, hạ tầng Cloud 0đ có lưu trạng thái, **nâng tối thiểu lên 4 người** (`1 Chủ · 2 Phản · 1 Nội`), đồ họa 2D ký hiệu tinh gọn ở v1.
 
 ---
 
-## 3. Sự Thật Môi Trường Đã Kiểm Chứng (Tại thời điểm 2026-11-16)
+## 3. Sự Thật Môi Trường Đã Kiểm Chứng (2026-11-16 trên máy khởi tạo)
 
-Các thông tin dưới đây được kiểm tra trực tiếp trên máy khởi tạo dự án:
-- **Mã nguồn hiện có:** Chưa có (thư mục làm việc ban đầu trống hoàn toàn trước khi tạo bộ ngữ cảnh này).
+- **Mã nguồn hiện có:** Chưa có (mới có bộ tài liệu ngữ cảnh và ý định).
 - **Công cụ đã có sẵn trên máy khởi tạo:** `Node.js v26.13.1`, `npm`, `Git`, `Python`, `gcc`, `winget`.
-- **Công cụ chưa cài trên máy khởi tạo:** `Rust/Cargo`, `MSVC C++ Build Tools (cl.exe)`, `CMake`, `Godot`, `Flutter`, `.NET`, `Java`, `gh` CLI.
-- *(Lưu ý cho thành viên khác: kiểm tra lại công cụ trên máy riêng trước khi bắt tay vào Giai đoạn 0).*
+- **Công cụ chưa cài trên máy khởi tạo:** `Rust/Cargo`, `MSVC Build Tools (cl.exe)`, `CMake`, `Godot`, `Flutter`, `.NET`, `Java`, `gh` CLI.
 
 ---
 
-## 4. Phân Tích Rủi Ro & Ràng Buộc Kiến Trúc Bắt Buộc (`/honest-advisor` & `/ultrathinking`)
+## 4. Rủi Ro Trọng Yếu & Trụ Cột Ổn Định Bắt Buộc Trong Đặc Tả
 
-Bất kỳ phương án kỹ thuật nào team lựa chọn đều **bắt buộc phải giải quyết 6 rủi ro đặc thù sau**, nếu không game sẽ không thể ổn định khi 3–8 người chơi từ xa:
+Mọi bản thiết kế kỹ thuật và code cho v1 bắt buộc giải quyết triệt để **6 vấn đề sau**:
 
-### Rủi ro 1 — Sĩ số 3–8 người làm gãy luật nếu dùng chung một khuôn
-- **Vấn đề:** Chế độ Thân Phận truyền thống (Chủ Công – Trung Thần – Phản Tặc – Nội Gián) chỉ thực sự cân bằng và hay từ **5 đến 8 người**. Nếu ép dùng cho **3 người** hoặc **4 người**, ván đấu dễ rơi vào thế 2 người chờ người thứ 3 hết máu rồi ăn hôi, hoặc mất cân bằng phe.
-- **Hướng xử lý thiết kế:** Tự động chọn thể thức theo sĩ số (hoặc cho Chủ phòng chọn):
-  - **3 người:** Chế độ **Đấu Địa Chủ (1v2)** — 1 Chủ tướng được tăng máu/rút thêm bài/kỹ năng cường hóa đấu 2 Đồng minh (chơi nhanh 10–15 phút). Hoặc bấm thêm Bot.
-  - **4 người:** Chế độ **2v2 (Cặp đôi)** hoặc **Thân Phận 4 người tùy chọn** / thêm Bot lên 5.
-  - **5–8 người:** Chế độ **Thân Phận Kinh Điển** đúng tỷ lệ chuẩn (1 Chủ, 1–2 Trung, 2–4 Phản, 1 Nội).
-
-### Rủi ro 2 — Bàn 8 người chơi từ xa cực dễ kẹt bởi rớt mạng / AFK
-- **Vấn đề:** Một ván 8 người từ xa rất dễ có người rớt Wi-Fi, đóng nhầm cửa sổ, hoặc đi vắng đúng lúc pha phản ứng (*Thiểm*, *Đào*, *Vô Giải Khả Kích*). Nếu thiếu cơ chế xử lý, cả 7 người còn lại bị treo vô tận.
-- **4 Trụ cột ổn định bắt buộc:**
-  1. **Session Reconnect:** Cấp mã phiên chơi theo phòng; rớt mạng / mở lại app là khôi phục nguyên ghế, bài trên tay, máu, trang bị và pha hiện tại.
-  2. **Phase Timeout Fallback:** Mọi lượt đánh (vd. 45–60s) và pha phản ứng (vd. 12–15s) đều có đồng hồ; hết giờ tự động bỏ qua phản ứng hoặc xả bài thừa kết lượt.
-  3. **Bot Takeover (Máy đánh hộ tạm thời):** Người mất kết nối tự chuyển sang `[Mất kết nối — Máy đánh hộ]` để ván chạy tiếp; khi vào lại thì giành lại quyền điều khiển ngay.
-  4. **Bảng Trọng Tài Chủ phòng (Host Referee Controls):** Nút bảo hiểm chống gãy ván — cho phép Chủ phòng tạm dừng đồng hồ, hoàn tác 1 bước (từ snapshot trạng thái), chỉnh máu/bài hoặc bỏ qua pha chờ khi gặp ngoại lệ.
-
-### Rủi ro 3 — Không đặt Server Online trên máy cá nhân của người chơi
-- **Vấn đề:** Nếu 1 người chạy Server ngay trên laptop cá nhân qua mạng nhà, khi máy đó sập nguồn/ngủ đông hoặc tụt mạng thì cả 7 người kia văng hết cùng lúc; đồng thời nhà mạng VN thường chặn mở cổng (CGNAT).
-- **Hướng xử lý:** Máy chủ phòng Online phải chạy tách biệt trên một điểm cố định (Cloud/VPS nhẹ) và địa chỉ kết nối được đóng gói sẵn vào app để bạn bè mở lên là vào được ngay.
-
-### Rủi ro 4 — Lệch phiên bản (Version Drift) & Lười cài lại file `.exe`
-- **Vấn đề:** Với Native app, mỗi lần sửa 1 lỗi kỹ năng mà bắt 8 người tải lại bộ cài `.exe` mới bằng tay (kèm cảnh báo Windows SmartScreen *"Unknown Publisher"* khi chưa có chứng chỉ ký số trả phí) sẽ làm nhóm rất nhanh nản.
-- **Hướng xử lý:** Bắt buộc tích hợp **Auto-Updater** (mở app tự kiểm tra và tải bản vá khi có bản mới) hoặc kiểm tra đồng bộ phiên bản ngay lúc kết nối Server; xác định rõ hệ điều hành của cả nhóm (Windows vs macOS) từ đầu.
-
-### Rủi ro 5 — Gian lận soi bài & Lộ thông tin qua thời gian dừng hỏi *Vô Giải Khả Kích*
-- **Vấn đề:** Nếu gửi cả bộ bài úp/thân phận xuống Client, người rành kỹ thuật có thể soi dữ liệu bộ nhớ/mạng. Ngoài ra, nếu Server chỉ dừng lại hỏi phản ứng khi có người thực sự cầm *Vô Giải Khả Kích*, bạn bè tinh ý sẽ đoán ra ngay ai đang giữ lá đó.
-- **Hướng xử lý:**
-  - **Server-Authoritative:** Server giữ toàn bộ trạng thái thật (`MasterGameState`), chỉ chiếu và gửi xuống từng người đúng phần thông tin được phép thấy (`PlayerViewState`).
-  - Có tùy chọn *"Tự động bỏ qua không hỏi Vô Giải"* hoặc khoảng dừng ngắn đồng nhất để không làm lộ bài trên tay.
-
-### Rủi ro 6 — Bản quyền (IP/Copyright)
-- **Thực tế:** Tên *"Tam Quốc Sát"*, hình ảnh thẻ bài/tướng và câu chữ gốc thuộc bản quyền thương mại (Yoka Games). Dự án hiện làm để **chơi nội bộ nhóm bạn (phi thương mại)**. Nếu về sau có ý định công khai rộng rãi hoặc lên Store, bắt buộc tự đặt tên riêng, tự tạo mỹ thuật và viết lại văn bản/cơ chế độc lập.
+1. **Tương thích Cloud 0 đồng (Cold Start & Sleep Recovery):**
+   - Cloud miễn phí thường ngủ sau ~15 phút không truy cập hoặc có thể khởi động lại bất ngờ.
+   - *Giải pháp bắt buộc:*
+     - Client phải có trạng thái UI rõ ràng **`[⏳ Đang đánh thức máy chủ phòng chơi... (~30–60s)]`** kèm nút **`[⏹️ Hủy]`** mỗi khi bắt đầu kết nối đầu ngày.
+     - Server phải **lưu trạng thái phòng & ván đấu bền vững (persistent snapshot)** sau mỗi sự kiện chuyển pha/kết lượt để nếu server khởi động lại, phòng tự khôi phục đúng tay bài, máu, trang bị và lượt hiện tại.
+     - Duy trì ping nhẹ giữ kết nối WebSocket khi phòng đang có người chơi hoạt động.
+2. **Chống treo bàn 4–8 người từ xa (Reconnect, Timeout & Bot Takeover):**
+   - **Session Reconnect:** Mỗi người chơi có `sessionToken` lưu cục bộ; rớt Wi-Fi hoặc tắt nhầm app mở lại tự vào đúng ghế và tay bài cũ.
+   - **Phase Timeout Fallback:** Mọi lượt đánh (vd. 45–60s) và pha phản ứng (vd. 12–15s) đều có đồng hồ; hết giờ tự bỏ qua phản ứng hoặc xả bài thừa kết lượt.
+   - **Bot Takeover:** Người mất kết nối chuyển sang `[⚠️ Mất kết nối — Máy đánh hộ]` để 3–7 người còn lại chơi tiếp không hủy ván; quay lại bấm giành lại ghế ngay.
+   - **Bảng Trọng Tài Chủ phòng:** Tạm dừng đồng hồ, Hoàn tác 1 bước, Bỏ qua pha chờ kẹt, Chuyển sang Máy, Chỉnh máu/bài ngoại lệ — **mọi thao tác ghi công khai vào Nhật ký cả bàn**.
+3. **Lõi Luật Thuần & Kiểm Chứng 0 Deadlock Trước Khi Vẽ UI Đẹp:**
+   - Chuỗi *Sát/Cẩm nang → Vô Giải Khả Kích lồng nhau → Hưởng ứng → Sát thương → Kỹ năng kích hoạt → Hấp hối Cầu Đào theo vòng tròn → Tử vong & thưởng/phạt* phải chạy trên **Pure State Machine** độc lập hoàn toàn với mạng và giao diện.
+   - Bắt buộc qua **Cổng kiểm soát Fuzz Test >= 100 ván Bot tự đánh** cho từng mốc **4, 5, 6, 7, 8 người** với 0 treo lượt.
+4. **Bảo mật Thông tin Ẩn & Nhịp Hỏi *Vô Giải Khả Kích*:**
+   - **Server-Authoritative:** Server giữ `MasterGameState`, chỉ gửi xuống mỗi máy `PlayerViewState` đã lọc bỏ bài úp trên tay đối thủ, thứ tự chồng bài rút và Thân phận ẩn chưa lật.
+   - Có tùy chọn *"Tự động bỏ qua không hỏi Vô Giải"* và cách xử lý thời gian chờ khéo để tránh lộ việc ai đang cầm *Vô Giải Khả Kích*.
+5. **Tự Cập Nhật Phiên Bản (Auto-Updater) & Cảnh Báo Windows SmartScreen:**
+   - Tích hợp Auto-Updater để 4–8 người luôn khớp 100% cùng phiên bản sau mỗi lần mở app (chỉ cài 1 lần).
+   - Lưu ý khi viết Đặc tả/Hướng dẫn bạn bè: file `.exe`/`.msi` nội bộ chưa ký số trả phí có thể hiện cảnh báo *Windows SmartScreen* lần đầu (*More info → Run anyway*), và nếu repo `LKDF` để Private thì cần kênh phân phát release public/token trung gian cho Auto-Updater.
+6. **Bản quyền (IP/Copyright):**
+   - Dự án phục vụ chơi nội bộ phi thương mại; nếu sau này mở rộng công khai cần đổi tên, tự tạo mỹ thuật và viết lại văn bản độc lập.
 
 ---
 
-## 5. Bản Thiết Kế Đề Xuất Hiện Tại (`[MODE: BLUEPRINT]` — Chờ Team Duyệt/Điều Chỉnh)
+## 5. Kiến Trúc & Lộ Trình Đề Xuất Cho Bước Đặc Tả Tiếp Theo
 
-### 5.1. Trải nghiệm người chơi & Bố cục Desktop
-* **Không cuộn trang ở Bàn đấu:** Giữ cố định 100% trong khung cửa sổ Desktop (`1280×720` trở lên):
-  * **Thanh trên:** Mã phòng, số ván/vòng, nút `[🔊 Âm thanh]`, `[⚖️ Trọng tài]`, `[📖 Luật nhanh]`.
-  * **Vòng chữ U (trên + trái + phải):** Tối đa 7 ô đối thủ (ẩn các ghế trống khi chơi 3–5 người). Mỗi ô hiển thị gọn: Tên + Tướng + Máu + Số lá + **Khoảng cách đánh thực tế tới người đó** (tính sẵn ngựa `+1/-1` và vũ khí) + Trang bị/Phán xét + Nhãn trạng thái (`[✅ Đến lượt]`, `[⏳ Đang phản ứng]`, `[⚠️ Máy đánh hộ]`).
-  * **Trung tâm bàn:** Chồng bài rút/bỏ, **Nhật ký hành động** dễ đọc, và **Banner Pha Phản Ứng + Thanh đếm ngược**.
-  * **Thanh dưới ghim cố định:** Thẻ Tướng + Nút kỹ năng chủ động + Tay bài xòe rộng (di chuột xem mô tả tiếng Việt đầy đủ, bấm chọn bài sẽ tự làm sáng mục tiêu hợp lệ trên bàn) + **Thanh nút hành động ghi rõ tên việc** (ví dụ `[⚔️ Đánh Sát vào Tuấn]`, `[⏭️ Bỏ qua]`, `[↩️ Hủy chọn]` — tránh nút chung chung gây bấm nhầm).
-* **Tiện ích Native Desktop:** Nháy biểu tượng Taskbar + phát âm thanh trống báo hiệu khi tới lượt hoặc cần phản ứng lúc đang thu nhỏ cửa sổ; hiện hộp thoại xác nhận khi bấm `[X]` đóng app giữa ván.
+### Kiến trúc kỹ thuật đề xuất (Tối ưu ổn định trên Windows + Cloud 0đ)
+- **Lõi dùng chung (`packages/shared`):** TypeScript thuần (không I/O) chứa kiểu dữ liệu, bộ bài Tiêu chuẩn, 12 Tướng Quốc Dân, bộ tính khoảng cách, `stateMachine` + `interruptStack`, `projectStateForPlayer`, và `botAi`.
+- **Server Online (`apps/server`):** Node.js (`v26.13.1` sẵn có — kiểm tra độ tương thích package ở Phase 0) + Fastify + WebSocket (`ws`), `clientSeq` chống nhấn đúp, `sessionToken` reconnect, lưu snapshot phòng xuống storage bền vững cho Cloud 0đ.
+- **Native Windows Client (`apps/desktop`):**
+  - Đề xuất chính: **Tauri v2** (bộ cài gọn nhẹ dùng WebView2 sẵn có trên Windows 10/11, `tauri-plugin-updater`, nháy Taskbar `request_user_attention`, close-guard giữa ván) + React 19 + TypeScript + Tailwind CSS v4.
+  - Phương án dự phòng kỹ thuật: **Electron** (nếu kiểm tra cài đặt Rust/MSVC Build Tools ở Phase 0 không thuận lợi — dùng chung 100% giao diện React/TypeScript và `packages/shared`, không tốn công làm lại UI).
+- **Layout Desktop 4–8 ghế (Anti-Overflow):** Cố định `100vh`, không cuộn trang — Vòng chữ U tối đa 7 đối thủ (ẩn ghế trống theo sĩ số), Trung tâm là bàn bài + Nhật ký + Banner đếm ngược pha phản ứng, Đáy màn hình ghim Tướng + Tay bài + Thanh hành động ghi rõ tên việc.
 
-### 5.2. Kiến Trúc Kỹ Thuật Đề Xuất (Phương án chính vs Thay thế)
-
-#### Phương án Đề xuất Chính — **Tauri v2 + TypeScript UI + Node.js Authoritative Server**
-- **`apps/desktop` (Native Client):** Tauri v2 (Rust shell + Windows WebView2) + React + TypeScript + Tailwind CSS + chuyển động 2D gọn (`150ms–250ms`, không dùng 3D/WebGL nặng).
-  - *Tích hợp sẵn:* `tauri-plugin-updater` (tự cập nhật khi mở app), `request_user_attention` (nháy Taskbar), close-guard giữa trận, âm thanh SFX.
-- **`apps/server` (Online Server):** Node.js (`v26.13.1`) + Fastify + WebSocket (`ws`), lưu snapshot cho tính năng Hoàn tác Trọng tài, quản lý `sessionToken` reconnect và bộ đếm thời gian pha.
-- **`packages/shared` (Lõi Luật Thuần):** TypeScript thuần (không phụ thuộc I/O) chia sẻ chung kiểu dữ liệu, bộ tính khoảng cách, máy trạng thái & chuỗi phản ứng (`interruptStack`), và Bot AI cho cả Server, Client (gợi ý mục tiêu) và Test runner.
-- *Điểm mạnh:* Server và Client dùng chung 100% hợp đồng dữ liệu -> giảm tối đa lỗi lệch trạng thái; bộ cài `.exe`/`.msi` gọn nhẹ và có Auto-Updater chính chủ; UI bảng biểu/mô tả tiếng Việt bàn 8 người sắc nét.
-- *Điểm đánh đổi:* Cần cài `Rust` + `MSVC Build Tools` trên máy dev (chỉ máy dev, người chơi không cần cài gì); nếu có thành viên dùng macOS cần cấu hình build macOS riêng (hoặc dùng Electron/CI build).
-
-#### Phương án Thay thế — **Godot 4 (.NET/GDScript) Client + Server Online**
-- Phù hợp nếu team muốn tự tay làm hiệu ứng chiến đấu 2D/shader đậm chất game engine và đã quen Godot. Đánh đổi là phải tự dựng hệ thống Auto-Patcher/Updater và tách ngôn ngữ giữa Client (Godot) với Server (Node.js) hoặc viết Server bằng Godot/C#.
-
-### 5.3. Lộ Trình Thực Thi Theo Cổng Kiểm Soát (Stage-Gate)
-1. **Giai đoạn 0 — Thiết lập Môi trường & Nền móng:** Khởi tạo cấu trúc repo, cài đặt toolchain đã chọn trên máy dev, chốt `DESIGN.md` (gợi ý tone *Sơn Thủy Mặc & Chu Sa*, tương phản cao dễ đọc chữ tiếng Việt).
-2. **Giai đoạn 1 — Lõi Luật 3–8 Người & Bộ Test Ổn Định (Greybox trước, Mỹ thuật sau):**
-   - Bộ bài Tiêu chuẩn + Trang bị + Cẩm nang + 12 Tướng Quốc Dân đầu tiên (Lưu Bị, Quan Vũ, Trương Phi, Triệu Vân, Tào Tháo, Tư Mã Ý, Quách Gia, Tôn Quyền, Chu Du, Hoa Đà, Điêu Thuyền, Lữ Bố).
-   - 3 chế độ: *Đấu Địa Chủ (3 người)*, *2v2/Thân phận (4 người)*, *Thân phận (5–8 người)*.
-   - **Cổng thoát Giai đoạn 1:** Chạy kiểm thử tự động cho **Bot tự đánh hàng trăm ván ở các mốc 3, 4, 5, 8 người** — bắt buộc **0 deadlock, 0 treo pha phản ứng** trước khi đầu tư giao diện đẹp.
-3. **Giai đoạn 2 — Giao diện Native Desktop & Tính năng Hệ điều hành:** Bàn 3–8 ghế không cuộn trang, highlight mục tiêu, Bảng Trọng Tài Chủ phòng, nháy Taskbar, SFX, chống tắt nhầm app.
-4. **Giai đoạn 3 — Đóng gói Zero-Config, Auto-Updater & Triển khai Server Online:** Build bộ cài cho người chơi tải về bấm mở là vào phòng ngay.
+### Lộ trình 5 Mốc Thực Thi (Vertical Slices)
+1. **Mốc 0 — Nền móng & Kiểm tra Toolchain:** Chốt Đặc tả (SRS), `DESIGN.md`, `tasks/plan.md`, `tasks/todo.md`, cài đặt & xác minh build app Windows + persistence cho Cloud 0đ.
+2. **Mốc 1 — Phòng Online 4–8 Người & Đánh Thức Cloud 0đ:** Tạo/vào phòng bằng mã 6 ký tự, màn hình chờ đánh thức server, lưu phiên kết nối lại.
+3. **Mốc 2 — Ván Đấu Thô Hoàn Chỉnh (Greybox 4–8 Người):** Chia Thân Phận chuẩn (`1-2-1` cho 4 người, chuẩn cho 5–8 người), đánh *Sát – Thiểm – Đào*, kết thúc ván & khôi phục sau restart server.
+4. **Mốc 3 — Đủ Cẩm Nang, Trang Bị, 12 Tướng & Cổng Fuzz Test Ổn Định:** Hoàn thiện *Vô Giải Khả Kích*, Phán xét, 12 Tướng, Bảng Trọng Tài, Bot đánh hộ, đạt 100% pass Fuzz Test 4–8 người.
+5. **Mốc 4 & 5 — Giao Diện Sơn Thủy Mặc, Nháy Taskbar, Đóng Gói Auto-Updater & Deploy Cloud 0đ:** Hoàn chỉnh trải nghiệm 2D, âm thanh, đóng gói `.exe`/`.msi` tải 1 lần chơi ngay.
 
 ---
 
-## 6. Câu Hỏi Mở Team Cần Chốt Trước Khi Code (`Phase 0 Gate`)
+## 6. Điểm Cần Xác Minh Nhanh Lúc Viết Đặc Tả (Không Chặn Bước Hiện Tại)
 
-Các thành viên hãy cùng chốt 5 điểm sau trước khi bắt đầu Giai đoạn 0:
-
-- [ ] **1. Công nghệ Native Client:** Chọn **Tauri v2 + TypeScript** (đề xuất, dễ đồng bộ kiểu dữ liệu với Server & có Auto-Updater sẵn), **Electron**, hay **Godot 4**?
-- [ ] **2. Hệ điều hành của nhóm 3–8 người chơi:** Nhóm dùng **100% Windows** hay có người dùng **macOS / Linux**?
-- [ ] **3. Mức độ tự động luật ở bản v1:**
-  - *(Đề xuất)* **Tự động hoàn toàn bộ Tiêu chuẩn + 12 Tướng + Bảng Trọng Tài Chủ phòng** (mở rộng thêm từng cụm 4–6 tướng sau khi test kỹ).
-  - *Hoặc* **Bán tự động (Hybrid Sandbox):** Máy lo chia bài, ẩn thân phận, máu, trang bị, khoảng cách, log; kỹ năng tướng người chơi tự bấm nút thực hiện để đưa nhanh nhiều tướng vào chơi.
-- [ ] **4. Phương án đặt Server Online:** Thuê VPS/Cloud nhẹ chạy 24/7 (nếu có ngân sách nhỏ hoặc gói free phù hợp) hay triển khai theo hạ tầng riêng của team?
-- [ ] **5. Luật nhà (House Rules) & Bộ tướng ưu tiên:** Nhóm có dùng *Tửu / Thiết Tác / Binh Lương*, và ưu tiên thêm những tướng nào ngay sau nhóm 12 tướng đầu?
+*Toàn bộ câu hỏi lớn về sản phẩm đã được chốt. Chỉ còn 3 chi tiết vận hành nhỏ sẽ được làm rõ hoặc kiểm chứng trực tiếp khi viết Đặc tả / chạy Mốc 0:*
+- [ ] Xác nhận kho `Play-with-me/LKDF` đang để **Public hay Private** (để chọn luồng phân phát file cho Auto-Updater 0 đồng).
+- [ ] Chốt chi tiết edge-case luật nhỏ của 12 tướng/trang bị trong SRS (ví dụ: *Bát Quái Trận* gặp *Vô Song*, *Thanh Long Đao* truy kích).
+- [ ] Chọn nền tảng Cloud 0 đồng cụ thể + phương án lưu snapshot (ví dụ Redis/SQLite/Turso/Supabase free hoặc disk phù hợp) và kiểm thử thực tế trên `Node.js` + Windows Native toolchain ở Mốc 0.
 
 ---
 
-## 7. Hướng Dẫn Dành Cho Thành Viên & AI Agent Khi Làm Việc Trên Repo Này
+## 7. Hướng Dẫn Dành Cho Thành Viên Team & AI Agent
 
-1. **Đọc `CONTEXT.md` (file này) và `.agents/PROJECT_MEMORY.md` trước khi đề xuất kiến trúc hoặc viết code.**
-2. **Không nhảy cóc qua bước kiểm chứng lõi luật:** Nếu triển khai tự động hóa luật Tam Quốc Sát, bắt buộc giữ lõi xử lý luật thuần (tách rời giao diện và mạng) và viết bài test mô phỏng nhiều ván Bot 3–8 người ngay từ Giai đoạn 1.
-3. **Cập nhật lại `CONTEXT.md` và `.agents/PROJECT_MEMORY.md`** mỗi khi team chốt xong câu hỏi ở Mục 6 hoặc hoàn thành một giai đoạn.
+1. **Đọc `docs/intent/v1-tam-quoc-sat.md`, `CONTEXT.md` (file này) và `.agents/PROJECT_MEMORY.md`** trước khi viết Đặc tả hoặc Code.
+2. **Tuân thủ chặt Phạm vi Out-of-Scope ở Mục 1:** Không tự ý nhét thêm Mobile, 3 người, *Quân Tranh* hay tranh vẽ phức tạp vào v1 làm mất mục tiêu ổn định.
+3. **Luôn giữ `packages/shared` thuần túy không phụ thuộc UI/mạng** và bắt buộc qua cổng Fuzz Test 4–8 người trước khi hoàn thiện UI.
