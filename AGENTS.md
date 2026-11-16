@@ -56,7 +56,21 @@ Khi bắt đầu một phiên làm việc mới, AI **bắt buộc đọc theo t
 
 ---
 
-## 5. Quy Tắc Cập Nhật Tài Liệu & Bàn Giao Tiến Độ
+## 5. Quy Tắc Cập Nhật Tài Liệu & Bàn Giao Tiến Độ ("Chuẩn Báo Cáo Sếp")
 
 - Mỗi loại thông tin chỉ cập nhật tại **1 tài liệu gốc chính** (ví dụ: yêu cầu chức năng tại [REQUIREMENTS.md](./REQUIREMENTS.md), giao diện tại [DESIGN.md](./DESIGN.md), dữ liệu tại [DATA_MODEL.md](./DATA_MODEL.md)), các tài liệu khác dẫn link tới đó để tránh lệch thông tin.
-- Sau khi hoàn thành và kiểm chứng xong mỗi đầu việc trong [TASKS.md](./TASKS.md), AI bắt buộc cập nhật trạng thái vào [TASKS.md](./TASKS.md) và đồng bộ tóm tắt tiến độ vào cả **[PROJECT_MEMORY.md](./PROJECT_MEMORY.md)** lẫn **[`.agents/PROJECT_MEMORY.md`](./.agents/PROJECT_MEMORY.md)**.
+- **LUẬT 1 — BẮT BUỘC CẬP NHẬT 4 FILE SAU MỖI BƯỚC HOÀN THÀNH:** Trước khi kết thúc lượt trả lời của bất kỳ đầu việc nào trong [TASKS.md](./TASKS.md), AI **bắt buộc cập nhật đồng thời cả 4 file sau**:
+  1. **[HUONG_DAN_CHO_TOI.md](./HUONG_DAN_CHO_TOI.md)** — Cập nhật khung *Trạng thái hiện tại* ở Mục 2, đánh dấu `✅ ĐÃ XONG` vào bước vừa làm xong, và dời nhãn `👉 BẠN ĐANG Ở ĐÂY` xuống bước kế tiếp để khách hàng luôn biết chính xác câu lệnh cần copy tiếp theo.
+  2. **[TASKS.md](./TASKS.md)** — Đánh dấu `[x]` vào bước đã kiểm chứng đạt.
+  3. **[PROJECT_MEMORY.md](./PROJECT_MEMORY.md)** — Ghi nhận phần vừa hoàn thành, bằng chứng kiểm tra và bước tiếp theo.
+  4. **[`.agents/PROJECT_MEMORY.md`](./.agents/PROJECT_MEMORY.md)** — Đồng bộ bộ nhớ tóm tắt cho các phiên AI tiếp theo.
+- **LUẬT 2 — BẮT BUỘC BÁO CÁO PHONG CÁCH "BÁO CÁO SẾP" (Ngắn gọn – Đủ ý – Không lan man):**
+  - Khi báo cáo kết quả cho khách hàng, trình bày súc tích như báo cáo cho Sếp, tuyệt đối không giải thích code dài dòng, gói gọn trong **4 ý cốt lõi**:
+    1. **✅ Đã hoàn thành:** Tóm tắt 1–2 câu những gì vừa làm xong bằng ngôn ngữ đời thường.
+    2. **📊 Bằng chứng kiểm tra:** Nêu rõ lệnh/cách đã kiểm tra và con số kết quả thực tế (ví dụ: `X/X bài test đạt 100%, 0 lỗi`).
+    3. **⚠️ Tồn đọng / Lưu ý:** Nêu ngắn gọn điểm cần lưu ý hoặc ghi rõ *"Không có vướng mắc"*.
+    4. **👉 Bước tiếp theo (Trình Sếp duyệt):** Trích dẫn sẵn câu lệnh của bước kế tiếp trong [HUONG_DAN_CHO_TOI.md](./HUONG_DAN_CHO_TOI.md) để khách hàng copy ngay.
+- **LUẬT 3 — BẮT BUỘC KÈM ĐÁNH GIÁ `/honest-advisor`, `/ultrathinking` & GỢI Ý `swarm` TRONG MỌI BÁO CÁO:**
+  - Mọi báo cáo gửi lại khách hàng bắt buộc có thêm **2 mục ngắn gọn, đi thẳng vào trọng tâm**:
+    5. **🔍 Phản biện thẳng (`/honest-advisor` & `/ultrathinking`):** Phân biệt rõ *sự thật đã kiểm chứng* với *giả định chưa kiểm*, chỉ ra điểm yếu/rủi ro lớn nhất hoặc kịch bản dễ hỏng (*pre-mortem*) nếu đi tiếp, kèm giải pháp khắc phục thực tế (không nịnh, không bịa rủi ro giả).
+    6. **🐝 Gợi ý chia quân (`/swarm`):** Đề xuất rõ cho bước kế tiếp là **nên chạy 1 mình** hay **gọi Swarm**, nêu rõ **số lượng Agent cụ thể** (kèm vai trò từng Agent tách file không đụng nhau, cộng `monitor` nếu chạy Swarm) và nêu thẳng đánh đổi về *tốc độ vs mức tiêu hao quota*.

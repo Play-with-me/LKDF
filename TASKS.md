@@ -11,8 +11,8 @@
 
 | Giai đoạn | Tên giai đoạn | Phụ thuộc | Trạng thái |
 | :---: | :--- | :---: | :---: |
-| **Giai đoạn 0** | Chuẩn hóa Bộ 11 Tài liệu & Khởi tạo khung dự án (Monorepo) | Không | 🔄 Đang thực hiện (Xong Bước 0.1) |
-| **Giai đoạn 1** | Lõi Luật Thuần: 108 lá bài, 25 Tướng chuẩn & Kiểm thử Fuzz 4–8 người | Giai đoạn 0 | ⏳ Chưa bắt đầu |
+| **Giai đoạn 0** | Chuẩn hóa Bộ 11 Tài liệu & Khởi tạo khung dự án (Monorepo) | Không | ✅ Hoàn thành (Xong Bước 0.1 & 0.2) |
+| **Giai đoạn 1** | Lõi Luật Thuần: 108 lá bài, 25 Tướng chuẩn & Kiểm thử Fuzz 4–8 người | Giai đoạn 0 | 🔄 Đang thực hiện (Xong Bước 1.1 – 1.3) |
 | **Giai đoạn 2** | Máy chủ Cloud 0đ, Đăng nhập Google, Lưu Thống kê & Phòng 4–8 người thật | Giai đoạn 0 | ⏳ Chưa bắt đầu |
 | **Giai đoạn 3** | Ghép nối Ván đấu Trực tuyến, Chống lộ *Vô Giải*, Rớt mạng & Trọng Tài 4 nút | Giai đoạn 1, 2 | ⏳ Chưa bắt đầu |
 | **Giai đoạn 4** | Giao diện Windows 2D Sơn Thủy Mặc, Thống kê người dùng & Tiện ích Taskbar | Giai đoạn 2, 3 | ⏳ Chưa bắt đầu |
@@ -29,40 +29,40 @@
   - **Kết quả bàn giao:** Đầy đủ 11 file (`README.md`, `REQUIREMENTS.md`, `DESIGN.md`, `ARCHITECTURE.md`, `DATA_MODEL.md`, `AGENTS.md`, `TASKS.md`, `PROJECT_MEMORY.md`, `TESTING.md`, `DECISIONS.md`, `DEPLOYMENT.md`) cùng `CONTEXT.md`, `.agents/PROJECT_MEMORY.md` và `docs/intent/v1-tam-quoc-sat.md`.
   - **Điều kiện hoàn thành:** Toàn bộ 11 file tồn tại trên ổ đĩa, các đường dẫn liên kết và thông số nghiệp vụ khớp nhau 100%, không còn chi tiết mâu thuẫn.
 
-- [ ] **Bước 0.2 — Khởi tạo cấu trúc Monorepo (`packages/shared`, `apps/server`, `apps/desktop`) & Công cụ kiểm thử**
+- [x] **Bước 0.2 — Khởi tạo cấu trúc Monorepo (`packages/shared`, `apps/server`, `apps/desktop`) & Công cụ kiểm thử**
   - **Phụ thuộc:** Bước 0.1.
   - **Kết quả bàn giao:** `package.json` gốc, cấu hình TypeScript nghiêm ngặt (`tsconfig.json`), bộ chạy test `Vitest` trong `packages/shared`, khung máy chủ `Fastify + ws` trong `apps/server`, và khung ứng dụng Windows trong `apps/desktop`.
-  - **Điều kiện hoàn thành:** Chạy lệnh `npm install`, `npm run typecheck` và `npm run test:unit` (với bài test mẫu đầu tiên) báo thành công (`exit code 0`).
+  - **Điều kiện hoàn thành:** Chạy lệnh `npm install`, `npm run typecheck` và `npm run test:unit` (với bài test mẫu đầu tiên) báo thành công (`exit code 0`). *(Đã kiểm chứng thực tế: `npm install`, `npm run typecheck`, `npm run test:unit` 4/4 đạt, `npm run test:integration` 1/1 đạt, `npm run build` đạt — exit code 0.)*
 
 ---
 
 ### Giai Đoạn 1 — Lõi Luật Thuần (`packages/shared`): 108 Lá Bài, 25 Tướng & Cổng Fuzz Test
 
-- [ ] **Bước 1.1 — Xây dựng Mô hình dữ liệu ván đấu, Chia Thân Phận 4–8 người, Chia 25 Tướng & Tính khoảng cách**
+- [x] **Bước 1.1 — Xây dựng Mô hình dữ liệu ván đấu, Chia Thân Phận 4–8 người, Chia 25 Tướng & Tính khoảng cách**
   - **Phụ thuộc:** Bước 0.2.
   - **Kết quả bàn giao:**
     - Bộ chia Thân Phận đúng tỷ lệ (`4: 1-0-2-1`, `5: 1-1-2-1`, `6: 1-1-3-1`, `7: 1-2-3-1`, `8: 1-2-3-2`) + cộng `+1 máu tối đa` cho Chủ Công ở mọi mốc 4–8 người.
     - Bộ chia tướng đầu ván: Chủ Công chọn 1/5 tướng (có đủ *Lưu Bị, Tào Tháo, Tôn Quyền*), trả 4 tướng dư về bộ rồi chia mỗi người còn lại chọn 1/3 tướng.
     - Bộ tính khoảng cách (`distance.ts`) tính sẵn ngựa `+1/-1`, tầm vũ khí và kỹ năng *Mã Thuật / Kỳ Tài*.
     - Bộ lọc bảo mật `projectStateForPlayer` ẩn bài úp trên tay đối thủ, chồng bài rút và Thân Phận chưa lật.
-  - **Điều kiện hoàn thành:** 100% bài Unit Test cho chia Thân Phận, chia tướng, tính khoảng cách và lọc thông tin ẩn chạy đạt.
+  - **Điều kiện hoàn thành:** 100% bài Unit Test cho chia Thân Phận, chia tướng, tính khoảng cách và lọc thông tin ẩn chạy đạt. *(Đã kiểm chứng thực tế: 19/19 unit tests trong 4 file tại `packages/shared/tests/unit` đạt 100%, `typecheck` & `build` toàn Monorepo đạt — exit code 0.)*
 
-- [ ] **Bước 1.2 — Xây dựng Máy trạng thái lượt đánh & Toàn bộ 108 lá bài (gồm 4 lá EX)**
+- [x] **Bước 1.2 — Xây dựng Máy trạng thái lượt đánh & Toàn bộ 108 lá bài (gồm 4 lá EX)**
   - **Phụ thuộc:** Bước 1.1.
   - **Kết quả bàn giao:**
     - Vòng đời lượt (`Phán xét → Rút bài → Đánh bài → Bỏ bài → Kết lượt`) và ngăn xếp phản ứng (`interruptStack`).
     - Xử lý đầy đủ Bài cơ bản (*Sát, Thiểm, Đào*), 12 loại Cẩm nang (kể cả *Vô Giải Khả Kích* lồng nhau kèm cờ dừng giả lập `2–3.5s` khi không ai có bài, *Lạc Bất Tư Thục*, *Thiểm Điện*), và 19 lá Trang bị (kể cả *Hàn Băng Kiếm*, *Nhân Vương Thuẫn*).
     - Quy tắc *Hấp hối Cầu Đào* theo vòng ghế, thưởng 3 lá khi diệt Phản Tặc, phạt hủy hết bài khi Chủ Công giết Trung Thần, và điều kiện thắng của các phe (kể cả luật **2 Nội Gián** ở bàn 8 người).
-  - **Điều kiện hoàn thành:** Toàn bộ Unit Test cho từng loại lá bài trong 108 lá và điều kiện thắng 2 Nội Gián chạy đạt 100%.
+  - **Điều kiện hoàn thành:** Toàn bộ Unit Test cho từng loại lá bài trong 108 lá và điều kiện thắng 2 Nội Gián chạy đạt 100%. *(Đã kiểm chứng thực tế: 30/30 unit tests trong 6 file tại `packages/shared/tests/unit`, gồm `cards.test.ts` & `combat.test.ts`, đạt 100%; `typecheck` & `build` đạt — exit code 0.)*
 
-- [ ] **Bước 1.3 — Triển khai đầy đủ Kỹ năng của 25 Tướng Bản Tiêu Chuẩn gốc**
+- [x] **Bước 1.3 — Triển khai đầy đủ Kỹ năng của 25 Tướng Bản Tiêu Chuẩn gốc**
   - **Phụ thuộc:** Bước 1.2.
   - **Kết quả bàn giao:**
     - Nhóm 7 tướng Thục (*Lưu Bị, Quan Vũ, Trương Phi, Gia Cát Lượng, Triệu Vân, Mã Siêu, Hoàng Nguyệt Anh*).
     - Nhóm 7 tướng Ngụy (*Tào Tháo, Tư Mã Ý, Hạ Hầu Đôn, Trương Liêu, Hứa Chử, Quách Gia, Chân Cơ*).
     - Nhóm 8 tướng Ngô (*Tôn Quyền, Cam Ninh, Lữ Mông, Hoàng Cái, Chu Du, Đại Kiều, Lục Tốn, Tôn Thượng Hương*).
     - Nhóm 3 tướng Quần (*Hoa Đà, Lữ Bố, Điêu Thuyền*).
-  - **Điều kiện hoàn thành:** Mỗi tướng trong 25 tướng có bài Unit Test riêng kiểm tra kích hoạt kỹ năng và các tương tác đặc biệt (như *Vô Song + Bát Quái Trận*, *Quỷ Tài + Thiểm Điện*, *Lưu Ly*, *êu Cơ*, *Quan Tinh*) chạy đạt 100%.
+  - **Điều kiện hoàn thành:** Mỗi tướng trong 25 tướng có bài Unit Test riêng kiểm tra kích hoạt kỹ năng và các tương tác đặc biệt (như *Vô Song + Bát Quái Trận*, *Quỷ Tài + Thiểm Điện*, *Lưu Ly*, *Kiêu Cơ*, *Quan Tinh*) chạy đạt 100%. *(Đã kiểm chứng thực tế: 79/79 unit tests trong 10 file tại `packages/shared/tests/unit`, 1/1 integration test, `typecheck` & `build` toàn Monorepo đạt — exit code 0.)*
 
 - [ ] **Bước 1.4 — Xây dựng Mô-đun Máy đánh hộ (`botAi`) & Vượt cổng Kiểm thử Fuzz >= 500 ván**
   - **Phụ thuộc:** Bước 1.3.

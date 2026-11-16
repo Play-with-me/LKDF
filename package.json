@@ -1,0 +1,32 @@
+{
+  "name": "lkdf-monorepo",
+  "version": "0.1.0",
+  "private": true,
+  "description": "LKDF — Game Thẻ Bài Tam Quốc Sát (Windows Native Online 4–8 Người)",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "build:shared": "npm run build --workspace=@lkdf/shared",
+    "build": "npm run build:shared && npm run build --workspace=@lkdf/server && npm run build --workspace=@lkdf/desktop",
+    "typecheck": "npm run build:shared && npm run typecheck --workspaces --if-present",
+    "test:unit": "npm run test:unit --workspace=@lkdf/shared",
+    "test:fuzz": "npm run test:fuzz --workspace=@lkdf/shared",
+    "test:integration": "npm run test:integration --workspace=@lkdf/server",
+    "test": "npm run test:unit",
+    "dev:server": "npm run build:shared && npm run dev --workspace=@lkdf/server",
+    "dev:desktop": "npm run build:shared && npm run dev --workspace=@lkdf/desktop",
+    "dev": "npm run build:shared && concurrently -n shared,server,desktop -c cyan,green,magenta \"npm run dev --workspace=@lkdf/shared\" \"npm run dev --workspace=@lkdf/server\" \"npm run dev --workspace=@lkdf/desktop\""
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "concurrently": "^10.0.7",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vitest": "^5.1.0"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  }
+}

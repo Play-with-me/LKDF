@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "verbatimModuleSyntax": false,
+    "rootDir": "electron",
+    "outDir": "dist-electron",
+    "sourceMap": true
+  },
+  "include": ["electron/**/*.cts"]
+}
