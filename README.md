@@ -1,14 +1,61 @@
 # LKDF — Dự Án Game Thẻ Bài Tam Quốc Sát (Windows Native Online 4–8 Người)
 
-Kho lưu trữ tài liệu ngữ cảnh, bản chốt ý định và đặc tả xây dựng game thẻ bài chủ đề **Tam Quốc Sát** tối ưu cho **Windows (Native Desktop App)**, chơi **Online từ xa nội bộ nhóm bạn** với sĩ số **4 đến 8 người**, ưu tiên hàng đầu là **độ ổn định**.
+Ứng dụng trò chơi thẻ bài **Tam Quốc Sát** cài đặt trên máy tính **Windows** (`.exe`/`.msi`), thiết kế riêng cho nhóm bạn **từ 4 đến 8 người chơi thật** chơi trực tuyến từ xa qua Internet với ưu tiên số 1 là **độ ổn định**, **tự động hóa trọn vẹn luật chuẩn (108 lá bài, 25 tướng)**, **đăng nhập bằng Google để lưu/phân lọc thống kê người dùng (0 đồng)** và **cập nhật phiên bản mới chỉ bằng 1 cú nhấp chuột ngay trong ứng dụng**.
 
-## Đọc nhanh theo thứ tự
+---
 
-1. **[docs/intent/v1-tam-quoc-sat.md](./docs/intent/v1-tam-quoc-sat.md)** — Bản chốt Ý định & Phạm vi v1 chính thức (đã được người dùng xác nhận qua `/grill-me`).
-2. **[CONTEXT.md](./CONTEXT.md)** — Tài liệu ngữ cảnh tổng hợp cho team và AI (rủi ro kỹ thuật, kiến trúc ổn định cho Cloud 0đ, phác thảo màn hình và lộ trình 5 mốc).
-3. **[.agents/PROJECT_MEMORY.md](./.agents/PROJECT_MEMORY.md)** — Bộ nhớ dự án ngắn gọn cho AI coding agent khi mở repo.
+## 1. Tình Trạng Hiện Tại Của Dự Án
 
-## Trạng thái hiện tại
+- **Giai đoạn hiện tại:** Hoàn thành **Bước 0.1** trong [TASKS.md](./TASKS.md) — Đã chốt 100% yêu cầu với khách hàng và hoàn tất **Bộ 11 Tài liệu chuẩn của dự án** (chưa viết mã nguồn).
+- **Bước tiếp theo:** Thực hiện **Bước 0.2** trong [TASKS.md](./TASKS.md) — Khởi tạo cấu trúc Monorepo (`packages/shared`, `apps/server`, `apps/desktop`) và bắt đầu Giai đoạn 1 (Xây dựng Lõi Luật Thuần 108 lá bài & 25 Tướng chuẩn).
 
-- **Giai đoạn:** Hoàn tất chốt Ý định & Phạm vi v1 -> Chuẩn bị viết **Tài liệu Đặc tả (SRS)** (`spec-driven-development`), **chưa viết mã nguồn**.
-- **Việc tiếp theo:** Viết Đặc tả chi tiết v1 (luật 4–8 người, máy trạng thái phản ứng, lưu trữ chống mất ván trên Cloud 0đ, hợp đồng giao diện 5 trạng thái), sau đó lập `tasks/plan.md`, `tasks/todo.md`, `DESIGN.md` và bước vào triển khai từng lát cắt dọc.
+---
+
+## 2. Mục Lục Bộ 11 Tài Liệu Dự Án Chính Thức
+
+Mỗi tài liệu dưới đây phụ trách một mảng thông tin duy nhất để đảm bảo toàn bộ dự án luôn nhất quán:
+
+| STT | Tài liệu | Mục đích & Nội dung chính |
+| :---: | :--- | :--- |
+| **1** | **[README.md](./README.md)** *(File này)* | Điểm bắt đầu, giới thiệu dự án, tình trạng hiện tại và mục lục dẫn tới toàn bộ tài liệu khác. |
+| **2** | **[REQUIREMENTS.md](./REQUIREMENTS.md)** | Mục tiêu, người dùng, phạm vi v1, bảng Thân Phận 4–8 người, danh sách 25 tướng & 108 lá bài chuẩn, đặc tả chi tiết 5 chức năng lớn và 8 tiêu chí nghiệm thu (`AC-1` đến `AC-8`). |
+| **3** | **[DESIGN.md](./DESIGN.md)** | Phong cách 2D *Sơn Thủy Mặc & Chu Sa*, bảng màu, chữ viết, bố cục bàn 4–8 ghế không cuộn trang, 5 trạng thái màn hình, nhãn nút rõ hành động và phím tắt. |
+| **4** | **[ARCHITECTURE.md](./ARCHITECTURE.md)** | Cấu trúc Monorepo (`packages/shared`, `apps/server`, `apps/desktop`), bảo mật giấu bài, luồng đăng nhập Google OAuth 2.0, lưu bản chụp trên Cloud 0đ và cổng cập nhật 1-Click từ GitHub Private. |
+| **5** | **[DATA_MODEL.md](./DATA_MODEL.md)** | Mô hình dữ liệu người dùng (`UserProfile`, `UserStats`, `MatchHistory`), phòng chơi, trạng thái ván đấu (`MasterGameState` vs `PlayerViewState`), bảng phân quyền và vòng đời dữ liệu. |
+| **6** | **[AGENTS.md](./AGENTS.md)** | Quy tắc làm việc bắt buộc dành cho AI: thứ tự đọc tài liệu, ranh giới tự quyết vs hỏi khách hàng, quy trình kiểm thử và bàn giao. |
+| **7** | **[TASKS.md](./TASKS.md)** | Kế hoạch thực hiện chia nhỏ theo 6 giai đoạn, thứ tự phụ thuộc, sản phẩm bàn giao và điều kiện hoàn thành kiểm tra được. |
+| **8** | **[PROJECT_MEMORY.md](./PROJECT_MEMORY.md)** | Ghi nhớ mục tiêu, phạm vi đã xác nhận, phần đã hoàn thành, vấn đề tồn tại và bước tiếp theo *(đồng bộ cùng [`.agents/PROJECT_MEMORY.md`](./.agents/PROJECT_MEMORY.md))*. |
+| **9** | **[TESTING.md](./TESTING.md)** | Chiến lược 4 tầng kiểm thử: Unit Test 108 lá & 25 tướng, Fuzz Test >= 500 ván (0 deadlock), Integration Test và Kịch bản nghiệm thu thực tế trên Windows. |
+| **10** | **[DECISIONS.md](./DECISIONS.md)** | Lịch sử 10 quyết định quan trọng (`ADR-001` đến `ADR-010`) kèm bối cảnh, lý do và đánh đổi. |
+| **11** | **[DEPLOYMENT.md](./DEPLOYMENT.md)** | Hướng dẫn triển khai Cloud 0 đồng, thiết lập Google OAuth, cấu hình GitHub Private Actions cho cập nhật 1-Click và cách khôi phục khi có lỗi. |
+
+### Tài liệu ngữ cảnh bổ trợ
+- **[CONTEXT.md](./CONTEXT.md)** — Bức tranh tổng hợp nhanh cho các thành viên trong nhóm.
+- **[docs/intent/v1-tam-quoc-sat.md](./docs/intent/v1-tam-quoc-sat.md)** — Bản chốt ý định gốc của phiên bản đầu (v1).
+
+---
+
+## 3. Cách Khởi Động và Sử Dụng (Sau Khi Khởi Tạo Mã Nguồn Ở Bước 0.2)
+
+### 3.1. Dành cho Người chơi (Trên máy tính Windows)
+1. Tải và chạy bộ cài đặt lần đầu (`TamQuocSat-Setup.exe` / `.msi`). *(Lưu ý: Ở lần mở đầu tiên, nếu Windows hiện bảng SmartScreen, bấm `More info` → `Run anyway`)*.
+2. Bấm **`[🔑 Đăng nhập bằng Google]`** và xác nhận tài khoản Gmail trên trình duyệt (chỉ cần làm 1 lần đầu, các lần sau mở app tự động đăng nhập).
+3. Chủ phòng bấm **`[➕ Tạo phòng chơi mới]`** và gửi mã phòng 6 ký tự cho 3–7 người bạn nhập vào **`[🚪 Vào phòng ngay]`**.
+4. Khi có bản cập nhật mới, chỉ cần bấm **1 nút `[⬇️ Cập nhật ngay]`** hiện ngay trong ứng dụng.
+
+### 3.2. Dành cho Thành viên Phát triển & Kiểm thử
+Sau khi hoàn thành **Bước 0.2** trong [TASKS.md](./TASKS.md), sử dụng các lệnh sau tại thư mục gốc `c:\Tam quốc sát`:
+```powershell
+# Cài đặt thư viện
+npm install
+
+# Chạy kiểm tra kiểu dữ liệu và bộ kiểm thử đơn vị (108 lá bài & 25 tướng)
+npm run typecheck
+npm run test:unit
+
+# Chạy kiểm thử giả lập tự động >= 500 ván cho các bàn 4-8 người
+npm run test:fuzz
+
+# Khởi động môi trường chạy thử trên máy (Máy chủ + Ứng dụng Windows)
+npm run dev
+```
