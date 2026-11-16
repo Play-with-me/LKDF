@@ -1,22 +1,35 @@
-import type { MasterGameState, PlayerCombatState } from '../types/game.js';
+import type { HeroId, PlayerEquipments } from '../types/game.js';
+
+export interface DistancePlayerLike {
+  readonly seatIndex: number;
+  readonly alive: boolean;
+  readonly heroId: HeroId | null;
+  readonly equipments: PlayerEquipments;
+}
+
+export interface DistanceStateLike {
+  readonly players: readonly DistancePlayerLike[];
+}
 
 /** Trả về danh sách người chơi còn sống sắp xếp theo thứ tự ghế tăng dần. */
-export function getAlivePlayers(state: MasterGameState): PlayerCombatState[] {
+export function getAlivePlayers<T extends DistancePlayerLike>(
+  state: { readonly players: readonly T[] },
+): T[] {
   return [...state.players]
     .filter((player) => player.alive)
     .sort((a, b) => a.seatIndex - b.seatIndex);
 }
 
-function findPlayerBySeat(
-  state: MasterGameState,
+function findPlayerBySeat<T extends DistancePlayerLike>(
+  state: { readonly players: readonly T[] },
   seatIndex: number,
-): PlayerCombatState | undefined {
+): T | undefined {
   return state.players.find((player) => player.seatIndex === seatIndex);
 }
 
 /** Tính khoảng cách ghế thuần túy (chỉ đếm người còn sống theo vòng tròn ngắn nhất). */
 export function calculateSeatDistance(
-  state: MasterGameState,
+  state: DistanceStateLike,
   fromSeat: number,
   toSeat: number,
 ): number {
@@ -45,7 +58,7 @@ export function calculateSeatDistance(
  * - Khoảng cách giữa 2 người khác nhau tối thiểu luôn là 1.
  */
 export function calculateDistance(
-  state: MasterGameState,
+  state: DistanceStateLike,
   fromSeat: number,
   toSeat: number,
 ): number {
@@ -78,13 +91,13 @@ export function calculateDistance(
 }
 
 /** Tầm đánh vũ khí hiện tại của người chơi (mặc định 1 nếu không cầm vũ khí). */
-export function getAttackRange(player: Pick<PlayerCombatState, 'equipments'>): number {
+export function getAttackRange(player: Pick<DistancePlayerLike, 'equipments'>): number {
   return player.equipments.weapon?.attackRange ?? 1;
 }
 
 /** Kiểm tra `toSeat` có nằm trong tầm đánh Sát của `fromSeat` hay không. */
 export function isInAttackRange(
-  state: MasterGameState,
+  state: DistanceStateLike,
   fromSeat: number,
   toSeat: number,
 ): boolean {
@@ -102,7 +115,7 @@ export function isInAttackRange(
 
 /** Trả về danh sách ghế mục tiêu hợp lệ nằm trong tầm đánh của `fromSeat`. */
 export function getValidAttackTargets(
-  state: MasterGameState,
+  state: DistanceStateLike,
   fromSeat: number,
 ): number[] {
   return getAlivePlayers(state)
@@ -115,7 +128,7 @@ export function getValidAttackTargets(
  * Hoàng Nguyệt Anh (Kỳ Tài) được bỏ qua giới hạn khoảng cách Cẩm nang.
  */
 export function canReachForSnatch(
-  state: MasterGameState,
+  state: DistanceStateLike,
   fromSeat: number,
   toSeat: number,
 ): boolean {
@@ -135,7 +148,7 @@ export function canReachForSnatch(
 
 /** Trả về danh sách ghế nằm trong tầm sử dụng Thuận Thủ Khiên Dương. */
 export function getValidSnatchTargets(
-  state: MasterGameState,
+  state: DistanceStateLike,
   fromSeat: number,
 ): number[] {
   return getAlivePlayers(state)
@@ -145,7 +158,7 @@ export function getValidSnatchTargets(
 
 /** Kiểm tra cặp (người cầm vũ khí, nạn nhân) có hợp lệ cho Tá Đao Sát Nhân hay không. */
 export function canUseCollateralMurder(
-  state: MasterGameState,
+  state: DistanceStateLike,
   casterSeat: number,
   attackerSeat: number,
   victimSeat: number,

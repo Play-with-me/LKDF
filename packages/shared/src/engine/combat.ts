@@ -820,7 +820,11 @@ export function applyGameAction(
       let dodgedIncrement = 0;
 
       if (action.useHuJia) {
-        if (target.heroId !== 'cao_cao' || target.identity !== 'LORD') {
+        if (
+          target.heroId !== 'cao_cao' ||
+          target.identity !== 'LORD' ||
+          top.huJiaTriedThisStrike
+        ) {
           throw new Error('HU_JIA_NOT_AVAILABLE');
         }
         const weiAllies = getClockwiseAliveSeats(next, top.targetSeat, false).filter(
@@ -1207,7 +1211,11 @@ export function applyGameAction(
       let next = state;
 
       if (action.useHuJia) {
-        if (target.heroId !== 'cao_cao' || target.identity !== 'LORD') {
+        if (
+          target.heroId !== 'cao_cao' ||
+          target.identity !== 'LORD' ||
+          top.huJiaTriedThisFrame
+        ) {
           throw new Error('HU_JIA_NOT_AVAILABLE');
         }
         const weiAllies = getClockwiseAliveSeats(next, top.targetSeat, false).filter(
@@ -1910,6 +1918,18 @@ export function applyGameAction(
           ],
         };
         if (top.contextKind === 'PLAY' && top.strikeTargetSeat !== undefined) {
+          const prevFlags = next.turnFlags ?? {
+            satUsedThisTurn: 0,
+            skipPlayPhase: false,
+          };
+          next = {
+            ...next,
+            turnFlags: {
+              ...prevFlags,
+              satUsedThisTurn: prevFlags.satUsedThisTurn + 1,
+              satPlayedOrUsedThisTurn: true,
+            },
+          };
           next = beginStrikeAgainstTarget(
             next,
             top.lordSeat,
@@ -1924,6 +1944,17 @@ export function applyGameAction(
 
       const nextCursor = top.askCursor + 1;
       if (nextCursor >= top.askOrder.length) {
+        const prevFlags = next.turnFlags ?? {
+          satUsedThisTurn: 0,
+          skipPlayPhase: false,
+        };
+        next = {
+          ...next,
+          turnFlags: {
+            ...prevFlags,
+            jiJiangDeclinedThisTurn: true,
+          },
+        };
         return stepEngine(next, rng);
       }
       const nextResponder = top.askOrder[nextCursor]!;
@@ -1983,6 +2014,18 @@ export function applyGameAction(
 
       const nextCursor = top.askCursor + 1;
       if (nextCursor >= top.askOrder.length) {
+        const dodgeTop = next.interruptStack[next.interruptStack.length - 1];
+        if (dodgeTop?.kind === 'WAIT_DODGE') {
+          next = replaceTopInterrupt(next, {
+            ...dodgeTop,
+            huJiaTriedThisStrike: true,
+          });
+        } else if (dodgeTop?.kind === 'WAIT_AOE_DODGE') {
+          next = replaceTopInterrupt(next, {
+            ...dodgeTop,
+            huJiaTriedThisFrame: true,
+          });
+        }
         return next;
       }
       const nextResponder = top.askOrder[nextCursor]!;

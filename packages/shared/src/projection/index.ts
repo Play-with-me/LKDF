@@ -146,6 +146,28 @@ function projectTopInterrupt(
         kind: topFrame.kind,
         targetSeat: topFrame.targetSeat,
       };
+    case 'WAIT_DODGE':
+      return {
+        id: topFrame.id,
+        kind: topFrame.kind,
+        targetSeat: topFrame.targetSeat,
+        sourceSeat: topFrame.sourceSeat,
+        allowBagua: topFrame.allowBagua,
+        baguaTried: topFrame.baguaTriedThisStrike,
+        huJiaTried: Boolean(topFrame.huJiaTriedThisStrike),
+        requiredCount: topFrame.requiredCount,
+        dodgedSoFar: topFrame.dodgedSoFar,
+      };
+    case 'WAIT_AOE_DODGE':
+      return {
+        id: topFrame.id,
+        kind: topFrame.kind,
+        targetSeat: topFrame.targetSeat,
+        sourceSeat: topFrame.sourceSeat,
+        allowBagua: topFrame.allowBagua,
+        baguaTried: topFrame.baguaTriedThisFrame,
+        huJiaTried: Boolean(topFrame.huJiaTriedThisFrame),
+      };
     default:
       return {
         id: topFrame.id,
@@ -227,6 +249,7 @@ export function projectStateForPlayer(
     harvestPool: (masterState.harvestPool ?? []).map((card) => ({ ...card })),
     players: publicPlayers,
     activeInterrupt: projectTopInterrupt(masterState.interruptStack, viewerSeatIndex),
+    ...(masterState.turnFlags ? { turnFlags: { ...masterState.turnFlags } } : {}),
     actionLog: [...masterState.actionLog],
     refereeAuditLog: [...masterState.refereeAuditLog],
     winningFaction: masterState.winningFaction,

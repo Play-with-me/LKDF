@@ -12,7 +12,7 @@
 | Giai đoạn | Tên giai đoạn | Phụ thuộc | Trạng thái |
 | :---: | :--- | :---: | :---: |
 | **Giai đoạn 0** | Chuẩn hóa Bộ 11 Tài liệu & Khởi tạo khung dự án (Monorepo) | Không | ✅ Hoàn thành (Xong Bước 0.1 & 0.2) |
-| **Giai đoạn 1** | Lõi Luật Thuần: 108 lá bài, 25 Tướng chuẩn & Kiểm thử Fuzz 4–8 người | Giai đoạn 0 | 🔄 Đang thực hiện (Xong Bước 1.1 – 1.3) |
+| **Giai đoạn 1** | Lõi Luật Thuần: 108 lá bài, 25 Tướng chuẩn & Kiểm thử Fuzz 4–8 người | Giai đoạn 0 | ✅ Hoàn thành (Xong Bước 1.1 – 1.4) |
 | **Giai đoạn 2** | Máy chủ Cloud 0đ, Đăng nhập Google, Lưu Thống kê & Phòng 4–8 người thật | Giai đoạn 0 | ⏳ Chưa bắt đầu |
 | **Giai đoạn 3** | Ghép nối Ván đấu Trực tuyến, Chống lộ *Vô Giải*, Rớt mạng & Trọng Tài 4 nút | Giai đoạn 1, 2 | ⏳ Chưa bắt đầu |
 | **Giai đoạn 4** | Giao diện Windows 2D Sơn Thủy Mặc, Thống kê người dùng & Tiện ích Taskbar | Giai đoạn 2, 3 | ⏳ Chưa bắt đầu |
@@ -64,10 +64,10 @@
     - Nhóm 3 tướng Quần (*Hoa Đà, Lữ Bố, Điêu Thuyền*).
   - **Điều kiện hoàn thành:** Mỗi tướng trong 25 tướng có bài Unit Test riêng kiểm tra kích hoạt kỹ năng và các tương tác đặc biệt (như *Vô Song + Bát Quái Trận*, *Quỷ Tài + Thiểm Điện*, *Lưu Ly*, *Kiêu Cơ*, *Quan Tinh*) chạy đạt 100%. *(Đã kiểm chứng thực tế: 79/79 unit tests trong 10 file tại `packages/shared/tests/unit`, 1/1 integration test, `typecheck` & `build` toàn Monorepo đạt — exit code 0.)*
 
-- [ ] **Bước 1.4 — Xây dựng Mô-đun Máy đánh hộ (`botAi`) & Vượt cổng Kiểm thử Fuzz >= 500 ván**
+- [x] **Bước 1.4 — Xây dựng Mô-đun Máy đánh hộ (`botAi`) & Vượt cổng Kiểm thử Fuzz >= 500 ván**
   - **Phụ thuộc:** Bước 1.3.
   - **Kết quả bàn giao:** Mô-đun `botAi` biết chọn nước đi hợp lệ cho mọi pha phản ứng/lượt chính và bộ kiểm thử tự động `fuzz.test.ts`.
-  - **Điều kiện hoàn thành:** Chạy `npm run test:fuzz` giả lập tối thiểu **100 ván cho mỗi mốc 4, 5, 6, 7, 8 người** (tổng >= 500 ván) đạt **100% hoàn tất ván, 0 lỗi treo pha phản ứng (0 deadlock)**.
+  - **Điều kiện hoàn thành:** Chạy `npm run test:fuzz` giả lập tối thiểu **100 ván cho mỗi mốc 4, 5, 6, 7, 8 người** (tổng >= 500 ván) đạt **100% hoàn tất ván, 0 lỗi treo pha phản ứng (0 deadlock)**. *(Đã kiểm chứng thực tế: `npm run test:fuzz` đạt **500/500 ván** trong `10.42s`, 0 deadlock, 0 rò rỉ `PlayerViewState`, đủ 25 tướng & 3 phe thắng; `npm run test:unit` **82/82 tests** đạt; `npm run test:integration` **1/1** đạt; `typecheck` & `build` đạt — exit code 0.)*
 
 ---
 

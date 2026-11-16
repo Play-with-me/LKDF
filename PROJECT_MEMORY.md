@@ -2,7 +2,7 @@
 
 > **Dự án:** LKDF — Game Thẻ Bài Tam Quốc Sát (Windows Native Online 4–8 Người)
 > **Ngày cập nhật:** 2026-11-16
-> **Trạng thái hiện tại:** Hoàn thành **Giai đoạn 0** và **Bước 1.1 – 1.3** — Đã triển khai đủ kỹ năng **25 Tướng Bản Tiêu Chuẩn gốc** (7 Thục, 7 Ngụy, 8 Ngô, 3 Quần) kèm kiểm thử chéo đạt 100%; sẵn sàng sang **Bước 1.4 (Bot AI & Fuzz Test >= 500 ván)**.
+> **Trạng thái hiện tại:** Hoàn thành **Giai đoạn 0 & trọn vẹn Giai đoạn 1 (Bước 1.1 – 1.4)** — Lõi luật 108 lá + 25 tướng + Máy đánh hộ `botAi` đã vượt cổng **500/500 ván Fuzz Test (0 deadlock, 0 rò rỉ bài ẩn)**; sẵn sàng sang **Giai đoạn 2 (Bước 2.1 — Đăng nhập Google & Thống kê)**.
 
 ---
 
@@ -87,6 +87,15 @@ Xem đầy đủ 10 quyết định (`ADR-001` đến `ADR-010`) tại [DECISION
     - `npm run test:integration`: `1/1 test passed`, `exit code 0`.
     - `npm run typecheck` & `npm run build`: thành công 100% trên cả 3 workspace, `exit code 0`.
 
+- **[Hoàn thành — 2026-11-16] Bước 1.4 trong [TASKS.md](./TASKS.md) (Chốt trọn vẹn Giai đoạn 1):**
+  - Đã xây dựng Mô-đun Máy đánh hộ `botAi` (`packages/shared/src/bot/index.ts`) ra quyết định hoàn toàn từ `PlayerViewState` (không đọc bài ẩn), hỗ trợ đầy đủ cả 25 tướng, 108 lá bài, mọi pha phản ứng và ưu tiên đồng minh theo Thân Phận.
+  - Đã nâng cấp `distance/index.ts` dùng được trực tiếp trên cả `MasterGameState` lẫn `PlayerViewState`, đồng thời bịt lỗ hổng lặp *Hộ Giá* (`huJiaTried`) / *Kích Tướng* (`jiJiangDeclinedThisTurn`) và đưa `turnFlags` công khai lên `PlayerViewState`.
+  - **Bằng chứng kiểm tra thực tế (2026-11-16):**
+    - `npm run test:fuzz`: **500/500 ván hoàn chỉnh đạt 100%** trong `10.42s` (`4 người: 1118ms`, `5 người: 1302ms`, `6 người: 1794ms`, `7 người: 2449ms`, `8 người: 3449ms` — trung bình `11–35 ms/ván < 50ms`), **0 deadlock, 0 rò rỉ `PlayerViewState`**, đủ 25/25 tướng và cả 3 phe thắng.
+    - `npm run test:unit`: **11 files · 82/82 tests passed** (thêm `bot.test.ts` 3 tests), `exit code 0`.
+    - `npm run test:integration`: `1/1 test passed`, `exit code 0`.
+    - `npm run typecheck` & `npm run build`: thành công 100% trên cả 3 workspace, `exit code 0`.
+
 ---
 
 ## 4. Vấn Đề Đang Tồn Tại & Câu Hỏi Chưa Giải Quyết
@@ -103,4 +112,4 @@ Xem đầy đủ 10 quyết định (`ADR-001` đến `ADR-010`) tại [DECISION
 - **LUẬT BẮT BUỘC SAU MỖI BƯỚC HOÀN THÀNH (Cập nhật 4 file & Chuẩn "Báo cáo Sếp"):**
   1. Tự động cập nhật tiến độ vào [HUONG_DAN_CHO_TOI.md](./HUONG_DAN_CHO_TOI.md) (đánh dấu `✅ ĐÃ XONG` bước vừa làm và chuyển nhãn `👉 BẠN ĐANG Ở ĐÂY` xuống bước kế tiếp), đồng thời cập nhật [TASKS.md](./TASKS.md), [PROJECT_MEMORY.md](./PROJECT_MEMORY.md) và [`.agents/PROJECT_MEMORY.md`](./.agents/PROJECT_MEMORY.md).
   2. Báo cáo cho khách hàng theo đúng **phong cách "Báo cáo Sếp"**: ngắn gọn, đi thẳng vào trọng tâm gồm 4 mục (*✅ Đã hoàn thành · 📊 Bằng chứng kiểm tra · ⚠️ Tồn đọng/Lưu ý · 👉 Bước tiếp theo kèm câu lệnh copy*).
-- **Bước tiếp theo ngay sau đây:** Thực hiện **Bước 1.4 trong [TASKS.md](./TASKS.md):** Xây dựng Mô-đun Máy đánh hộ (`botAi`) và chạy cổng kiểm thử giả lập `npm run test:fuzz` tối thiểu **100 ván cho mỗi mốc 4, 5, 6, 7, 8 người** (tổng `>= 500 ván`) đạt **0 lỗi treo bàn (0 deadlock)**.
+- **Bước tiếp theo ngay sau đây:** Thực hiện **Bước 2.1 trong [TASKS.md](./TASKS.md):** Triển khai Đăng nhập Google OAuth 2.0, lưu trữ `UserProfile`, `UserStats`, `MatchHistory` trên Kho dữ liệu Cloud 0 đồng và API lọc thống kê theo Người chơi, Thân Phận và 25 Tướng trong `apps/server`.

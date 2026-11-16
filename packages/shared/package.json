@@ -17,7 +17,7 @@
     "dev": "tsc -p tsconfig.json --watch --preserveWatchOutput",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test:unit": "vitest run tests/unit",
-    "test:fuzz": "vitest run tests/fuzz --passWithNoTests"
+    "test:fuzz": "vitest run tests/fuzz --reporter=verbose"
   },
   "dependencies": {
     "zod": "^4.6.7"

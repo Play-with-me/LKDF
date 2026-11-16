@@ -33,12 +33,9 @@ Vì bạn là người mới và không lập trình, bạn **không cần đọ
 ## 2. Lộ Trình Từ Đầu Đến Cuối & Các Câu Lệnh "Copy – Dán" Cho Bạn
 
 > **📌 Trạng thái hiện tại của bạn (AI tự động cập nhật sau mỗi bước):**
-> - ✅ **Bước 0.1 (Làm rõ yêu cầu & Tạo bộ 11 tài liệu chuẩn):** **ĐÃ XONG 100%**.
-> - ✅ **Bước 0.2 (Khởi tạo cấu trúc Monorepo & Công cụ kiểm thử):** **ĐÃ XONG 100%**.
-> - ✅ **Bước 1.1 (Chia Thân Phận 4–8 người, Máu Chủ Công, Chia 25 Tướng, Khoảng cách & Giấu bài ẩn):** **ĐÃ XONG 100%**.
-> - ✅ **Bước 1.2 (Máy trạng thái lượt đánh, Bộ 108 lá bài gồm 4 lá EX, *Vô Giải*, *Cầu Đào* & 2 Nội Gián):** **ĐÃ XONG 100%**.
-> - ✅ **Bước 1.3 (Kỹ năng đầy đủ của 25 Tướng Bản Tiêu Chuẩn gốc 4 phe Thục – Ngụy – Ngô – Quần):** **ĐÃ XONG 100%**.
-> - 👉 **BẠN ĐANG Ở ĐÂY — Việc ngay tiếp theo của bạn:** Copy câu lệnh ở **Bước 1.4** ngay bên dưới!
+> - ✅ **Giai đoạn 0 (Bước 0.1 & 0.2 — Bộ 11 tài liệu & Monorepo):** **ĐÃ XONG 100%**.
+> - ✅ **Giai đoạn 1 (Bước 1.1 – 1.4 — Chia Thân Phận, 108 lá, 25 Tướng, Bot AI & 500 ván Fuzz Test):** **ĐÃ XONG 100%**.
+> - 👉 **BẠN ĐANG Ở ĐÂY — Việc ngay tiếp theo của bạn:** Copy câu lệnh ở **Bước 2.1** (Chặng 2) ngay bên dưới!
 
 ---
 
@@ -50,7 +47,7 @@ Vì bạn là người mới và không lập trình, bạn **không cần đọ
 
 ---
 
-### 🟡 CHẶNG 1: Dạy Máy Thuộc Lòng Luật Tam Quốc Sát (👉 BẠN ĐANG Ở CHẶNG NÀY)
+### 🟡 CHẶNG 1: Dạy Máy Thuộc Lòng Luật Tam Quốc Sát (✅ ĐÃ HOÀN THÀNH)
 
 #### ✅ Bước 1.1 — Chia Thân Phận 4–8 người, Chia 25 Tướng, Tính Khoảng Cách & Giấu Bài Ẩn *(ĐÃ XONG)*
 - **Kết quả đã nghiệm thu:** Đã hoàn thành bộ chia Thân Phận 4–8 người (`+1 máu tối đa` cho Chủ Công), bộ chia 25 tướng đầu ván (5 tướng cho Chủ Công, trả 4 tướng dư rồi chia 3 tướng/người), bộ tính khoảng cách ngựa/vũ khí/Mã Thuật/Kỳ Tài, và bộ lọc giấu bài ẩn (kể cả ẩn cờ giả lập *Vô Giải*). Đạt **19/19** bài kiểm tra tự động.
@@ -61,17 +58,15 @@ Vì bạn là người mới và không lập trình, bạn **không cần đọ
 #### ✅ Bước 1.3 — Làm Đủ Kỹ Năng Của 25 Tướng Bản Tiêu Chuẩn Gốc *(ĐÃ XONG)*
 - **Kết quả đã nghiệm thu:** Đã triển khai đầy đủ kỹ năng của cả **25 Tướng chuẩn** (7 Thục, 7 Ngụy, 8 Ngô, 3 Quần) cùng các tương tác khó (*Vô Song + Bát Quái*, *Quỷ Tài* 6 loại phán xét, *Lưu Ly*, *Kiêu Cơ*, *Quan Tinh* ẩn bài xem trước, *Hàn Băng Kiếm* không kích hoạt phản đòn, và 3 kỹ năng Chủ Công). Đạt **79/79** bài kiểm tra tự động.
 
-#### 👉 Bước 1.4 (BẠN ĐANG Ở ĐÂY) — Cổng Kiểm Tra Quan Trọng Nhất: Cho Máy Tự Đánh Thử 500 Ván Liên Tiếp
+#### ✅ Bước 1.4 — Cổng Kiểm Tra Quan Trọng Nhất: Cho Máy Tự Đánh Thử 500 Ván Liên Tiếp *(ĐÃ XONG)*
 - **Ý nghĩa đời thường:** Trước khi lắp giao diện, bắt máy tự đánh với nhau ít nhất 500 ván từ 4 đến 8 người xem có ván nào bị kẹt lượt không.
-- **💬 Câu lệnh bạn Copy & Gửi cho AI:**
-  > `Hãy thực hiện Bước 1.4 trong TASKS.md: Xây dựng Máy đánh hộ tạm thời và chạy kiểm tra giả lập tự động tối thiểu 100 ván cho mỗi mốc 4, 5, 6, 7, 8 người (tổng ít nhất 500 ván). Nếu có bất kỳ ván nào bị kẹt lượt thì tự sửa cho tới khi đạt 0 lỗi rồi cập nhật HUONG_DAN_CHO_TOI.md, báo cáo cho tôi và commit lên repo.`
-- **👀 Khi nào đạt?** AI báo cáo đã chạy đủ `>= 500 ván` ở cả 5 mốc sĩ số với **0 lỗi treo bàn**.
+- **Kết quả đã nghiệm thu:** Đã hoàn thiện mô-đun Máy đánh hộ (`botAi`, chỉ đọc thông tin công khai `PlayerViewState`) và chạy kiểm thử tự động **500/500 ván** (`100 ván/mốc` cho cả bàn `4, 5, 6, 7, 8 người`) với **0 lỗi treo bàn (0 deadlock), 0 lỗi ngoại lệ, 0 rò rỉ bài ẩn**, tốc độ trung bình `~11–35 ms/ván` (`< 50ms`).
 
 ---
 
-### 🟠 CHẶNG 2: Làm Máy Chủ Phòng Chơi, Đăng Nhập Google & Lưu Thống Kê
+### 🟠 CHẶNG 2: Làm Máy Chủ Phòng Chơi, Đăng Nhập Google & Lưu Thống Kê (👉 BẠN ĐANG Ở CHẶNG NÀY)
 
-#### ⏳ Bước 2.1 — Làm Đăng Nhập Google & Bộ Lọc Thống Kê Người Dùng
+#### 👉 Bước 2.1 (BẠN ĐANG Ở ĐÂY) — Làm Đăng Nhập Google & Bộ Lọc Thống Kê Người Dùng
 - **💬 Câu lệnh bạn Copy & Gửi cho AI:**
   > `Hãy thực hiện Bước 2.1 trong TASKS.md (Chức năng Đăng nhập bằng Google, lưu hồ sơ người dùng và bộ lọc thống kê thắng/thua theo Người chơi, theo Thân Phận và theo 25 Tướng). Làm xong hãy chạy kiểm tra, cập nhật lại tiến độ trong HUONG_DAN_CHO_TOI.md và báo cáo cho tôi.`
 

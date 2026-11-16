@@ -180,6 +180,7 @@ export const WU_QUN_HERO_SKILLS: Partial<Record<HeroId, HeroSkillHandler>> = {
           p.alive &&
           p.seatIndex !== targetSeat &&
           p.seatIndex !== sourceSeat &&
+          !(p.heroId === 'zhuge_liang' && p.handCards.length === 0) &&
           rt.isInAttackRange(state, targetSeat, p.seatIndex),
       );
       if (!hasValidRedirect) {

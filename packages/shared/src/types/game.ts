@@ -207,6 +207,7 @@ export type InterruptFrame =
       readonly dodgedSoFar: number;
       readonly allowBagua: boolean;
       readonly baguaTriedThisStrike: boolean;
+      readonly huJiaTriedThisStrike?: boolean;
       readonly canBeForcedByQuanThachPhu: boolean;
       readonly strikeColor: 'RED' | 'BLACK' | 'NONE';
       readonly isCollateralStrike: boolean;
@@ -267,6 +268,7 @@ export type InterruptFrame =
       readonly sourceSeat: number;
       readonly allowBagua: boolean;
       readonly baguaTriedThisFrame: boolean;
+      readonly huJiaTriedThisFrame?: boolean;
     }
   | {
       readonly id: string;
@@ -416,6 +418,11 @@ export interface PublicInterruptView {
   readonly yiJiCards?: readonly CardInstance[];
   readonly judgeCard?: CardInstance;
   readonly judgePurpose?: string;
+  readonly allowBagua?: boolean;
+  readonly baguaTried?: boolean;
+  readonly huJiaTried?: boolean;
+  readonly requiredCount?: number;
+  readonly dodgedSoFar?: number;
 }
 
 export type JudgmentPurpose =
@@ -534,6 +541,7 @@ export interface TurnFlags {
   readonly jieYinUsedThisTurn?: boolean;
   readonly qingNangUsedThisTurn?: boolean;
   readonly liJianUsedThisTurn?: boolean;
+  readonly jiJiangDeclinedThisTurn?: boolean;
   readonly luoYiActive?: boolean;
 }
 
@@ -577,6 +585,7 @@ export interface PlayerViewState {
   readonly harvestPool: readonly CardInstance[];
   readonly players: readonly PublicPlayerView[];
   readonly activeInterrupt: PublicInterruptView | null;
+  readonly turnFlags?: TurnFlags;
   readonly actionLog: readonly string[];
   readonly refereeAuditLog: readonly RefereeAuditEntry[];
   readonly winningFaction: WinningFaction | null;
