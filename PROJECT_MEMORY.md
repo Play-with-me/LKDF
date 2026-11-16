@@ -50,7 +50,7 @@ Xem đầy đủ 10 quyết định (`ADR-001` đến `ADR-010`) tại [DECISION
     9. [TESTING.md](./TESTING.md)
     10. [DECISIONS.md](./DECISIONS.md)
     11. [DEPLOYMENT.md](./DEPLOYMENT.md)
-  - Đã đồng bộ hóa [CONTEXT.md](./CONTEXT.md) và [docs/intent/v1-tam-quoc-sat.md](./docs/intent/v1-tam-quoc-sat.md).
+  - Đã đồng bộ hóa [CONTEXT.md](./CONTEXT.md), [docs/intent/v1-tam-quoc-sat.md](./docs/intent/v1-tam-quoc-sat.md) và tạo sổ tay điều khiển riêng cho khách hàng tại [HUONG_DAN_CHO_TOI.md](./HUONG_DAN_CHO_TOI.md).
 
 ---
 

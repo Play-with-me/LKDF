@@ -2,7 +2,7 @@
 
 - **Ngày cập nhật:** 2026-11-16
 - **Trạng thái hiện tại:** Hoàn thành **Bước 0.1** (Đã khóa 100% yêu cầu với khách hàng và tạo đầy đủ **Bộ 11 Tài liệu chuẩn**; chuẩn bị sang **Bước 0.2 — Khởi tạo Monorepo**).
-- **Bản đầy đủ:** Xem [`PROJECT_MEMORY.md`](../PROJECT_MEMORY.md), [`REQUIREMENTS.md`](../REQUIREMENTS.md) và [`TASKS.md`](../TASKS.md).
+- **Bản đầy đủ:** Xem [`PROJECT_MEMORY.md`](../PROJECT_MEMORY.md), [`HUONG_DAN_CHO_TOI.md`](../HUONG_DAN_CHO_TOI.md), [`REQUIREMENTS.md`](../REQUIREMENTS.md) và [`TASKS.md`](../TASKS.md).
 
 ## Quyết định v1 đã khóa 100% (Tuyệt đối không tự ý thay đổi)
 1. **Nền tảng & Người chơi:** 100% **Windows Native Desktop App** (`.exe`/`.msi`), chỉ bắt đầu ván khi có đủ **4–8 người chơi thật** (không thêm Bot vào ghế trống ở phòng chờ).

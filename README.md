@@ -29,7 +29,8 @@ Mỗi tài liệu dưới đây phụ trách một mảng thông tin duy nhất 
 | **10** | **[DECISIONS.md](./DECISIONS.md)** | Lịch sử 10 quyết định quan trọng (`ADR-001` đến `ADR-010`) kèm bối cảnh, lý do và đánh đổi. |
 | **11** | **[DEPLOYMENT.md](./DEPLOYMENT.md)** | Hướng dẫn triển khai Cloud 0 đồng, thiết lập Google OAuth, cấu hình GitHub Private Actions cho cập nhật 1-Click và cách khôi phục khi có lỗi. |
 
-### Tài liệu ngữ cảnh bổ trợ
+### Tài liệu ngữ cảnh bổ trợ & Sổ tay dành riêng cho Chủ dự án
+- **[HUONG_DAN_CHO_TOI.md](./HUONG_DAN_CHO_TOI.md)** — **Sổ tay điều khiển dự án dành riêng cho bạn (Người mới 100% không cần biết lập trình):** tổng hợp sẵn các câu lệnh Copy–Dán cho từng bước từ đầu đến cuối.
 - **[CONTEXT.md](./CONTEXT.md)** — Bức tranh tổng hợp nhanh cho các thành viên trong nhóm.
 - **[docs/intent/v1-tam-quoc-sat.md](./docs/intent/v1-tam-quoc-sat.md)** — Bản chốt ý định gốc của phiên bản đầu (v1).
 
