@@ -2,7 +2,7 @@
 
 > **Dự án:** LKDF — Game Thẻ Bài Tam Quốc Sát (Windows Native Online 4–8 Người)
 > **Ngày cập nhật:** 2026-11-17
-> **Trạng thái hiện tại:** Đã hoàn thành **Giai đoạn 0, Giai đoạn 1 (`Bước 1.1 – 1.4`), Giai đoạn 2 (`Bước 2.1 – 2.2`) & trọn vẹn Giai đoạn 3 (`Bước 3.1 – 3.2`)** — Hoàn tất hoàn toàn máy chủ thời gian thực, nhịp *Vô Giải* giả lập, Máy đánh hộ, Bảng Trọng Tài 4 nút & chuyển quyền 30s; sẵn sàng sang **Giai đoạn 4 (Bước 4.1 — Giao diện Windows: Đánh thức server, Đăng nhập Google, Sảnh/Phòng chờ & Thống kê)**.
+> **Trạng thái hiện tại:** Đã hoàn thành **Giai đoạn 0, Giai đoạn 1 (`Bước 1.1 – 1.4`), Giai đoạn 2 (`Bước 2.1 – 2.2`), Giai đoạn 3 (`Bước 3.1 – 3.2`) & trọn vẹn Giai đoạn 4 (`Bước 4.1 – 4.2`)** — Đã hoàn tất toàn bộ giao diện Electron 2D Sơn Thủy Mặc gồm Đánh thức, Google Auth, Sảnh/Phòng chờ, Trang Thống kê và Bàn Đấu 4–8 ghế không cuộn trang kèm Trọng Tài 4 nút & Tiện ích Windows; sẵn sàng sang **Giai đoạn 5 (Bước 5.1 — Update Proxy 1-Click từ GitHub Private & Đóng gói `.exe`/`.msi`)**.
 
 ---
 
@@ -129,6 +129,23 @@ Xem đầy đủ 10 quyết định (`ADR-001` đến `ADR-010`) tại [DECISION
     - `npm run test:unit`: **11 files · 82/82 tests passed**, `exit code 0`.
     - `npm run typecheck` & `npm run build`: thành công 100% trên cả 3 workspace, `exit code 0`.
 
+- **[Hoàn thành — 2026-11-17] Bước 4.1 trong [TASKS.md](./TASKS.md) (Mở đầu Giai đoạn 4 — Giao diện Windows Sơn Thủy Mặc):**
+  - Đã nâng cấp cầu nối Electron an toàn (`apps/desktop/electron/{main,preload}.cts`, `src/electron.d.ts`, sửa lỗi cú pháp TypeScript trong `scripts/wait-and-launch-electron.mjs`): mở trình duyệt ngoài an toàn (`https:` hoặc `localhost`/`127.0.0.1`), lắng nghe OAuth callback nội bộ trên `127.0.0.1` có lọc XSS (`escapeHtml`), lưu cấu hình `serverUrl` + `sessionToken` xuống `userData/lkdf-client-state.json`.
+  - Đã hoàn thiện tầng kết nối HTTP + WebSocket (`apps/desktop/src/lib/{types.ts,api.ts,wsClient.ts}`) và toàn bộ 5 màn hình theo [DESIGN.md](./DESIGN.md): `ServerWakeScreen.tsx` (đếm giây `~30–60s` + nút Hủy + đổi địa chỉ server), `LoginScreen.tsx` (OAuth 2.0 + ô dán mã dự phòng + xem bảng thống kê), `HomeLobbyHub.tsx` (Tạo phòng 6 ký tự theo 3 mức đồng hồ, vào phòng, tự khôi phục bàn cũ), `WaitingRoomScreen.tsx` (hiển thị 4–8 ghế Google Avatar/Tên + nút bắt đầu khi đủ 4–8 người thật + WebSocket tự đồng bộ), và `StatsPage.tsx` (cùng `StatsMetaFilters.tsx`, `MatchHistoryList.tsx` lọc đủ Người chơi / 4 Thân Phận / 25 Tướng, 0 số liệu giả).
+  - **Bằng chứng kiểm tra thực tế (2026-11-17):**
+    - `npm run typecheck`: `0 lỗi` (`@lkdf/shared`, `@lkdf/desktop` renderer + Electron, `@lkdf/server`).
+    - `npm run test:unit`: **11 files · 82/82 tests passed**, `exit code 0`.
+    - `npm run test:integration`: **6 files · 21/21 tests passed**, `exit code 0`.
+    - `npm run build`: thành công 100% (`vite build` 141 modules + `tsc -p tsconfig.electron.json`), `exit code 0`.
+    - Khởi chạy thực tế máy chủ + Electron Desktop (`http://0.0.0.0:3001` & `http://localhost:5173`) và kiểm tra hiển thị trực tiếp (`ServerWakeScreen → LoginScreen → StatsPage`): không tràn khung, 0 lỗi console, 0 số liệu giả.
+
+- **[Hoàn thành — 2026-11-17] Bước 4.2 trong [TASKS.md](./TASKS.md) (Chốt trọn vẹn Giai đoạn 4 — Bàn đấu 4–8 ghế & Tiện ích Windows):**
+  - Đã nâng cấp Electron + WebSocket (`apps/desktop/electron/{main,preload}.cts`, `src/electron.d.ts`, `src/lib/{wsClient,soundFx}.ts`): IPC nháy thanh Taskbar (`flashFrame` tự tắt khi focus), hộp thoại xác nhận tiếng Việt khi bấm `[X]`/`Alt+F4` đóng cửa sổ giữa ván (`window:setMatchCloseGuard`), âm thanh Web Audio API nhắc lượt/cảnh báo/chiến thắng, và gửi `SELECT_HERO` / `GAME_ACTION` / `REFEREE_ACTION` trực tiếp qua `RoomWsClient`.
+  - Đã xây dựng trọn vẹn Bàn Đấu 2D Sơn Thủy Mặc cố định `100vh` (`apps/desktop/src/features/match/`): lưới chữ U `MatchArenaLayout.tsx` tự ẩn ghế trống `4–8` người, `SeatCard.tsx` kèm `DistanceBadge` (`Cách: X`) tính từ `@lkdf/shared`, `HeroSelectPanel.tsx` (`1/5` Chủ Công & `1/3` người khác), `MatchCenterBoard.tsx` (đồng hồ đếm ngược, `WAIT_HARVEST_PICK`, `PICK_TARGET_CARD`, `WAIT_GUAN_XING`, `WAIT_YI_JI`, nhật ký bàn đấu), `HandCardItem.tsx` (`108×152px`), `MatchActionSidebar.tsx` (nút hành động rõ tên việc cho đủ mọi pha & 26 interrupt), `RefereePanelDialog.tsx` (4 nút Trọng Tài + xác nhận 2 bước khi Hủy ván + nhật ký công khai + đếm 30s), `RulesHotkeysDialog.tsx` (phím tắt `1–9`, `Enter`/`Space`, `Esc`, `E`), `GameOverSummaryModal.tsx`, và nối luồng `WAITING_ROOM <-> MATCH` trong `App.tsx` (kèm `DevMatchPreview.tsx` chỉ chạy ở chế độ DEV dùng lõi `@lkdf/shared` để kiểm tra 4–8 ghế).
+  - **Bằng chứng kiểm tra thực tế (2026-11-17):**
+    - `npm run typecheck`, `npm run test:unit` (**11 files · 82/82 passed**), `npm run test:integration` (**6 files · 21/21 passed**), `npm run build` (`vite build` 155 modules + `tsc -p tsconfig.electron.json`): đều thoát `0`.
+    - Kiểm tra trực quan bằng trình duyệt ở `1280×720` cho đủ **5 mốc `4P, 5P, 6P, 7P, 8P`** (cùng Pha Chọn Tướng, chọn bài, `Luật & Phím tắt`, `Bảng Trọng Tài 4 nút`): **0 tràn khung, 0 tràn cha, 0 lỗi console**; đã mở ứng dụng Electron mới nhất kèm máy chủ cục bộ để khách hàng bấm thử trực tiếp.
+
 ---
 
 ## 4. Vấn Đề Đang Tồn Tại & Câu Hỏi Chưa Giải Quyết
@@ -147,4 +164,4 @@ Xem đầy đủ 10 quyết định (`ADR-001` đến `ADR-010`) tại [DECISION
   2. Báo cáo cho khách hàng theo đúng **phong cách "Báo cáo Sếp"**: ngắn gọn, đi thẳng vào trọng tâm gồm 4 mục (*✅ Đã hoàn thành · 📊 Bằng chứng kiểm tra · ⚠️ Tồn đọng/Lưu ý · 👉 Bước tiếp theo kèm câu lệnh copy*).
   3. Luôn kèm mục **Phản biện thẳng (`/honest-advisor` & `/ultrathinking`)** và **Gợi ý chia quân (`/swarm`)**.
   4. **Bàn giao ca trực khép kín giữa các phiên:** Đầu phiên mới luôn đọc sổ nhớ + chạy `git status --short`; cuối mỗi bước luôn ghi *Ghi chú bàn giao kỹ thuật (Handoff Notes)* vào [`.agents/PROJECT_MEMORY.md`](./.agents/PROJECT_MEMORY.md).
-- **Bước tiếp theo ngay sau đây:** Thực hiện **Bước 4.1 trong [TASKS.md](./TASKS.md):** Dựng giao diện Windows 2D Sơn Thủy Mặc theo [DESIGN.md](./DESIGN.md) gồm Màn hình chờ đánh thức máy chủ (`30–60s` + nút Hủy), Đăng nhập Google (tự đồng bộ + ô dán mã dự phòng), Sảnh tạo/vào phòng, Phòng chờ 4–8 người và Trang lọc Thống kê (đủ 5 trạng thái UI).
+- **Bước tiếp theo ngay sau đây:** Thực hiện **Bước 5.1 trong [TASKS.md](./TASKS.md):** Triển khai Cổng trung gian Cập nhật (`Update Proxy` đọc GitHub Release của kho Private qua `/api/update/latest` & `/api/update/download` trên `apps/server`), hộp thoại Cập nhật 1-Click trong Electron App (`[⬇️ Cập nhật ngay]`), cấu hình đóng gói Windows installer (`.exe`/`.msi`) + GitHub Actions, và hướng dẫn chi tiết từng nút để khách hàng lấy mã Google OAuth 2.0 + bật Máy chủ Cloud 0 đồng.

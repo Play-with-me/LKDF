@@ -38,7 +38,9 @@ Vì bạn là người mới và không lập trình, bạn **không cần đọ
 > - ✅ **Giai đoạn 1 (Bước 1.1 – 1.4 — Chia Thân Phận, 108 lá, 25 Tướng, Bot AI & 500 ván Fuzz Test):** **ĐÃ XONG 100%**.
 > - ✅ **Giai đoạn 2 (Bước 2.1 & 2.2 — Máy chủ Cloud 0đ, Google OAuth, Bộ lọc Thống kê, Phòng 4–8 người & Tự lưu Ván đấu):** **ĐÃ XONG 100%**.
 > - ✅ **Giai đoạn 3 (Bước 3.1 & 3.2 — Đánh bài trực tuyến, Nhịp Vô Giải giả lập, Máy đánh hộ, Bảng Trọng Tài 4 nút & Chuyển quyền 30s):** **ĐÃ XONG 100%**.
-> - 👉 **BẠN ĐANG Ở ĐÂY — Việc ngay tiếp theo của bạn:** Copy câu lệnh ở **Bước 4.1** (Chặng 4) ngay bên dưới!
+> - 🔄 **Giai đoạn 4 — Giao diện Windows 2D Sơn Thủy Mặc:** ✅ **Đã xong Bước 4.1** (Đánh thức máy chủ, Google Auth, Sảnh chính, Phòng chờ 4–8 người & Trang Thống kê).
+> - ✅ **Giai đoạn 4 (Bước 4.1 & 4.2 — Toàn bộ Giao diện Windows 2D Sơn Thủy Mặc & Tiện ích Windows):** **ĐÃ XONG 100%**.
+> - 👉 **BẠN ĐANG Ở ĐÂY — Việc ngay tiếp theo của bạn:** Kiểm tra thử Bàn Đấu vừa mở, xong copy câu lệnh ở **Bước 5.1** (Chặng 5) bên dưới!
 
 ---
 
@@ -87,22 +89,19 @@ Vì bạn là người mới và không lập trình, bạn **không cần đọ
 
 ---
 
-### 🟣 CHẶNG 4: Làm Màn Hình Giao Diện Windows Để Bạn Nhìn & Bấm Thử Trực Tiếp (👉 BẠN ĐANG Ở CHẶNG NÀY)
+### 🟣 CHẶNG 4: Làm Màn Hình Giao Diện Windows Để Bạn Nhìn & Bấm Thử Trực Tiếp (✅ ĐÃ HOÀN THÀNH)
 
-#### 👉 Bước 4.1 (BẠN ĐANG Ở ĐÂY) — Màn Hình Đăng Nhập Google, Đánh Thức Máy Chủ, Phòng Chờ & Trang Thống Kê
-- **💬 Câu lệnh bạn Copy & Gửi cho AI:**
-  > `Hãy thực hiện Bước 4.1 trong TASKS.md theo đúng DESIGN.md (Màn hình chờ đánh thức máy chủ Cloud 0đ, Đăng nhập Google, Sảnh tạo/vào phòng, Phòng chờ 4–8 người và Trang lọc Thống kê). Làm xong hãy cập nhật HUONG_DAN_CHO_TOI.md và mở giao diện lên để tôi xem và bấm thử.`
-- **👀 Việc của bạn ở bước này:** Nhìn màn hình hiện lên, xem chữ tiếng Việt có dễ đọc không, màu sắc có dịu mắt không. Nếu chỗ nào muốn chữ to hơn hay đổi vị trí nút, bạn cứ nói thẳng bằng lời thường cho AI sửa ngay!
+#### ✅ Bước 4.1 — Màn Hình Đăng Nhập Google, Đánh Thức Máy Chủ, Phòng Chờ & Trang Thống Kê *(ĐÃ XONG)*
+- **Kết quả đã nghiệm thu:** Đã dựng trọn vẹn giao diện Windows Electron 2D phong cách Sơn Thủy Mặc (`DESIGN.md`): Màn hình chờ đánh thức máy chủ (`~30–60s` đếm giây + `[⏹️ Hủy]`), Màn hình Đăng nhập Google (mở trình duyệt nhận callback nội bộ + ô nhập mã dự phòng), Sảnh tạo/vào phòng mã 6 ký tự (3 mức đồng hồ), Phòng chờ 4–8 người thật, và Trang lọc Thống kê theo Người chơi / 4 Thân Phận / 25 Tướng (0 số liệu giả). Đạt **0 lỗi** `typecheck`, **82/82** unit test, **21/21** integration test, `build` thành công, và đã mở trực tiếp ứng dụng desktop để xem và bấm thử.
 
-#### ⏳ Bước 4.2 — Màn Hình Bàn Đấu 4–8 Ghế (1 Khung Không Cuộn Trang), Trọng Tài & Nháy Thanh Taskbar
-- **💬 Câu lệnh bạn Copy & Gửi cho AI:**
-  > `Hãy thực hiện Bước 4.2 trong TASKS.md theo đúng DESIGN.md (Màn hình bàn đấu 4–8 ghế gói gọn trong 1 cửa sổ không cuộn trang, chọn tướng, đánh bài, hiện khoảng cách, Bảng Trọng Tài 4 nút, nháy thanh công cụ Windows khi tới lượt và hỏi xác nhận khi bấm đóng cửa sổ giữa ván). Làm xong hãy cập nhật HUONG_DAN_CHO_TOI.md và mở lên cho tôi kiểm tra.`
+#### ✅ Bước 4.2 — Màn Hình Bàn Đấu 4–8 Ghế (1 Khung Không Cuộn Trang), Trọng Tài & Nháy Thanh Taskbar *(ĐÃ XONG)*
+- **Kết quả đã nghiệm thu:** Đã hoàn thiện Màn hình Bàn Đấu cố định `100vh` (vòng ghế chữ U tự ẩn ghế trống ở cả **4, 5, 6, 7, 8 người**, huy hiệu `Cách: X`, chọn Tướng `1/5` Chủ Công & `1/3` ghế khác, thẻ bài `#F4EFE6` `108×152px`, `[☑️ Tự bỏ qua Vô Giải lượt này]`, thanh nút ghi rõ hành động, Bảng Trọng Tài 4 nút + Nhật ký công khai, nháy thanh Taskbar Windows, âm thanh nhắc lượt, hộp thoại hỏi xác nhận khi đóng cửa sổ giữa ván và phím tắt `1–9, Enter/Space, Esc, E`). Đã kiểm chứng thực tế `typecheck` (0 lỗi), **82/82** unit test, **21/21** integration test, `build` thành công và kiểm tra hiển thị trực tiếp ở `1280×720` cho **cả 5 mốc 4–8 ghế (0 tràn khung, 0 lỗi console)**.
 
 ---
 
-### 🔴 CHẶNG 5: Lắp Đặt Lên Cloud 0 Đồng, Tự Cập Nhật 1 Nhấp Chuột & Nghiệm Thu Cùng Hội Bạn
+### 🔴 CHẶNG 5: Lắp Đặt Lên Cloud 0 Đồng, Tự Cập Nhật 1 Nhấp Chuột & Nghiệm Thu Cùng Hội Bạn (👉 BẠN ĐANG Ở CHẶNG NÀY)
 
-#### ⏳ Bước 5.1 — Làm Tính Năng Cập Nhật 1 Cú Nhấp Chuột Ngay Trong App & Đóng Gói File Cài Windows
+#### 👉 Bước 5.1 (BẠN ĐANG Ở ĐÂY) — Làm Tính Năng Cập Nhật 1 Cú Nhấp Chuột Ngay Trong App & Đóng Gói File Cài Windows
 - **💬 Câu lệnh bạn Copy & Gửi cho AI:**
   > `Hãy thực hiện Bước 5.1 trong TASKS.md (Làm cổng kiểm tra bản mới từ kho GitHub Private, hộp thoại bấm 1 nút "Cập nhật ngay" trong ứng dụng và cấu hình đóng gói bộ cài Windows). Đồng thời hãy cập nhật HUONG_DAN_CHO_TOI.md và hướng dẫn từng bước thật dễ hiểu để tôi lấy mã Google OAuth và bật Máy chủ Cloud 0 đồng.`
 - **👀 Việc của bạn ở bước này:** Làm theo hướng dẫn từng nút của AI để bật dịch vụ miễn phí (Google + Cloud 0đ).

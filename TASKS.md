@@ -1,7 +1,7 @@
 # TASKS.md — Kế Hoạch Thực Hiện Chi Tiết Theo Từng Bước Kiểm Tra Được
 
 > **Dự án:** LKDF — Game Thẻ Bài Tam Quốc Sát (Windows Native Online 4–8 Người)
-> **Cập nhật lần cuối:** 2026-11-16
+> **Cập nhật lần cuối:** 2026-11-17
 > **Quy tắc bắt buộc:** Chỉ đánh dấu hoàn thành (`[x]`) khi đã có sản phẩm bàn giao và đã chạy kiểm tra đạt điều kiện nghiệm thu của bước đó. Không đánh dấu hoàn thành chỉ vì đã viết xong mã nguồn.
 > **Tài liệu liên quan:** [REQUIREMENTS.md](./REQUIREMENTS.md) · [ARCHITECTURE.md](./ARCHITECTURE.md) · [TESTING.md](./TESTING.md) · [PROJECT_MEMORY.md](./PROJECT_MEMORY.md)
 
@@ -13,9 +13,9 @@
 | :---: | :--- | :---: | :---: |
 | **Giai đoạn 0** | Chuẩn hóa Bộ 11 Tài liệu & Khởi tạo khung dự án (Monorepo) | Không | ✅ Hoàn thành (Xong Bước 0.1 & 0.2) |
 | **Giai đoạn 1** | Lõi Luật Thuần: 108 lá bài, 25 Tướng chuẩn & Kiểm thử Fuzz 4–8 người | Giai đoạn 0 | ✅ Hoàn thành (Xong Bước 1.1 – 1.4) |
-| **Giai đoạn 2** | Máy chủ Cloud 0đ, Đăng nhập Google, Lưu Thống kê & Phòng 4–8 người thật | Giai đoạn 0 | ⏳ Chưa bắt đầu |
-| **Giai đoạn 3** | Ghép nối Ván đấu Trực tuyến, Chống lộ *Vô Giải*, Rớt mạng & Trọng Tài 4 nút | Giai đoạn 1, 2 | ⏳ Chưa bắt đầu |
-| **Giai đoạn 4** | Giao diện Windows 2D Sơn Thủy Mặc, Thống kê người dùng & Tiện ích Taskbar | Giai đoạn 2, 3 | ⏳ Chưa bắt đầu |
+| **Giai đoạn 2** | Máy chủ Cloud 0đ, Đăng nhập Google, Lưu Thống kê & Phòng 4–8 người thật | Giai đoạn 0 | ✅ Hoàn thành (Xong Bước 2.1 & 2.2) |
+| **Giai đoạn 3** | Ghép nối Ván đấu Trực tuyến, Chống lộ *Vô Giải*, Rớt mạng & Trọng Tài 4 nút | Giai đoạn 1, 2 | ✅ Hoàn thành (Xong Bước 3.1 & 3.2) |
+| **Giai đoạn 4** | Giao diện Windows 2D Sơn Thủy Mặc, Thống kê người dùng & Tiện ích Taskbar | Giai đoạn 2, 3 | ✅ Hoàn thành (Xong Bước 4.1 & 4.2) |
 | **Giai đoạn 5** | Đóng gói `.exe`/`.msi`, Cập nhật 1-Click từ GitHub Private & Nghiệm thu tổng thể | Giai đoạn 4 | ⏳ Chưa bắt đầu |
 
 ---
@@ -111,20 +111,20 @@
 
 ### Giai Đoạn 4 — Giao Diện Windows 2D Sơn Thủy Mặc & Tiện Ích Hệ Điều Hành
 
-- [ ] **Bước 4.1 — Màn hình Đăng nhập Google, Đánh thức Máy chủ Cloud 0đ, Sảnh chính, Phòng chờ & Trang Thống kê**
+- [x] **Bước 4.1 — Màn hình Đăng nhập Google, Đánh thức Máy chủ Cloud 0đ, Sảnh chính, Phòng chờ & Trang Thống kê**
   - **Phụ thuộc:** Bước 2.2.
   - **Kết quả bàn giao:**
     - Màn hình chờ đánh thức máy chủ (`~30–60s` có đếm giây + nút `[⏹️ Hủy]`).
     - Màn hình Đăng nhập Google, Sảnh tạo/vào phòng, Phòng chờ 4–8 ghế (hiển thị Avatar + Tên Google), và Trang lọc Thống kê & Lịch sử đấu theo Người dùng / Thân Phận / 25 Tướng.
-  - **Điều kiện hoàn thành:** Kiểm tra hiển thị đủ 5 trạng thái giao diện (`Đang tải`, `Chưa có dữ liệu`, `Đang chọn dở`, `Thành công`, `Lỗi`) theo đúng [DESIGN.md](./DESIGN.md).
+  - **Điều kiện hoàn thành:** Kiểm tra hiển thị đủ 5 trạng thái giao diện (`Đang tải`, `Chưa có dữ liệu`, `Đang chọn dở`, `Thành công`, `Lỗi`) theo đúng [DESIGN.md](./DESIGN.md). *(Đã kiểm chứng thực tế: `npm run typecheck`, `npm run test:unit` **82/82**, `npm run test:integration` **21/21**, `npm run build` đều đạt exit `0`; đã mở ứng dụng Electron kết nối máy chủ cục bộ `http://127.0.0.1:3001` và kiểm tra trực quan `ServerWakeScreen → LoginScreen → StatsPage` không tràn khung, 0 lỗi console, 0 số liệu giả.)*
 
-- [ ] **Bước 4.2 — Màn hình Bàn đấu 4–8 ghế (1 khung cố định không cuộn), Bảng Trọng Tài 4 nút & Tiện ích Windows**
+- [x] **Bước 4.2 — Màn hình Bàn đấu 4–8 ghế (1 khung cố định không cuộn), Bảng Trọng Tài 4 nút & Tiện ích Windows**
   - **Phụ thuộc:** Bước 3.2, Bước 4.1.
   - **Kết quả bàn giao:**
     - Bàn đấu vòng chữ U tự ẩn ghế trống theo sĩ số 4–8 người, huy hiệu khoảng cách tính sẵn, khung chọn 1/5 tướng (Chủ Công) và 1/3 tướng (người chơi khác), vùng tay bài xòe ngang, nút tích `[☑️ Tự bỏ qua Vô Giải lượt này]` và thanh nút hành động ghi rõ tên việc.
     - Giao diện Bảng Trọng Tài 4 nút và Nhật ký bàn đấu.
     - Nháy thanh Taskbar Windows + âm thanh nhắc lượt + hộp thoại xác nhận khi bấm `[X]` đóng cửa sổ giữa ván + phím tắt bàn phím (`1–9`, `Enter`, `Esc`, `E`).
-  - **Điều kiện hoàn thành:** Mở giao diện kiểm tra ở độ phân giải `1280×720` đảm bảo **không tràn khung, không xuất hiện thanh cuộn trang** ở cả bàn 4, 5, 6, 7, 8 ghế.
+  - **Điều kiện hoàn thành:** Mở giao diện kiểm tra ở độ phân giải `1280×720` đảm bảo **không tràn khung, không xuất hiện thanh cuộn trang** ở cả bàn 4, 5, 6, 7, 8 ghế. *(Đã kiểm chứng thực tế: `npm run typecheck` **0 lỗi**, `npm run test:unit` **82/82**, `npm run test:integration` **21/21**, `npm run build` exit `0`; kiểm tra trình duyệt ở `1280×720` qua `DevMatchPreview` xác nhận **0 tràn khung, 0 tràn cha, 0 lỗi console** ở cả `4P, 5P, 6P, 7P, 8P`, Chọn Tướng, Bảng Trọng Tài 4 nút & phím tắt.)*
 
 ---
 
