@@ -4,7 +4,7 @@ import http from 'node:http';
 const VITE_URL = 'http://localhost:5173';
 const MAX_WAIT_MS = 30000;
 
-function checkViteReady(): Promise<boolean> {
+function checkViteReady() {
   return new Promise((resolve) => {
     const req = http.get(VITE_URL, (res) => {
       res.resume();
@@ -18,7 +18,7 @@ function checkViteReady(): Promise<boolean> {
   });
 }
 
-async function main(): Promise<void> {
+async function main() {
   const startedAt = Date.now();
   while (Date.now() - startedAt < MAX_WAIT_MS) {
     if (await checkViteReady()) {
@@ -32,7 +32,7 @@ async function main(): Promise<void> {
     shell: true,
   });
 
-  await new Promise<void>((resolve, reject) => {
+  await new Promise((resolve, reject) => {
     build.on('exit', (code) => {
       if (code === 0) resolve();
       else reject(new Error(`build:electron exited with code ${code}`));
