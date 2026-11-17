@@ -2,10 +2,11 @@
 
 > **Dành riêng cho:** Chủ dự án (Khách hàng / Sếp)
 > **Mục đích file này:** Giúp bạn biết chính xác **mình đang ở đâu**, **bước tiếp theo nên copy câu lệnh nào gửi cho AI**, **kiểm tra kết quả bằng mắt thường ra sao**, và **xử lý thế nào khi gặp lỗi hoặc mở cuộc trò chuyện mới** — từ lúc chưa có dòng code nào cho tới khi 8 người bạn mở game lên chơi.
-> **📌 3 LUẬT BẮT BUỘC DÀNH CHO AI KHI LÀM XONG MỖI BƯỚC:**
+> **📌 4 LUẬT BẮT BUỘC DÀNH CHO AI KHI LÀM XONG MỖI BƯỚC:**
 > 1. **Tự động cập nhật 4 file tiến độ:** Sau mỗi bước hoàn thành, AI bắt buộc cập nhật đồng thời `HUONG_DAN_CHO_TOI.md`, `TASKS.md`, `PROJECT_MEMORY.md` và `.agents/PROJECT_MEMORY.md` (đánh dấu `✅ ĐÃ XONG` và dời `👉 BẠN ĐANG Ở ĐÂY` sang bước kế tiếp).
 > 2. **Báo cáo chuẩn phong cách "Báo cáo Sếp" (Ngắn gọn – Đủ ý – Không lan man):** Tóm gọn đúng 4 ý: **✅ Đã hoàn thành**, **📊 Kết quả kiểm tra** (`X/X đạt 100%, 0 lỗi`), **⚠️ Vấn đề / Lưu ý**, và **👉 Việc tiếp theo trình Sếp duyệt**.
 > 3. **Luôn kèm Phản biện thẳng (`/honest-advisor` + `/ultrathinking`) & Gợi ý chia quân (`/swarm`):** Chỉ rõ giả định chưa kiểm, rủi ro dễ hỏng nhất, và đề xuất rõ bước tiếp theo nên chạy 1 mình hay gọi thêm bao nhiêu Agent trong Swarm (nêu rõ vai trò và mức tốn quota).
+> 4. **Bàn giao ca trực khép kín giữa các phiên:** Khi mở phiên mới phải đọc sổ nhớ + kiểm tra `git status --short` đầu tiên; khi xong bước phải ghi *Ghi chú bàn giao kỹ thuật* vào `.agents/PROJECT_MEMORY.md` để phiên sau nối tiếp được ngay 100%.
 
 ---
 
@@ -35,7 +36,8 @@ Vì bạn là người mới và không lập trình, bạn **không cần đọ
 > **📌 Trạng thái hiện tại của bạn (AI tự động cập nhật sau mỗi bước):**
 > - ✅ **Giai đoạn 0 (Bước 0.1 & 0.2 — Bộ 11 tài liệu & Monorepo):** **ĐÃ XONG 100%**.
 > - ✅ **Giai đoạn 1 (Bước 1.1 – 1.4 — Chia Thân Phận, 108 lá, 25 Tướng, Bot AI & 500 ván Fuzz Test):** **ĐÃ XONG 100%**.
-> - 👉 **BẠN ĐANG Ở ĐÂY — Việc ngay tiếp theo của bạn:** Copy câu lệnh ở **Bước 2.1** (Chặng 2) ngay bên dưới!
+> - ✅ **Giai đoạn 2 (Bước 2.1 & 2.2 — Máy chủ Cloud 0đ, Google OAuth, Bộ lọc Thống kê, Phòng 4–8 người & Tự lưu Ván đấu):** **ĐÃ XONG 100%**.
+> - 👉 **BẠN ĐANG Ở ĐÂY — Việc ngay tiếp theo của bạn:** Copy câu lệnh ở **Bước 3.1** (Chặng 3) ngay bên dưới!
 
 ---
 
@@ -66,19 +68,17 @@ Vì bạn là người mới và không lập trình, bạn **không cần đọ
 
 ### 🟠 CHẶNG 2: Làm Máy Chủ Phòng Chơi, Đăng Nhập Google & Lưu Thống Kê (👉 BẠN ĐANG Ở CHẶNG NÀY)
 
-#### 👉 Bước 2.1 (BẠN ĐANG Ở ĐÂY) — Làm Đăng Nhập Google & Bộ Lọc Thống Kê Người Dùng
-- **💬 Câu lệnh bạn Copy & Gửi cho AI:**
-  > `Hãy thực hiện Bước 2.1 trong TASKS.md (Chức năng Đăng nhập bằng Google, lưu hồ sơ người dùng và bộ lọc thống kê thắng/thua theo Người chơi, theo Thân Phận và theo 25 Tướng). Làm xong hãy chạy kiểm tra, cập nhật lại tiến độ trong HUONG_DAN_CHO_TOI.md và báo cáo cho tôi.`
+#### ✅ Bước 2.1 — Làm Đăng Nhập Google & Bộ Lọc Thống Kê Người Dùng *(ĐÃ XONG)*
+- **Kết quả đã nghiệm thu:** Đã hoàn thành Kho dữ liệu Cloud 0 đồng (`@libsql/client`: Turso Cloud / SQLite `file:` & `:memory:`), luồng **Đăng nhập Google OAuth 2.0** (tự đồng bộ phiên + mã dán dự phòng 1 lần), tạo/cập nhật đúng hồ sơ theo `googleSub`, khóa chặn **1 tài khoản ngồi 2 ghế** qua cả API lẫn WebSocket `/ws`, và API lọc thống kê thắng/thua theo **Người chơi**, **4 Thân Phận** (*Chủ – Trung – Phản – Nội*) và **25 Tướng**. Đạt **12/12** bài kiểm tra tích hợp (`100%, 0 lỗi`).
 
-#### ⏳ Bước 2.2 — Làm Phòng Chờ 4–8 Người Thật & Tự Lưu Ván Bài Chống Mất Dữ Liệu
-- **💬 Câu lệnh bạn Copy & Gửi cho AI:**
-  > `Hãy thực hiện Bước 2.2 trong TASKS.md (Tạo/vào phòng bằng mã 6 ký tự, chọn 3 mức đồng hồ đếm ngược, chỉ cho bắt đầu khi đủ 4–8 người thật, và tự lưu bản chụp ván đấu để máy chủ khởi động lại không mất bài). Làm xong hãy chạy kiểm tra, cập nhật lại tiến độ trong HUONG_DAN_CHO_TOI.md và báo cáo cho tôi.`
+#### ✅ Bước 2.2 — Làm Phòng Chờ 4–8 Người Thật & Tự Lưu Ván Bài Chống Mất Dữ Liệu *(ĐÃ XONG)*
+- **Kết quả đã nghiệm thu:** Đã hoàn thành bộ quản lý phòng chờ mã **6 ký tự**, đổi **3 mức đồng hồ** (*Nhanh / Chuẩn / Thong thả*), chuyển Chủ phòng khi rời phòng chờ, chặn bắt đầu khi **dưới 4 người thật** (không tự thêm Máy), và tự lưu `RoomSnapshot` (gồm tối đa 5 bản hoàn tác) sau mỗi bước để khôi phục nguyên trạng bàn đấu khi máy chủ khởi động lại. Đạt **15/15** bài kiểm tra tích hợp (`100%, 0 lỗi`).
 
 ---
 
-### 🔵 CHẶNG 3: Kết Nối Đánh Bài Qua Mạng, Xử Lý Rớt Mạng & Bảng Trọng Tài 4 Nút
+### 🔵 CHẶNG 3: Kết Nối Đánh Bài Qua Mạng, Xử Lý Rớt Mạng & Bảng Trọng Tài 4 Nút (👉 BẠN ĐANG Ở CHẶNG NÀY)
 
-#### ⏳ Bước 3.1 — Ghép Nối Đánh Bài Trực Tuyến, Rớt Mạng Tự Có Máy Đánh Hộ & Vào Lại Đúng Ghế
+#### 👉 Bước 3.1 (BẠN ĐANG Ở ĐÂY) — Ghép Nối Đánh Bài Trực Tuyến, Rớt Mạng Tự Có Máy Đánh Hộ & Vào Lại Đúng Ghế
 - **💬 Câu lệnh bạn Copy & Gửi cho AI:**
   > `Hãy thực hiện Bước 3.1 trong TASKS.md (Ghép nối ván đấu trực tuyến, giữ nhịp chờ Vô Giải Khả Kích chống lộ bài, tự chuyển Máy đánh hộ khi rớt mạng/hết giờ và tự trả lại đúng ghế/tay bài khi người chơi mở lại ứng dụng). Làm xong hãy kiểm tra, cập nhật lại tiến độ trong HUONG_DAN_CHO_TOI.md và báo cáo cho tôi.`
 

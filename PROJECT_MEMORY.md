@@ -2,7 +2,7 @@
 
 > **Dự án:** LKDF — Game Thẻ Bài Tam Quốc Sát (Windows Native Online 4–8 Người)
 > **Ngày cập nhật:** 2026-11-16
-> **Trạng thái hiện tại:** Hoàn thành **Giai đoạn 0 & trọn vẹn Giai đoạn 1 (Bước 1.1 – 1.4)** — Lõi luật 108 lá + 25 tướng + Máy đánh hộ `botAi` đã vượt cổng **500/500 ván Fuzz Test (0 deadlock, 0 rò rỉ bài ẩn)**; sẵn sàng sang **Giai đoạn 2 (Bước 2.1 — Đăng nhập Google & Thống kê)**.
+> **Trạng thái hiện tại:** Đã hoàn thành **Giai đoạn 0, Giai đoạn 1 (`Bước 1.1 – 1.4`) & trọn vẹn Giai đoạn 2 (`Bước 2.1 – 2.2`)** — Máy chủ Cloud 0đ đã có đủ Google OAuth, Bộ lọc Thống kê, Quản lý phòng 4–8 người thật, 3 mức Đồng hồ & tự lưu/khôi phục `RoomSnapshot` qua restart; sẵn sàng sang **Giai đoạn 3 (Bước 3.1 — Ghép nối WebSocket Ván đấu thời gian thực & Máy đánh hộ khi rớt mạng)**.
 
 ---
 
@@ -96,6 +96,23 @@ Xem đầy đủ 10 quyết định (`ADR-001` đến `ADR-010`) tại [DECISION
     - `npm run test:integration`: `1/1 test passed`, `exit code 0`.
     - `npm run typecheck` & `npm run build`: thành công 100% trên cả 3 workspace, `exit code 0`.
 
+- **[Hoàn thành — 2026-11-16] Bước 2.1 trong [TASKS.md](./TASKS.md):**
+  - Đã xây dựng Kho dữ liệu Cloud 0 đồng (`apps/server/src/persistence/schema.ts`, `apps/server/src/persistence/index.ts`) dùng `@libsql/client@0.18.0` (hỗ trợ Turso `libsql://` + `authToken` và SQLite `file:` / `:memory:`) quản lý `users`, `user_stats`, `matches`, `match_participants` và khung `room_snapshots`.
+  - Đã triển khai luồng **Google OAuth 2.0** (`apps/server/src/auth/`: `googleProvider.ts`, `jwt.ts`, `index.ts`, `routes.ts`) hỗ trợ đồng bộ tự động (`pollSecret` + `127.0.0.1` loopback), mã dán dự phòng dùng 1 lần `LKDF-XXXX-XXXX`, tạo/cập nhật hồ sơ đúng theo `googleSub`, giữ phiên qua khởi động lại máy chủ và khóa **chặn 1 tài khoản Google ngồi 2 ghế** (qua `/api/auth/seat-check`, luân chuyển `active_session_id` và kết nối WebSocket `/ws`).
+  - Đã triển khai API **Thống kê & Bộ lọc đa chiều** (`apps/server/src/stats/routes.ts`: `/api/stats/meta`, `/api/stats`, `/api/users/:userId/stats`) lọc chính xác theo Người chơi, 4 Thân Phận (kể cả luật 2 Nội Gián ở bàn 8 người), và 25 Tướng chuẩn mà không làm lộ `email`/`googleSub`/`clientSecret`.
+  - **Bằng chứng kiểm tra thực tế (2026-11-16):**
+    - `npm run test:integration`: **3 files · 12/12 tests passed** (`health.test.ts` 1/1, `auth-persistence.test.ts` 5/5, `stats-filter.test.ts` 6/6), `exit code 0`.
+    - `npm run test:unit`: **11 files · 82/82 tests passed**, `exit code 0`.
+    - `npm run typecheck` & `npm run build`: thành công 100% trên cả 3 workspace, `exit code 0`.
+
+- **[Hoàn thành — 2026-11-16] Bước 2.2 trong [TASKS.md](./TASKS.md) (Chốt trọn vẹn Giai đoạn 2):**
+  - Đã xây dựng Mô-đun Quản lý phòng chờ 4–8 người thật (`apps/server/src/rooms/index.ts`, `apps/server/src/rooms/routes.ts`): tạo phòng mã 6 ký tự dễ đọc, đổi 3 mức đồng hồ (*Nhanh `20/30/10s` · Chuẩn `30/45/15s` · Thong thả `45/60/20s`*), rời phòng tự chuyển Chủ phòng hoặc xóa phòng rỗng, chặn bắt đầu khi `< 4` người thật (không thêm Bot), chặn vượt quá 8 người và chặn 1 tài khoản ngồi 2 ghế.
+  - Đã hoàn thiện lưu & tự nạp lại `RoomSnapshot` trên Kho dữ liệu Cloud 0đ (`room_snapshots` gồm `roomState`, `masterGameState`, `undoHistory` giới hạn 5 bản, `phaseDeadlineAt` & `pausedRemainingMs`), tự động lưu sau mỗi bước và khôi phục nguyên trạng qua nhiều lần khởi động lại máy chủ mà không lộ bài ẩn của đối thủ.
+  - **Bằng chứng kiểm tra thực tế (2026-11-16):**
+    - `npm run test:integration`: **4 files · 15/15 tests passed** (`health.test.ts` 1/1, `auth-persistence.test.ts` 5/5, `stats-filter.test.ts` 6/6, `rooms-snapshot.test.ts` 3/3), `exit code 0`.
+    - `npm run test:unit`: **11 files · 82/82 tests passed**, `exit code 0`.
+    - `npm run typecheck` & `npm run build`: thành công 100% trên cả 3 workspace, `exit code 0`.
+
 ---
 
 ## 4. Vấn Đề Đang Tồn Tại & Câu Hỏi Chưa Giải Quyết
@@ -109,7 +126,9 @@ Xem đầy đủ 10 quyết định (`ADR-001` đến `ADR-010`) tại [DECISION
 
 ## 5. Bước Tiếp Theo & Quy Tắc Bàn Giao Bắt Buộc
 
-- **LUẬT BẮT BUỘC SAU MỖI BƯỚC HOÀN THÀNH (Cập nhật 4 file & Chuẩn "Báo cáo Sếp"):**
+- **4 LUẬT BẮT BUỘC SAU MỖI BƯỚC HOÀN THÀNH (`AGENTS.md` Mục 5):**
   1. Tự động cập nhật tiến độ vào [HUONG_DAN_CHO_TOI.md](./HUONG_DAN_CHO_TOI.md) (đánh dấu `✅ ĐÃ XONG` bước vừa làm và chuyển nhãn `👉 BẠN ĐANG Ở ĐÂY` xuống bước kế tiếp), đồng thời cập nhật [TASKS.md](./TASKS.md), [PROJECT_MEMORY.md](./PROJECT_MEMORY.md) và [`.agents/PROJECT_MEMORY.md`](./.agents/PROJECT_MEMORY.md).
   2. Báo cáo cho khách hàng theo đúng **phong cách "Báo cáo Sếp"**: ngắn gọn, đi thẳng vào trọng tâm gồm 4 mục (*✅ Đã hoàn thành · 📊 Bằng chứng kiểm tra · ⚠️ Tồn đọng/Lưu ý · 👉 Bước tiếp theo kèm câu lệnh copy*).
-- **Bước tiếp theo ngay sau đây:** Thực hiện **Bước 2.1 trong [TASKS.md](./TASKS.md):** Triển khai Đăng nhập Google OAuth 2.0, lưu trữ `UserProfile`, `UserStats`, `MatchHistory` trên Kho dữ liệu Cloud 0 đồng và API lọc thống kê theo Người chơi, Thân Phận và 25 Tướng trong `apps/server`.
+  3. Luôn kèm mục **Phản biện thẳng (`/honest-advisor` & `/ultrathinking`)** và **Gợi ý chia quân (`/swarm`)**.
+  4. **Bàn giao ca trực khép kín giữa các phiên:** Đầu phiên mới luôn đọc sổ nhớ + chạy `git status --short`; cuối mỗi bước luôn ghi *Ghi chú bàn giao kỹ thuật (Handoff Notes)* vào [`.agents/PROJECT_MEMORY.md`](./.agents/PROJECT_MEMORY.md).
+- **Bước tiếp theo ngay sau đây:** Thực hiện **Bước 3.1 trong [TASKS.md](./TASKS.md):** Ghép nối WebSocket Ván đấu thời gian thực với `PlayerViewState` riêng cho từng ghế, giữ nhịp chờ *Vô Giải Khả Kích* đồng nhất (`2.0s–3.5s`), tự chuyển Máy đánh hộ khi rớt mạng/hết giờ và trả lại đúng ghế/tay bài khi kết nối lại.

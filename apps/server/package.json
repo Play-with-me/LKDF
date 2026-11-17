@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@fastify/cors": "^11.4.3",
+    "@libsql/client": "^0.18.0",
     "@lkdf/shared": "*",
     "fastify": "^5.12.8",
     "ws": "^8.23.0",

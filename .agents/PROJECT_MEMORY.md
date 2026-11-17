@@ -1,7 +1,7 @@
 # Project Memory — LKDF (Tam Quốc Sát Windows Native Online 4–8 Người)
 
 - **Ngày cập nhật:** 2026-11-16
-- **Trạng thái hiện tại:** Hoàn thành **Giai đoạn 0 & trọn vẹn Giai đoạn 1 (Bước 1.1 – 1.4)** — Lõi luật 108 lá + 25 tướng + `botAi` đã vượt cổng **500/500 ván Fuzz Test (0 deadlock)**; sẵn sàng sang **Bước 2.1 (Google OAuth & Lưu Thống kê Cloud 0đ)**.
+- **Trạng thái hiện tại:** Đã hoàn thành **Giai đoạn 0, Giai đoạn 1 (`Bước 1.1 – 1.4`) & trọn vẹn Giai đoạn 2 (`Bước 2.1 – 2.2`)** — Hoàn tất Google OAuth 2.0, Bộ lọc Thống kê, Phòng chờ 4–8 người & Khôi phục `RoomSnapshot`; sẵn sàng sang **Giai đoạn 3 (Bước 3.1 — WebSocket ván đấu & Rớt mạng)**.
 - **Bản đầy đủ:** Xem [`PROJECT_MEMORY.md`](../PROJECT_MEMORY.md), [`HUONG_DAN_CHO_TOI.md`](../HUONG_DAN_CHO_TOI.md), [`REQUIREMENTS.md`](../REQUIREMENTS.md) và [`TASKS.md`](../TASKS.md).
 
 ## Quyết định v1 đã khóa 100% (Tuyệt đối không tự ý thay đổi)
@@ -18,11 +18,15 @@
 ## Kiến trúc kỹ thuật & Quy tắc báo cáo
 - **3 Luật báo cáo bắt buộc (`AGENTS.md` Mục 5):** (1) Cập nhật đồng bộ 4 file (`HUONG_DAN_CHO_TOI.md`, `TASKS.md`, `PROJECT_MEMORY.md`, `.agents/PROJECT_MEMORY.md`); (2) Báo cáo chuẩn "Báo cáo Sếp" 4 ý; (3) Luôn kèm phản biện thẳng (`/honest-advisor` + `/ultrathinking`) và gợi ý chia quân (`/swarm`: nên chạy 1 mình hay gọi bao nhiêu Agent).
 - **Monorepo (npm workspaces):** `packages/shared` (TypeScript 7 + Zod 4 + Vitest 5), `apps/server` (Fastify 5 + ws 8), `apps/desktop` (Electron 45 + `electron-updater` + React 19 + Vite 8 + Tailwind CSS v4 — chọn phương án dự phòng tương thích trong `ARCHITECTURE.md` vì máy chưa cài Rust/MSVC).
-- **God Nodes / File cốt lõi bảo vệ:** `packages/shared/src/types/{identity,game}.ts`, `packages/shared/src/cards/catalog.ts`, `packages/shared/src/heroes/{catalog,skillContracts,registry}.ts`, `packages/shared/src/heroes/skills/{shu,wei,wuQun}.ts`, `packages/shared/src/engine/{setup,combatCore,combat,deck,winCondition}.ts`, `packages/shared/src/bot/index.ts`, `packages/shared/src/distance/index.ts`, `packages/shared/src/projection/index.ts`, `apps/server/src/server.ts`, `apps/desktop/electron/main.cts`.
-- **Kiểm chứng thực tế gần nhất (Bước 1.4):** `npm run typecheck`, `npm run test:unit` (`11 files · 82/82 passed`), `npm run test:fuzz` (**500/500 ván đạt 100%, 0 deadlock, 0 rò rỉ**), `npm run test:integration` (`1/1 passed`), `npm run build` — đều thoát `0`.
+- **God Nodes / File cốt lõi bảo vệ:** `packages/shared/src/types/{identity,game}.ts`, `packages/shared/src/cards/catalog.ts`, `packages/shared/src/heroes/{catalog,skillContracts,registry}.ts`, `packages/shared/src/heroes/skills/{shu,wei,wuQun}.ts`, `packages/shared/src/engine/{setup,combatCore,combat,deck,winCondition}.ts`, `packages/shared/src/bot/index.ts`, `packages/shared/src/distance/index.ts`, `packages/shared/src/projection/index.ts`, `apps/server/src/{server,config}.ts`, `apps/server/src/persistence/{schema,index}.ts`, `apps/server/src/auth/{index,jwt,googleProvider,routes}.ts`, `apps/server/src/stats/routes.ts`, `apps/server/src/rooms/{index,routes}.ts`, `apps/desktop/electron/main.cts`.
+- **Kiểm chứng thực tế gần nhất (Bước 2.2):** `npm run typecheck`, `npm run test:unit` (`11 files · 82/82 passed`), `npm run test:integration` (`4 files · 15/15 passed`), `npm run build` — đều thoát `0`.
 
 ## Việc tiếp theo & Quy tắc bàn giao bắt buộc
-- **Quy tắc bắt buộc sau mỗi bước hoàn thành:**
+- **Quy tắc bắt buộc sau mỗi bước hoàn thành (4 Luật trong `AGENTS.md`):**
   1. Tự động cập nhật tiến độ vào [`HUONG_DAN_CHO_TOI.md`](../HUONG_DAN_CHO_TOI.md) (đánh dấu `✅ ĐÃ XONG` bước vừa làm và dời nhãn `👉 BẠN ĐANG Ở ĐÂY` xuống bước kế tiếp), đồng thời cập nhật `TASKS.md`, `PROJECT_MEMORY.md` và `.agents/PROJECT_MEMORY.md`.
   2. Báo cáo cho khách hàng theo chuẩn **"Báo cáo Sếp"** + LUẬT 3 (`/honest-advisor`, `/ultrathinking` & gợi ý `/swarm`).
-- **Bước tiếp theo:** Thực hiện **Bước 2.1** trong [`TASKS.md`](../TASKS.md): Đăng nhập Google OAuth 2.0, lưu hồ sơ & thống kê trên Kho dữ liệu Cloud 0đ và bộ lọc thống kê theo Người chơi / Thân Phận / 25 Tướng (`apps/server`).
+  3. **Bàn giao ca trực khép kín (LUẬT 4):** Đầu phiên mới luôn đọc 3 file nhớ + chạy `git status --short`; cuối mỗi bước luôn cập nhật mục *"Ghi chú bàn giao kỹ thuật cho Bước kế tiếp"* ngay bên dưới.
+- **Ghi chú bàn giao kỹ thuật cho Bước 3.1 (Handoff Notes từ Bước 2.2):**
+  - `RoomManager` trong `apps/server/src/rooms/index.ts` đã có sẵn `startMatch()`, `applyMatchAction()`, `saveRoomSnapshot()` và `restoreActiveRoomsFromDb()`.
+  - Kết nối WebSocket `/ws?token=...` trong `apps/server/src/server.ts` đã xác thực JWT + khóa `activeSessionId`. Bước 3.1 cần nối thông điệp WebSocket (`JOIN_ROOM_WS`, `GAME_ACTION`, `PING`, `TOGGLE_AUTO_SKIP_WU_XIE`) vào `RoomManager`, phát `PlayerViewState` riêng cho từng ghế qua `projectStateForPlayer`, chạy bộ đếm pha + nhịp giả lập *Vô Giải Khả Kích* (`2.0s–3.5s` khi `isSimulatedDelay = true`), và tự bật `isBotTakeover = true` gọi `chooseBotAction` khi rớt mạng/hết giờ.
+- **Bước tiếp theo:** Thực hiện **Bước 3.1** trong [`TASKS.md`](../TASKS.md): Ghép nối WebSocket Ván đấu thời gian thực, giữ nhịp chờ *Vô Giải Khả Kích* (`2.0s–3.5s`), tự chuyển Máy đánh hộ khi rớt mạng/hết giờ & kết nối lại đúng ghế (`apps/server`).

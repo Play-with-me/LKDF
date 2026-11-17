@@ -73,20 +73,20 @@
 
 ### Giai Đoạn 2 — Máy Chủ Cloud 0 Đồng, Đăng Nhập Google & Lưu Dữ Liệu Người Dùng
 
-- [ ] **Bước 2.1 — Triển khai Đăng nhập Google OAuth 2.0 & Bộ lọc Thống kê Người dùng (`apps/server`)**
+- [x] **Bước 2.1 — Triển khai Đăng nhập Google OAuth 2.0 & Bộ lọc Thống kê Người dùng (`apps/server`)**
   - **Phụ thuộc:** Bước 0.2.
   - **Kết quả bàn giao:**
     - Luồng xác thực Google OAuth 2.0 (tự đồng bộ phiên đăng nhập về ứng dụng Windows + mã dán dự phòng).
     - Lưu trữ và truy vấn `UserProfile`, `UserStats`, `MatchHistory` trên Kho dữ liệu Cloud 0 đồng.
     - API lọc dữ liệu người dùng theo Thành viên, theo Thân Phận (*Chủ – Trung – Phản – Nội*) và theo 25 Tướng.
-  - **Điều kiện hoàn thành:** Kiểm thử đăng nhập tạo/cập nhật đúng hồ sơ theo `googleSub`, chặn 1 tài khoản ngồi 2 ghế, và truy vấn lọc đúng thống kê mẫu.
+  - **Điều kiện hoàn thành:** Kiểm thử đăng nhập tạo/cập nhật đúng hồ sơ theo `googleSub`, chặn 1 tài khoản ngồi 2 ghế, và truy vấn lọc đúng thống kê mẫu. *(Đã kiểm chứng thực tế: `npm run test:integration` **3 files · 12/12 tests passed**, gồm `health.test.ts`, `auth-persistence.test.ts` & `stats-filter.test.ts`; `npm run test:unit` **82/82** đạt; `typecheck` & `build` toàn Monorepo đạt — exit code 0.)*
 
-- [ ] **Bước 2.2 — Quản lý Phòng chờ 4–8 người thật, Đồng hồ đếm ngược & Lưu Bản chụp (`RoomSnapshot`)**
+- [x] **Bước 2.2 — Quản lý Phòng chờ 4–8 người thật, Đồng hồ đếm ngược & Lưu Bản chụp (`RoomSnapshot`)**
   - **Phụ thuộc:** Bước 2.1.
   - **Kết quả bàn giao:**
     - Tạo phòng (mã 6 ký tự), vào phòng, chọn 3 mức đồng hồ (*Nhanh / Chuẩn / Thong thả*), kiểm tra chặn bắt đầu khi dưới 4 người thật.
     - Tự động lưu `RoomSnapshot` vào Kho dữ liệu sau mỗi bước và tự nạp lại khi máy chủ khởi động lại.
-  - **Điều kiện hoàn thành:** Bài kiểm thử tích hợp tạo phòng, chặn khi <4 người, bắt đầu khi 4–8 người, và khôi phục phòng sau khi khởi động lại máy chủ chạy đạt 100%.
+  - **Điều kiện hoàn thành:** Bài kiểm thử tích hợp tạo phòng, chặn khi <4 người, bắt đầu khi 4–8 người, và khôi phục phòng sau khi khởi động lại máy chủ chạy đạt 100%. *(Đã kiểm chứng thực tế: `npm run test:integration` **4 files · 15/15 tests passed**, gồm `rooms-snapshot.test.ts` 3/3 tests; `npm run test:unit` **82/82** đạt; `typecheck` & `build` toàn Monorepo đạt — exit code 0.)*
 
 ---
 

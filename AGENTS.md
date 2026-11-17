@@ -7,14 +7,15 @@ Tài liệu này quy định các nguyên tắc bắt buộc cho mọi AI Agent 
 
 ---
 
-## 1. Thứ Tự Đọc Tài Liệu Trước Khi Làm Bất Kỳ Việc Gì
+## 1. Thứ Tự Đọc Tài Liệu & Kiểm Tra Đầu Phiên Trước Khi Làm Bất Kỳ Việc Gì
 
-Khi bắt đầu một phiên làm việc mới, AI **bắt buộc đọc theo thứ tự sau** trước khi đề xuất kế hoạch hoặc sửa code:
-1. **[PROJECT_MEMORY.md](./PROJECT_MEMORY.md)** (và [`.agents/PROJECT_MEMORY.md`](./.agents/PROJECT_MEMORY.md)) — Nắm trạng thái hiện tại, các quyết định đã khóa và việc tiếp theo.
-2. **[REQUIREMENTS.md](./REQUIREMENTS.md)** — Nắm yêu cầu chức năng, bảng Thân Phận 4–8 người, 25 tướng chuẩn, 108 lá chuẩn và tiêu chí nghiệm thu.
-3. **[DESIGN.md](./DESIGN.md)** — Khi làm việc liên quan đến giao diện, bố cục 4–8 ghế, nhãn nút hoặc 5 trạng thái màn hình.
-4. **[ARCHITECTURE.md](./ARCHITECTURE.md)** & **[DATA_MODEL.md](./DATA_MODEL.md)** — Khi làm việc với lõi luật, máy chủ, đăng nhập Google, lưu trữ Cloud 0đ hoặc tự cập nhật 1-Click.
-5. **[TASKS.md](./TASKS.md)** — Kiểm tra đúng đầu việc đang thực hiện và điều kiện hoàn thành của đầu việc đó.
+Khi bắt đầu một phiên làm việc mới, AI **bắt buộc thực hiện theo thứ tự sau** trước khi đề xuất kế hoạch hoặc sửa code:
+1. **[PROJECT_MEMORY.md](./PROJECT_MEMORY.md)**, **[`.agents/PROJECT_MEMORY.md`](./.agents/PROJECT_MEMORY.md)** và **[HUONG_DAN_CHO_TOI.md](./HUONG_DAN_CHO_TOI.md)** — Nắm trạng thái hiện tại, các quyết định đã khóa, ghi chú bàn giao kỹ thuật từ phiên trước và bước kế tiếp đang chờ.
+2. **Chạy kiểm tra `git status --short` và `git log -n 3 --oneline`** — Phát hiện ngay mọi file phiên trước đang làm dở hoặc chưa kịp `commit` để bảo vệ công việc hiện có, tuyệt đối không ghi đè mù quáng.
+3. **[REQUIREMENTS.md](./REQUIREMENTS.md)** — Nắm yêu cầu chức năng, bảng Thân Phận 4–8 người, 25 tướng chuẩn, 108 lá chuẩn và tiêu chí nghiệm thu.
+4. **[DESIGN.md](./DESIGN.md)** — Khi làm việc liên quan đến giao diện, bố cục 4–8 ghế, nhãn nút hoặc 5 trạng thái màn hình.
+5. **[ARCHITECTURE.md](./ARCHITECTURE.md)** & **[DATA_MODEL.md](./DATA_MODEL.md)** — Khi làm việc với lõi luật, máy chủ, đăng nhập Google, lưu trữ Cloud 0đ hoặc tự cập nhật 1-Click.
+6. **[TASKS.md](./TASKS.md)** — Kiểm tra đúng đầu việc đang thực hiện và điều kiện hoàn thành của đầu việc đó.
 
 ---
 
@@ -74,3 +75,7 @@ Khi bắt đầu một phiên làm việc mới, AI **bắt buộc đọc theo t
   - Mọi báo cáo gửi lại khách hàng bắt buộc có thêm **2 mục ngắn gọn, đi thẳng vào trọng tâm**:
     5. **🔍 Phản biện thẳng (`/honest-advisor` & `/ultrathinking`):** Phân biệt rõ *sự thật đã kiểm chứng* với *giả định chưa kiểm*, chỉ ra điểm yếu/rủi ro lớn nhất hoặc kịch bản dễ hỏng (*pre-mortem*) nếu đi tiếp, kèm giải pháp khắc phục thực tế (không nịnh, không bịa rủi ro giả).
     6. **🐝 Gợi ý chia quân (`/swarm`):** Đề xuất rõ cho bước kế tiếp là **nên chạy 1 mình** hay **gọi Swarm**, nêu rõ **số lượng Agent cụ thể** (kèm vai trò từng Agent tách file không đụng nhau, cộng `monitor` nếu chạy Swarm) và nêu thẳng đánh đổi về *tốc độ vs mức tiêu hao quota*.
+- **LUẬT 4 — GIAO THỨC BÀN GIAO CA TRỰC KHÉP KÍN GIỮA CÁC PHIÊN (Session Handoff Protocol):**
+  - Để phiên làm việc mới không bao giờ mất ngữ cảnh của phiên cũ (kể cả khi phiên cũ dừng đột ngột):
+    1. **Đầu phiên mới:** Bắt buộc đọc `PROJECT_MEMORY.md`, `.agents/PROJECT_MEMORY.md`, `HUONG_DAN_CHO_TOI.md` **và chạy `git status --short`** trước tiên để nắm cả những thay đổi chưa commit.
+    2. **Cuối mỗi bước:** Bắt buộc ghi mục *"Ghi chú bàn giao kỹ thuật cho Bước kế tiếp (Handoff Notes)"* vào `.agents/PROJECT_MEMORY.md` (chỉ rõ các hàm/mô-đun vừa tạo và điểm cần nối tiếp) để phiên sau làm tiếp ngay không phải dò lại từ đầu.
