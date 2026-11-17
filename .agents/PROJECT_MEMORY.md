@@ -1,7 +1,7 @@
 # Project Memory — LKDF (Tam Quốc Sát Windows Native Online 4–8 Người)
 
-- **Ngày cập nhật:** 2026-11-16
-- **Trạng thái hiện tại:** Đã hoàn thành **Giai đoạn 0, Giai đoạn 1 (`Bước 1.1 – 1.4`) & trọn vẹn Giai đoạn 2 (`Bước 2.1 – 2.2`)** — Hoàn tất Google OAuth 2.0, Bộ lọc Thống kê, Phòng chờ 4–8 người & Khôi phục `RoomSnapshot`; sẵn sàng sang **Giai đoạn 3 (Bước 3.1 — WebSocket ván đấu & Rớt mạng)**.
+- **Ngày cập nhật:** 2026-11-17
+- **Trạng thái hiện tại:** Đã hoàn thành **Giai đoạn 0, Giai đoạn 1 (`Bước 1.1 – 1.4`), Giai đoạn 2 (`Bước 2.1 – 2.2`) & trọn vẹn Giai đoạn 3 (`Bước 3.1 – 3.2`)** — Hoàn tất máy chủ thời gian thực, Trọng Tài 4 nút & chuyển quyền 30s; sẵn sàng sang **Giai đoạn 4 (Bước 4.1 — Giao diện Windows: Đánh thức, Google Auth, Phòng chờ & Thống kê)**.
 - **Bản đầy đủ:** Xem [`PROJECT_MEMORY.md`](../PROJECT_MEMORY.md), [`HUONG_DAN_CHO_TOI.md`](../HUONG_DAN_CHO_TOI.md), [`REQUIREMENTS.md`](../REQUIREMENTS.md) và [`TASKS.md`](../TASKS.md).
 
 ## Quyết định v1 đã khóa 100% (Tuyệt đối không tự ý thay đổi)
@@ -18,15 +18,20 @@
 ## Kiến trúc kỹ thuật & Quy tắc báo cáo
 - **3 Luật báo cáo bắt buộc (`AGENTS.md` Mục 5):** (1) Cập nhật đồng bộ 4 file (`HUONG_DAN_CHO_TOI.md`, `TASKS.md`, `PROJECT_MEMORY.md`, `.agents/PROJECT_MEMORY.md`); (2) Báo cáo chuẩn "Báo cáo Sếp" 4 ý; (3) Luôn kèm phản biện thẳng (`/honest-advisor` + `/ultrathinking`) và gợi ý chia quân (`/swarm`: nên chạy 1 mình hay gọi bao nhiêu Agent).
 - **Monorepo (npm workspaces):** `packages/shared` (TypeScript 7 + Zod 4 + Vitest 5), `apps/server` (Fastify 5 + ws 8), `apps/desktop` (Electron 45 + `electron-updater` + React 19 + Vite 8 + Tailwind CSS v4 — chọn phương án dự phòng tương thích trong `ARCHITECTURE.md` vì máy chưa cài Rust/MSVC).
-- **God Nodes / File cốt lõi bảo vệ:** `packages/shared/src/types/{identity,game}.ts`, `packages/shared/src/cards/catalog.ts`, `packages/shared/src/heroes/{catalog,skillContracts,registry}.ts`, `packages/shared/src/heroes/skills/{shu,wei,wuQun}.ts`, `packages/shared/src/engine/{setup,combatCore,combat,deck,winCondition}.ts`, `packages/shared/src/bot/index.ts`, `packages/shared/src/distance/index.ts`, `packages/shared/src/projection/index.ts`, `apps/server/src/{server,config}.ts`, `apps/server/src/persistence/{schema,index}.ts`, `apps/server/src/auth/{index,jwt,googleProvider,routes}.ts`, `apps/server/src/stats/routes.ts`, `apps/server/src/rooms/{index,routes}.ts`, `apps/desktop/electron/main.cts`.
-- **Kiểm chứng thực tế gần nhất (Bước 2.2):** `npm run typecheck`, `npm run test:unit` (`11 files · 82/82 passed`), `npm run test:integration` (`4 files · 15/15 passed`), `npm run build` — đều thoát `0`.
+- **God Nodes / File cốt lõi bảo vệ:** `packages/shared/src/types/{identity,game}.ts`, `packages/shared/src/cards/catalog.ts`, `packages/shared/src/heroes/{catalog,skillContracts,registry}.ts`, `packages/shared/src/heroes/skills/{shu,wei,wuQun}.ts`, `packages/shared/src/engine/{setup,combatCore,combat,deck,winCondition}.ts`, `packages/shared/src/bot/index.ts`, `packages/shared/src/distance/index.ts`, `packages/shared/src/projection/index.ts`, `apps/server/src/{server,config}.ts`, `apps/server/src/persistence/{schema,index}.ts`, `apps/server/src/auth/{index,jwt,googleProvider,routes}.ts`, `apps/server/src/stats/routes.ts`, `apps/server/src/rooms/{index,routes,coordinator,wsSchemas}.ts`, `apps/desktop/electron/main.cts`.
+- **Kiểm chứng thực tế gần nhất (Bước 3.2):** `npm run typecheck`, `npm run test:unit` (`11 files · 82/82 passed`), `npm run test:integration` (`6 files · 21/21 passed`, gồm `ws-match-flow.test.ts` 3/3 và `referee-host-failover.test.ts` 3/3), `npm run build` — đều thoát `0`.
 
 ## Việc tiếp theo & Quy tắc bàn giao bắt buộc
 - **Quy tắc bắt buộc sau mỗi bước hoàn thành (4 Luật trong `AGENTS.md`):**
   1. Tự động cập nhật tiến độ vào [`HUONG_DAN_CHO_TOI.md`](../HUONG_DAN_CHO_TOI.md) (đánh dấu `✅ ĐÃ XONG` bước vừa làm và dời nhãn `👉 BẠN ĐANG Ở ĐÂY` xuống bước kế tiếp), đồng thời cập nhật `TASKS.md`, `PROJECT_MEMORY.md` và `.agents/PROJECT_MEMORY.md`.
   2. Báo cáo cho khách hàng theo chuẩn **"Báo cáo Sếp"** + LUẬT 3 (`/honest-advisor`, `/ultrathinking` & gợi ý `/swarm`).
   3. **Bàn giao ca trực khép kín (LUẬT 4):** Đầu phiên mới luôn đọc 3 file nhớ + chạy `git status --short`; cuối mỗi bước luôn cập nhật mục *"Ghi chú bàn giao kỹ thuật cho Bước kế tiếp"* ngay bên dưới.
-- **Ghi chú bàn giao kỹ thuật cho Bước 3.1 (Handoff Notes từ Bước 2.2):**
-  - `RoomManager` trong `apps/server/src/rooms/index.ts` đã có sẵn `startMatch()`, `applyMatchAction()`, `saveRoomSnapshot()` và `restoreActiveRoomsFromDb()`.
-  - Kết nối WebSocket `/ws?token=...` trong `apps/server/src/server.ts` đã xác thực JWT + khóa `activeSessionId`. Bước 3.1 cần nối thông điệp WebSocket (`JOIN_ROOM_WS`, `GAME_ACTION`, `PING`, `TOGGLE_AUTO_SKIP_WU_XIE`) vào `RoomManager`, phát `PlayerViewState` riêng cho từng ghế qua `projectStateForPlayer`, chạy bộ đếm pha + nhịp giả lập *Vô Giải Khả Kích* (`2.0s–3.5s` khi `isSimulatedDelay = true`), và tự bật `isBotTakeover = true` gọi `chooseBotAction` khi rớt mạng/hết giờ.
-- **Bước tiếp theo:** Thực hiện **Bước 3.1** trong [`TASKS.md`](../TASKS.md): Ghép nối WebSocket Ván đấu thời gian thực, giữ nhịp chờ *Vô Giải Khả Kích* (`2.0s–3.5s`), tự chuyển Máy đánh hộ khi rớt mạng/hết giờ & kết nối lại đúng ghế (`apps/server`).
+- **Ghi chú bàn giao kỹ thuật cho Bước 4.1 (Handoff Notes từ Bước 3.2):**
+  - Toàn bộ API & WebSocket phía `apps/server` đã hoàn chỉnh cho Bước 4.1:
+    - Đánh thức server & kiểm tra cấu hình: `GET /api/health`, `GET /api/auth/config`.
+    - Google OAuth 2.0: `POST /api/auth/google/start` (nhận `desktopCallbackPort` -> trả `authSessionId`, `pollSecret`, `authUrl`), `GET /api/auth/google/status/:authSessionId` (kèm header `x-auth-poll-secret`), `POST /api/auth/exchange-code`, `GET /api/auth/me`, `PATCH /api/profile/preferences`, `POST /api/auth/logout`.
+    - Phòng chờ: `GET /api/rooms/presets`, `GET /api/rooms/mine`, `POST /api/rooms`, `POST /api/rooms/join`, `PATCH /api/rooms/:roomCode/timer`, `POST /api/rooms/:roomCode/leave`, `POST /api/rooms/:roomCode/start`.
+    - Thống kê & Bộ lọc: `GET /api/stats/meta`, `GET /api/stats?userId=&identity=&heroId=&includeMatches=true`, `GET /api/users/:userId/stats`.
+    - WebSocket `/ws`: `AUTH`, `SUBSCRIBE_ROOM`, nhận `ROOM_STATE` thời gian thực (`RoomViewerPayload` gồm `roomState`, `timerConfig`, `phaseDeadlineAt`, `pausedRemainingMs`, `playerView`, `refereeAuditLog`).
+  - `apps/desktop` đang dùng Electron 45 + Vite 8 + React 19 + Tailwind CSS v4 (`electron/{main,preload}.cts`); tuyệt đối đọc `DESIGN.md` trước khi code UI, bảo đảm 5 trạng thái UI, lưu phiên cục bộ an toàn, không nhúng secret, mở được trình duyệt ngoài + nhận callback nội bộ `127.0.0.1` + ô nhập mã dự phòng.
+- **Bước tiếp theo:** Thực hiện **Bước 4.1** trong [`TASKS.md`](../TASKS.md): Màn hình Đánh thức server, Đăng nhập Google, Sảnh chính, Phòng chờ 4–8 người & Trang lọc Thống kê (`apps/desktop`).

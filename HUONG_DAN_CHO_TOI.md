@@ -37,7 +37,8 @@ Vì bạn là người mới và không lập trình, bạn **không cần đọ
 > - ✅ **Giai đoạn 0 (Bước 0.1 & 0.2 — Bộ 11 tài liệu & Monorepo):** **ĐÃ XONG 100%**.
 > - ✅ **Giai đoạn 1 (Bước 1.1 – 1.4 — Chia Thân Phận, 108 lá, 25 Tướng, Bot AI & 500 ván Fuzz Test):** **ĐÃ XONG 100%**.
 > - ✅ **Giai đoạn 2 (Bước 2.1 & 2.2 — Máy chủ Cloud 0đ, Google OAuth, Bộ lọc Thống kê, Phòng 4–8 người & Tự lưu Ván đấu):** **ĐÃ XONG 100%**.
-> - 👉 **BẠN ĐANG Ở ĐÂY — Việc ngay tiếp theo của bạn:** Copy câu lệnh ở **Bước 3.1** (Chặng 3) ngay bên dưới!
+> - ✅ **Giai đoạn 3 (Bước 3.1 & 3.2 — Đánh bài trực tuyến, Nhịp Vô Giải giả lập, Máy đánh hộ, Bảng Trọng Tài 4 nút & Chuyển quyền 30s):** **ĐÃ XONG 100%**.
+> - 👉 **BẠN ĐANG Ở ĐÂY — Việc ngay tiếp theo của bạn:** Copy câu lệnh ở **Bước 4.1** (Chặng 4) ngay bên dưới!
 
 ---
 
@@ -66,7 +67,7 @@ Vì bạn là người mới và không lập trình, bạn **không cần đọ
 
 ---
 
-### 🟠 CHẶNG 2: Làm Máy Chủ Phòng Chơi, Đăng Nhập Google & Lưu Thống Kê (👉 BẠN ĐANG Ở CHẶNG NÀY)
+### 🟠 CHẶNG 2: Làm Máy Chủ Phòng Chơi, Đăng Nhập Google & Lưu Thống Kê (✅ ĐÃ HOÀN THÀNH)
 
 #### ✅ Bước 2.1 — Làm Đăng Nhập Google & Bộ Lọc Thống Kê Người Dùng *(ĐÃ XONG)*
 - **Kết quả đã nghiệm thu:** Đã hoàn thành Kho dữ liệu Cloud 0 đồng (`@libsql/client`: Turso Cloud / SQLite `file:` & `:memory:`), luồng **Đăng nhập Google OAuth 2.0** (tự đồng bộ phiên + mã dán dự phòng 1 lần), tạo/cập nhật đúng hồ sơ theo `googleSub`, khóa chặn **1 tài khoản ngồi 2 ghế** qua cả API lẫn WebSocket `/ws`, và API lọc thống kê thắng/thua theo **Người chơi**, **4 Thân Phận** (*Chủ – Trung – Phản – Nội*) và **25 Tướng**. Đạt **12/12** bài kiểm tra tích hợp (`100%, 0 lỗi`).
@@ -76,21 +77,19 @@ Vì bạn là người mới và không lập trình, bạn **không cần đọ
 
 ---
 
-### 🔵 CHẶNG 3: Kết Nối Đánh Bài Qua Mạng, Xử Lý Rớt Mạng & Bảng Trọng Tài 4 Nút (👉 BẠN ĐANG Ở CHẶNG NÀY)
+### 🔵 CHẶNG 3: Kết Nối Đánh Bài Qua Mạng, Xử Lý Rớt Mạng & Bảng Trọng Tài 4 Nút (✅ ĐÃ HOÀN THÀNH)
 
-#### 👉 Bước 3.1 (BẠN ĐANG Ở ĐÂY) — Ghép Nối Đánh Bài Trực Tuyến, Rớt Mạng Tự Có Máy Đánh Hộ & Vào Lại Đúng Ghế
-- **💬 Câu lệnh bạn Copy & Gửi cho AI:**
-  > `Hãy thực hiện Bước 3.1 trong TASKS.md (Ghép nối ván đấu trực tuyến, giữ nhịp chờ Vô Giải Khả Kích chống lộ bài, tự chuyển Máy đánh hộ khi rớt mạng/hết giờ và tự trả lại đúng ghế/tay bài khi người chơi mở lại ứng dụng). Làm xong hãy kiểm tra, cập nhật lại tiến độ trong HUONG_DAN_CHO_TOI.md và báo cáo cho tôi.`
+#### ✅ Bước 3.1 — Ghép Nối Đánh Bài Trực Tuyến, Rớt Mạng Tự Có Máy Đánh Hộ & Vào Lại Đúng Ghế *(ĐÃ XONG)*
+- **Kết quả đã nghiệm thu:** Đã hoàn thành bộ điều phối ván đấu WebSocket thời gian thực (`PlayerViewState` riêng cho từng ghế, chặn giả mạo ghế), giữ nhịp chờ *Vô Giải Khả Kích* giả lập `2.0s–3.5s` chống lộ bài trên tay người chơi, tự bật `isBotTakeover = true` để Máy đánh hộ khi rớt mạng hoặc hết giờ đồng hồ pha, tự trả lại đúng ghế/tay bài khi kết nối lại, và tự lưu kết quả trận đấu khi kết thúc. Đạt **18/18** bài kiểm tra tích hợp (`100%, 0 lỗi`).
 
-#### ⏳ Bước 3.2 — Làm Bảng Trọng Tài 4 Nút & Tự Chuyển Quyền Sau 30 Giây Khi Chủ Phòng Mất Mạng
-- **💬 Câu lệnh bạn Copy & Gửi cho AI:**
-  > `Hãy thực hiện Bước 3.2 trong TASKS.md (4 nút Trọng Tài cơ bản có ghi nhật ký công khai và tự động chuyển quyền Trọng Tài tạm thời nếu Chủ phòng mất mạng quá 30 giây). Làm xong hãy kiểm tra thực tế, cập nhật HUONG_DAN_CHO_TOI.md, báo cáo cho tôi và commit lên repo.`
+#### ✅ Bước 3.2 — Làm Bảng Trọng Tài 4 Nút & Tự Chuyển Quyền Sau 30 Giây Khi Chủ Phòng Mất Mạng *(ĐÃ XONG)*
+- **Kết quả đã nghiệm thu:** Đã hoàn thiện đủ **4 nút Trọng Tài** (`Tạm dừng/Tiếp tục`, `Hoàn tác 1 bước`, `Bỏ qua pha chờ`, `Kết thúc ván về phòng chờ`) qua cả WebSocket và HTTP, ghi nhật ký công khai `refereeAuditLog` không bị xóa kể cả khi Hoàn tác, và bộ đếm **30 giây** tự chuyển quyền `actingHostUserId` sang người chơi đang online kế tiếp nếu Chủ phòng mất kết nối (tự trả lại quyền ngay khi Chủ phòng gốc vào lại). Đạt **21/21** bài kiểm tra tích hợp (`100%, 0 lỗi`).
 
 ---
 
-### 🟣 CHẶNG 4: Làm Màn Hình Giao Diện Windows Để Bạn Nhìn & Bấm Thử Trực Tiếp
+### 🟣 CHẶNG 4: Làm Màn Hình Giao Diện Windows Để Bạn Nhìn & Bấm Thử Trực Tiếp (👉 BẠN ĐANG Ở CHẶNG NÀY)
 
-#### ⏳ Bước 4.1 — Màn Hình Đăng Nhập Google, Đánh Thức Máy Chủ, Phòng Chờ & Trang Thống Kê
+#### 👉 Bước 4.1 (BẠN ĐANG Ở ĐÂY) — Màn Hình Đăng Nhập Google, Đánh Thức Máy Chủ, Phòng Chờ & Trang Thống Kê
 - **💬 Câu lệnh bạn Copy & Gửi cho AI:**
   > `Hãy thực hiện Bước 4.1 trong TASKS.md theo đúng DESIGN.md (Màn hình chờ đánh thức máy chủ Cloud 0đ, Đăng nhập Google, Sảnh tạo/vào phòng, Phòng chờ 4–8 người và Trang lọc Thống kê). Làm xong hãy cập nhật HUONG_DAN_CHO_TOI.md và mở giao diện lên để tôi xem và bấm thử.`
 - **👀 Việc của bạn ở bước này:** Nhìn màn hình hiện lên, xem chữ tiếng Việt có dễ đọc không, màu sắc có dịu mắt không. Nếu chỗ nào muốn chữ to hơn hay đổi vị trí nút, bạn cứ nói thẳng bằng lời thường cho AI sửa ngay!

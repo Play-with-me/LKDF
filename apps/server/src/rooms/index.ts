@@ -1,15 +1,24 @@
 import { randomBytes, randomUUID } from 'node:crypto';
 import {
+  applyGameAction,
+  autoSelectTimedOutHeroes,
+  chooseBotHero,
   createInitialMatchSetup,
+  decideBotAction,
+  getPendingPrompt,
   HERO_BY_ID,
   projectStateForPlayer,
   selectLordHero,
   selectPlayerHero,
   startMatchCombat,
   TIMER_PRESETS,
+  type GameAction,
   type HeroId,
   type MasterGameState,
+  type PlayerCount,
   type PlayerViewState,
+  type RefereeActionType,
+  type RefereeAuditEntry,
   type RoomSeat,
   type RoomState,
   type TimerPreset,
@@ -27,6 +36,7 @@ export const ROOMS_MODULE_READY = true;
 const ROOM_CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const ROOM_CODE_LENGTH = 6;
 const MAX_UNDO_HISTORY = 5;
+const DEFAULT_HOST_FAILOVER_DELAY_MS = 30_000;
 
 export interface RoomViewerPayload {
   readonly roomState: RoomState;
@@ -34,6 +44,7 @@ export interface RoomViewerPayload {
   readonly phaseDeadlineAt: string | null;
   readonly pausedRemainingMs: number | null;
   readonly playerView: PlayerViewState | null;
+  readonly refereeAuditLog: readonly RefereeAuditEntry[];
 }
 
 export type RoomOperationResult<T> =
@@ -45,17 +56,28 @@ export type RoomOperationResult<T> =
       readonly messageVi: string;
     };
 
+export interface ApplyPlayerActionOutcome {
+  readonly viewerPayload: RoomViewerPayload;
+  readonly silentPass: boolean;
+}
+
+export type RoomUpdateListener = (roomCode: string, reason: string) => void;
+
 interface MutableRoomRecord {
   roomState: RoomState;
   masterGameState: MasterGameState | null;
   undoHistory: MasterGameState[];
+  lastMatchAuditLog: RefereeAuditEntry[];
   phaseDeadlineAt: string | null;
   pausedRemainingMs: number | null;
+  matchStartedAtMs: number | null;
   updatedAt: string;
 }
 
 export interface RoomManager {
   restoreFromPersistence(): Promise<number>;
+  getAllActiveRoomCodes(): readonly string[];
+  onRoomUpdated(listener: RoomUpdateListener): () => void;
   getActiveRoomCodeForUser(userId: string): string | null;
   getRoomViewForUser(
     userId: string,
@@ -77,7 +99,9 @@ export interface RoomManager {
   leaveRoom(
     userId: string,
     roomCode: string,
-  ): Promise<RoomOperationResult<{ readonly deleted: boolean; readonly room: RoomViewerPayload | null }>>;
+  ): Promise<
+    RoomOperationResult<{ readonly deleted: boolean; readonly room: RoomViewerPayload | null }>
+  >;
   startMatch(
     userId: string,
     roomCode: string,
@@ -89,6 +113,43 @@ export interface RoomManager {
     heroId: HeroId,
     options?: { readonly rng?: () => number },
   ): Promise<RoomOperationResult<RoomViewerPayload>>;
+  applyPlayerAction(
+    userId: string,
+    roomCode: string,
+    action: GameAction,
+    options?: { readonly rng?: () => number },
+  ): Promise<RoomOperationResult<ApplyPlayerActionOutcome>>;
+  resolveSimulatedNullification(
+    roomCode: string,
+    expectedFrameId: string,
+    options?: { readonly rng?: () => number },
+  ): Promise<RoomOperationResult<RoomSnapshotRecord>>;
+  setUserConnectionAndTakeover(
+    userId: string,
+    roomCode: string,
+    params: {
+      readonly connectionStatus: 'ONLINE' | 'DISCONNECTED';
+      readonly isBotTakeover?: boolean;
+      readonly logMessageVi?: string;
+    },
+  ): Promise<RoomOperationResult<RoomViewerPayload>>;
+  executeBotActionIfEligible(
+    roomCode: string,
+    options?: { readonly rng?: () => number },
+  ): Promise<{ readonly acted: boolean; readonly roomCode: string }>;
+  handlePhaseTimeout(
+    roomCode: string,
+    options?: { readonly rng?: () => number },
+  ): Promise<{ readonly handled: boolean; readonly roomCode: string }>;
+  applyRefereeAction(
+    actorUserId: string,
+    roomCode: string,
+    actionType: RefereeActionType,
+    options?: { readonly rng?: () => number },
+  ): Promise<RoomOperationResult<RoomViewerPayload>>;
+  transferActingHostAfterTimeout(
+    roomCode: string,
+  ): Promise<{ readonly transferred: boolean; readonly roomCode: string }>;
   commitMatchStep(
     roomCode: string,
     nextMasterState: MasterGameState,
@@ -115,6 +176,7 @@ function computePhaseDeadlineIso(
   timerPreset: TimerPreset,
   isTimerPaused: boolean,
   nowMs: number,
+  timerScale: number,
 ): string | null {
   if (!masterState || isTimerPaused || masterState.turnPhase === 'GAME_OVER') {
     return null;
@@ -126,7 +188,8 @@ function computePhaseDeadlineIso(
   } else if (masterState.interruptStack.length > 0) {
     seconds = config.reactionSeconds;
   }
-  return new Date(nowMs + seconds * 1000).toISOString();
+  const durationMs = Math.max(20, Math.round(seconds * 1000 * timerScale));
+  return new Date(nowMs + durationMs).toISOString();
 }
 
 function buildViewerPayload(
@@ -141,6 +204,8 @@ function buildViewerPayload(
     playerView: record.masterGameState
       ? projectStateForPlayer(record.masterGameState, userId)
       : null,
+    refereeAuditLog:
+      record.masterGameState?.refereeAuditLog ?? record.lastMatchAuditLog,
   };
 }
 
@@ -153,6 +218,158 @@ function toSnapshotRecord(record: MutableRoomRecord): RoomSnapshotRecord {
     pausedRemainingMs: record.pausedRemainingMs,
     updatedAt: record.updatedAt,
   };
+}
+
+function syncTakeoverOnState(
+  record: MutableRoomRecord,
+  userId: string,
+  params: {
+    readonly connectionStatus?: 'ONLINE' | 'DISCONNECTED';
+    readonly isBotTakeover?: boolean;
+    readonly logMessageVi?: string;
+  },
+): boolean {
+  let changed = false;
+
+  const updatedSeats = record.roomState.seats.map((seat) => {
+    if (seat.userId !== userId) {
+      return seat;
+    }
+    const nextConn = params.connectionStatus ?? seat.connectionStatus;
+    const nextTakeover = params.isBotTakeover ?? seat.isBotTakeover;
+    if (seat.connectionStatus !== nextConn || seat.isBotTakeover !== nextTakeover) {
+      changed = true;
+    }
+    return {
+      ...seat,
+      connectionStatus: nextConn,
+      isBotTakeover: nextTakeover,
+    };
+  });
+
+  if (changed) {
+    record.roomState = {
+      ...record.roomState,
+      seats: updatedSeats,
+    };
+  }
+
+  if (record.masterGameState && record.masterGameState.turnPhase !== 'GAME_OVER') {
+    let playerChanged = false;
+    const updatedPlayers = record.masterGameState.players.map((p) => {
+      if (p.userId !== userId) {
+        return p;
+      }
+      const nextTakeover = params.isBotTakeover ?? p.isBotTakeover;
+      if (p.isBotTakeover !== nextTakeover) {
+        playerChanged = true;
+        changed = true;
+      }
+      return nextTakeover === p.isBotTakeover ? p : { ...p, isBotTakeover: nextTakeover };
+    });
+
+    if (playerChanged || params.logMessageVi) {
+      record.masterGameState = {
+        ...record.masterGameState,
+        players: updatedPlayers,
+        ...(params.logMessageVi
+          ? {
+              actionLog: [...record.masterGameState.actionLog, params.logMessageVi],
+            }
+          : {}),
+      };
+      changed = true;
+    }
+  }
+
+  return changed;
+}
+
+function pickClockwiseOnlineSeat(
+  seats: readonly RoomSeat[],
+  afterUserId: string,
+  excludeUserId?: string,
+): RoomSeat | null {
+  const ordered = [...seats].sort((a, b) => a.seatIndex - b.seatIndex);
+  if (ordered.length === 0) {
+    return null;
+  }
+  const startIdx = ordered.findIndex((s) => s.userId === afterUserId);
+  const anchor = startIdx === -1 ? 0 : startIdx;
+  for (let offset = 1; offset <= ordered.length; offset += 1) {
+    const candidate = ordered[(anchor + offset) % ordered.length];
+    if (
+      candidate &&
+      candidate.userId !== afterUserId &&
+      candidate.userId !== excludeUserId &&
+      candidate.connectionStatus === 'ONLINE'
+    ) {
+      return candidate;
+    }
+  }
+  return null;
+}
+
+function advanceSkippedPhaseState(
+  master: MasterGameState,
+  rng: () => number,
+): MasterGameState {
+  if (master.turnPhase === 'HERO_SELECT') {
+    let nextState = autoSelectTimedOutHeroes(master, rng);
+    if (nextState.heroDraft?.stage === 'COMPLETED') {
+      nextState = startMatchCombat(nextState, rng);
+    }
+    return nextState;
+  }
+
+  const top = master.interruptStack[master.interruptStack.length - 1];
+  if (top?.kind === 'WAIT_NULLIFICATION') {
+    if (top.isSimulatedDelay) {
+      return applyGameAction(
+        master,
+        { type: 'RESOLVE_SIMULATED_NULLIFICATION' },
+        rng,
+      );
+    }
+    let nextState = master;
+    const remainingEligible = top.eligibleSeats.filter(
+      (s) => !top.passedSeats.includes(s),
+    );
+    for (const seatIndex of remainingEligible) {
+      const currentTop =
+        nextState.interruptStack[nextState.interruptStack.length - 1];
+      if (!currentTop || currentTop.id !== top.id) {
+        break;
+      }
+      nextState = applyGameAction(
+        nextState,
+        { type: 'RESPOND_NULLIFICATION', seatIndex, cardId: null },
+        rng,
+      );
+    }
+    return nextState;
+  }
+
+  if (master.interruptStack.length === 0 && master.turnPhase === 'PLAY') {
+    return applyGameAction(
+      master,
+      { type: 'END_PLAY_PHASE', seatIndex: master.currentTurnSeat },
+      rng,
+    );
+  }
+
+  const prompt = getPendingPrompt(master);
+  const actorSeat = prompt?.actorSeats[0];
+  if (actorSeat === undefined) {
+    return master;
+  }
+  const actor = master.players.find((p) => p.seatIndex === actorSeat);
+  if (!actor) {
+    return master;
+  }
+  const actorView = projectStateForPlayer(master, actor.userId);
+  const fallbackAction = decideBotAction(actorView, rng);
+  return applyGameAction(master, fallbackAction, rng);
 }
 
 function mapSetupOrHeroErrorVi(err: unknown): {
@@ -191,7 +408,7 @@ function mapSetupOrHeroErrorVi(err: unknown): {
       return {
         statusCode: 400,
         code,
-        messageVi: `Không thể thực hiện thao tác: ${code}.`,
+        messageVi: `Hành động không hợp lệ: ${code}.`,
       };
   }
 }
@@ -200,12 +417,26 @@ export function createRoomManager(deps: {
   readonly persistence: PersistenceStore;
   readonly authService: AuthService;
   readonly nowFn?: () => number;
+  readonly timerScale?: number;
+  readonly hostFailoverDelayMs?: number;
+  readonly defaultRng?: () => number;
 }): RoomManager {
   const roomsByCode = new Map<string, MutableRoomRecord>();
   const roomCodeByUserId = new Map<string, string>();
   const roomLocks = new Map<string, Promise<unknown>>();
+  const updateListeners = new Set<RoomUpdateListener>();
   let globalOpQueue: Promise<unknown> = Promise.resolve();
   const getNowMs = deps.nowFn ?? (() => Date.now());
+  const timerScale = deps.timerScale ?? 1;
+  const hostFailoverDelayMs =
+    deps.hostFailoverDelayMs ?? DEFAULT_HOST_FAILOVER_DELAY_MS;
+  const fallbackRng = deps.defaultRng ?? Math.random;
+
+  const emitRoomUpdated = (roomCode: string, reason: string): void => {
+    for (const listener of updateListeners) {
+      listener(roomCode, reason);
+    }
+  };
 
   const runWithGlobalLock = <T>(fn: () => Promise<T>): Promise<T> => {
     const next = globalOpQueue.then(fn, fn);
@@ -232,19 +463,119 @@ export function createRoomManager(deps: {
     return next;
   };
 
+  const archiveFinishedMatch = async (
+    record: MutableRoomRecord,
+    masterState: MasterGameState,
+    nowMs: number,
+  ): Promise<void> => {
+    if (!masterState.winningFaction) {
+      return;
+    }
+    const allHaveHero = masterState.players.every((p) => p.heroId !== null);
+    if (!allHaveHero) {
+      return;
+    }
+    const durationSeconds = record.matchStartedAtMs
+      ? Math.max(1, Math.round((nowMs - record.matchStartedAtMs) / 1000))
+      : 1;
+    await deps.persistence.recordMatchResult({
+      matchId: masterState.matchId,
+      roomCode: record.roomState.roomCode,
+      playerCount: masterState.players.length as PlayerCount,
+      winningFaction: masterState.winningFaction,
+      durationSeconds,
+      participants: masterState.players.map((p) => ({
+        userId: p.userId,
+        displayName: p.displayName,
+        seatIndex: p.seatIndex,
+        identity: p.identity,
+        heroId: p.heroId!,
+        isWinner: masterState.winnerUserIds.includes(p.userId),
+        survived: p.alive,
+      })),
+      finishedAt: new Date(nowMs).toISOString(),
+    });
+  };
+
+  const persistAfterMasterTransition = async (
+    record: MutableRoomRecord,
+    nextMasterState: MasterGameState,
+    nowMs: number,
+    options?: { readonly pushUndo?: boolean; readonly event?: string },
+  ): Promise<void> => {
+    if (options?.pushUndo && record.masterGameState) {
+      record.undoHistory = [
+        ...record.undoHistory,
+        record.masterGameState,
+      ].slice(-MAX_UNDO_HISTORY);
+    }
+
+    record.masterGameState = nextMasterState;
+    if (nextMasterState.turnPhase === 'GAME_OVER') {
+      record.roomState = { ...record.roomState, status: 'FINISHED' };
+      record.undoHistory = [];
+      record.phaseDeadlineAt = null;
+      record.pausedRemainingMs = null;
+      record.updatedAt = new Date(nowMs).toISOString();
+      await deps.persistence.saveRoomSnapshot(toSnapshotRecord(record));
+      await archiveFinishedMatch(record, nextMasterState, nowMs);
+    } else {
+      record.phaseDeadlineAt = computePhaseDeadlineIso(
+        nextMasterState,
+        record.roomState.timerPreset,
+        record.roomState.isTimerPaused,
+        nowMs,
+        timerScale,
+      );
+      record.updatedAt = new Date(nowMs).toISOString();
+      await deps.persistence.saveRoomSnapshot(toSnapshotRecord(record));
+    }
+    emitRoomUpdated(record.roomState.roomCode, options?.event ?? 'STATE_UPDATED');
+  };
+
   return {
+    onRoomUpdated(listener: RoomUpdateListener): () => void {
+      updateListeners.add(listener);
+      return () => {
+        updateListeners.delete(listener);
+      };
+    },
+
+    getAllActiveRoomCodes(): readonly string[] {
+      return Array.from(roomsByCode.keys());
+    },
+
     async restoreFromPersistence(): Promise<number> {
       roomsByCode.clear();
       roomCodeByUserId.clear();
 
+      const nowMs = getNowMs();
       const snapshots = await deps.persistence.listRecoverableRoomSnapshots();
       for (const snap of snapshots) {
+        let phaseDeadlineAt = snap.phaseDeadlineAt;
+        if (
+          snap.roomState.status === 'IN_GAME' &&
+          !snap.roomState.isTimerPaused &&
+          snap.masterGameState &&
+          (!phaseDeadlineAt || Date.parse(phaseDeadlineAt) <= nowMs)
+        ) {
+          phaseDeadlineAt = computePhaseDeadlineIso(
+            snap.masterGameState,
+            snap.roomState.timerPreset,
+            false,
+            nowMs,
+            timerScale,
+          );
+        }
+
         const record: MutableRoomRecord = {
           roomState: snap.roomState,
           masterGameState: snap.masterGameState,
           undoHistory: [...snap.undoHistory],
-          phaseDeadlineAt: snap.phaseDeadlineAt,
+          lastMatchAuditLog: [],
+          phaseDeadlineAt,
           pausedRemainingMs: snap.pausedRemainingMs,
+          matchStartedAtMs: snap.roomState.status === 'IN_GAME' ? nowMs : null,
           updatedAt: snap.updatedAt,
         };
         roomsByCode.set(snap.roomState.roomCode, record);
@@ -336,8 +667,10 @@ export function createRoomManager(deps: {
           roomState,
           masterGameState: null,
           undoHistory: [],
+          lastMatchAuditLog: [],
           phaseDeadlineAt: null,
           pausedRemainingMs: null,
+          matchStartedAtMs: null,
           updatedAt: nowIso,
         };
 
@@ -346,6 +679,7 @@ export function createRoomManager(deps: {
 
         await deps.persistence.saveRoomSnapshot(toSnapshotRecord(record));
         await deps.persistence.setUserActiveRoom(profile.userId, roomCode);
+        emitRoomUpdated(roomCode, 'ROOM_CREATED');
 
         return { ok: true, data: buildViewerPayload(record, profile.userId) };
       });
@@ -424,6 +758,7 @@ export function createRoomManager(deps: {
         roomCodeByUserId.set(profile.userId, roomCode);
         await deps.persistence.saveRoomSnapshot(toSnapshotRecord(record));
         await deps.persistence.setUserActiveRoom(profile.userId, roomCode);
+        emitRoomUpdated(roomCode, 'PLAYER_JOINED');
 
         return { ok: true, data: buildViewerPayload(record, profile.userId) };
       });
@@ -473,6 +808,7 @@ export function createRoomManager(deps: {
         };
         record.updatedAt = new Date(getNowMs()).toISOString();
         await deps.persistence.saveRoomSnapshot(toSnapshotRecord(record));
+        emitRoomUpdated(roomCode, 'TIMER_UPDATED');
 
         return { ok: true, data: buildViewerPayload(record, userId) };
       });
@@ -511,8 +847,7 @@ export function createRoomManager(deps: {
             ok: false,
             statusCode: 409,
             code: 'CANNOT_LEAVE_IN_GAME',
-            messageVi:
-              'Ván đấu đang diễn ra, không thể tự rời ghế giữa chừng.',
+            messageVi: 'Ván đấu đang diễn ra, không thể tự rời ghế giữa chừng.',
           };
         }
 
@@ -526,6 +861,7 @@ export function createRoomManager(deps: {
         if (remainingSeats.length === 0) {
           roomsByCode.delete(roomCode);
           await deps.persistence.deleteRoomSnapshot(roomCode);
+          emitRoomUpdated(roomCode, 'ROOM_DELETED');
           return { ok: true, data: { deleted: true, room: null } };
         }
 
@@ -546,6 +882,7 @@ export function createRoomManager(deps: {
         };
         record.updatedAt = new Date(getNowMs()).toISOString();
         await deps.persistence.saveRoomSnapshot(toSnapshotRecord(record));
+        emitRoomUpdated(roomCode, 'PLAYER_LEFT');
 
         return {
           ok: true,
@@ -615,6 +952,7 @@ export function createRoomManager(deps: {
         }
 
         const matchId = `match_${randomUUID().replace(/-/g, '').slice(0, 16)}`;
+        const rng = options?.rng ?? fallbackRng;
         const setupState = createInitialMatchSetup({
           matchId,
           seats: record.roomState.seats.map((seat) => ({
@@ -622,7 +960,7 @@ export function createRoomManager(deps: {
             displayName: seat.displayName,
             avatarUrl: seat.avatarUrl,
           })),
-          ...(options?.rng ? { rng: options.rng } : {}),
+          rng,
         });
 
         const nowMs = getNowMs();
@@ -631,18 +969,14 @@ export function createRoomManager(deps: {
           status: 'IN_GAME',
           isTimerPaused: false,
         };
-        record.masterGameState = setupState;
         record.undoHistory = [];
+        record.lastMatchAuditLog = [];
         record.pausedRemainingMs = null;
-        record.phaseDeadlineAt = computePhaseDeadlineIso(
-          setupState,
-          record.roomState.timerPreset,
-          false,
-          nowMs,
-        );
-        record.updatedAt = new Date(nowMs).toISOString();
+        record.matchStartedAtMs = nowMs;
 
-        await deps.persistence.saveRoomSnapshot(toSnapshotRecord(record));
+        await persistAfterMasterTransition(record, setupState, nowMs, {
+          event: 'MATCH_STARTED',
+        });
         return { ok: true, data: buildViewerPayload(record, userId) };
       });
     },
@@ -705,6 +1039,7 @@ export function createRoomManager(deps: {
           };
         }
 
+        const rng = options?.rng ?? fallbackRng;
         let nextState: MasterGameState;
         try {
           if (draft.stage === 'LORD_SELECTING') {
@@ -712,7 +1047,7 @@ export function createRoomManager(deps: {
               record.masterGameState,
               seat.seatIndex,
               heroId,
-              options?.rng,
+              rng,
             );
           } else if (draft.stage === 'OTHERS_SELECTING') {
             nextState = selectPlayerHero(
@@ -730,7 +1065,7 @@ export function createRoomManager(deps: {
           }
 
           if (nextState.heroDraft?.stage === 'COMPLETED') {
-            nextState = startMatchCombat(nextState, options?.rng);
+            nextState = startMatchCombat(nextState, rng);
           }
         } catch (err) {
           return {
@@ -739,18 +1074,884 @@ export function createRoomManager(deps: {
           };
         }
 
-        const nowMs = getNowMs();
-        record.masterGameState = nextState;
-        record.phaseDeadlineAt = computePhaseDeadlineIso(
-          nextState,
-          record.roomState.timerPreset,
-          record.roomState.isTimerPaused,
-          nowMs,
-        );
-        record.updatedAt = new Date(nowMs).toISOString();
-
-        await deps.persistence.saveRoomSnapshot(toSnapshotRecord(record));
+        syncTakeoverOnState(record, userId, {
+          connectionStatus: 'ONLINE',
+          isBotTakeover: false,
+        });
+        await persistAfterMasterTransition(record, nextState, getNowMs(), {
+          event: 'HERO_SELECTED',
+        });
         return { ok: true, data: buildViewerPayload(record, userId) };
+      });
+    },
+
+    async applyPlayerAction(
+      userId: string,
+      roomCodeRaw: string,
+      action: GameAction,
+      options?: { readonly rng?: () => number },
+    ): Promise<RoomOperationResult<ApplyPlayerActionOutcome>> {
+      const roomCode = normalizeRoomCode(roomCodeRaw);
+      return runWithRoomLock(roomCode, async () => {
+        const record = roomsByCode.get(roomCode);
+        if (!record) {
+          return {
+            ok: false,
+            statusCode: 404,
+            code: 'ROOM_NOT_FOUND',
+            messageVi: 'Không tìm thấy phòng chơi này.',
+          };
+        }
+
+        if (record.roomState.status !== 'IN_GAME' || !record.masterGameState) {
+          return {
+            ok: false,
+            statusCode: 409,
+            code: 'MATCH_NOT_ACTIVE',
+            messageVi: 'Phòng hiện không ở trong ván đấu.',
+          };
+        }
+
+        if (record.roomState.isTimerPaused) {
+          return {
+            ok: false,
+            statusCode: 409,
+            code: 'MATCH_PAUSED',
+            messageVi: 'Ván đấu đang được Trọng Tài tạm dừng.',
+          };
+        }
+
+        if (action.type === 'RESOLVE_SIMULATED_NULLIFICATION') {
+          return {
+            ok: false,
+            statusCode: 403,
+            code: 'FORBIDDEN_ACTION',
+            messageVi: 'Máy khách không được tự kết thúc nhịp chờ Vô Giải giả lập.',
+          };
+        }
+
+        const seatPlayer = record.masterGameState.players.find(
+          (p) => p.userId === userId,
+        );
+        if (!seatPlayer) {
+          return {
+            ok: false,
+            statusCode: 403,
+            code: 'NOT_ROOM_MEMBER',
+            messageVi: 'Bạn không thuộc bàn đấu này.',
+          };
+        }
+
+        if (action.seatIndex !== seatPlayer.seatIndex) {
+          return {
+            ok: false,
+            statusCode: 403,
+            code: 'UNAUTHORIZED_SEAT',
+            messageVi: 'Bạn chỉ được thao tác trên đúng ghế của mình.',
+          };
+        }
+
+        // Khôi phục quyền điều khiển tay nếu người chơi bấm thao tác trực tiếp
+        syncTakeoverOnState(record, userId, {
+          connectionStatus: 'ONLINE',
+          isBotTakeover: false,
+        });
+
+        const topInterrupt =
+          record.masterGameState.interruptStack[
+            record.masterGameState.interruptStack.length - 1
+          ];
+
+        if (
+          action.type === 'RESPOND_NULLIFICATION' &&
+          action.cardId === null &&
+          topInterrupt?.kind === 'WAIT_NULLIFICATION'
+        ) {
+          if (
+            topInterrupt.isSimulatedDelay ||
+            !topInterrupt.eligibleSeats.includes(seatPlayer.seatIndex)
+          ) {
+            // Chống lộ thông tin: người chơi không cầm Vô Giải bấm Bỏ qua được xác nhận im lặng
+            return {
+              ok: true,
+              data: {
+                viewerPayload: buildViewerPayload(record, userId),
+                silentPass: true,
+              },
+            };
+          }
+        }
+
+        const rng = options?.rng ?? fallbackRng;
+        let nextState: MasterGameState;
+        try {
+          nextState = applyGameAction(record.masterGameState, action, rng);
+
+          if (
+            action.type === 'SET_AUTO_SKIP_NULLIFICATION' &&
+            action.enabled &&
+            topInterrupt?.kind === 'WAIT_NULLIFICATION' &&
+            !topInterrupt.isSimulatedDelay &&
+            topInterrupt.eligibleSeats.includes(seatPlayer.seatIndex) &&
+            !topInterrupt.passedSeats.includes(seatPlayer.seatIndex)
+          ) {
+            nextState = applyGameAction(
+              nextState,
+              {
+                type: 'RESPOND_NULLIFICATION',
+                seatIndex: seatPlayer.seatIndex,
+                cardId: null,
+              },
+              rng,
+            );
+          }
+        } catch (err) {
+          return {
+            ok: false,
+            ...mapSetupOrHeroErrorVi(err),
+          };
+        }
+
+        const shouldPushUndo = action.type !== 'SET_AUTO_SKIP_NULLIFICATION';
+        await persistAfterMasterTransition(record, nextState, getNowMs(), {
+          pushUndo: shouldPushUndo,
+          event: `ACTION:${action.type}`,
+        });
+
+        return {
+          ok: true,
+          data: {
+            viewerPayload: buildViewerPayload(record, userId),
+            silentPass: false,
+          },
+        };
+      });
+    },
+
+    async resolveSimulatedNullification(
+      roomCodeRaw: string,
+      expectedFrameId: string,
+      options?: { readonly rng?: () => number },
+    ): Promise<RoomOperationResult<RoomSnapshotRecord>> {
+      const roomCode = normalizeRoomCode(roomCodeRaw);
+      return runWithRoomLock(roomCode, async () => {
+        const record = roomsByCode.get(roomCode);
+        if (!record || record.roomState.status !== 'IN_GAME' || !record.masterGameState) {
+          return {
+            ok: false,
+            statusCode: 404,
+            code: 'ROOM_OR_MATCH_NOT_ACTIVE',
+            messageVi: 'Phòng không còn trong ván đấu.',
+          };
+        }
+
+        if (record.roomState.isTimerPaused) {
+          return {
+            ok: false,
+            statusCode: 409,
+            code: 'MATCH_PAUSED',
+            messageVi: 'Ván đấu đang tạm dừng.',
+          };
+        }
+
+        const top =
+          record.masterGameState.interruptStack[
+            record.masterGameState.interruptStack.length - 1
+          ];
+        if (
+          !top ||
+          top.kind !== 'WAIT_NULLIFICATION' ||
+          top.id !== expectedFrameId ||
+          !top.isSimulatedDelay
+        ) {
+          return {
+            ok: false,
+            statusCode: 409,
+            code: 'SIMULATED_FRAME_MISMATCH',
+            messageVi: 'Nhịp Vô Giải giả lập đã kết thúc trước đó.',
+          };
+        }
+
+        const nextState = applyGameAction(
+          record.masterGameState,
+          { type: 'RESOLVE_SIMULATED_NULLIFICATION' },
+          options?.rng ?? fallbackRng,
+        );
+
+        await persistAfterMasterTransition(record, nextState, getNowMs(), {
+          pushUndo: false,
+          event: 'SIMULATED_NULLIFICATION_RESOLVED',
+        });
+
+        return { ok: true, data: toSnapshotRecord(record) };
+      });
+    },
+
+    async setUserConnectionAndTakeover(
+      userId: string,
+      roomCodeRaw: string,
+      params: {
+        readonly connectionStatus: 'ONLINE' | 'DISCONNECTED';
+        readonly isBotTakeover?: boolean;
+        readonly logMessageVi?: string;
+      },
+    ): Promise<RoomOperationResult<RoomViewerPayload>> {
+      const roomCode = normalizeRoomCode(roomCodeRaw);
+      return runWithRoomLock(roomCode, async () => {
+        const record = roomsByCode.get(roomCode);
+        if (!record) {
+          return {
+            ok: false,
+            statusCode: 404,
+            code: 'ROOM_NOT_FOUND',
+            messageVi: 'Không tìm thấy phòng chơi này.',
+          };
+        }
+
+        const isMember = record.roomState.seats.some((s) => s.userId === userId);
+        if (!isMember) {
+          return {
+            ok: false,
+            statusCode: 403,
+            code: 'NOT_ROOM_MEMBER',
+            messageVi: 'Bạn không thuộc phòng này.',
+          };
+        }
+
+        const nowMs = getNowMs();
+        let changed = syncTakeoverOnState(record, userId, params);
+
+        const ownerId = record.roomState.ownerUserId;
+        const actingId = record.roomState.actingHostUserId;
+        const targetSeat = record.roomState.seats.find((s) => s.userId === userId);
+        const actorName = targetSeat?.displayName ?? userId;
+
+        if (userId === ownerId && params.connectionStatus === 'DISCONNECTED') {
+          if (!record.roomState.hostDisconnectedAt) {
+            record.roomState = {
+              ...record.roomState,
+              hostDisconnectedAt: new Date(nowMs).toISOString(),
+            };
+            changed = true;
+          }
+        } else if (userId === ownerId && params.connectionStatus === 'ONLINE') {
+          if (record.roomState.hostDisconnectedAt !== null || actingId !== ownerId) {
+            const hadDelegatedHost = actingId !== ownerId;
+            record.roomState = {
+              ...record.roomState,
+              hostDisconnectedAt: null,
+              actingHostUserId: ownerId,
+            };
+            if (hadDelegatedHost && record.masterGameState) {
+              record.masterGameState = {
+                ...record.masterGameState,
+                actionLog: [
+                  ...record.masterGameState.actionLog,
+                  `Chủ phòng gốc ${actorName} đã kết nối lại và nhận lại quyền Trọng Tài.`,
+                ],
+              };
+            }
+            changed = true;
+          }
+        } else if (userId !== ownerId && params.connectionStatus === 'DISCONNECTED' && actingId === userId) {
+          const nextOnline = pickClockwiseOnlineSeat(
+            record.roomState.seats,
+            userId,
+            ownerId,
+          );
+          const nextHostId = nextOnline ? nextOnline.userId : ownerId;
+          record.roomState = {
+            ...record.roomState,
+            actingHostUserId: nextHostId,
+          };
+          if (nextOnline && record.masterGameState) {
+            record.masterGameState = {
+              ...record.masterGameState,
+              actionLog: [
+                ...record.masterGameState.actionLog,
+                `Trọng Tài tạm thời ${actorName} mất kết nối — quyền Trọng Tài chuyển sang ${nextOnline.displayName}.`,
+              ],
+            };
+          }
+          changed = true;
+        } else if (
+          userId !== ownerId &&
+          params.connectionStatus === 'ONLINE' &&
+          record.roomState.hostDisconnectedAt !== null &&
+          actingId === ownerId &&
+          nowMs >= Date.parse(record.roomState.hostDisconnectedAt) + hostFailoverDelayMs
+        ) {
+          record.roomState = {
+            ...record.roomState,
+            actingHostUserId: userId,
+          };
+          if (record.masterGameState) {
+            record.masterGameState = {
+              ...record.masterGameState,
+              actionLog: [
+                ...record.masterGameState.actionLog,
+                `Chủ phòng gốc đang mất kết nối quá 30 giây — quyền Trọng Tài tạm thời giao cho ${actorName}.`,
+              ],
+            };
+          }
+          changed = true;
+        }
+
+        if (
+          params.connectionStatus === 'ONLINE' &&
+          params.isBotTakeover === false &&
+          record.roomState.status === 'IN_GAME' &&
+          !record.roomState.isTimerPaused &&
+          record.masterGameState
+        ) {
+          if (
+            !record.phaseDeadlineAt ||
+            Date.parse(record.phaseDeadlineAt) <= nowMs + 1000
+          ) {
+            record.phaseDeadlineAt = computePhaseDeadlineIso(
+              record.masterGameState,
+              record.roomState.timerPreset,
+              false,
+              nowMs,
+              timerScale,
+            );
+          }
+        }
+
+        if (changed) {
+          record.updatedAt = new Date(nowMs).toISOString();
+          await deps.persistence.saveRoomSnapshot(toSnapshotRecord(record));
+          emitRoomUpdated(
+            roomCode,
+            params.connectionStatus === 'ONLINE'
+              ? 'PLAYER_RECLAIMED'
+              : 'PLAYER_DISCONNECTED',
+          );
+        }
+
+        return { ok: true, data: buildViewerPayload(record, userId) };
+      });
+    },
+
+    async executeBotActionIfEligible(
+      roomCodeRaw: string,
+      options?: { readonly rng?: () => number },
+    ): Promise<{ readonly acted: boolean; readonly roomCode: string }> {
+      const roomCode = normalizeRoomCode(roomCodeRaw);
+      return runWithRoomLock(roomCode, async () => {
+        const record = roomsByCode.get(roomCode);
+        if (
+          !record ||
+          record.roomState.status !== 'IN_GAME' ||
+          record.roomState.isTimerPaused ||
+          !record.masterGameState
+        ) {
+          return { acted: false, roomCode };
+        }
+
+        const master = record.masterGameState;
+        const prompt = getPendingPrompt(master);
+        if (!prompt || prompt.isSimulatedDelay) {
+          return { acted: false, roomCode };
+        }
+
+        const botActorSeat = prompt.actorSeats.find((seatIndex) => {
+          const p = master.players.find((pl) => pl.seatIndex === seatIndex);
+          return p?.isBotTakeover === true;
+        });
+
+        if (botActorSeat === undefined) {
+          return { acted: false, roomCode };
+        }
+
+        const actor = master.players.find((p) => p.seatIndex === botActorSeat);
+        if (!actor) {
+          return { acted: false, roomCode };
+        }
+
+        const rng = options?.rng ?? fallbackRng;
+        const botView = projectStateForPlayer(master, actor.userId);
+        let nextState: MasterGameState;
+
+        if (master.turnPhase === 'HERO_SELECT') {
+          const heroPick = chooseBotHero(botView);
+          nextState =
+            master.heroDraft?.stage === 'LORD_SELECTING'
+              ? selectLordHero(master, botActorSeat, heroPick, rng)
+              : selectPlayerHero(master, botActorSeat, heroPick);
+          if (nextState.heroDraft?.stage === 'COMPLETED') {
+            nextState = startMatchCombat(nextState, rng);
+          }
+        } else {
+          const botAction = decideBotAction(botView, rng);
+          nextState = applyGameAction(master, botAction, rng);
+        }
+
+        await persistAfterMasterTransition(record, nextState, getNowMs(), {
+          pushUndo: true,
+          event: 'BOT_ACTION',
+        });
+        return { acted: true, roomCode };
+      });
+    },
+
+    async handlePhaseTimeout(
+      roomCodeRaw: string,
+      options?: { readonly rng?: () => number },
+    ): Promise<{ readonly handled: boolean; readonly roomCode: string }> {
+      const roomCode = normalizeRoomCode(roomCodeRaw);
+      return runWithRoomLock(roomCode, async () => {
+        const record = roomsByCode.get(roomCode);
+        if (
+          !record ||
+          record.roomState.status !== 'IN_GAME' ||
+          record.roomState.isTimerPaused ||
+          !record.masterGameState ||
+          !record.phaseDeadlineAt
+        ) {
+          return { handled: false, roomCode };
+        }
+
+        const nowMs = getNowMs();
+        if (nowMs < Date.parse(record.phaseDeadlineAt)) {
+          return { handled: false, roomCode };
+        }
+
+        const master = record.masterGameState;
+        const prompt = getPendingPrompt(master);
+        if (!prompt) {
+          return { handled: false, roomCode };
+        }
+
+        const rng = options?.rng ?? fallbackRng;
+
+        if (master.turnPhase === 'HERO_SELECT') {
+          let nextState = autoSelectTimedOutHeroes(master, rng);
+          if (nextState.heroDraft?.stage === 'COMPLETED') {
+            nextState = startMatchCombat(nextState, rng);
+          }
+          nextState = {
+            ...nextState,
+            actionLog: [
+              ...nextState.actionLog,
+              'Hết giờ chọn tướng — hệ thống tự chọn tướng đầu tiên cho người chưa chọn.',
+            ],
+          };
+          await persistAfterMasterTransition(record, nextState, nowMs, {
+            event: 'HERO_SELECT_TIMEOUT',
+          });
+          return { handled: true, roomCode };
+        }
+
+        const top = master.interruptStack[master.interruptStack.length - 1];
+        if (top?.kind === 'WAIT_NULLIFICATION') {
+          if (top.isSimulatedDelay) {
+            const nextState = applyGameAction(
+              master,
+              { type: 'RESOLVE_SIMULATED_NULLIFICATION' },
+              rng,
+            );
+            await persistAfterMasterTransition(record, nextState, nowMs, {
+              event: 'SIMULATED_NULLIFICATION_RESOLVED',
+            });
+            return { handled: true, roomCode };
+          }
+
+          let nextState = master;
+          for (const timedOutSeat of prompt.actorSeats) {
+            const actor = nextState.players.find(
+              (p) => p.seatIndex === timedOutSeat,
+            );
+            if (!actor) {
+              continue;
+            }
+            syncTakeoverOnState(record, actor.userId, {
+              isBotTakeover: true,
+              logMessageVi: `${actor.displayName} hết giờ phản ứng Vô Giải — Máy tạm thời đánh hộ.`,
+            });
+            nextState = record.masterGameState!;
+            nextState = applyGameAction(
+              nextState,
+              {
+                type: 'RESPOND_NULLIFICATION',
+                seatIndex: timedOutSeat,
+                cardId: null,
+              },
+              rng,
+            );
+            record.masterGameState = nextState;
+          }
+
+          await persistAfterMasterTransition(record, nextState, nowMs, {
+            pushUndo: true,
+            event: 'NULLIFICATION_TIMEOUT',
+          });
+          return { handled: true, roomCode };
+        }
+
+        const timedOutSeat = prompt.actorSeats[0];
+        if (timedOutSeat === undefined) {
+          return { handled: false, roomCode };
+        }
+
+        const actor = master.players.find((p) => p.seatIndex === timedOutSeat);
+        if (!actor) {
+          return { handled: false, roomCode };
+        }
+
+        syncTakeoverOnState(record, actor.userId, {
+          isBotTakeover: true,
+          logMessageVi: `${actor.displayName} hết giờ — Máy tạm thời đánh hộ.`,
+        });
+        const stateWithTakeover = record.masterGameState!;
+        const botView = projectStateForPlayer(stateWithTakeover, actor.userId);
+        const botAction = decideBotAction(botView, rng);
+        const nextState = applyGameAction(stateWithTakeover, botAction, rng);
+
+        await persistAfterMasterTransition(record, nextState, nowMs, {
+          pushUndo: true,
+          event: 'TURN_OR_REACTION_TIMEOUT',
+        });
+        return { handled: true, roomCode };
+      });
+    },
+
+    async applyRefereeAction(
+      actorUserId: string,
+      roomCodeRaw: string,
+      actionType: RefereeActionType,
+      options?: { readonly rng?: () => number },
+    ): Promise<RoomOperationResult<RoomViewerPayload>> {
+      const roomCode = normalizeRoomCode(roomCodeRaw);
+      return runWithRoomLock(roomCode, async () => {
+        const record = roomsByCode.get(roomCode);
+        if (!record) {
+          return {
+            ok: false,
+            statusCode: 404,
+            code: 'ROOM_NOT_FOUND',
+            messageVi: 'Không tìm thấy phòng chơi này.',
+          };
+        }
+
+        const actorSeat = record.roomState.seats.find(
+          (s) => s.userId === actorUserId,
+        );
+        if (!actorSeat) {
+          return {
+            ok: false,
+            statusCode: 403,
+            code: 'NOT_ROOM_MEMBER',
+            messageVi: 'Bạn không thuộc phòng này.',
+          };
+        }
+
+        if (record.roomState.actingHostUserId !== actorUserId) {
+          return {
+            ok: false,
+            statusCode: 403,
+            code: 'ONLY_ACTING_HOST',
+            messageVi:
+              'Chỉ Chủ phòng / Trọng Tài hiện tại mới được dùng Bảng Trọng Tài.',
+          };
+        }
+
+        const nowMs = getNowMs();
+        const auditEntry: RefereeAuditEntry = {
+          timestamp: new Date(nowMs).toISOString(),
+          actorUserId,
+          actorName: actorSeat.displayName,
+          actionType,
+        };
+
+        if (actionType === 'ABORT_MATCH') {
+          if (
+            record.roomState.status !== 'IN_GAME' &&
+            record.roomState.status !== 'FINISHED'
+          ) {
+            return {
+              ok: false,
+              statusCode: 409,
+              code: 'MATCH_NOT_ACTIVE',
+              messageVi: 'Hiện không có ván đấu nào để kết thúc.',
+            };
+          }
+
+          const existingLogs =
+            record.masterGameState?.refereeAuditLog ?? record.lastMatchAuditLog;
+          record.lastMatchAuditLog = [...existingLogs, auditEntry];
+          record.roomState = {
+            ...record.roomState,
+            status: 'LOBBY',
+            isTimerPaused: false,
+            seats: record.roomState.seats.map((s) => ({
+              ...s,
+              isBotTakeover: false,
+            })),
+          };
+          record.masterGameState = null;
+          record.undoHistory = [];
+          record.phaseDeadlineAt = null;
+          record.pausedRemainingMs = null;
+          record.matchStartedAtMs = null;
+          record.updatedAt = new Date(nowMs).toISOString();
+
+          await deps.persistence.saveRoomSnapshot(toSnapshotRecord(record));
+          emitRoomUpdated(roomCode, 'REFEREE_ABORT_MATCH');
+          return { ok: true, data: buildViewerPayload(record, actorUserId) };
+        }
+
+        if (record.roomState.status !== 'IN_GAME' || !record.masterGameState) {
+          return {
+            ok: false,
+            statusCode: 409,
+            code: 'MATCH_NOT_ACTIVE',
+            messageVi: 'Lệnh Trọng Tài này chỉ dùng được khi ván đấu đang diễn ra.',
+          };
+        }
+
+        const master = record.masterGameState;
+        const rng = options?.rng ?? fallbackRng;
+
+        switch (actionType) {
+          case 'PAUSE': {
+            if (record.roomState.isTimerPaused) {
+              return {
+                ok: false,
+                statusCode: 409,
+                code: 'ALREADY_PAUSED',
+                messageVi: 'Ván đấu đang được tạm dừng sẵn.',
+              };
+            }
+            const fallbackMs = Math.max(
+              500,
+              Math.round(
+                TIMER_PRESETS[record.roomState.timerPreset].mainTurnSeconds *
+                  1000 *
+                  timerScale,
+              ),
+            );
+            const remainingMs = record.phaseDeadlineAt
+              ? Math.max(200, Date.parse(record.phaseDeadlineAt) - nowMs)
+              : fallbackMs;
+
+            record.roomState = { ...record.roomState, isTimerPaused: true };
+            record.pausedRemainingMs = remainingMs;
+            record.phaseDeadlineAt = null;
+            record.masterGameState = {
+              ...master,
+              refereeAuditLog: [...master.refereeAuditLog, auditEntry],
+              actionLog: [
+                ...master.actionLog,
+                `Trọng Tài ${actorSeat.displayName} đã Tạm dừng ván đấu.`,
+              ],
+            };
+            record.updatedAt = new Date(nowMs).toISOString();
+            await deps.persistence.saveRoomSnapshot(toSnapshotRecord(record));
+            emitRoomUpdated(roomCode, 'REFEREE_PAUSE');
+            return { ok: true, data: buildViewerPayload(record, actorUserId) };
+          }
+
+          case 'RESUME': {
+            if (!record.roomState.isTimerPaused) {
+              return {
+                ok: false,
+                statusCode: 409,
+                code: 'NOT_PAUSED',
+                messageVi: 'Ván đấu không ở trạng thái tạm dừng.',
+              };
+            }
+            const fallbackMs = Math.max(
+              500,
+              Math.round(
+                TIMER_PRESETS[record.roomState.timerPreset].mainTurnSeconds *
+                  1000 *
+                  timerScale,
+              ),
+            );
+            const remainingMs = Math.max(
+              200,
+              record.pausedRemainingMs ?? fallbackMs,
+            );
+            record.roomState = { ...record.roomState, isTimerPaused: false };
+            record.pausedRemainingMs = null;
+            record.phaseDeadlineAt = new Date(nowMs + remainingMs).toISOString();
+            record.masterGameState = {
+              ...master,
+              refereeAuditLog: [...master.refereeAuditLog, auditEntry],
+              actionLog: [
+                ...master.actionLog,
+                `Trọng Tài ${actorSeat.displayName} đã cho Tiếp tục ván đấu.`,
+              ],
+            };
+            record.updatedAt = new Date(nowMs).toISOString();
+            await deps.persistence.saveRoomSnapshot(toSnapshotRecord(record));
+            emitRoomUpdated(roomCode, 'REFEREE_RESUME');
+            return { ok: true, data: buildViewerPayload(record, actorUserId) };
+          }
+
+          case 'UNDO_ONE_STEP': {
+            const restored = record.undoHistory[record.undoHistory.length - 1];
+            if (!restored) {
+              return {
+                ok: false,
+                statusCode: 409,
+                code: 'NO_UNDO_HISTORY',
+                messageVi: 'Không còn bước trước đó để hoàn tác (tối đa 5 bước gần nhất).',
+              };
+            }
+            record.undoHistory = record.undoHistory.slice(0, -1);
+
+            const seatTakeoverMap = new Map(
+              record.roomState.seats.map((s) => [s.userId, s.isBotTakeover]),
+            );
+            const syncedPlayers = restored.players.map((p) => {
+              const currentTakeover = seatTakeoverMap.get(p.userId);
+              return currentTakeover !== undefined &&
+                currentTakeover !== p.isBotTakeover
+                ? { ...p, isBotTakeover: currentTakeover }
+                : p;
+            });
+
+            const nextMaster: MasterGameState = {
+              ...restored,
+              players: syncedPlayers,
+              refereeAuditLog: [...master.refereeAuditLog, auditEntry],
+              actionLog: [
+                ...restored.actionLog,
+                `Trọng Tài ${actorSeat.displayName} đã Hoàn tác 1 bước.`,
+              ],
+            };
+
+            record.masterGameState = nextMaster;
+            record.phaseDeadlineAt = record.roomState.isTimerPaused
+              ? null
+              : computePhaseDeadlineIso(
+                  nextMaster,
+                  record.roomState.timerPreset,
+                  false,
+                  nowMs,
+                  timerScale,
+                );
+            record.updatedAt = new Date(nowMs).toISOString();
+            await deps.persistence.saveRoomSnapshot(toSnapshotRecord(record));
+            emitRoomUpdated(roomCode, 'REFEREE_UNDO_ONE_STEP');
+            return { ok: true, data: buildViewerPayload(record, actorUserId) };
+          }
+
+          case 'SKIP_PHASE': {
+            if (master.turnPhase === 'GAME_OVER') {
+              return {
+                ok: false,
+                statusCode: 409,
+                code: 'MATCH_ALREADY_FINISHED',
+                messageVi: 'Ván đấu đã kết thúc.',
+              };
+            }
+
+            const skippedState = advanceSkippedPhaseState(master, rng);
+            const nextMaster: MasterGameState = {
+              ...skippedState,
+              refereeAuditLog: [...skippedState.refereeAuditLog, auditEntry],
+              actionLog: [
+                ...skippedState.actionLog,
+                `Trọng Tài ${actorSeat.displayName} đã Bỏ qua pha chờ.`,
+              ],
+            };
+
+            if (record.roomState.isTimerPaused) {
+              record.undoHistory = [...record.undoHistory, master].slice(
+                -MAX_UNDO_HISTORY,
+              );
+              record.masterGameState = nextMaster;
+              if (nextMaster.turnPhase === 'GAME_OVER') {
+                record.roomState = {
+                  ...record.roomState,
+                  status: 'FINISHED',
+                  isTimerPaused: false,
+                };
+                record.undoHistory = [];
+                record.pausedRemainingMs = null;
+                record.phaseDeadlineAt = null;
+                record.updatedAt = new Date(nowMs).toISOString();
+                await deps.persistence.saveRoomSnapshot(toSnapshotRecord(record));
+                await archiveFinishedMatch(record, nextMaster, nowMs);
+              } else {
+                record.phaseDeadlineAt = null;
+                record.updatedAt = new Date(nowMs).toISOString();
+                await deps.persistence.saveRoomSnapshot(toSnapshotRecord(record));
+              }
+              emitRoomUpdated(roomCode, 'REFEREE_SKIP_PHASE');
+            } else {
+              await persistAfterMasterTransition(record, nextMaster, nowMs, {
+                pushUndo: true,
+                event: 'REFEREE_SKIP_PHASE',
+              });
+            }
+
+            return { ok: true, data: buildViewerPayload(record, actorUserId) };
+          }
+        }
+      });
+    },
+
+    async transferActingHostAfterTimeout(
+      roomCodeRaw: string,
+    ): Promise<{ readonly transferred: boolean; readonly roomCode: string }> {
+      const roomCode = normalizeRoomCode(roomCodeRaw);
+      return runWithRoomLock(roomCode, async () => {
+        const record = roomsByCode.get(roomCode);
+        if (
+          !record ||
+          record.roomState.status === 'FINISHED' ||
+          record.roomState.hostDisconnectedAt === null ||
+          record.roomState.actingHostUserId !== record.roomState.ownerUserId
+        ) {
+          return { transferred: false, roomCode };
+        }
+
+        const nowMs = getNowMs();
+        if (
+          nowMs <
+          Date.parse(record.roomState.hostDisconnectedAt) + hostFailoverDelayMs
+        ) {
+          return { transferred: false, roomCode };
+        }
+
+        const ownerId = record.roomState.ownerUserId;
+        const ownerSeat = record.roomState.seats.find(
+          (s) => s.userId === ownerId,
+        );
+        if (!ownerSeat || ownerSeat.connectionStatus !== 'DISCONNECTED') {
+          return { transferred: false, roomCode };
+        }
+
+        const nextOnline = pickClockwiseOnlineSeat(
+          record.roomState.seats,
+          ownerId,
+          ownerId,
+        );
+        if (!nextOnline) {
+          return { transferred: false, roomCode };
+        }
+
+        record.roomState = {
+          ...record.roomState,
+          actingHostUserId: nextOnline.userId,
+        };
+        if (record.masterGameState) {
+          record.masterGameState = {
+            ...record.masterGameState,
+            actionLog: [
+              ...record.masterGameState.actionLog,
+              `Chủ phòng ${ownerSeat.displayName} mất kết nối quá 30 giây — quyền Trọng Tài tạm thời chuyển cho ${nextOnline.displayName}.`,
+            ],
+          };
+        }
+        record.updatedAt = new Date(nowMs).toISOString();
+        await deps.persistence.saveRoomSnapshot(toSnapshotRecord(record));
+        emitRoomUpdated(roomCode, 'ACTING_HOST_TRANSFERRED');
+        return { transferred: true, roomCode };
       });
     },
 
@@ -771,32 +1972,16 @@ export function createRoomManager(deps: {
           };
         }
 
-        const nowMs = options?.nowMs ?? getNowMs();
-        if (options?.pushUndo && record.masterGameState) {
-          record.undoHistory = [
-            ...record.undoHistory,
-            record.masterGameState,
-          ].slice(-MAX_UNDO_HISTORY);
-        }
-
-        record.masterGameState = nextMasterState;
-        if (nextMasterState.turnPhase === 'GAME_OVER') {
-          record.roomState = { ...record.roomState, status: 'FINISHED' };
-          record.phaseDeadlineAt = null;
-          record.pausedRemainingMs = null;
-        } else {
-          record.phaseDeadlineAt = computePhaseDeadlineIso(
-            nextMasterState,
-            record.roomState.timerPreset,
-            record.roomState.isTimerPaused,
-            nowMs,
-          );
-        }
-        record.updatedAt = new Date(nowMs).toISOString();
-
-        const snapshot = toSnapshotRecord(record);
-        await deps.persistence.saveRoomSnapshot(snapshot);
-        return { ok: true, data: snapshot };
+        await persistAfterMasterTransition(
+          record,
+          nextMasterState,
+          options?.nowMs ?? getNowMs(),
+          {
+            pushUndo: options?.pushUndo ?? false,
+            event: 'COMMIT_STEP',
+          },
+        );
+        return { ok: true, data: toSnapshotRecord(record) };
       });
     },
 

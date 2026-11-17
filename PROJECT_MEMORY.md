@@ -1,8 +1,8 @@
 # PROJECT_MEMORY.md — Ghi Nhớ Dự Án và Bàn Giao Tiến Độ
 
 > **Dự án:** LKDF — Game Thẻ Bài Tam Quốc Sát (Windows Native Online 4–8 Người)
-> **Ngày cập nhật:** 2026-11-16
-> **Trạng thái hiện tại:** Đã hoàn thành **Giai đoạn 0, Giai đoạn 1 (`Bước 1.1 – 1.4`) & trọn vẹn Giai đoạn 2 (`Bước 2.1 – 2.2`)** — Máy chủ Cloud 0đ đã có đủ Google OAuth, Bộ lọc Thống kê, Quản lý phòng 4–8 người thật, 3 mức Đồng hồ & tự lưu/khôi phục `RoomSnapshot` qua restart; sẵn sàng sang **Giai đoạn 3 (Bước 3.1 — Ghép nối WebSocket Ván đấu thời gian thực & Máy đánh hộ khi rớt mạng)**.
+> **Ngày cập nhật:** 2026-11-17
+> **Trạng thái hiện tại:** Đã hoàn thành **Giai đoạn 0, Giai đoạn 1 (`Bước 1.1 – 1.4`), Giai đoạn 2 (`Bước 2.1 – 2.2`) & trọn vẹn Giai đoạn 3 (`Bước 3.1 – 3.2`)** — Hoàn tất hoàn toàn máy chủ thời gian thực, nhịp *Vô Giải* giả lập, Máy đánh hộ, Bảng Trọng Tài 4 nút & chuyển quyền 30s; sẵn sàng sang **Giai đoạn 4 (Bước 4.1 — Giao diện Windows: Đánh thức server, Đăng nhập Google, Sảnh/Phòng chờ & Thống kê)**.
 
 ---
 
@@ -113,6 +113,22 @@ Xem đầy đủ 10 quyết định (`ADR-001` đến `ADR-010`) tại [DECISION
     - `npm run test:unit`: **11 files · 82/82 tests passed**, `exit code 0`.
     - `npm run typecheck` & `npm run build`: thành công 100% trên cả 3 workspace, `exit code 0`.
 
+- **[Hoàn thành — 2026-11-17] Bước 3.1 trong [TASKS.md](./TASKS.md):**
+  - Đã xây dựng Bộ điều phối ván đấu WebSocket thời gian thực (`apps/server/src/rooms/coordinator.ts`, `apps/server/src/rooms/wsSchemas.ts`) gắn chặt vào `RoomManager` (`apps/server/src/rooms/index.ts`) và `/ws` (`apps/server/src/server.ts`): mỗi ghế chỉ nhận `PlayerViewState` đã lọc bảo mật, chặn giả mạo ghế và chặn máy khách tự đóng pha *Vô Giải* giả lập.
+  - Đã hoàn thiện nhịp chờ *Vô Giải Khả Kích* đồng nhất (`2.0s–3.5s` dừng giả lập khi `isSimulatedDelay = true` mà không rò rỉ cờ ẩn, giữ im lặng khi người không cầm *Vô Giải* bấm Bỏ qua), cơ chế rớt mạng / hết giờ tự bật `isBotTakeover = true` gọi `botAi` đánh hộ, khôi phục đúng ghế/tay bài ngay khi người chơi kết nối lại, và tự ghi nhận `MatchHistory` + `UserStats` khi ván kết thúc.
+  - **Bằng chứng kiểm tra thực tế (2026-11-17):**
+    - `npm run test:integration`: **5 files · 18/18 tests passed** (`health.test.ts` 1/1, `auth-persistence.test.ts` 5/5, `stats-filter.test.ts` 6/6, `rooms-snapshot.test.ts` 3/3, `ws-match-flow.test.ts` 3/3), `exit code 0`.
+    - `npm run test:unit`: **11 files · 82/82 tests passed**, `exit code 0`.
+    - `npm run typecheck` & `npm run build`: thành công 100% trên cả 3 workspace, `exit code 0`.
+
+- **[Hoàn thành — 2026-11-17] Bước 3.2 trong [TASKS.md](./TASKS.md) (Chốt trọn vẹn Giai đoạn 3):**
+  - Đã triển khai đủ **4 nút Trọng Tài** (`PAUSE/RESUME`, `UNDO_ONE_STEP`, `SKIP_PHASE`, `ABORT_MATCH`) qua cả WebSocket (`REFEREE_ACTION`) lẫn HTTP (`POST /api/rooms/:roomCode/referee`), bảo vệ quyền chỉ `actingHostUserId` mới được thao tác, bảo toàn nhật ký công khai `refereeAuditLog` xuyên suốt kể cả sau khi Hoàn tác hoặc Kết thúc ván về phòng chờ (và không ghi thành tích thắng/thua giả khi hủy ván).
+  - Đã hoàn thiện bộ đếm chuyển quyền **30 giây** (`hostFailoverDelayMs = 30000`, hoạt động ngay cả khi ván đang Tạm dừng hoặc trong Phòng chờ): nếu Chủ phòng gốc (`ownerUserId`) mất mạng quá 30s sẽ tự chuyển `actingHostUserId` sang người chơi online kế tiếp theo vòng ghế, chuyển tiếp nếu Trọng Tài tạm thời rớt tiếp, và tự trả lại quyền ngay lập tức khi Chủ phòng gốc kết nối lại.
+  - **Bằng chứng kiểm tra thực tế (2026-11-17):**
+    - `npm run test:integration`: **6 files · 21/21 tests passed** (`health.test.ts` 1/1, `auth-persistence.test.ts` 5/5, `stats-filter.test.ts` 6/6, `rooms-snapshot.test.ts` 3/3, `ws-match-flow.test.ts` 3/3, `referee-host-failover.test.ts` 3/3), `exit code 0`.
+    - `npm run test:unit`: **11 files · 82/82 tests passed**, `exit code 0`.
+    - `npm run typecheck` & `npm run build`: thành công 100% trên cả 3 workspace, `exit code 0`.
+
 ---
 
 ## 4. Vấn Đề Đang Tồn Tại & Câu Hỏi Chưa Giải Quyết
@@ -131,4 +147,4 @@ Xem đầy đủ 10 quyết định (`ADR-001` đến `ADR-010`) tại [DECISION
   2. Báo cáo cho khách hàng theo đúng **phong cách "Báo cáo Sếp"**: ngắn gọn, đi thẳng vào trọng tâm gồm 4 mục (*✅ Đã hoàn thành · 📊 Bằng chứng kiểm tra · ⚠️ Tồn đọng/Lưu ý · 👉 Bước tiếp theo kèm câu lệnh copy*).
   3. Luôn kèm mục **Phản biện thẳng (`/honest-advisor` & `/ultrathinking`)** và **Gợi ý chia quân (`/swarm`)**.
   4. **Bàn giao ca trực khép kín giữa các phiên:** Đầu phiên mới luôn đọc sổ nhớ + chạy `git status --short`; cuối mỗi bước luôn ghi *Ghi chú bàn giao kỹ thuật (Handoff Notes)* vào [`.agents/PROJECT_MEMORY.md`](./.agents/PROJECT_MEMORY.md).
-- **Bước tiếp theo ngay sau đây:** Thực hiện **Bước 3.1 trong [TASKS.md](./TASKS.md):** Ghép nối WebSocket Ván đấu thời gian thực với `PlayerViewState` riêng cho từng ghế, giữ nhịp chờ *Vô Giải Khả Kích* đồng nhất (`2.0s–3.5s`), tự chuyển Máy đánh hộ khi rớt mạng/hết giờ và trả lại đúng ghế/tay bài khi kết nối lại.
+- **Bước tiếp theo ngay sau đây:** Thực hiện **Bước 4.1 trong [TASKS.md](./TASKS.md):** Dựng giao diện Windows 2D Sơn Thủy Mặc theo [DESIGN.md](./DESIGN.md) gồm Màn hình chờ đánh thức máy chủ (`30–60s` + nút Hủy), Đăng nhập Google (tự đồng bộ + ô dán mã dự phòng), Sảnh tạo/vào phòng, Phòng chờ 4–8 người và Trang lọc Thống kê (đủ 5 trạng thái UI).

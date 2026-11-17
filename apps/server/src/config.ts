@@ -14,9 +14,28 @@ export interface ServerConfig {
   readonly isEphemeralJwtSecret: boolean;
 }
 
+export interface MatchCoordinatorConfig {
+  /** Khoảng dừng giả lập Vô Giải Khả Kích khi không ai có bài (mặc định 2000–3500ms). */
+  readonly simulatedNullificationMinMs?: number;
+  readonly simulatedNullificationMaxMs?: number;
+  /** Độ trễ mỗi nước đánh khi Máy đánh hộ tạm thời (mặc định 450ms). */
+  readonly botActionDelayMs?: number;
+  /** Độ trễ tối thiểu khi Máy bỏ qua Vô Giải Khả Kích để chống lộ thời gian (mặc định 1500ms). */
+  readonly nullificationBotPassMinMs?: number;
+  /** Thời gian ân hạn trước khi chuyển isBotTakeover=true khi rớt mạng giữa ván (mặc định 0ms). */
+  readonly disconnectBotTakeoverGraceMs?: number;
+  /** Thời gian chờ trước khi tự chuyển quyền Trọng Tài tạm thời nếu Chủ phòng gốc mất mạng (mặc định 30000ms). */
+  readonly hostFailoverDelayMs?: number;
+  /** Hệ số tỷ lệ thời lượng đồng hồ pha (mặc định 1.0; dùng < 1 trong test hết giờ). */
+  readonly timerScale?: number;
+  /** Hàm sinh số ngẫu nhiên tùy biến cho test. */
+  readonly rng?: () => number;
+}
+
 export interface CreateServerOptions {
   readonly config?: Partial<ServerConfig>;
   readonly googleProvider?: GoogleOAuthProvider;
+  readonly runtime?: MatchCoordinatorConfig;
 }
 
 /** Đọc cấu hình máy chủ từ biến môi trường; không bao giờ nhúng khóa bí mật cứng vào mã nguồn. */

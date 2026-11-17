@@ -92,20 +92,20 @@
 
 ### Giai Đoạn 3 — Ván Đấu Trực Tuyến, Rớt Mạng, Nhịp *Vô Giải* & Bảng Trọng Tài 4 Nút
 
-- [ ] **Bước 3.1 — Ghép nối WebSocket Ván đấu, Chống lộ *Vô Giải* & Tự kết nối lại / Máy đánh hộ**
+- [x] **Bước 3.1 — Ghép nối WebSocket Ván đấu, Chống lộ *Vô Giải* & Tự kết nối lại / Máy đánh hộ**
   - **Phụ thuộc:** Bước 1.4, Bước 2.2.
   - **Kết quả bàn giao:**
     - Điều phối ván đấu thời gian thực qua WebSocket với `PlayerViewState` riêng cho từng ghế.
     - Giữ nhịp chờ *Vô Giải Khả Kích* đồng nhất (kèm dừng giả lập `2.0s–3.5s` khi không ai có bài).
     - Khi rớt mạng hoặc hết giờ: tự chuyển `isBotTakeover = true` để Máy đánh hộ tạm thời; khi người chơi mở lại app thì trả lại đúng ghế và tay bài.
-  - **Điều kiện hoàn thành:** Kiểm thử tích hợp mô phỏng rớt mạng giữa pha phản ứng → Máy đánh hộ → Kết nối lại lấy đúng bài chạy đạt 100%.
+  - **Điều kiện hoàn thành:** Kiểm thử tích hợp mô phỏng rớt mạng giữa pha phản ứng → Máy đánh hộ → Kết nối lại lấy đúng bài chạy đạt 100%. *(Đã kiểm chứng thực tế: `npm run test:integration` **5 files · 18/18 tests passed**, gồm `ws-match-flow.test.ts` 3/3 tests; `npm run test:unit` **82/82** đạt; `typecheck` & `build` toàn Monorepo đạt — exit code 0.)*
 
-- [ ] **Bước 3.2 — Triển khai Bảng Trọng Tài 4 nút & Chuyển quyền Trọng Tài sau 30 giây Chủ phòng mất mạng**
+- [x] **Bước 3.2 — Triển khai Bảng Trọng Tài 4 nút & Chuyển quyền Trọng Tài sau 30 giây Chủ phòng mất mạng**
   - **Phụ thuộc:** Bước 3.1.
   - **Kết quả bàn giao:**
     - 4 lệnh Trọng Tài trên máy chủ (`PAUSE/RESUME`, `UNDO_ONE_STEP`, `SKIP_PHASE`, `ABORT_MATCH`) kèm ghi nhận công khai vào `refereeAuditLog`.
     - Bộ đếm `30 giây` khi Chủ phòng gốc mất kết nối để tự chuyển `actingHostUserId` cho người chơi thật đang online kế tiếp, và tự trả lại quyền khi Chủ phòng gốc vào lại.
-  - **Điều kiện hoàn thành:** Kiểm thử tích hợp cho cả 4 nút Trọng Tài và tình huống Chủ phòng mất mạng quá 30 giây chạy đạt 100%.
+  - **Điều kiện hoàn thành:** Kiểm thử tích hợp cho cả 4 nút Trọng Tài và tình huống Chủ phòng mất mạng quá 30 giây chạy đạt 100%. *(Đã kiểm chứng thực tế: `npm run test:integration` **6 files · 21/21 tests passed**, gồm `referee-host-failover.test.ts` 3/3 tests; `npm run test:unit` **82/82** đạt; `typecheck` & `build` toàn Monorepo đạt — exit code 0.)*
 
 ---
 

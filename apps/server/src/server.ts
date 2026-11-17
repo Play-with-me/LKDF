@@ -2,7 +2,6 @@ import Fastify, { type FastifyInstance } from 'fastify';
 import cors from '@fastify/cors';
 import { WebSocket, WebSocketServer } from 'ws';
 import { STANDARD_DECK_TOTAL, STANDARD_HERO_COUNT } from '@lkdf/shared';
-import { z } from 'zod';
 import { RealGoogleOAuthProvider } from './auth/googleProvider.js';
 import { createAuthService, type AuthService } from './auth/index.js';
 import { registerAuthRoutes } from './auth/routes.js';
@@ -15,8 +14,13 @@ import {
   createPersistenceStore,
   type PersistenceStore,
 } from './persistence/index.js';
+import {
+  createMatchCoordinator,
+  type MatchCoordinator,
+} from './rooms/coordinator.js';
 import { createRoomManager, type RoomManager } from './rooms/index.js';
 import { registerRoomRoutes } from './rooms/routes.js';
+import { WsClientMessageSchema } from './rooms/wsSchemas.js';
 import { registerStatsRoutes } from './stats/routes.js';
 
 export interface ServerInstance {
@@ -25,16 +29,11 @@ export interface ServerInstance {
   readonly persistence: PersistenceStore;
   readonly authService: AuthService;
   readonly roomManager: RoomManager;
+  readonly coordinator: MatchCoordinator;
   readonly config: ServerConfig;
 }
 
-const WsAuthMessageSchema = z.object({
-  type: z.literal('AUTH'),
-  sessionToken: z.string().min(1),
-  seatMode: z.enum(['CLAIM_SEAT', 'TAKEOVER']).optional(),
-});
-
-/** Khởi tạo máy chủ Fastify + WebSocket (ws) + Cloud 0đ Persistence + Google OAuth 2.0 cho LKDF. */
+/** Khởi tạo máy chủ Fastify + WebSocket (ws) + Cloud 0đ Persistence + Google OAuth 2.0 + MatchCoordinator cho LKDF. */
 export async function createServer(
   options?: CreateServerOptions,
 ): Promise<ServerInstance> {
@@ -64,8 +63,20 @@ export async function createServer(
   const roomManager = createRoomManager({
     persistence,
     authService,
+    ...(options?.runtime?.timerScale !== undefined
+      ? { timerScale: options.runtime.timerScale }
+      : {}),
+    ...(options?.runtime?.hostFailoverDelayMs !== undefined
+      ? { hostFailoverDelayMs: options.runtime.hostFailoverDelayMs }
+      : {}),
+    ...(options?.runtime?.rng ? { defaultRng: options.runtime.rng } : {}),
   });
   await roomManager.restoreFromPersistence();
+
+  const coordinator = createMatchCoordinator({
+    roomManager,
+    ...(options?.runtime ? { runtime: options.runtime } : {}),
+  });
 
   const app = Fastify({ logger: false });
   await app.register(cors, { origin: true });
@@ -102,6 +113,7 @@ export async function createServer(
       }
       activeSocketsByUserId.delete(userId);
       socketToUserId.delete(existingSocket);
+      coordinator.handleDisplacedSocket(existingSocket);
       if (existingSocket.readyState === WebSocket.OPEN) {
         existingSocket.send(
           JSON.stringify({
@@ -119,8 +131,9 @@ export async function createServer(
   );
 
   wss.on('connection', (socket) => {
-    socket.on('message', async (raw) => {
-      const text = raw.toString();
+    let messageQueue: Promise<void> = Promise.resolve();
+
+    const processMessage = async (text: string): Promise<void> => {
       if (text === 'ping') {
         socket.send('pong');
         return;
@@ -133,69 +146,103 @@ export async function createServer(
         return;
       }
 
-      const authMsg = WsAuthMessageSchema.safeParse(decoded);
-      if (!authMsg.success) {
-        return;
-      }
-
-      const verified = await authService.verifySessionToken(
-        authMsg.data.sessionToken,
-      );
-      if (!verified.ok) {
+      const parsed = WsClientMessageSchema.safeParse(decoded);
+      if (!parsed.success) {
         socket.send(
           JSON.stringify({
-            type: 'AUTH_ERROR',
-            code: verified.code,
-            messageVi: verified.messageVi,
+            type: 'ACTION_ERROR',
+            code: 'INVALID_WS_MESSAGE',
+            messageVi: 'Gói tin WebSocket không đúng định dạng.',
           }),
         );
-        socket.close(4001, verified.code);
         return;
       }
 
-      const userId = verified.profile.userId;
-      const existingSocket = activeSocketsByUserId.get(userId);
-      if (
-        existingSocket &&
-        existingSocket !== socket &&
-        existingSocket.readyState === WebSocket.OPEN
-      ) {
-        if (authMsg.data.seatMode !== 'TAKEOVER') {
+      const msg = parsed.data;
+      if (msg.type === 'AUTH') {
+        const verified = await authService.verifySessionToken(msg.sessionToken);
+        if (!verified.ok) {
           socket.send(
             JSON.stringify({
               type: 'AUTH_ERROR',
-              code: 'DUPLICATE_ACTIVE_SEAT',
-              messageVi:
-                'Tài khoản Google này đang kết nối ở một cửa sổ/ghế khác. Không thể ngồi 2 ghế cùng lúc.',
+              code: verified.code,
+              messageVi: verified.messageVi,
             }),
           );
-          socket.close(4009, 'DUPLICATE_ACTIVE_SEAT');
+          socket.close(4001, verified.code);
           return;
         }
 
-        existingSocket.send(
+        const userId = verified.profile.userId;
+        const existingSocket = activeSocketsByUserId.get(userId);
+        if (
+          existingSocket &&
+          existingSocket !== socket &&
+          existingSocket.readyState === WebSocket.OPEN
+        ) {
+          if (msg.seatMode !== 'TAKEOVER') {
+            socket.send(
+              JSON.stringify({
+                type: 'AUTH_ERROR',
+                code: 'DUPLICATE_ACTIVE_SEAT',
+                messageVi:
+                  'Tài khoản Google này đang kết nối ở một cửa sổ/ghế khác. Không thể ngồi 2 ghế cùng lúc.',
+              }),
+            );
+            socket.close(4009, 'DUPLICATE_ACTIVE_SEAT');
+            return;
+          }
+
+          existingSocket.send(
+            JSON.stringify({
+              type: 'SESSION_DISPLACED',
+              code: 'TAKEOVER',
+              messageVi: 'Phiên kết nối đã được tiếp quản ở cửa sổ khác.',
+            }),
+          );
+          socketToUserId.delete(existingSocket);
+          coordinator.handleDisplacedSocket(existingSocket);
+          existingSocket.close(4001, 'TAKEOVER');
+        }
+
+        activeSocketsByUserId.set(userId, socket);
+        socketToUserId.set(socket, userId);
+        socket.send(
           JSON.stringify({
-            type: 'SESSION_DISPLACED',
-            code: 'TAKEOVER',
-            messageVi: 'Phiên kết nối đã được tiếp quản ở cửa sổ khác.',
+            type: 'AUTH_OK',
+            userId,
+            displayName: verified.profile.displayName,
           }),
         );
-        socketToUserId.delete(existingSocket);
-        existingSocket.close(4001, 'TAKEOVER');
+        await coordinator.bindAuthenticatedSocket(userId, socket);
+        return;
       }
 
-      activeSocketsByUserId.set(userId, socket);
-      socketToUserId.set(socket, userId);
-      socket.send(
-        JSON.stringify({
-          type: 'AUTH_OK',
-          userId,
-          displayName: verified.profile.displayName,
-        }),
+      const authedUserId = socketToUserId.get(socket);
+      if (!authedUserId) {
+        socket.send(
+          JSON.stringify({
+            type: 'AUTH_ERROR',
+            code: 'NOT_AUTHENTICATED',
+            messageVi: 'Vui lòng xác thực phiên Google trước khi gửi thao tác.',
+          }),
+        );
+        return;
+      }
+
+      await coordinator.handleAuthenticatedMessage(socket, authedUserId, msg);
+    };
+
+    socket.on('message', (raw) => {
+      const text = raw.toString();
+      messageQueue = messageQueue.then(
+        () => processMessage(text),
+        () => processMessage(text),
       );
     });
 
     socket.on('close', () => {
+      coordinator.handleSocketClosed(socket);
       const boundUserId = socketToUserId.get(socket);
       if (!boundUserId) {
         return;
@@ -207,8 +254,11 @@ export async function createServer(
     });
   });
 
+  coordinator.scheduleAllActiveRooms();
+
   app.addHook('onClose', async () => {
     unsubscribeSession();
+    coordinator.shutdown();
     for (const socket of wss.clients) {
       socket.terminate();
     }
@@ -218,5 +268,13 @@ export async function createServer(
     await persistence.close();
   });
 
-  return { app, wss, persistence, authService, roomManager, config };
+  return {
+    app,
+    wss,
+    persistence,
+    authService,
+    roomManager,
+    coordinator,
+    config,
+  };
 }

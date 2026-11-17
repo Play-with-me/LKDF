@@ -1,4 +1,9 @@
-import { HeroIdSchema, TIMER_PRESETS, TimerPresetSchema } from '@lkdf/shared';
+import {
+  HeroIdSchema,
+  RefereeActionTypeSchema,
+  TIMER_PRESETS,
+  TimerPresetSchema,
+} from '@lkdf/shared';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import type { AuthService } from '../auth/index.js';
@@ -21,6 +26,10 @@ const UpdateTimerBodySchema = z.object({
 
 const SelectHeroBodySchema = z.object({
   heroId: HeroIdSchema,
+});
+
+const RefereeActionBodySchema = z.object({
+  actionType: RefereeActionTypeSchema,
 });
 
 const RoomCodeParamSchema = z
@@ -314,6 +323,48 @@ export function registerRoomRoutes(
     return {
       ok: true,
       ...selected.data,
+    };
+  });
+
+  app.post('/api/rooms/:roomCode/referee', async (request, reply) => {
+    const auth = await authService.verifyAuthorizationHeader(
+      request.headers.authorization,
+    );
+    if (!auth.ok) {
+      return reply.status(auth.statusCode).send(auth);
+    }
+
+    const params = request.params as { roomCode?: string };
+    const codeParsed = RoomCodeParamSchema.safeParse(params.roomCode ?? '');
+    if (!codeParsed.success) {
+      return reply.status(400).send({
+        ok: false,
+        code: 'INVALID_ROOM_CODE',
+        messageVi: 'Mã phòng phải gồm đúng 6 ký tự.',
+      });
+    }
+
+    const bodyParsed = RefereeActionBodySchema.safeParse(request.body ?? {});
+    if (!bodyParsed.success) {
+      return reply.status(400).send({
+        ok: false,
+        code: 'INVALID_REFEREE_ACTION',
+        messageVi: 'Lệnh Trọng Tài không hợp lệ.',
+      });
+    }
+
+    const res = await roomManager.applyRefereeAction(
+      auth.profile.userId,
+      codeParsed.data,
+      bodyParsed.data.actionType,
+    );
+    if (!res.ok) {
+      return reply.status(res.statusCode).send(res);
+    }
+
+    return {
+      ok: true,
+      ...res.data,
     };
   });
 }
