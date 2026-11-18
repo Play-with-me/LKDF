@@ -2,6 +2,7 @@ import type {
   ExchangeManualCodeResponse,
   FilteredStatsResponse,
   HealthCheckResponse,
+  LatestUpdateInfoResponse,
   PersistedClientState,
   PollAuthStatusResponse,
   RoomViewerPayload,
@@ -15,7 +16,9 @@ import type {
   UserStatsDetailResponse,
 } from './types.js';
 
-export const DEFAULT_SERVER_URL = 'http://127.0.0.1:3001';
+export const DEFAULT_SERVER_URL =
+  (import.meta.env.VITE_LKDF_SERVER_URL as string | undefined)?.trim() ||
+  'http://127.0.0.1:3001';
 const LOCAL_STORAGE_KEY = 'lkdf_client_state_v1';
 
 export class ApiError extends Error {
@@ -167,6 +170,10 @@ export interface LkdfApiClient {
     signal?: AbortSignal,
   ): Promise<FilteredStatsResponse>;
   getUserStats(userId: string): Promise<UserStatsDetailResponse>;
+  getLatestUpdate(
+    currentVersion: string,
+    forceRefresh?: boolean,
+  ): Promise<LatestUpdateInfoResponse>;
 }
 
 interface RequestOptions {
@@ -418,6 +425,20 @@ export function createApiClient(serverUrl: string): LkdfApiClient {
     getUserStats(userId) {
       return requestJson<UserStatsDetailResponse>(
         `/api/users/${encodeURIComponent(userId)}/stats`,
+      );
+    },
+
+    getLatestUpdate(currentVersion, forceRefresh = false) {
+      const params = new URLSearchParams();
+      if (currentVersion.trim()) {
+        params.set('currentVersion', currentVersion.trim());
+      }
+      if (forceRefresh) {
+        params.set('refresh', '1');
+      }
+      const query = params.toString();
+      return requestJson<LatestUpdateInfoResponse>(
+        query ? `/api/update/latest?${query}` : '/api/update/latest',
       );
     },
   };

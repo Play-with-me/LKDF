@@ -22,6 +22,8 @@ import { createRoomManager, type RoomManager } from './rooms/index.js';
 import { registerRoomRoutes } from './rooms/routes.js';
 import { WsClientMessageSchema } from './rooms/wsSchemas.js';
 import { registerStatsRoutes } from './stats/routes.js';
+import { UpdateProxyService } from './update-proxy/index.js';
+import { registerUpdateProxyRoutes } from './update-proxy/routes.js';
 
 export interface ServerInstance {
   readonly app: FastifyInstance;
@@ -30,6 +32,7 @@ export interface ServerInstance {
   readonly authService: AuthService;
   readonly roomManager: RoomManager;
   readonly coordinator: MatchCoordinator;
+  readonly updateProxy: UpdateProxyService;
   readonly config: ServerConfig;
 }
 
@@ -78,6 +81,13 @@ export async function createServer(
     ...(options?.runtime ? { runtime: options.runtime } : {}),
   });
 
+  const updateProxy = new UpdateProxyService({
+    githubRepo: config.githubRepo,
+    githubReleaseToken: config.githubReleaseToken,
+    githubApiBaseUrl: config.githubApiBaseUrl,
+    cacheTtlMs: config.updateCacheTtlMs,
+  });
+
   const app = Fastify({ logger: false });
   await app.register(cors, { origin: true });
 
@@ -89,6 +99,7 @@ export async function createServer(
       heroCount: STANDARD_HERO_COUNT,
       deckTotal: STANDARD_DECK_TOTAL,
       googleConfigured: authService.isGoogleConfigured,
+      updateProxyConfigured: updateProxy.isConfigured,
       timestamp: new Date().toISOString(),
     };
   });
@@ -96,6 +107,7 @@ export async function createServer(
   registerAuthRoutes(app, { authService, persistence });
   registerStatsRoutes(app, persistence);
   registerRoomRoutes(app, { authService, roomManager });
+  registerUpdateProxyRoutes(app, updateProxy);
 
   const wss = new WebSocketServer({
     server: app.server,
@@ -275,6 +287,7 @@ export async function createServer(
     authService,
     roomManager,
     coordinator,
+    updateProxy,
     config,
   };
 }

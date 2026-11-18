@@ -1,4 +1,7 @@
-import type { PersistedClientState } from './lib/types.js';
+import type {
+  DesktopUpdateState,
+  PersistedClientState,
+} from './lib/types.js';
 
 export interface LocalAuthCallbackPayload {
   readonly code: string;
@@ -19,6 +22,15 @@ export interface LkdfDesktopBridge {
   saveClientState: (
     patch: Partial<PersistedClientState>,
   ) => Promise<PersistedClientState>;
+  checkForUpdates: (
+    serverUrl: string,
+    forceRefresh?: boolean,
+  ) => Promise<DesktopUpdateState>;
+  startOneClickUpdate: (serverUrl: string) => Promise<DesktopUpdateState>;
+  quitAndInstallUpdate: () => Promise<void>;
+  onUpdateStatus: (
+    listener: (state: DesktopUpdateState) => void,
+  ) => () => void;
 }
 
 declare global {

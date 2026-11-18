@@ -1,11 +1,20 @@
 import type { PlayerCount } from '@lkdf/shared';
-import { Suspense, lazy, useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  Suspense,
+  lazy,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { LoginScreen } from './features/auth/LoginScreen.js';
 import { ServerWakeScreen } from './features/auth/ServerWakeScreen.js';
 import { HomeLobbyHub } from './features/lobby/HomeLobbyHub.js';
 import { WaitingRoomScreen } from './features/lobby/WaitingRoomScreen.js';
 import { MatchScreen } from './features/match/MatchScreen.js';
 import { StatsPage } from './features/stats/StatsPage.js';
+import { UpdateModal } from './features/update/UpdateModal.js';
 import {
   DEFAULT_SERVER_URL,
   createApiClient,
@@ -13,6 +22,7 @@ import {
   saveClientStatePatch,
 } from './lib/api.js';
 import type {
+  DesktopUpdateState,
   HealthCheckResponse,
   RoomViewerPayload,
   UserProfile,
@@ -23,6 +33,27 @@ const DevMatchPreviewLazy = lazy(() =>
     default: mod.DevMatchPreview,
   })),
 );
+
+function createIdleUpdateState(currentVersion: string): DesktopUpdateState {
+  return {
+    phase: 'IDLE',
+    currentVersion,
+    latestVersion: null,
+    releaseName: null,
+    releaseNotes: '',
+    publishedAt: null,
+    installerName: null,
+    installerSizeBytes: null,
+    downloadPath: null,
+    percent: null,
+    transferredBytes: null,
+    totalBytes: null,
+    bytesPerSecond: null,
+    canAutoInstall: false,
+    manualDownloadSavedPath: null,
+    messageVi: null,
+  };
+}
 
 function readDevPreviewSeatsFromUrl(): PlayerCount | null {
   if (!import.meta.env.DEV) {
@@ -65,6 +96,11 @@ export function App() {
   const [justLoggedIn, setJustLoggedIn] = useState<boolean>(false);
   const [loginNotice, setLoginNotice] = useState<string | null>(null);
   const [isRestoringSession, setIsRestoringSession] = useState<boolean>(false);
+  const [updateState, setUpdateState] = useState<DesktopUpdateState>(() =>
+    createIdleUpdateState('0.1.0'),
+  );
+  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState<boolean>(false);
+  const checkedUpdateServerRef = useRef<string | null>(null);
 
   const api = useMemo(() => createApiClient(serverUrl), [serverUrl]);
 
@@ -107,7 +143,157 @@ export function App() {
     };
   }, []);
 
+  useEffect(() => {
+    const bridge = window.lkdfDesktop;
+    if (!bridge) {
+      return undefined;
+    }
+    return bridge.onUpdateStatus((next) => {
+      setUpdateState(next);
+      if (
+        next.phase === 'AVAILABLE' ||
+        next.phase === 'DOWNLOADING' ||
+        next.phase === 'INSTALLING'
+      ) {
+        setIsUpdateModalOpen(true);
+      }
+    });
+  }, []);
+
+  const runUpdateCheck = useCallback(
+    async (options: {
+      readonly silentIfUpToDate: boolean;
+      readonly forceRefresh?: boolean;
+    }): Promise<void> => {
+      const bridge = window.lkdfDesktop;
+      if (!options.silentIfUpToDate) {
+        setUpdateState((prev) => ({
+          ...prev,
+          currentVersion: appVersion,
+          phase: 'CHECKING',
+          messageVi: null,
+        }));
+        setIsUpdateModalOpen(true);
+      }
+
+      if (bridge) {
+        try {
+          const next = await bridge.checkForUpdates(
+            serverUrl,
+            Boolean(options.forceRefresh),
+          );
+          setUpdateState(next);
+          if (next.phase === 'AVAILABLE') {
+            setIsUpdateModalOpen(true);
+          } else if (!options.silentIfUpToDate) {
+            setIsUpdateModalOpen(true);
+          }
+        } catch (err: unknown) {
+          if (!options.silentIfUpToDate) {
+            setUpdateState((prev) => ({
+              ...prev,
+              phase: 'ERROR',
+              messageVi:
+                err instanceof Error
+                  ? err.message
+                  : 'Không thể kiểm tra cập nhật mới.',
+            }));
+            setIsUpdateModalOpen(true);
+          }
+        }
+        return;
+      }
+
+      try {
+        const res = await api.getLatestUpdate(appVersion, options.forceRefresh);
+        if (res.configured && res.hasRelease && res.updateAvailable) {
+          setUpdateState({
+            ...createIdleUpdateState(appVersion),
+            phase: 'AVAILABLE',
+            latestVersion: res.latestVersion,
+            releaseName: res.releaseName,
+            releaseNotes: res.releaseNotes,
+            publishedAt: res.publishedAt,
+            installerName: res.primaryInstaller?.name ?? null,
+            installerSizeBytes: res.primaryInstaller?.size ?? null,
+            downloadPath: res.primaryInstaller?.downloadPath ?? null,
+            canAutoInstall: false,
+          });
+          setIsUpdateModalOpen(true);
+          return;
+        }
+
+        const msg =
+          res.messageVi ??
+          `Bạn đang dùng phiên bản mới nhất (v${appVersion}).`;
+        setUpdateState({
+          ...createIdleUpdateState(appVersion),
+          phase: 'UP_TO_DATE',
+          latestVersion: res.latestVersion,
+          releaseName: res.releaseName,
+          releaseNotes: res.releaseNotes,
+          publishedAt: res.publishedAt,
+          messageVi: msg,
+        });
+        if (!options.silentIfUpToDate) {
+          setIsUpdateModalOpen(true);
+        }
+      } catch (err: unknown) {
+        if (!options.silentIfUpToDate) {
+          setUpdateState({
+            ...createIdleUpdateState(appVersion),
+            phase: 'ERROR',
+            messageVi:
+              err instanceof Error
+                ? err.message
+                : 'Không thể kiểm tra bản cập nhật mới từ máy chủ.',
+          });
+          setIsUpdateModalOpen(true);
+        }
+      }
+    },
+    [api, appVersion, serverUrl],
+  );
+
+  useEffect(() => {
+    if (!health || screen === 'DEV_PREVIEW') {
+      return;
+    }
+    if (checkedUpdateServerRef.current === serverUrl) {
+      return;
+    }
+    checkedUpdateServerRef.current = serverUrl;
+    void runUpdateCheck({ silentIfUpToDate: true });
+  }, [health, runUpdateCheck, screen, serverUrl]);
+
+  const handleStartOneClickUpdate = useCallback(() => {
+    const bridge = window.lkdfDesktop;
+    if (bridge) {
+      void bridge.startOneClickUpdate(serverUrl);
+      return;
+    }
+    if (updateState.downloadPath) {
+      const targetUrl = `${api.baseUrl}${updateState.downloadPath.startsWith('/') ? '' : '/'}${updateState.downloadPath}`;
+      window.open(targetUrl, '_blank', 'noopener,noreferrer');
+      setUpdateState((prev) => ({
+        ...prev,
+        phase: 'DOWNLOADED',
+        percent: 100,
+        messageVi:
+          'Đã mở liên kết tải bộ cài trực tiếp từ máy chủ cập nhật. Hãy chạy tệp vừa tải về để cài đặt.',
+      }));
+    }
+  }, [api.baseUrl, serverUrl, updateState.downloadPath]);
+
+  const handleInstallUpdateNow = useCallback(() => {
+    const bridge = window.lkdfDesktop;
+    if (bridge) {
+      void bridge.quitAndInstallUpdate();
+    }
+  }, []);
+
   const handleServerUrlChange = useCallback(async (nextUrl: string) => {
+    checkedUpdateServerRef.current = null;
     const saved = await saveClientStatePatch({ serverUrl: nextUrl });
     setServerUrl(saved.serverUrl);
     setHealth(null);
@@ -250,9 +436,34 @@ export function App() {
             {health ? 'Máy chủ sẵn sàng' : 'Đang kết nối'}
           </span>
 
-          <span className="font-mono-num text-xs tabular-nums text-[#9CA3AF]">
-            v{appVersion}
-          </span>
+          {updateState.phase === 'AVAILABLE' && updateState.latestVersion ? (
+            <button
+              type="button"
+              onClick={() => setIsUpdateModalOpen(true)}
+              className="inline-flex items-center gap-1.5 rounded-full border border-[#D99B26] bg-[#C83E37] px-3 py-1 font-mono-num text-[11px] font-semibold tabular-nums text-[#F4EFE6] shadow transition-colors hover:bg-[#D94A42]"
+            >
+              ⬇️ Có bản v{updateState.latestVersion}
+            </button>
+          ) : (
+            <button
+              type="button"
+              disabled={!health}
+              title={
+                health
+                  ? 'Kiểm tra phiên bản cập nhật mới'
+                  : 'Chờ kết nối máy chủ để kiểm tra cập nhật'
+              }
+              onClick={() => {
+                void runUpdateCheck({
+                  silentIfUpToDate: false,
+                  forceRefresh: true,
+                });
+              }}
+              className="inline-flex items-center gap-1 rounded-full border border-[#30363D] bg-[#14171A] px-2.5 py-0.5 font-mono-num text-xs tabular-nums text-[#D1D5DB] transition-colors hover:border-[#D99B26] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              🔄 v{appVersion}
+            </button>
+          )}
         </div>
       </header>
       ) : null}
@@ -360,6 +571,20 @@ export function App() {
           onBack={() => setScreen(statsReturnScreen)}
         />
       ) : null}
+
+      <UpdateModal
+        open={isUpdateModalOpen}
+        updateState={updateState}
+        onStartUpdate={handleStartOneClickUpdate}
+        onRecheck={() => {
+          void runUpdateCheck({
+            silentIfUpToDate: false,
+            forceRefresh: true,
+          });
+        }}
+        onInstallNow={handleInstallUpdateNow}
+        onClose={() => setIsUpdateModalOpen(false)}
+      />
     </main>
   );
 }

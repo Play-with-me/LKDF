@@ -1,0 +1,85 @@
+name: Release Windows Installer (.exe + latest.yml)
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Số phiên bản muốn đóng gói (VD: 1.0.0)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows-release:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Resolve release version & tag
+        id: meta
+        shell: pwsh
+        run: |
+          if ("${{ github.event_name }}" -eq "workflow_dispatch") {
+            $ver = "${{ github.event.inputs.version }}".Trim().TrimStart('v', 'V')
+            $tag = "v$ver"
+          } else {
+            $tag = "${{ github.ref_name }}".Trim()
+            $ver = $tag.TrimStart('v', 'V')
+          }
+          if ($ver -notmatch '^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$') {
+            throw "Phiên bản không hợp lệ: $ver"
+          }
+          echo "version=$ver" >> $env:GITHUB_OUTPUT
+          echo "tag=$tag" >> $env:GITHUB_OUTPUT
+
+      - name: Sync workspace version for installer metadata
+        shell: pwsh
+        run: |
+          npm --workspace=@lkdf/desktop version --no-git-tag-version --allow-same-version "${{ steps.meta.outputs.version }}"
+
+      - name: Inject public Cloud server URL (if configured in Repo Variables)
+        shell: pwsh
+        env:
+          BAKED_URL: ${{ vars.LKDF_SERVER_URL }}
+        run: |
+          if ($env:BAKED_URL -and $env:BAKED_URL.Trim().Length -gt 0) {
+            $trimmed = $env:BAKED_URL.Trim().TrimEnd('/')
+            $env:TRIMMED_URL = $trimmed
+            node -e "const fs=require('node:fs'); fs.writeFileSync('apps/desktop/assets/default-server.json', JSON.stringify({ defaultServerUrl: process.env.TRIMMED_URL }, null, 2));"
+            echo "VITE_LKDF_SERVER_URL=$trimmed" >> $env:GITHUB_ENV
+          }
+
+      - name: Verify typecheck & tests before packaging
+        run: |
+          npm run typecheck
+          npm run test:unit
+          npm run test:integration
+
+      - name: Package Windows NSIS Installer (.exe + latest.yml)
+        run: npm run package:win
+
+      - name: Publish artifacts to GitHub Releases (Private Repo)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.meta.outputs.tag }}
+          name: Tam Quốc Sát LKDF ${{ steps.meta.outputs.tag }}
+          generate_release_notes: true
+          files: |
+            apps/desktop/release/TamQuocSat-LKDF-Setup-${{ steps.meta.outputs.version }}.exe
+            apps/desktop/release/TamQuocSat-LKDF-Setup-${{ steps.meta.outputs.version }}.exe.blockmap
+            apps/desktop/release/latest.yml

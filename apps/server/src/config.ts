@@ -12,6 +12,10 @@ export interface ServerConfig {
   readonly googleRedirectUri: string;
   readonly jwtSessionSecret: string;
   readonly isEphemeralJwtSecret: boolean;
+  readonly githubRepo: string;
+  readonly githubReleaseToken: string;
+  readonly githubApiBaseUrl: string;
+  readonly updateCacheTtlMs: number;
 }
 
 export interface MatchCoordinatorConfig {
@@ -58,6 +62,17 @@ export function loadServerConfig(overrides?: Partial<ServerConfig>): ServerConfi
   const databaseUrl = databaseUrlRaw.trim().length > 0 ? databaseUrlRaw.trim() : ':memory:';
   const databaseAuthTokenRaw =
     overrides?.databaseAuthToken ?? process.env.DATABASE_AUTH_TOKEN;
+  const githubRepoRaw =
+    overrides?.githubRepo ?? process.env.GITHUB_REPO ?? 'Play-with-me/LKDF';
+  const githubReleaseTokenRaw =
+    overrides?.githubReleaseToken ?? process.env.GITHUB_RELEASE_TOKEN ?? '';
+  const githubApiBaseUrlRaw =
+    overrides?.githubApiBaseUrl ??
+    process.env.GITHUB_API_BASE_URL ??
+    'https://api.github.com';
+  const updateCacheTtlRaw =
+    overrides?.updateCacheTtlMs ??
+    Number(process.env.UPDATE_CACHE_TTL_MS ?? 60_000);
 
   return {
     port: overrides?.port ?? Number(process.env.PORT ?? 3001),
@@ -76,5 +91,16 @@ export function loadServerConfig(overrides?: Partial<ServerConfig>): ServerConfi
       'http://localhost:3001/api/auth/google/callback',
     jwtSessionSecret,
     isEphemeralJwtSecret,
+    githubRepo:
+      githubRepoRaw.trim().length > 0
+        ? githubRepoRaw.trim()
+        : 'Play-with-me/LKDF',
+    githubReleaseToken: githubReleaseTokenRaw.trim(),
+    githubApiBaseUrl:
+      githubApiBaseUrlRaw.trim().replace(/\/+$/, '') || 'https://api.github.com',
+    updateCacheTtlMs:
+      Number.isFinite(updateCacheTtlRaw) && updateCacheTtlRaw >= 0
+        ? updateCacheTtlRaw
+        : 60_000,
   };
 }

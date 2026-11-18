@@ -1,16 +1,43 @@
 import { app, BrowserWindow, dialog, ipcMain, shell } from 'electron';
+import { readFileSync } from 'node:fs';
 import fs from 'node:fs/promises';
 import http from 'node:http';
 import path from 'node:path';
-import { autoUpdater } from 'electron-updater';
+import { createDesktopUpdaterController } from './updater.cjs';
 
 interface PersistedClientState {
   readonly serverUrl: string;
   readonly sessionToken: string | null;
 }
 
-const DEFAULT_SERVER_URL =
-  process.env['LKDF_SERVER_URL']?.trim() || 'http://127.0.0.1:3001';
+function readBakedDefaultServerUrl(): string {
+  const fromEnv = process.env['LKDF_SERVER_URL']?.trim();
+  if (fromEnv) {
+    return fromEnv;
+  }
+  try {
+    const configPath = path.join(
+      __dirname,
+      '..',
+      'assets',
+      'default-server.json',
+    );
+    const raw = JSON.parse(readFileSync(configPath, 'utf8')) as {
+      defaultServerUrl?: unknown;
+    };
+    if (
+      typeof raw.defaultServerUrl === 'string' &&
+      raw.defaultServerUrl.trim().length > 0
+    ) {
+      return raw.defaultServerUrl.trim();
+    }
+  } catch {
+    // Mặc định localhost nếu chưa cấu hình máy chủ Cloud
+  }
+  return 'http://127.0.0.1:3001';
+}
+
+const DEFAULT_SERVER_URL = readBakedDefaultServerUrl();
 const CLIENT_STATE_FILENAME = 'lkdf-client-state.json';
 
 let mainWindow: BrowserWindow | null = null;
@@ -326,8 +353,29 @@ ipcMain.handle(
   },
 );
 
-// Tham chiếu sẵn autoUpdater cho Giai đoạn 5 (1-Click Update qua Update Proxy)
-void autoUpdater;
+const updaterController = createDesktopUpdaterController({
+  getMainWindow: () => mainWindow,
+  sanitizeServerUrl,
+  prepareForAutoRestart: () => {
+    matchCloseGuardActive = false;
+    allowForceClose = true;
+  },
+});
+
+ipcMain.handle(
+  'update:check',
+  async (_event, serverUrl: string, forceRefresh?: boolean) => {
+    return updaterController.checkForUpdates(serverUrl, Boolean(forceRefresh));
+  },
+);
+
+ipcMain.handle('update:startOneClick', async (_event, serverUrl: string) => {
+  return updaterController.startOneClickUpdate(serverUrl);
+});
+
+ipcMain.handle('update:quitAndInstall', () => {
+  updaterController.quitAndInstallNow();
+});
 
 app.whenReady().then(() => {
   mainWindow = createMainWindow();

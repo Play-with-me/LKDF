@@ -173,3 +173,61 @@ export interface UserStatsDetailResponse {
   readonly player: PublicPlayerInfo;
   readonly stats: UserStats;
 }
+
+export interface UpdateAssetSummary {
+  readonly name: string;
+  readonly size: number;
+  readonly sha512: string | null;
+  readonly downloadPath: string;
+}
+
+export interface LatestUpdateInfoResponse {
+  readonly ok: true;
+  readonly configured: boolean;
+  readonly hasRelease: boolean;
+  readonly currentVersion: string | null;
+  readonly latestVersion: string | null;
+  readonly updateAvailable: boolean;
+  readonly tagName: string | null;
+  readonly releaseName: string | null;
+  readonly releaseNotes: string;
+  readonly publishedAt: string | null;
+  readonly ymlAvailable: boolean;
+  readonly feedUrl: string;
+  readonly primaryInstaller: UpdateAssetSummary | null;
+  readonly assets: readonly {
+    readonly name: string;
+    readonly size: number;
+    readonly downloadPath: string;
+  }[];
+  readonly messageVi?: string;
+}
+
+export type UpdateStatusPhase =
+  | 'IDLE'
+  | 'CHECKING'
+  | 'UP_TO_DATE'
+  | 'AVAILABLE'
+  | 'DOWNLOADING'
+  | 'DOWNLOADED'
+  | 'INSTALLING'
+  | 'ERROR';
+
+export interface DesktopUpdateState {
+  readonly phase: UpdateStatusPhase;
+  readonly currentVersion: string;
+  readonly latestVersion: string | null;
+  readonly releaseName: string | null;
+  readonly releaseNotes: string;
+  readonly publishedAt: string | null;
+  readonly installerName: string | null;
+  readonly installerSizeBytes: number | null;
+  readonly downloadPath: string | null;
+  readonly percent: number | null;
+  readonly transferredBytes: number | null;
+  readonly totalBytes: number | null;
+  readonly bytesPerSecond: number | null;
+  readonly canAutoInstall: boolean;
+  readonly manualDownloadSavedPath: string | null;
+  readonly messageVi: string | null;
+}
