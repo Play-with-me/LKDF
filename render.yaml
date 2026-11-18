@@ -2,8 +2,9 @@ services:
   - type: web
     name: lkdf-tam-quoc-sat-server
     runtime: node
+    region: singapore
     plan: free
-    buildCommand: npm ci && npm run build:shared && npm run build --workspace=@lkdf/server
+    buildCommand: npm ci --workspace=@lkdf/server --workspace=@lkdf/shared --include-workspace-root && npm run build:shared && npm run build --workspace=@lkdf/server
     startCommand: npm run start --workspace=@lkdf/server
     healthCheckPath: /api/health
     autoDeployTrigger: commit

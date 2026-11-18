@@ -193,7 +193,7 @@ Hãy gọi kèm `/honest-advisor` và `/ultrathinking` như bạn đã dùng r�
 1. Mở **`https://dashboard.render.com/`** → Đăng nhập nhanh bằng tài khoản **GitHub** của bạn.
 2. Bấm nút **`New +`** ở góc trên phải → chọn **`Blueprint`**.
 3. Chọn đúng kho GitHub Private **`Play-with-me/LKDF`** (nếu lần đầu chưa thấy, bấm *Configure GitHub Account* để cấp quyền Render đọc kho `LKDF`) → bấm **Connect**.
-4. Nhờ có sẵn tệp `render.yaml` trong dự án, Render **tự điền sẵn hết lệnh cài & chạy**. Bạn chỉ cần đặt tên (VD: `lkdf-server`) và điền các ô giá trị còn trống ở bảng **Environment Variables**:
+4. Nhờ có sẵn tệp `render.yaml` trong dự án, Render **tự chọn sẵn máy chủ Singapore (cho mượt ở Việt Nam) và điền sẵn hết lệnh cài & chạy**. Bạn chỉ cần đặt tên (VD: `lkdf-server`) và điền các ô giá trị còn trống ở bảng **Environment Variables**:
    - `DATABASE_URL` ← dán **(1)**
    - `DATABASE_AUTH_TOKEN` ← dán **(2)**
    - `GITHUB_RELEASE_TOKEN` ← dán **(3)**

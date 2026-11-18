@@ -50,12 +50,14 @@ Toàn bộ hệ thống vận hành trên 4 dịch vụ miễn phí kết nối 
 4. Sao chép Token đó gán làm biến `GITHUB_RELEASE_TOKEN` trên Máy chủ Cloud.
 
 ### Bước 2.4 — Đưa Máy Chủ (`apps/server`) Lên Cloud 0 Đồng (Render.com)
-Kho mã nguồn đã chuẩn bị sẵn file [render.yaml](./render.yaml) tự động điền lệnh Build/Start:
+Kho mã nguồn đã chuẩn bị sẵn file [render.yaml](./render.yaml) tự động đặt máy chủ tại **Singapore** và điền sẵn lệnh Build/Start (chỉ cài `@lkdf/server` & `@lkdf/shared` để không kéo theo Electron lúc build):
 1. Vào [Render.com](https://render.com/) → **New + → Blueprint** (hoặc *Web Service*) → chọn kho GitHub Private `Play-with-me/LKDF`.
-2. Render tự nhận các lệnh từ `render.yaml`:
-   - **Build Command:** `npm ci && npm run build:shared && npm run build --workspace=@lkdf/server`
+2. Render tự nhận cấu hình từ `render.yaml`:
+   - **Region:** `singapore` (ping thấp cho Việt Nam)
+   - **Build Command:** `npm ci --workspace=@lkdf/server --workspace=@lkdf/shared --include-workspace-root && npm run build:shared && npm run build --workspace=@lkdf/server`
    - **Start Command:** `npm run start --workspace=@lkdf/server`
    - **Health Check Path:** `/api/health`
+   - *(Lưu ý gói Render Free: có giới hạn băng thông **5 GB/tháng**; nên gửi bản cài lớn đầu tiên `v1.0.0` cho bạn bè qua Google Drive và giữ cập nhật 1-Click qua Render cho các bản vá nhẹ giữa các đợt chơi).*
 3. Điền đầy đủ biến môi trường (*Environment Variables*):
    - `NODE_ENV=production`
    - `JWT_SESSION_SECRET=<chuỗi ngẫu nhiên dài >= 32 ký tự>` *(hoặc để Render tự sinh qua `generateValue`)*
