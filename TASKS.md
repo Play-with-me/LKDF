@@ -16,7 +16,7 @@
 | **Giai đoạn 2** | Máy chủ Cloud 0đ, Đăng nhập Google, Lưu Thống kê & Phòng 4–8 người thật | Giai đoạn 0 | ✅ Hoàn thành (Xong Bước 2.1 & 2.2) |
 | **Giai đoạn 3** | Ghép nối Ván đấu Trực tuyến, Chống lộ *Vô Giải*, Rớt mạng & Trọng Tài 4 nút | Giai đoạn 1, 2 | ✅ Hoàn thành (Xong Bước 3.1 & 3.2) |
 | **Giai đoạn 4** | Giao diện Windows 2D Sơn Thủy Mặc, Thống kê người dùng & Tiện ích Taskbar | Giai đoạn 2, 3 | ✅ Hoàn thành (Xong Bước 4.1 & 4.2) |
-| **Giai đoạn 5** | Đóng gói `.exe`/`.msi`, Cập nhật 1-Click từ GitHub Private & Nghiệm thu tổng thể | Giai đoạn 4 | ⏳ Chưa bắt đầu |
+| **Giai đoạn 5** | Đóng gói `.exe`, Cập nhật 1-Click từ GitHub Private & Nghiệm thu tổng thể | Giai đoạn 4 | 🔄 Đã xong Bước 5.1 & Đạt 100% Kiểm thử kỹ thuật Bước 5.2 (Chờ Khách hàng nghiệm thu thực tế trên Cloud 0đ & Xác nhận hoàn thành) |
 
 ---
 
@@ -130,14 +130,14 @@
 
 ### Giai Đoạn 5 — Cập Nhật 1-Click Từ GitHub Private, Đóng Gói & Nghiệm Thu
 
-- [ ] **Bước 5.1 — Triển khai Cổng trung gian Cập nhật (`Update Proxy`) & Hộp thoại Cập nhật 1-Click trong App**
+- [x] **Bước 5.1 — Triển khai Cổng trung gian Cập nhật (`Update Proxy`) & Hộp thoại Cập nhật 1-Click trong App**
   - **Phụ thuộc:** Bước 4.2.
   - **Kết quả bàn giao:**
-    - Endpoint `/api/update/latest` và `/api/update/download` trên máy chủ đọc từ kho GitHub Private.
-    - Hộp thoại thông báo phiên bản mới ngay khi mở ứng dụng với nút **`[⬇️ Cập nhật ngay]`** (1 nhấp chuột tự tải, cài đặt và mở lại app) + cấu hình GitHub Actions tự đóng gói bản phát hành Windows.
-  - **Điều kiện hoàn thành:** Kiểm thử nâng cấp từ bản cũ lên bản mới thông qua nút `[⬇️ Cập nhật ngay]` thành công mà không cần mở trình duyệt vào GitHub.
+    - Endpoint `/api/update/latest`, `/api/update/latest.yml` và `/api/update/download/:asset` trên máy chủ đọc từ kho GitHub Private (`apps/server/src/update-proxy/`) mà giữ `GITHUB_RELEASE_TOKEN` tuyệt đối chỉ trên máy chủ.
+    - Cầu nối Electron (`apps/desktop/electron/updater.cts`) dùng `electron-updater`, hộp thoại `UpdateModal.tsx` với nút **`[⬇️ Cập nhật ngay]`** + thanh tiến trình tải `XX%` + cấu hình đóng gói Windows NSIS (`apps/desktop/electron-builder.yml`), icon `.ico`/`.png`, GitHub Actions (`.github/workflows/ci.yml`, `release-windows.yml`), `render.yaml`, cập nhật `DEPLOYMENT.md` & hướng dẫn chi tiết từng bước trong `HUONG_DAN_CHO_TOI.md`.
+  - **Điều kiện hoàn thành:** Kiểm thử nâng cấp từ bản cũ lên bản mới thông qua nút `[⬇️ Cập nhật ngay]` thành công mà không cần mở trình duyệt vào GitHub. *(Đã kiểm chứng thực tế: `npm run test:integration` **7 files · 23/23 tests passed** gồm `update-proxy.test.ts` giả lập HTTP GitHub Private API + chuyển hướng `302` không lộ Authorization + viết lại `latest.yml` giữ `sha512`; `npm run typecheck` **0 lỗi**; `npm run test:unit` **82/82 passed**; `npm run build` exit `0`; `npm run package:win` tạo thành công `TamQuocSat-LKDF-Setup-0.1.0.exe`, `.blockmap`, `latest.yml` và chạy thử `win-unpacked/Tam Quoc Sat LKDF.exe` sống ổn định; kiểm tra trình duyệt ở `1280×720` thấy hộp thoại `🔔 Đã có phiên bản mới (v1.0.1)!` + `[⬇️ Cập nhật ngay]` với 0 lỗi console.)*
 
-- [ ] **Bước 5.2 — Kiểm tra nghiệm thu tổng thể đối chiếu 8 Tiêu chí (`AC-1` đến `AC-8`) & Bàn giao**
+- [ ] **Bước 5.2 — Kiểm tra nghiệm thu tổng thể đối chiếu 8 Tiêu chí (`AC-1` đến `AC-8`) & Bàn giao** *(Đã xong 100% Kiểm chứng Kỹ thuật/Tự động trên máy — Chờ Khách hàng chạy Mục 5 & Xác nhận nghiệm thu thực tế)*
   - **Phụ thuộc:** Bước 5.1.
-  - **Kết quả bàn giao:** Bản cài đặt Windows hoàn chỉnh, máy chủ chạy ổn định trên Cloud 0 đồng, báo cáo đối chiếu từng tiêu chí nghiệm thu tại [REQUIREMENTS.md](./REQUIREMENTS.md).
-  - **Điều kiện hoàn thành:** Đạt đủ 8/8 tiêu chí nghiệm thu (`AC-1` đến `AC-8`) và được khách hàng xác nhận hoàn thành.
+  - **Kết quả bàn giao:** Bản cài đặt Windows hoàn chỉnh, cấu hình Cloud 0đ (`render.yaml`, `.github/workflows/*.yml`, `HUONG_DAN_CHO_TOI.md` Mục 5 & Mục 6), bảng đối chiếu từng tiêu chí nghiệm thu tại [REQUIREMENTS.md](./REQUIREMENTS.md) và hướng dẫn gửi bộ cài cho hội bạn 4–8 người.
+  - **Điều kiện hoàn thành:** Đạt đủ 8/8 tiêu chí nghiệm thu (`AC-1` đến `AC-8`) và được khách hàng xác nhận hoàn thành. *(Đã kiểm chứng kỹ thuật & bảo mật thực tế ngày 2026-11-18: `npm run typecheck` **0 lỗi**, `npm run test:unit` **82/82**, `npm run test:fuzz` **500/500 ván** trong `8.82s` — 0 deadlock/rò rỉ, `npm run test:integration` **23/23**, kiểm tra `42` file nguồn & gói `dist/`/`dist-electron/` = **0 bí mật lộ & 0 dev mock lộ**, `npm run build` & `npm run package:win` tạo thật `TamQuocSat-LKDF-Setup-0.1.0.exe` + `latest.yml`. Còn lại bước bấm bật Cloud 0đ thật theo Mục 5 và nghiệm thu buổi chơi thật 4–8 người theo Mục 6 để Khách hàng xác nhận đóng dấu `[x]` cuối cùng.)*

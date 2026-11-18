@@ -6,8 +6,8 @@
 
 ## 1. Tình Trạng Hiện Tại Của Dự Án
 
-- **Giai đoạn hiện tại:** Hoàn thành **Bước 0.1** trong [TASKS.md](./TASKS.md) — Đã chốt 100% yêu cầu với khách hàng và hoàn tất **Bộ 11 Tài liệu chuẩn của dự án** (chưa viết mã nguồn).
-- **Bước tiếp theo:** Thực hiện **Bước 0.2** trong [TASKS.md](./TASKS.md) — Khởi tạo cấu trúc Monorepo (`packages/shared`, `apps/server`, `apps/desktop`) và bắt đầu Giai đoạn 1 (Xây dựng Lõi Luật Thuần 108 lá bài & 25 Tướng chuẩn).
+- **Giai đoạn hiện tại:** Hoàn thành trọn vẹn mã nguồn và đóng gói từ **Giai đoạn 0 đến Bước 5.1** trong [TASKS.md](./TASKS.md) (Lõi luật 108 lá & 25 Tướng, Cloud 0đ + Google OAuth + Snapshot, WebSocket + Trọng Tài 4 nút + Chuyển quyền 30s, Giao diện Electron Windows 2D Sơn Thủy Mặc 100vh không cuộn, Cổng Update 1-Click GitHub Private & bộ cài NSIS `.exe`). Đã vượt 100% cổng kiểm chứng kỹ thuật của **Bước 5.2** (82 unit tests, 500 ván Fuzz Test không deadlock, 23 integration tests, quét bảo mật gói build & đóng gói thành công `TamQuocSat-LKDF-Setup-*.exe`).
+- **Bước tiếp theo:** Khách hàng đẩy code lên GitHub Private, bật dịch vụ Cloud 0đ theo **Mục 5** và gửi bộ cài cho nhóm 4–8 bạn chơi thử nghiệm thu theo **Mục 6** trong [HUONG_DAN_CHO_TOI.md](./HUONG_DAN_CHO_TOI.md).
 
 ---
 

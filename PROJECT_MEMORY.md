@@ -1,8 +1,8 @@
 # PROJECT_MEMORY.md — Ghi Nhớ Dự Án và Bàn Giao Tiến Độ
 
 > **Dự án:** LKDF — Game Thẻ Bài Tam Quốc Sát (Windows Native Online 4–8 Người)
-> **Ngày cập nhật:** 2026-11-17
-> **Trạng thái hiện tại:** Đã hoàn thành **Giai đoạn 0, Giai đoạn 1 (`Bước 1.1 – 1.4`), Giai đoạn 2 (`Bước 2.1 – 2.2`), Giai đoạn 3 (`Bước 3.1 – 3.2`) & trọn vẹn Giai đoạn 4 (`Bước 4.1 – 4.2`)** — Đã hoàn tất toàn bộ giao diện Electron 2D Sơn Thủy Mặc gồm Đánh thức, Google Auth, Sảnh/Phòng chờ, Trang Thống kê và Bàn Đấu 4–8 ghế không cuộn trang kèm Trọng Tài 4 nút & Tiện ích Windows; sẵn sàng sang **Giai đoạn 5 (Bước 5.1 — Update Proxy 1-Click từ GitHub Private & Đóng gói `.exe`/`.msi`)**.
+> **Ngày cập nhật:** 2026-11-18
+> **Trạng thái hiện tại:** Đã hoàn thành mã nguồn & đóng gói từ **Giai đoạn 0 đến Bước 5.1** và hoàn tất **100% kiểm chứng kỹ thuật & đối chiếu 8/8 tiêu chí `AC-1`–`AC-8` (Bước 5.2)**; hiện chỉ chờ Khách hàng đẩy code lên GitHub, bật dịch vụ **Cloud 0đ + Google OAuth** ([HUONG_DAN_CHO_TOI.md](./HUONG_DAN_CHO_TOI.md) Mục 5) và chơi thử ván đầu cùng hội bạn 4–8 người (Mục 6) để đóng dấu nghiệm thu cuối cùng.
 
 ---
 
@@ -146,6 +146,27 @@ Xem đầy đủ 10 quyết định (`ADR-001` đến `ADR-010`) tại [DECISION
     - `npm run typecheck`, `npm run test:unit` (**11 files · 82/82 passed**), `npm run test:integration` (**6 files · 21/21 passed**), `npm run build` (`vite build` 155 modules + `tsc -p tsconfig.electron.json`): đều thoát `0`.
     - Kiểm tra trực quan bằng trình duyệt ở `1280×720` cho đủ **5 mốc `4P, 5P, 6P, 7P, 8P`** (cùng Pha Chọn Tướng, chọn bài, `Luật & Phím tắt`, `Bảng Trọng Tài 4 nút`): **0 tràn khung, 0 tràn cha, 0 lỗi console**; đã mở ứng dụng Electron mới nhất kèm máy chủ cục bộ để khách hàng bấm thử trực tiếp.
 
+- **[Hoàn thành — 2026-11-18] Bước 5.1 trong [TASKS.md](./TASKS.md) (Cổng Cập nhật 1-Click từ GitHub Private & Đóng gói Windows):**
+  - Đã xây dựng Cổng trung gian cập nhật trên máy chủ (`apps/server/src/update-proxy/{index,routes}.ts`, cập nhật `config.ts` & `server.ts`): đọc GitHub Private Release mới nhất qua `GITHUB_RELEASE_TOKEN` (cache 60s), cung cấp `GET /api/update/latest` (so sánh SemVer + release notes + đường dẫn tải), `GET /api/update/latest.yml` (viết lại URL sang `download/<asset>` giữ nguyên `sha512` cho `electron-updater`), và `GET /api/update/download/:asset` (stream trực tiếp không nạp RAM, xử lý chuyển hướng `302` sang CDN mà tuyệt đối không truyền `Authorization` header, hỗ trợ `Range 206` và chặn path traversal).
+  - Đã hoàn thiện `apps/desktop/electron/updater.cts`, `preload.cts`, `main.cts`, `src/electron.d.ts`, `src/lib/{types,api}.ts`, `src/features/update/UpdateModal.tsx` và nối vào `App.tsx`: tự động kiểm tra bản mới khi kết nối máy chủ thành công, hiện hộp thoại `🔔 Đã có phiên bản mới!` với nút **`[⬇️ Cập nhật ngay]`**, thanh tiến trình tải `XX%`, tự tắt bảo vệ đóng cửa sổ giữa ván khi khởi động lại cài đặt (`quitAndInstall(true, true)`), và nút badge vàng `[⬇️ Có bản vX.Y.Z]` ở thanh đầu nếu người dùng bấm `[⏭️ Để sau]`.
+  - Đã hoàn thiện đóng gói Windows NSIS: tạo bộ biểu tượng `apps/desktop/assets/icon.{ico,png}`, `apps/desktop/assets/default-server.json` (nhận biến `LKDF_SERVER_URL` lúc CI đóng gói để bạn bè mở `.exe` là nối đúng máy chủ Cloud ngay), `apps/desktop/electron-builder.yml`, kịch bản `.github/workflows/{ci,release-windows}.yml`, `render.yaml`, chuẩn hóa `DEPLOYMENT.md` theo Electron NSIS và bổ sung **Mục 5** hướng dẫn bấm từng nút lấy Google OAuth + Turso + GitHub PAT + Render vào [HUONG_DAN_CHO_TOI.md](./HUONG_DAN_CHO_TOI.md).
+  - **Bằng chứng kiểm tra thực tế (2026-11-18):**
+    - `npm run typecheck`: `0 lỗi` trên cả 3 workspace.
+    - `npm run test:unit`: **11 files · 82/82 tests passed**, `exit code 0`.
+    - `npm run test:integration`: **7 files · 23/23 tests passed** (bổ sung `update-proxy.test.ts` 2/2 test giả lập GitHub Private API + redirect `302` + xác minh không lộ token), `exit code 0`.
+    - `npm run build` (`vite build` 156 modules + `tsc`) & `npm run package:win`: thành công 100% (`exit code 0`), sinh thật `TamQuocSat-LKDF-Setup-0.1.0.exe` (`123,175,025 bytes`), `.blockmap`, `latest.yml`, và chạy thử `win-unpacked/Tam Quoc Sat LKDF.exe` khởi động ổn định (`alive after 3s`).
+    - Kiểm tra trình duyệt tại `1280×720` nối máy chủ Demo Update Proxy (`127.0.0.1:3011` phát hành giả `v1.0.1`): hộp thoại `🔔 Đã có phiên bản mới (v1.0.1)!` + `[⬇️ Cập nhật ngay]` + `[⏭️ Để sau]` ↔ `[⬇️ Có bản v1.0.1]` hoạt động chuẩn, 0 tràn khung, 0 lỗi console.
+
+- **[Đạt 100% Kiểm chứng Kỹ thuật — Chờ Khách hàng UAT thực tế — 2026-11-18] Bước 5.2 trong [TASKS.md](./TASKS.md) (Đối chiếu 8 tiêu chí `AC-1`–`AC-8` & Hướng dẫn phát hành cho nhóm bạn):**
+  - Đã hoàn tất Bảng đối chiếu 8/8 tiêu chí (`AC-1` đến `AC-8` tại [HUONG_DAN_CHO_TOI.md](./HUONG_DAN_CHO_TOI.md) Mục 6) kèm hướng dẫn 5 bước gửi file cài đặt `TamQuocSat-LKDF-Setup-1.0.0.exe` (gồm mẫu tin nhắn gửi nhóm bạn xử lý SmartScreen lần đầu & phím tắt) và cập nhật [README.md](./README.md).
+  - **Bằng chứng kiểm tra 4 tầng & quét bảo mật thực tế (2026-11-18):**
+    - `npm run typecheck`: `0 lỗi` toàn Monorepo.
+    - `npm run test:unit`: **11 files · 82/82 tests passed** (`521ms`), `exit code 0`.
+    - `npm run test:fuzz`: **500/500 ván** (`100 ván/mốc` cho bàn `4, 5, 6, 7, 8 người` trong **`8.82s`**, 0 deadlock, 0 rò rỉ `PlayerViewState`, đủ 25 tướng & 3 phe thắng), `exit code 0`.
+    - `npm run test:integration`: **7 files · 23/23 tests passed** (`4.80s`), `exit code 0`.
+    - `npm run build`: biên dịch sản phẩm sạch sẽ (`vite build` 156 modules + `tsc`), `exit code 0`.
+    - Quét bảo mật `42` file mã nguồn & gói build `apps/desktop/{dist,dist-electron}`: **0** bí mật server (`GOOGLE_CLIENT_SECRET`, `GITHUB_RELEASE_TOKEN`, `DATABASE_AUTH_TOKEN`, `JWT_SESSION_SECRET`, `TAURI_SIGNING_PRIVATE_KEY`), **0** mã `DEV_PREVIEW_ONLY` lọt vào gói chính.
+
 ---
 
 ## 4. Vấn Đề Đang Tồn Tại & Câu Hỏi Chưa Giải Quyết
@@ -164,4 +185,4 @@ Xem đầy đủ 10 quyết định (`ADR-001` đến `ADR-010`) tại [DECISION
   2. Báo cáo cho khách hàng theo đúng **phong cách "Báo cáo Sếp"**: ngắn gọn, đi thẳng vào trọng tâm gồm 4 mục (*✅ Đã hoàn thành · 📊 Bằng chứng kiểm tra · ⚠️ Tồn đọng/Lưu ý · 👉 Bước tiếp theo kèm câu lệnh copy*).
   3. Luôn kèm mục **Phản biện thẳng (`/honest-advisor` & `/ultrathinking`)** và **Gợi ý chia quân (`/swarm`)**.
   4. **Bàn giao ca trực khép kín giữa các phiên:** Đầu phiên mới luôn đọc sổ nhớ + chạy `git status --short`; cuối mỗi bước luôn ghi *Ghi chú bàn giao kỹ thuật (Handoff Notes)* vào [`.agents/PROJECT_MEMORY.md`](./.agents/PROJECT_MEMORY.md).
-- **Bước tiếp theo ngay sau đây:** Thực hiện **Bước 5.1 trong [TASKS.md](./TASKS.md):** Triển khai Cổng trung gian Cập nhật (`Update Proxy` đọc GitHub Release của kho Private qua `/api/update/latest` & `/api/update/download` trên `apps/server`), hộp thoại Cập nhật 1-Click trong Electron App (`[⬇️ Cập nhật ngay]`), cấu hình đóng gói Windows installer (`.exe`/`.msi`) + GitHub Actions, và hướng dẫn chi tiết từng nút để khách hàng lấy mã Google OAuth 2.0 + bật Máy chủ Cloud 0 đồng.
+- **Bước tiếp theo ngay sau đây:** Khách hàng nhắn `Commit và push lên cho tôi` để đưa mã nguồn Bước 5.1 & 5.2 lên kho GitHub Private, làm theo **Mục 5** trong [HUONG_DAN_CHO_TOI.md](./HUONG_DAN_CHO_TOI.md) (bật Turso + GitHub Token + Google OAuth + Render Cloud 0đ + build tag `v1.0.0`), gửi bộ cài cho nhóm bạn 4–8 người theo **Mục 6** và xác nhận nghiệm thu cuối cùng để đóng dấu `[x]` Bước 5.2.

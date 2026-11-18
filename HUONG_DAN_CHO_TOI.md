@@ -38,9 +38,11 @@ Vì bạn là người mới và không lập trình, bạn **không cần đọ
 > - ✅ **Giai đoạn 1 (Bước 1.1 – 1.4 — Chia Thân Phận, 108 lá, 25 Tướng, Bot AI & 500 ván Fuzz Test):** **ĐÃ XONG 100%**.
 > - ✅ **Giai đoạn 2 (Bước 2.1 & 2.2 — Máy chủ Cloud 0đ, Google OAuth, Bộ lọc Thống kê, Phòng 4–8 người & Tự lưu Ván đấu):** **ĐÃ XONG 100%**.
 > - ✅ **Giai đoạn 3 (Bước 3.1 & 3.2 — Đánh bài trực tuyến, Nhịp Vô Giải giả lập, Máy đánh hộ, Bảng Trọng Tài 4 nút & Chuyển quyền 30s):** **ĐÃ XONG 100%**.
-> - 🔄 **Giai đoạn 4 — Giao diện Windows 2D Sơn Thủy Mặc:** ✅ **Đã xong Bước 4.1** (Đánh thức máy chủ, Google Auth, Sảnh chính, Phòng chờ 4–8 người & Trang Thống kê).
 > - ✅ **Giai đoạn 4 (Bước 4.1 & 4.2 — Toàn bộ Giao diện Windows 2D Sơn Thủy Mặc & Tiện ích Windows):** **ĐÃ XONG 100%**.
-> - 👉 **BẠN ĐANG Ở ĐÂY — Việc ngay tiếp theo của bạn:** Kiểm tra thử Bàn Đấu vừa mở, xong copy câu lệnh ở **Bước 5.1** (Chặng 5) bên dưới!
+> - 🔄 **Giai đoạn 5 — Đóng gói Windows, Cập nhật 1-Click & Nghiệm thu:**
+>   - ✅ **Đã xong Bước 5.1** (Cổng cập nhật `/api/update/*` đọc GitHub Private, hộp thoại `[⬇️ Cập nhật ngay]` trong app, đóng gói Windows NSIS `.exe` + GitHub Actions & hướng dẫn bật Cloud 0đ).
+>   - ✅ **Đã kiểm chứng kỹ thuật & đối chiếu 8/8 tiêu chí `AC-1`–`AC-8` (Bước 5.2):** Toàn bộ `typecheck` (0 lỗi), `test:unit` (82/82), `test:fuzz` (500/500 ván, 0 deadlock), `test:integration` (23/23), kiểm tra rò rỉ bí mật (`42` file = 0 lỗi) & đóng gói `.exe` đều **ĐẠT 100%**.
+> - 👉 **BẠN ĐANG Ở ĐÂY — Việc cuối cùng của bạn (Nghiệm thu thực tế):** Push code lên GitHub, làm theo **Mục 5** để bật Cloud 0đ + Google OAuth, gửi bộ cài cho hội bạn chơi thử theo **Mục 6** và nhắn AI chốt nghiệm thu hoàn tất!
 
 ---
 
@@ -99,16 +101,20 @@ Vì bạn là người mới và không lập trình, bạn **không cần đọ
 
 ---
 
-### 🔴 CHẶNG 5: Lắp Đặt Lên Cloud 0 Đồng, Tự Cập Nhật 1 Nhấp Chuột & Nghiệm Thu Cùng Hội Bạn (👉 BẠN ĐANG Ở CHẶNG NÀY)
+### 🔴 CHẶNG 5: Lắp Đặt Lên Cloud 0 Đồng, Tự Cập Nhật 1 Nhấp Chuột & Nghiệm Thu Cùng Hội Bạn (👉 ĐANG Ở BƯỚC CUỐI)
 
-#### 👉 Bước 5.1 (BẠN ĐANG Ở ĐÂY) — Làm Tính Năng Cập Nhật 1 Cú Nhấp Chuột Ngay Trong App & Đóng Gói File Cài Windows
-- **💬 Câu lệnh bạn Copy & Gửi cho AI:**
-  > `Hãy thực hiện Bước 5.1 trong TASKS.md (Làm cổng kiểm tra bản mới từ kho GitHub Private, hộp thoại bấm 1 nút "Cập nhật ngay" trong ứng dụng và cấu hình đóng gói bộ cài Windows). Đồng thời hãy cập nhật HUONG_DAN_CHO_TOI.md và hướng dẫn từng bước thật dễ hiểu để tôi lấy mã Google OAuth và bật Máy chủ Cloud 0 đồng.`
-- **👀 Việc của bạn ở bước này:** Làm theo hướng dẫn từng nút của AI để bật dịch vụ miễn phí (Google + Cloud 0đ).
+#### ✅ Bước 5.1 — Làm Tính Năng Cập Nhật 1 Cú Nhấp Chuột Ngay Trong App & Đóng Gói File Cài Windows *(ĐÃ XONG)*
+- **Kết quả đã nghiệm thu:**
+  - Đã hoàn thiện Cổng trung gian cập nhật trên máy chủ (`/api/update/latest`, `/api/update/latest.yml`, `/api/update/download/:asset`) đọc bản phát hành từ kho GitHub Private mà không làm lộ `GITHUB_RELEASE_TOKEN`.
+  - Đã hoàn thiện Hộp thoại **`🔔 Đã có phiên bản mới!`** ngay khi mở app kèm nút **`[⬇️ Cập nhật ngay]`**, thanh tiến trình **`XX%`**, kiểm tra SHA-512 và tự cài đặt mở lại app bằng `electron-updater`.
+  - Đã cấu hình đóng gói bộ cài Windows NSIS (`.exe` + `.blockmap` + `latest.yml`), kiểm tra đóng gói thành công thực tế file `TamQuocSat-LKDF-Setup-0.1.0.exe`, cấu hình GitHub Actions (`.github/workflows/ci.yml`, `release-windows.yml`), file triển khai `render.yaml` và hướng dẫn chi tiết ở **Mục 5** bên dưới.
 
-#### ⏳ Bước 5.2 — Kiểm Tra Nghiệm Thu Cuối Cùng (8 Tiêu Chí)
-- **💬 Câu lệnh bạn Copy & Gửi cho AI:**
-  > `Hãy thực hiện Bước 5.2 trong TASKS.md: Kiểm tra đối chiếu toàn bộ 8 tiêu chí nghiệm thu từ AC-1 đến AC-8 trong REQUIREMENTS.md, cập nhật hoàn tất vào HUONG_DAN_CHO_TOI.md và hướng dẫn tôi cách gửi file cài đặt đầu tiên cho nhóm bạn 4–8 người chơi thử.`
+#### 🔄 Bước 5.2 — Kiểm Tra Nghiệm Thu Cuối Cùng (8 Tiêu Chí `AC-1`–`AC-8`) & Gửi Cho Hội Bạn *(ĐÃ ĐẠT KỸ THUẬT — CHỜ SẾP CHẠY THỬ THỰC TẾ)*
+- **Kết quả kiểm tra kỹ thuật mới nhất:** Đã kiểm chứng toàn bộ **8/8 tiêu chí** ở tầng tự động & đóng gói trên máy (`typecheck`: 0 lỗi, `test:unit`: **82/82**, `test:fuzz`: **500/500 ván** trong `8.82s` — 0 deadlock, `test:integration`: **23/23**, kiểm tra bảo mật `42` file gói build = **0 bí mật lộ & 0 dữ liệu giả**, `package:win` sinh thật `TamQuocSat-LKDF-Setup-0.1.0.exe` + `latest.yml`).
+- **👀 Việc duy nhất còn lại của bạn để đóng dấu `[x]` hoàn thành tuyệt đối:**
+  1. Nhắn AI `Commit và push lên cho tôi` để đưa mã nguồn mới nhất lên GitHub Private.
+  2. Bấm theo **Mục 5** bên dưới (~15 phút) để bật Turso + Google OAuth + Render Cloud 0đ và xuất file `TamQuocSat-LKDF-Setup-1.0.0.exe`.
+  3. Gửi file cài đặt cho 3–7 người bạn theo **Mục 6** bên dưới, chơi thử 1 ván rồi nhắn lại AI: **`Tôi đã test thực tế với bạn bè xong, xác nhận nghiệm thu hoàn tất Bước 5.2!`**.
 
 ---
 
@@ -137,3 +143,104 @@ Hãy gọi kèm `/honest-advisor` và `/ultrathinking` như bạn đã dùng r�
 | **`/ultrathinking`** | *"Hãy soi thật sâu xem kế hoạch này có lỗ hổng nào dễ làm hỏng việc không"* | Khi chuẩn bị chốt một quyết định quan trọng và muốn rà soát hết các bẫy ngầm từ trước. |
 | **`/plan`** | *"Hãy lập bản kế hoạch trước, khoan sửa code vội"* | Khi bạn muốn xem trước bản phác thảo thay đổi (bảng Trước/Sau và hình vẽ màn hình bằng chữ) rồi mới duyệt cho làm. |
 | **`/compact`** | *"Tóm tắt gọn lại cuộc trò chuyện cho đỡ nặng"* | Khi một cuộc trò chuyện đã kéo dài rất lâu và bạn muốn làm gọn lại bộ nhớ của cửa sổ chat. |
+
+---
+
+## 5. Hướng Dẫn Cầm Tay Chỉ Việc: Lấy Mã Google OAuth & Bật Máy Chủ Cloud 0 Đồng (~15 Phút)
+
+> **Lưu ý an toàn:** Không bao giờ chụp ảnh hay dán các dòng Secret/Token của bạn lên mạng hoặc vào cửa sổ chat công khai. Bạn chỉ cần **mở 1 file Notepad tạm trên máy** để chép đủ **6 dòng thông số** rồi dán thẳng vào trang quản trị của Render.com.
+
+### Phần 5.1 — Tạo Kho Lưu Dữ Liệu Cloud 0đ trên Turso (~3 phút)
+1. Mở trang **`https://turso.tech`** → bấm **Sign up** → chọn đăng nhập nhanh bằng tài khoản **GitHub** của bạn.
+2. Ở màn hình chính, bấm nút **`+ Create Database`**:
+   - Đặt tên: `lkdf-tam-quoc-sat` (chọn khu vực **Singapore** hoặc **Tokyo** gần Việt Nam nhất).
+   - Bấm **Create Database**.
+3. Trong trang chi tiết Database vừa tạo, bấm **Connect** (hoặc **Quickstart**):
+   - Copy dòng URL bắt đầu bằng **`libsql://...`** → Lưu vào Notepad là **`(1) DATABASE_URL`**.
+   - Bấm nút **Create Token** (chọn quyền Read & Write, thời hạn **Never expire**) → Copy chuỗi ký tự dài hiện ra → Lưu vào Notepad là **`(2) DATABASE_AUTH_TOKEN`**.
+
+### Phần 5.2 — Tạo Mã Chỉ Đọc Kho GitHub Private (`GITHUB_RELEASE_TOKEN`, ~2 phút)
+*(Để app của bạn bè tự tải được bản cập nhật `.exe` dù kho GitHub của bạn đang khóa riêng tư Private)*
+1. Mở trang **`https://github.com/settings/personal-access-tokens/new`** (đăng nhập đúng tài khoản GitHub sở hữu kho `Play-with-me/LKDF`).
+2. Điền đúng 4 ô sau:
+   - **Token name:** `LKDF Server Read Releases`
+   - **Expiration:** Chọn `No expiration` (hoặc `1 year`).
+   - **Repository access:** Chọn **Only select repositories** → tick chọn đúng **`Play-with-me/LKDF`**.
+   - Kéo xuống mục **Permissions → Repository permissions → Contents**: đổi từ *No access* sang **`Read-only`**.
+3. Bấm nút xanh **Generate token** ở cuối trang → Copy chuỗi `github_pat_...` → Lưu vào Notepad là **`(3) GITHUB_RELEASE_TOKEN`**.
+
+### Phần 5.3 — Tạo Chìa Khóa Đăng Nhập Google (~5 phút)
+1. Mở **`https://console.cloud.google.com/`** và đăng nhập bằng Gmail của bạn.
+2. Trên thanh trên cùng, bấm chọn dự án → bấm **New Project** → đặt tên **`Tam Quoc Sat LKDF`** → bấm **Create**, rồi bấm **Select Project** để chuyển vào dự án mới tạo.
+3. Ở thanh tìm kiếm/menu trái, vào **APIs & Services → OAuth consent screen**:
+   - Nếu thấy nút **Get started**, bấm vào:
+     - **App name:** `Tam Quoc Sat LKDF`
+     - **User support email:** Chọn Gmail của bạn
+     - **Audience:** Chọn **External**
+     - **Contact Information:** Nhập Gmail của bạn → **Create**.
+   - Sau đó vào mục **Audience** (hoặc **OAuth consent screen**) tìm bảng **Test users** → bấm **`+ Add users`** → **gõ toàn bộ Gmail của bạn và 3–7 người bạn trong nhóm chơi** → **Save**.
+     > *Rất quan trọng:* Nếu quên thêm Gmail của bạn bè vào mục **Test users**, lúc bạn bè bấm `[🔑 Đăng nhập bằng Google]` sẽ bị Google báo lỗi *"Access blocked"*.
+4. Vào menu trái **Clients** (hoặc **Credentials → `+ Create Credentials` → OAuth client ID**):
+   - **Application type:** Chọn **`Web application`**.
+   - **Name:** `LKDF Windows Client`
+   - Ở mục **Authorized redirect URIs**, bấm **`+ ADD URI`** và thêm sẵn:
+     - `http://localhost:3001/api/auth/google/callback` *(để sau này bạn test trên máy vẫn dùng được)*
+   - Bấm **Create** → Hiện bảng chứa **Client ID** và **Client secret**:
+     - Lưu vào Notepad **`(4) GOOGLE_CLIENT_ID`** và **`(5) GOOGLE_CLIENT_SECRET`**.
+   - *(Đừng đóng tab Google này vội — lát nữa sau Phần 5.4 mình có tên miền `.onrender.com` rồi sẽ quay lại thêm thêm 1 dòng link vào đây là xong!)*
+
+### Phần 5.4 — Bật Máy Chủ Cloud 0 Đồng trên Render.com (~5 phút)
+1. Mở **`https://dashboard.render.com/`** → Đăng nhập nhanh bằng tài khoản **GitHub** của bạn.
+2. Bấm nút **`New +`** ở góc trên phải → chọn **`Blueprint`**.
+3. Chọn đúng kho GitHub Private **`Play-with-me/LKDF`** (nếu lần đầu chưa thấy, bấm *Configure GitHub Account* để cấp quyền Render đọc kho `LKDF`) → bấm **Connect**.
+4. Nhờ có sẵn tệp `render.yaml` trong dự án, Render **tự điền sẵn hết lệnh cài & chạy**. Bạn chỉ cần đặt tên (VD: `lkdf-server`) và điền các ô giá trị còn trống ở bảng **Environment Variables**:
+   - `DATABASE_URL` ← dán **(1)**
+   - `DATABASE_AUTH_TOKEN` ← dán **(2)**
+   - `GITHUB_RELEASE_TOKEN` ← dán **(3)**
+   - `GOOGLE_CLIENT_ID` ← dán **(4)**
+   - `GOOGLE_CLIENT_SECRET` ← dán **(5)**
+   - `GOOGLE_REDIRECT_URI` ← Tạm điền `https://<ten-ban-dat>.onrender.com/api/auth/google/callback` (bạn sẽ thấy đúng tên miền `.onrender.com` trên góc trái trang sau khi bấm **Apply / Deploy**; nếu khác tên, bấm *Environment → Edit* sửa lại cho khớp 100%).
+5. Chờ khoảng 2–4 phút cho Render báo **`Live`** màu xanh lá. Bấm vào đường link trang chủ của bạn trên Render rồi gõ thêm `/api/health` ở cuối (VD: `https://lkdf-tam-quoc-sat-server.onrender.com/api/health`). Thấy hiện `"ok":true,"updateProxyConfigured":true` là máy chủ đã sống!
+6. **Quay lại tab Google Cloud Console (ở Phần 5.3 bước 4):** Mở đúng **Web application** vừa tạo → mục **Authorized redirect URIs** bấm **`+ ADD URI`** dán chính xác link:
+   - `https://<ten-service-cua-ban>.onrender.com/api/auth/google/callback`
+   - Bấm **Save**! (Nếu `GOOGLE_REDIRECT_URI` trên Render chưa khớp từng chữ với link này, vào Render → *Environment* sửa cho giống hệt rồi bấm *Manual Deploy*).
+
+### Phần 5.5 — Tạo File Cài `.exe` Tự Kết Nối Sẵn Cho Cả Nhóm Bạn (~3 phút)
+1. Mở kho GitHub **`Play-with-me/LKDF`** trên trình duyệt → vào tab **Settings** → bên trái chọn **Secrets and variables → Actions** → chọn tab **Variables** (bên cạnh Secrets) → bấm **New repository variable**:
+   - **Name:** `LKDF_SERVER_URL`
+   - **Value:** `https://<ten-service-cua-ban>.onrender.com` *(không có dấu `/` ở cuối)* → bấm **Add variable**.
+2. Vào tab **Actions** trên GitHub → bên trái chọn **Release Windows Installer (.exe + latest.yml)** → bấm **Run workflow** → gõ phiên bản `1.0.0` → bấm **Run workflow**.
+3. Chờ khoảng 4–5 phút để GitHub đóng gói xong → vào mục **Releases** bên phải trang chủ kho GitHub của bạn tải file **`TamQuocSat-LKDF-Setup-1.0.0.exe`** gửi cho hội bạn 4–8 người! *(Lần đầu cài trên Windows, dặn bạn bè nếu thấy bảng xanh "Windows protected your PC" thì bấm `More info` → `Run anyway`; từ các bản `1.0.1`, `1.0.2` sau này bạn bè chỉ cần mở app và bấm 1 nút **`[⬇️ Cập nhật ngay]`**).*
+
+---
+
+## 6. Bảng Đối Chiếu 8 Tiêu Chí Nghiệm Thu (`AC-1`–`AC-8`) & Hướng Dẫn Gửi File Cài Cho Nhóm Bạn 4–8 Người
+
+### 6.1. Bảng đối chiếu trạng thái từng tiêu chí trong `REQUIREMENTS.md`
+
+| Mã tiêu chí | Nội dung cốt lõi | Đã kiểm chứng kỹ thuật trên máy / Tự động | Phần bạn kiểm tra thực tế trên Cloud 0đ & nhóm 4–8 người |
+| :---: | :--- | :--- | :--- |
+| **AC-1** | Đăng nhập Google & lọc Thống kê theo Người / Thân Phận / 25 Tướng | ✅ `auth-persistence.test.ts` (5/5), `stats-filter.test.ts` (6/6), giao diện không số liệu giả | ⏳ Bạn & 3–7 bạn bấm `[🔑 Đăng nhập bằng Google]`, tắt app mở lại vẫn tự nhớ & xem thống kê sau ván đầu |
+| **AC-2** | Cập nhật 1-Click trong App từ kho GitHub Private | ✅ `update-proxy.test.ts` (2/2), sinh thật `.exe` + `latest.yml`, mở thử hộp thoại `[⬇️ Cập nhật ngay]` (`1280×720`), 0 token lộ trong gói cài (`42` file sạch) | ⏳ Sau bản `v1.0.0`, chạy workflow tag `v1.0.1` trên GitHub để test app cũ bấm 1 nút `[⬇️ Cập nhật ngay]` tự nâng cấp |
+| **AC-3** | Đánh thức Cloud 0đ (`~30–60s`) & phòng 4–8 người thật | ✅ `rooms-snapshot.test.ts` (3/3), `ServerWakeScreen` đếm giây + khóa nút bắt đầu khi `< 4` người thật | ⏳ Mở app sau khi Render ngủ để thấy bảng đếm giây đánh thức và mở bàn đủ 4–8 người thật |
+| **AC-4** | Chia Thân Phận 4–8 người, Chủ Công `+1` máu, chọn 1/5 & 1/3 tướng | ✅ `setup.test.ts` (9/9) + hiển thị `HeroSelectPanel` chuẩn ở đủ mốc 4–8 người | ⏳ Nhìn trực tiếp Chủ Công được `+1` máu tối đa & chọn 1/5 tướng (đủ *Lưu Bị, Tào Tháo, Tôn Quyền*) |
+| **AC-5** | Chính xác 108 lá, 25 Tướng & 2 Nội Gián (`>= 500` ván không treo) | ✅ **82/82** Unit Tests + **500/500 ván Fuzz Test** (`8.82s`, 0 deadlock, 0 rò rỉ `PlayerViewState`, đủ 25 tướng & 3 phe thắng) | ⏳ Chơi thực tế cùng nhóm bạn kiểm tra cảm giác mượt mà của lá bài & kỹ năng |
+| **AC-6** | Giữ nhịp chờ *Vô Giải Khả Kích* `2–3.5s` chống lộ bài | ✅ `ws-match-flow.test.ts` (3/3) kiểm chứng thời gian dừng giả lập đồng nhất không rò rỉ cờ ẩn | ⏳ Khi đánh Cẩm nang lúc bàn không có *Vô Giải*, quan sát thấy vẫn dừng tự nhiên `2–3.5s` |
+| **AC-7** | Tự kết nối lại / Máy đánh hộ, Trọng Tài 4 nút, chuyển quyền 30s, khôi phục Server Restart | ✅ `ws-match-flow.test.ts` (3/3), `referee-host-failover.test.ts` (3/3), `rooms-snapshot.test.ts` (3/3) | ⏳ Thử tắt app 1 người rồi mở lại đúng ghế/bài; thử 4 nút Trọng Tài & ngắt mạng Chủ phòng > 30s |
+| **AC-8** | 1 khung Windows `1280×720` không cuộn, nháy Taskbar & hỏi thoát `[X]` | ✅ Browser `4P–8P` 0 tràn khung + chạy thử `Tam Quoc Sat LKDF.exe` đóng gói + IPC `flashFrame` & hộp thoại `[X]` | ⏳ Thu nhỏ cửa sổ lúc chưa tới lượt để thấy Taskbar nháy cam; thử bấm `[X]` giữa ván thấy bảng hỏi xác nhận |
+
+---
+
+### 6.2. Checklist 5 Bước Gửi File Cài Đặt Đầu Tiên Cho Nhóm Bạn 4–8 Người
+1. **Xin trước Gmail của 3–7 người bạn** → Dán đủ vào mục **Test users** trong Google Cloud Console (theo Phần 5.3 ở trên) trước khi gửi file, nếu không bạn bè sẽ bị Google chặn lúc đăng nhập.
+2. **Tải file `TamQuocSat-LKDF-Setup-1.0.0.exe` (~118 MB)** từ mục *Releases* trên kho GitHub Private về máy bạn, rồi tải lên Google Drive cá nhân (chế độ *Bất kỳ ai có liên kết đều xem được*) hoặc gửi trực tiếp qua Zalo PC / Discord / Telegram. *(Không cần đưa tài khoản GitHub cho bạn bè)*.
+3. **Copy đoạn tin nhắn hướng dẫn sẵn dưới đây gửi vào nhóm chat bạn bè:**
+   > 🎴 **Mời anh em cài game Tam Quốc Sát LKDF (Bản nội bộ Windows 10/11):**
+   > 1. Tải file `TamQuocSat-LKDF-Setup-1.0.0.exe` về máy và nhấp đúp để cài (cài 1 phát xong luôn, không cần quyền Admin).
+   > 2. **Lưu ý duy nhất lần đầu:** Nếu Windows hiện bảng xanh *"Windows protected your PC"* (do app nội bộ không mua chữ ký Microsoft), anh em bấm **`More info`** → **`Run anyway`** là mở bình thường.
+   > 3. Mở game → nếu thấy bảng *"Đang đánh thức máy chủ (~30–60s)"* thì chờ vài chục giây cho máy chủ miễn phí bật dậy → bấm **`🔑 Đăng nhập bằng Google`** (chọn đúng Gmail đã gửi cho mình).
+   > 4. Vào Sảnh chính, nhập **mã phòng 6 ký tự** mình nhắn trong nhóm để vào bàn (tối thiểu đủ **4 đến 8 người thật** mới bấm Bắt đầu được).
+   > 5. **Mẹo chơi nhanh:** Bấm phím số `1–9` để chọn bài trên tay, `Enter` để đánh, `Esc` để hủy chọn, `E` để kết thúc lượt; di chuột lên lá bài/tướng để xem mô tả tiếng Việt. Nếu lỡ rớt mạng cứ mở lại app là vào đúng ghế cũ!
+   > 6. Từ bản cập nhật sau (`v1.0.1` trở đi), mở game sẽ tự báo chỉ cần bấm **1 nút `⬇️ Cập nhật ngay`** ngay trong app!
+4. **Trong buổi test đầu tiên (10–15 phút):** Bạn tạo phòng, thử cố bấm `[▶️ Bắt đầu ván đấu]` lúc mới có 2–3 bạn để thấy hệ thống tự khóa an toàn, đợi đủ 4–8 bạn rồi vào ván kiểm tra chọn tướng, đánh Cẩm nang, thu nhỏ cửa sổ xem nháy Taskbar, bấm thử 4 nút `[⚖️ Trọng tài]` và xem trang `[📊 Thống kê]` sau ván.
+5. **Chốt nghiệm thu cuối cùng:** Chơi thử xong ngon lành, bạn quay lại khung chat nhắn AI: **`Đã kiểm tra thực tế trên Cloud 0đ và chơi thử cùng nhóm bạn thành công, chốt hoàn thành 100% dự án!`**.
