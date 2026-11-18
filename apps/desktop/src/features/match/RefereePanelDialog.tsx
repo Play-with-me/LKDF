@@ -1,5 +1,6 @@
 import type { RefereeActionType, RefereeAuditEntry, RoomState } from '@lkdf/shared';
 import { useEffect, useRef, useState } from 'react';
+import { GameIcon } from '../../components/icons/index.js';
 
 export interface RefereePanelDialogProps {
   readonly open: boolean;
@@ -97,8 +98,9 @@ export function RefereePanelDialog({
       <div className="flex max-h-[85vh] flex-col">
         <div className="flex items-center justify-between border-b border-[#2D343C] px-5 py-3.5">
           <div>
-            <h2 id="referee-panel-title" className="font-serif-title text-lg font-bold text-[#F3F4F6]">
-              ⚖️ Bảng Trọng Tài Phòng #{roomState.roomCode}
+            <h2 id="referee-panel-title" className="font-serif-title flex items-center gap-2 text-lg font-bold text-[#F3F4F6]">
+              <GameIcon name="scales" size={18} className="text-[#D99B26]" />
+              Bảng Trọng Tài Phòng #{roomState.roomCode}
             </h2>
             <p className="mt-0.5 text-xs text-[#9CA3AF]">
               Trọng tài hiện tại: <strong className="text-[#D99B26]">{actingHostSeat?.displayName ?? 'Đang cập nhật'}</strong>
@@ -109,23 +111,27 @@ export function RefereePanelDialog({
             type="button"
             autoFocus
             onClick={onClose}
-            className="rounded-lg border border-[#3A424C] bg-[#14171A] px-3 py-1.5 text-xs font-semibold text-[#F3F4F6] hover:border-[#D99B26] focus-visible:outline-2 focus-visible:outline-[#D99B26]"
+            className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-[#3A424C] bg-[#14171A] px-3 py-1.5 text-xs font-semibold text-[#F3F4F6] hover:border-[#D99B26] focus-visible:outline-2 focus-visible:outline-[#D99B26]"
           >
-            ✕ Đóng bảng (Esc)
+            <GameIcon name="ui:x" size={13} />
+            Đóng bảng (Esc)
           </button>
         </div>
 
         <div className="space-y-4 overflow-y-auto px-5 py-4 text-sm">
           {roomState.hostDisconnectedAt ? (
-            <div className="rounded-lg border border-[#D97706]/50 bg-[#D97706]/15 px-3.5 py-2.5 text-xs text-[#FDE68A]">
-              ⚠️ Chủ phòng gốc ({hostSeat?.displayName ?? 'Chủ phòng'}) đang mất kết nối.{' '}
-              {takeoverRemainingSeconds !== null && takeoverRemainingSeconds > 0 ? (
-                <span className="font-mono-num font-bold tabular-nums">
-                  Chuyển quyền Trọng Tài tạm thời sau {takeoverRemainingSeconds}s.
-                </span>
-              ) : (
-                <span>Quyền Trọng Tài tạm thời đã được kích hoạt cho người kế tiếp.</span>
-              )}
+            <div className="flex items-start gap-2 rounded-lg border border-[#D97706]/50 bg-[#D97706]/15 px-3.5 py-2.5 text-xs text-[#FDE68A]">
+              <GameIcon name="ui:alert" size={15} className="mt-0.5 shrink-0" />
+              <div>
+                Chủ phòng gốc ({hostSeat?.displayName ?? 'Chủ phòng'}) đang mất kết nối.{' '}
+                {takeoverRemainingSeconds !== null && takeoverRemainingSeconds > 0 ? (
+                  <span className="font-mono-num font-bold tabular-nums">
+                    Chuyển quyền Trọng Tài tạm thời sau {takeoverRemainingSeconds}s.
+                  </span>
+                ) : (
+                  <span>Quyền Trọng Tài tạm thời đã được kích hoạt cho người kế tiếp.</span>
+                )}
+              </div>
             </div>
           ) : null}
 
@@ -142,9 +148,10 @@ export function RefereePanelDialog({
               onClick={() => {
                 onSendRefereeAction(roomState.isTimerPaused ? 'RESUME' : 'PAUSE');
               }}
-              className="rounded-lg border border-[#3A424C] bg-[#14171A] px-3.5 py-2.5 text-left text-xs font-semibold text-[#F3F4F6] hover:border-[#D99B26] disabled:cursor-not-allowed disabled:opacity-45"
+              className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-[#3A424C] bg-[#14171A] px-3.5 py-2.5 text-left text-xs font-semibold text-[#F3F4F6] hover:border-[#D99B26] disabled:cursor-not-allowed disabled:opacity-45"
             >
-              {roomState.isTimerPaused ? '▶️ Tiếp tục đồng hồ' : '⏸️ Tạm dừng đồng hồ'}
+              <GameIcon name={roomState.isTimerPaused ? 'ui:play' : 'ui:pause'} size={14} className="text-[#D99B26]" />
+              {roomState.isTimerPaused ? 'Tiếp tục đồng hồ' : 'Tạm dừng đồng hồ'}
             </button>
 
             <button
@@ -153,9 +160,10 @@ export function RefereePanelDialog({
               onClick={() => {
                 onSendRefereeAction('UNDO_ONE_STEP');
               }}
-              className="rounded-lg border border-[#3A424C] bg-[#14171A] px-3.5 py-2.5 text-left text-xs font-semibold text-[#F3F4F6] hover:border-[#D99B26] disabled:cursor-not-allowed disabled:opacity-45"
+              className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-[#3A424C] bg-[#14171A] px-3.5 py-2.5 text-left text-xs font-semibold text-[#F3F4F6] hover:border-[#D99B26] disabled:cursor-not-allowed disabled:opacity-45"
             >
-              ↩️ Hoàn tác 1 bước vừa đánh
+              <GameIcon name="ui:undo" size={14} className="text-[#D99B26]" />
+              Hoàn tác 1 bước vừa đánh
             </button>
 
             <button
@@ -164,9 +172,10 @@ export function RefereePanelDialog({
               onClick={() => {
                 onSendRefereeAction('SKIP_PHASE');
               }}
-              className="rounded-lg border border-[#3A424C] bg-[#14171A] px-3.5 py-2.5 text-left text-xs font-semibold text-[#F3F4F6] hover:border-[#D99B26] disabled:cursor-not-allowed disabled:opacity-45"
+              className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-[#3A424C] bg-[#14171A] px-3.5 py-2.5 text-left text-xs font-semibold text-[#F3F4F6] hover:border-[#D99B26] disabled:cursor-not-allowed disabled:opacity-45"
             >
-              ⏭️ Bỏ qua pha đang chờ
+              <GameIcon name="ui:skip" size={14} className="text-[#D99B26]" />
+              Bỏ qua pha đang chờ
             </button>
 
             {!confirmingAbort ? (
@@ -174,9 +183,10 @@ export function RefereePanelDialog({
                 type="button"
                 disabled={!isActingHost}
                 onClick={() => setConfirmingAbort(true)}
-                className="rounded-lg border border-[#C83E37]/60 bg-[#C83E37]/15 px-3.5 py-2.5 text-left text-xs font-semibold text-[#FCA5A5] hover:bg-[#C83E37]/25 disabled:cursor-not-allowed disabled:opacity-45"
+                className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-[#C83E37]/60 bg-[#C83E37]/15 px-3.5 py-2.5 text-left text-xs font-semibold text-[#FCA5A5] hover:bg-[#C83E37]/25 disabled:cursor-not-allowed disabled:opacity-45"
               >
-                🏁 Kết thúc ván & Về phòng chờ
+                <GameIcon name="ui:flag" size={14} />
+                Kết thúc ván &amp; Về phòng chờ
               </button>
             ) : (
               <div className="col-span-full rounded-lg border border-[#DC2626] bg-[#DC2626]/15 p-3">
@@ -191,16 +201,18 @@ export function RefereePanelDialog({
                       onSendRefereeAction('ABORT_MATCH');
                       onClose();
                     }}
-                    className="rounded-lg bg-[#C83E37] px-3 py-1.5 text-xs font-bold text-white hover:bg-[#DC2626]"
+                    className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg bg-[#C83E37] px-3 py-1.5 text-xs font-bold text-white hover:bg-[#DC2626]"
                   >
-                    🏁 Kết thúc ván &amp; Về phòng chờ ngay
+                    <GameIcon name="ui:flag" size={13} />
+                    Kết thúc ván &amp; Về phòng chờ ngay
                   </button>
                   <button
                     type="button"
                     onClick={() => setConfirmingAbort(false)}
-                    className="rounded-lg border border-[#3A424C] bg-[#14171A] px-3 py-1.5 text-xs font-semibold text-[#D1D5DB] hover:border-[#D99B26]"
+                    className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[#3A424C] bg-[#14171A] px-3 py-1.5 text-xs font-semibold text-[#D1D5DB] hover:border-[#D99B26]"
                   >
-                    ↩️ Giữ nguyên ván đấu
+                    <GameIcon name="ui:undo" size={13} />
+                    Giữ nguyên ván đấu
                   </button>
                 </div>
               </div>

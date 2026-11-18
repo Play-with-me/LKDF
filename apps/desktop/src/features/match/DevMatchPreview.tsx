@@ -22,6 +22,9 @@ import type {
 } from '@lkdf/shared';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { playMatchCue } from '../../lib/soundFx.js';
+import { getUiAssetUrl } from '../../lib/assetCatalog.js';
+import { GameIcon } from '../../components/icons/index.js';
+import { ActionLogDialog } from './ActionLogDialog.js';
 import { GameOverSummaryModal } from './GameOverSummaryModal.js';
 import { MatchActionSidebar } from './MatchActionSidebar.js';
 import { MatchArenaLayout } from './MatchArenaLayout.js';
@@ -107,6 +110,7 @@ export function DevMatchPreview({
   const [autoSkipNullify, setAutoSkipNullify] = useState<boolean>(false);
   const [selection, setSelection] = useState<MatchSelectionState>(EMPTY_MATCH_SELECTION);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [showLogDialog, setShowLogDialog] = useState<boolean>(false);
   const [showRulesDialog, setShowRulesDialog] = useState<boolean>(false);
   const [showRefereeDialog, setShowRefereeDialog] = useState<boolean>(false);
 
@@ -207,6 +211,15 @@ export function DevMatchPreview({
     [isPaused, masterState.turnPhase, playerCount],
   );
 
+  const formatPreviewErrorVi = useCallback((err: unknown, fallback: string): string => {
+    const raw = err instanceof Error ? err.message : '';
+    if (!raw) return fallback;
+    if (raw === 'SIMULATED_DELAY_CANNOT_BE_ANSWERED_BY_PLAYER') {
+      return 'Đang giữ nhịp chờ Vô Giải (2–3.5s) để tránh lộ bài.';
+    }
+    return /^[A-Z0-9_]+$/.test(raw) ? fallback : raw;
+  }, []);
+
   const handleSelectHero = useCallback((heroId: HeroId) => {
     setActionError(null);
     setMasterState((prev) => {
@@ -221,11 +234,11 @@ export function DevMatchPreview({
         }
         return next;
       } catch (err: unknown) {
-        setActionError(err instanceof Error ? err.message : 'Không thể chọn tướng.');
+        setActionError(formatPreviewErrorVi(err, 'Không thể chọn tướng.'));
         return prev;
       }
     });
-  }, []);
+  }, [formatPreviewErrorVi]);
 
   const handleSendAction = useCallback((action: GameAction) => {
     setActionError(null);
@@ -236,11 +249,11 @@ export function DevMatchPreview({
         setSelection(EMPTY_MATCH_SELECTION);
         return next;
       } catch (err: unknown) {
-        setActionError(err instanceof Error ? err.message : 'Thao tác chưa hợp lệ.');
+        setActionError(formatPreviewErrorVi(err, 'Thao tác chưa hợp lệ.'));
         return prev;
       }
     });
-  }, []);
+  }, [formatPreviewErrorVi]);
 
   const handleRefereeAction = useCallback(
     (actionType: RefereeActionType) => {
@@ -353,8 +366,14 @@ export function DevMatchPreview({
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if (showRulesDialog || showRefereeDialog || masterState.turnPhase === 'GAME_OVER') {
+      if (
+        showLogDialog ||
+        showRulesDialog ||
+        showRefereeDialog ||
+        masterState.turnPhase === 'GAME_OVER'
+      ) {
         if (event.key === 'Escape') {
+          setShowLogDialog(false);
           setShowRulesDialog(false);
           setShowRefereeDialog(false);
         }
@@ -400,24 +419,32 @@ export function DevMatchPreview({
     handleToggleCard,
     masterState.turnPhase,
     playerView,
+    showLogDialog,
     showRefereeDialog,
     showRulesDialog,
   ]);
 
   const prompt = describePendingActorPrompt(playerView);
-  const phaseDeadlineAt = useMemo(() => {
-    if (isPaused || !prompt.isMyTurn) {
-      return null;
-    }
-    return new Date(Date.now() + 25_000).toISOString();
-  }, [isPaused, masterState.roundNumber, masterState.turnPhase, prompt.isMyTurn]);
+  // Ở chế độ xem thử cục bộ không ép hết giờ đỏ 0s gây hiểu nhầm khi đang quan sát
+  const phaseDeadlineAt: string | null = null;
+  const headerBgUrl = getUiAssetUrl('tex-header-black');
 
   return (
-    <section className="flex h-screen w-screen min-h-0 min-w-0 flex-col overflow-hidden bg-[#14171A] text-[#F3F4F6]">
-      <header className="flex h-12 shrink-0 items-center justify-between gap-2 border-b border-[#2D343C] bg-[#1E2328] px-3">
+    <section className="flex h-screen w-screen min-h-0 min-w-0 flex-col overflow-hidden bg-[#090807] text-[#EFE6D5]">
+      <header
+        style={
+          headerBgUrl
+            ? {
+                backgroundImage: `linear-gradient(rgba(12,10,8,0.28), rgba(10,8,7,0.42)), url(${headerBgUrl})`,
+                backgroundSize: '100% 100%',
+              }
+            : undefined
+        }
+        className="flex h-11 shrink-0 items-center justify-between gap-2 border-b border-[#A68042]/40 bg-[#14110E] px-3"
+      >
         <div className="flex min-w-0 items-center gap-2 text-xs">
-          <span className="rounded border border-[#D99B26]/60 bg-[#D99B26]/15 px-2 py-0.5 font-semibold text-[#FDE68A]">
-            DEV · Bàn {playerCount} người
+          <span className="shrink-0 rounded border border-[#D99B26]/60 bg-[#9E2B25]/85 px-2 py-0.5 font-semibold text-[#FDE68A]">
+            DEV · {playerCount}P
           </span>
           <div className="flex items-center gap-1">
             {([4, 5, 6, 7, 8] as const).map((cnt) => (
@@ -425,10 +452,10 @@ export function DevMatchPreview({
                 key={cnt}
                 type="button"
                 onClick={() => resetPreview(cnt, previewStage)}
-                className={`cursor-pointer rounded px-2 py-0.5 font-mono-num text-[11px] font-bold ${
+                className={`cursor-pointer rounded px-1.5 py-0.5 font-mono-num text-[11px] font-bold ${
                   playerCount === cnt
-                    ? 'bg-[#C83E37] text-[#F4EFE6]'
-                    : 'border border-[#3A424C] bg-[#14171A] text-[#D1D5DB] hover:border-[#D99B26]'
+                    ? 'bg-[#9E2B25] text-[#F4EFE6]'
+                    : 'border border-[#9A7B4F]/40 bg-[#14100D]/90 text-[#D1D5DB] hover:border-[#D99B26]'
                 }`}
               >
                 {cnt}P
@@ -443,15 +470,26 @@ export function DevMatchPreview({
                 previewStage === 'HERO_SELECT' ? 'IN_PLAY' : 'HERO_SELECT',
               )
             }
-            className="cursor-pointer rounded border border-[#3A424C] bg-[#14171A] px-2 py-0.5 text-[11px] font-semibold text-[#D99B26] hover:border-[#D99B26]"
+            className="inline-flex cursor-pointer items-center gap-1 rounded border border-[#9A7B4F]/40 bg-[#14100D]/90 px-2 py-0.5 text-[11px] font-semibold text-[#D99B26] hover:border-[#D99B26]"
           >
-            {previewStage === 'HERO_SELECT' ? '👑 Pha Chọn Tướng' : '⚔️ Pha Đánh Bài'}
+            <GameIcon
+              name={previewStage === 'HERO_SELECT' ? 'crown' : 'saber-slash'}
+              size={12}
+            />
+            <span className="hidden sm:inline whitespace-nowrap shrink-0">
+              <span className="lg:hidden">
+                {previewStage === 'HERO_SELECT' ? 'Chọn tướng' : 'Đánh bài'}
+              </span>
+              <span className="hidden lg:inline">
+                {previewStage === 'HERO_SELECT' ? 'Pha Chọn Tướng' : 'Pha Đánh Bài'}
+              </span>
+            </span>
           </button>
-          <span className="font-mono-num text-[#D1D5DB] tabular-nums">
-            Bài rút: {playerView.drawPileCount}
+          <span className="font-mono-num hidden sm:inline shrink-0 whitespace-nowrap text-[#B5A792] tabular-nums">
+            Rút: {playerView.drawPileCount}
           </span>
           {actionError ? (
-            <span className="truncate rounded border border-[#DC2626]/50 bg-[#DC2626]/15 px-2 py-0.5 text-[11px] text-[#FCA5A5]">
+            <span className="max-w-[240px] truncate rounded border border-[#DC2626]/50 bg-[#DC2626]/15 px-2 py-0.5 text-[11px] text-[#FCA5A5]">
               {actionError}
             </span>
           ) : null}
@@ -468,30 +506,47 @@ export function DevMatchPreview({
               }
               void window.lkdfDesktop?.flashTaskbarFrame(true).catch(() => undefined);
             }}
-            className="rounded-lg border border-[#3A424C] bg-[#14171A] px-2.5 py-1 text-xs font-medium text-[#F3F4F6] hover:border-[#D99B26]"
+            className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-[#9A7B4F]/40 bg-[#14100D]/90 px-2 py-1 text-[11px] font-medium text-[#EFE6D5] hover:border-[#D99B26] xl:px-2.5 xl:text-xs"
           >
-            {soundEnabled ? '🔊 Âm thanh' : '🔇 Tắt tiếng'}
+            <GameIcon name={soundEnabled ? 'ui:volume-on' : 'ui:volume-off'} size={13} />
+            <span className="hidden lg:inline">{soundEnabled ? 'Âm thanh' : 'Tắt tiếng'}</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowLogDialog(true)}
+            className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-[#9A7B4F]/40 bg-[#14100D]/90 px-2 py-1 text-[11px] font-medium text-[#EFE6D5] hover:border-[#D99B26] xl:px-2.5 xl:text-xs"
+          >
+            <GameIcon name="scroll-unfurled" size={13} className="text-[#D99B26]" />
+            <span>Nhật ký</span>
+            <span className="font-mono-num rounded bg-[#272D35] px-1 py-0 text-[10px] font-bold text-[#FDE68A] tabular-nums">
+              {playerView.actionLog.length}
+            </span>
           </button>
           <button
             type="button"
             onClick={() => setShowRulesDialog(true)}
-            className="rounded-lg border border-[#3A424C] bg-[#14171A] px-2.5 py-1 text-xs font-medium text-[#F3F4F6] hover:border-[#D99B26]"
+            className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-[#9A7B4F]/40 bg-[#14100D]/90 px-2 py-1 text-[11px] font-medium text-[#EFE6D5] hover:border-[#D99B26] xl:px-2.5 xl:text-xs"
           >
-            📖 Luật & Phím tắt
+            <GameIcon name="ui:book-open" size={13} />
+            <span>
+              Luật <span className="hidden xl:inline">&amp; Phím tắt</span>
+            </span>
           </button>
           <button
             type="button"
             onClick={() => setShowRefereeDialog(true)}
-            className="rounded-lg border border-[#D99B26]/50 bg-[#D99B26]/10 px-2.5 py-1 text-xs font-semibold text-[#FDE68A] hover:bg-[#D99B26]/20"
+            className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-[#CA9A48]/50 bg-[#D99B26]/12 px-2 py-1 text-[11px] font-semibold text-[#FDE68A] hover:bg-[#D99B26]/22 xl:px-2.5 xl:text-xs"
           >
-            ⚖️ Trọng tài
+            <GameIcon name="scales" size={13} />
+            Trọng tài
           </button>
           <button
             type="button"
             onClick={onExitPreview}
-            className="rounded-lg border border-[#3A424C] bg-[#14171A] px-2.5 py-1 text-xs font-medium text-[#FCA5A5] hover:border-[#DC2626]"
+            className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-[#9A7B4F]/40 bg-[#14100D]/90 px-2 py-1 text-[11px] font-medium text-[#FCA5A5] hover:border-[#DC2626] xl:px-2.5 xl:text-xs"
           >
-            ↩️ Thoát xem thử
+            <GameIcon name="ui:undo" size={13} />
+            Thoát
           </button>
         </div>
       </header>
@@ -522,10 +577,12 @@ export function DevMatchPreview({
           }}
           onSendAction={handleSendAction}
           onSelectHero={handleSelectHero}
+          onClearSelection={() => setSelection(EMPTY_MATCH_SELECTION)}
           renderActionSidebar={() => (
             <MatchActionSidebar
               view={playerView}
               selection={selection}
+              layout="bar"
               onClearSelection={() => setSelection(EMPTY_MATCH_SELECTION)}
               onSendAction={handleSendAction}
               onEndPlayPhase={handleEndPlayPhase}
@@ -533,6 +590,12 @@ export function DevMatchPreview({
           )}
         />
       </div>
+
+      <ActionLogDialog
+        open={showLogDialog}
+        actionLog={playerView.actionLog}
+        onClose={() => setShowLogDialog(false)}
+      />
 
       <RulesHotkeysDialog
         open={showRulesDialog}

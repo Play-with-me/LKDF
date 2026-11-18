@@ -1,13 +1,13 @@
 @import "tailwindcss";
 
 :root {
-  --lkdf-bg-ink: #14171a;
-  --lkdf-bg-wood: #1e2328;
-  --lkdf-card-paper: #f4efe6;
-  --lkdf-text-jade: #f3f4f6;
-  --lkdf-text-ink: #18181b;
-  --lkdf-vermilion: #c83e37;
-  --lkdf-gold: #d99b26;
+  --lkdf-bg-ink: #090807;
+  --lkdf-bg-wood: #181b20;
+  --lkdf-card-paper: #dec79c;
+  --lkdf-text-jade: #efe6d5;
+  --lkdf-text-ink: #1d150d;
+  --lkdf-vermilion: #9e2b25;
+  --lkdf-gold: #c89b4b;
 }
 
 @layer base {
@@ -37,28 +37,152 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* Thanh cuộn tối tinh gọn cho các vùng cuộn nội bộ (nhật ký, bảng thống kê) */
+/* Hệ token co giãn tự động (Container Queries) chống bể khung 960x600 -> 1280x720 -> 2K */
+.lkdf-arena-stage {
+  container-type: size;
+  --seat-w: clamp(166px, 17cqw, 238px);
+  --seat-h: clamp(78px, 13.5cqh, 110px);
+  --dock-h: clamp(190px, 31.5cqh, 232px);
+  --left-w: clamp(288px, 27cqw, 368px);
+  --prof-w: clamp(138px, 12.6cqw, 168px);
+  --right-w: clamp(214px, 20.8cqw, 282px);
+  --card-w: clamp(60px, 6.2cqw, 86px);
+  --card-h: clamp(84px, 14.8cqh, 118px);
+}
+
+/* Doanh Trại A: Trướng Soái Đêm Xích Bích & Đĩa Rồng Chạm Khắc OL */
+.lkdf-arena-surface {
+  background:
+    radial-gradient(ellipse 72% 76% at 50% 50%, rgba(16, 12, 10, 0.56) 0%, rgba(10, 8, 7, 0.88) 74%, #080605 100%);
+}
+
+.lkdf-round-table-rim {
+  border-color: rgba(176, 138, 76, 0.38);
+  background:
+    radial-gradient(ellipse 72% 76% at 50% 50%, rgba(22, 18, 14, 0.90) 0%, rgba(16, 13, 10, 0.94) 74%, rgba(10, 8, 6, 0.98) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 232, 185, 0.06),
+    inset 0 18px 46px rgba(0, 0, 0, 0.72),
+    0 20px 44px rgba(0, 0, 0, 0.68);
+}
+
+.lkdf-card-parchment {
+  background:
+    radial-gradient(circle at 50% 35%, rgba(255, 244, 214, 0.24) 0%, transparent 68%),
+    linear-gradient(175deg, #dec79c 0%, #c6a673 100%);
+}
+
+/* Thanh cuộn tối viền đồng cổ tinh gọn */
 .lkdf-scroll {
   scrollbar-width: thin;
-  scrollbar-color: #3a424c #14171a;
+  scrollbar-color: rgba(184, 142, 74, 0.45) rgba(0, 0, 0, 0.25);
 }
 
 .lkdf-scroll::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 
 .lkdf-scroll::-webkit-scrollbar-track {
-  background: #14171a;
+  background: rgba(0, 0, 0, 0.26);
+  border-radius: 9999px;
 }
 
 .lkdf-scroll::-webkit-scrollbar-thumb {
-  background-color: #3a424c;
+  background-color: rgba(184, 142, 74, 0.45);
   border-radius: 9999px;
 }
 
 .lkdf-scroll::-webkit-scrollbar-thumb:hover {
-  background-color: #525d6b;
+  background-color: rgba(212, 168, 92, 0.78);
+}
+
+@keyframes lkdfDropPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 1px rgba(217, 155, 38, 0.6), 0 0 18px rgba(217, 155, 38, 0.32);
+  }
+  50% {
+    box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.95), 0 0 28px rgba(217, 155, 38, 0.58);
+  }
+}
+
+.lkdf-drop-pulse {
+  animation: lkdfDropPulse 1.15s ease-in-out infinite;
+}
+
+/* Thanh Lệnh Ngữ Cảnh Nằm Ngang (Ẩn hoàn toàn khi ngoài lượt, giữ gọn 1 hàng không đè bài ở 960x600) */
+.lkdf-action-bar {
+  display: flex;
+  flex-direction: row !important;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px !important;
+  width: 100%;
+  min-height: 30px;
+  height: auto !important;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 3px 8px !important;
+  border-radius: 8px !important;
+  background: rgba(15, 13, 11, 0.94) !important;
+}
+
+.lkdf-action-bar > div:first-child {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.lkdf-action-bar > div:first-child > * {
+  margin-top: 0 !important;
+}
+
+.lkdf-action-bar > div:first-child > span,
+.lkdf-action-bar > span:first-child {
+  flex-shrink: 0;
+  font-size: 10px !important;
+  padding: 1px 6px !important;
+  white-space: nowrap;
+}
+
+.lkdf-action-bar > div:first-child > p {
+  font-size: 11px !important;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@container (max-width: 1140px) {
+  .lkdf-action-bar > div:first-child > p {
+    display: none !important;
+  }
+}
+
+.lkdf-action-bar > div:last-child {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 5px !important;
+  flex-shrink: 0;
+}
+
+.lkdf-action-bar > div:last-child > button {
+  width: auto !important;
+  white-space: nowrap;
+  padding: 3px 9px !important;
+  font-size: 11px !important;
+  line-height: 1.2;
+}
+
+.lkdf-action-bar > div:last-child > p {
+  font-size: 11px !important;
+  margin: 0;
 }
 
 @keyframes lkdfFadeIn {

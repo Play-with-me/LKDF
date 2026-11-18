@@ -1,6 +1,7 @@
 import { HERO_CATALOG } from '@lkdf/shared';
 import type { IdentityRole, PlayerViewState, RoomState, WinningFaction } from '@lkdf/shared';
 import { useEffect, useRef } from 'react';
+import { GameIcon, type GameIconName } from '../../components/icons/index.js';
 
 export interface GameOverSummaryModalProps {
   readonly open: boolean;
@@ -10,18 +11,33 @@ export interface GameOverSummaryModalProps {
   readonly onLeaveRoom: () => void;
 }
 
-const IDENTITY_LABELS: Record<IdentityRole | 'UNKNOWN', string> = {
-  LORD: '👑 Chủ Công',
-  LOYALIST: '🛡️ Trung Thần',
-  REBEL: '⚔️ Phản Tặc',
-  SPY: '🎭 Nội Gián',
-  UNKNOWN: '❓ Chưa lộ',
+const IDENTITY_META: Record<
+  IdentityRole | 'UNKNOWN',
+  { readonly icon: GameIconName; readonly label: string }
+> = {
+  LORD: { icon: 'crown', label: 'Chủ Công' },
+  LOYALIST: { icon: 'bordered-shield', label: 'Trung Thần' },
+  REBEL: { icon: 'crossed-swords', label: 'Phản Tặc' },
+  SPY: { icon: 'drama-masks', label: 'Nội Gián' },
+  UNKNOWN: { icon: 'spy', label: 'Chưa lộ' },
 };
 
-const FACTION_WINNER_LABELS: Record<WinningFaction, string> = {
-  LORD_LOYALIST: '👑 Phe Chủ Công & Trung Thần chiến thắng!',
-  REBEL: '⚔️ Phe Phản Tặc chiến thắng!',
-  SPY: '🎭 Nội Gián chiến thắng!',
+const FACTION_WINNER_META: Record<
+  WinningFaction,
+  { readonly icon: GameIconName; readonly label: string }
+> = {
+  LORD_LOYALIST: {
+    icon: 'crown',
+    label: 'Phe Chủ Công & Trung Thần chiến thắng!',
+  },
+  REBEL: {
+    icon: 'crossed-swords',
+    label: 'Phe Phản Tặc chiến thắng!',
+  },
+  SPY: {
+    icon: 'drama-masks',
+    label: 'Nội Gián chiến thắng!',
+  },
 };
 
 export function GameOverSummaryModal({
@@ -45,9 +61,9 @@ export function GameOverSummaryModal({
     }
   }, [open]);
 
-  const winnerTitle = playerView.winningFaction
-    ? FACTION_WINNER_LABELS[playerView.winningFaction]
-    : 'Ván đấu đã kết thúc';
+  const winnerMeta = playerView.winningFaction
+    ? FACTION_WINNER_META[playerView.winningFaction]
+    : null;
   const winnerSet = new Set(playerView.winnerUserIds);
 
   return (
@@ -65,15 +81,19 @@ export function GameOverSummaryModal({
             <span className="inline-flex items-center rounded-full border border-[#D99B26]/50 bg-[#D99B26]/15 px-3 py-1 text-xs font-semibold text-[#FDE68A]">
               Tổng kết ván đấu · Phòng #{roomState.roomCode}
             </span>
-            <span className="rounded-full border border-[#16A34A]/40 bg-[#16A34A]/15 px-3 py-1 text-xs font-medium text-[#86EFAC]">
-              ✅ Đã lưu kết quả vào Thống kê tài khoản
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-[#16A34A]/40 bg-[#16A34A]/15 px-3 py-1 text-xs font-medium text-[#86EFAC]">
+              <GameIcon name="ui:check-circle" size={13} />
+              Đã lưu kết quả vào Thống kê tài khoản
             </span>
           </div>
           <h2
             id="gameover-summary-title"
-            className="mt-2.5 font-serif-title text-2xl font-bold text-[#F3F4F6]"
+            className="mt-2.5 flex items-center gap-2 font-serif-title text-2xl font-bold text-[#F3F4F6]"
           >
-            {winnerTitle}
+            {winnerMeta ? (
+              <GameIcon name={winnerMeta.icon} size={22} className="text-[#D99B26]" />
+            ) : null}
+            <span>{winnerMeta ? winnerMeta.label : 'Ván đấu đã kết thúc'}</span>
           </h2>
         </div>
 
@@ -116,14 +136,27 @@ export function GameOverSummaryModal({
                         {hero ? hero.nameVi : 'Chưa chọn'}
                       </td>
                       <td className="px-3 py-2.5 font-semibold text-[#FDE68A]">
-                        {IDENTITY_LABELS[seat.identity]}
+                        <span className="inline-flex items-center gap-1.5">
+                          <GameIcon name={IDENTITY_META[seat.identity].icon} size={13} />
+                          {IDENTITY_META[seat.identity].label}
+                        </span>
                       </td>
                       <td className="px-3 py-2.5 text-[#D1D5DB]">
-                        {seat.alive ? `Còn sống (${seat.hp}/${seat.maxHp}❤️)` : '💀 Đã tử trận'}
+                        {seat.alive ? (
+                          `Còn sống (${seat.hp}/${seat.maxHp} máu)`
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-[#FCA5A5]">
+                            <GameIcon name="death-skull" size={12} />
+                            Đã tử trận
+                          </span>
+                        )}
                       </td>
                       <td className="px-3 py-2.5 text-right font-semibold">
                         {isWinner ? (
-                          <span className="text-[#86EFAC]">🏆 Thắng</span>
+                          <span className="inline-flex items-center gap-1 text-[#86EFAC]">
+                            <GameIcon name="crown" size={12} />
+                            Thắng
+                          </span>
                         ) : (
                           <span className="text-[#9CA3AF]">Thua</span>
                         )}
@@ -140,17 +173,19 @@ export function GameOverSummaryModal({
           <button
             type="button"
             onClick={onLeaveRoom}
-            className="rounded-lg border border-[#3A424C] bg-[#1E2328] px-4 py-2 text-xs font-semibold text-[#D1D5DB] hover:border-[#D99B26]"
+            className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[#3A424C] bg-[#1E2328] px-4 py-2 text-xs font-semibold text-[#D1D5DB] hover:border-[#D99B26]"
           >
-            🚪 Rời phòng về Sảnh chính
+            <GameIcon name="ui:door-open" size={13} />
+            Rời phòng về Sảnh chính
           </button>
           <button
             type="button"
             autoFocus
             onClick={onReturnToLobby}
-            className="rounded-lg bg-[#C83E37] px-4 py-2 text-xs font-bold text-[#F3F4F6] hover:bg-[#D84B43] focus-visible:outline-2 focus-visible:outline-[#D99B26]"
+            className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg bg-[#C83E37] px-4 py-2 text-xs font-bold text-[#F3F4F6] hover:bg-[#D84B43] focus-visible:outline-2 focus-visible:outline-[#D99B26]"
           >
-            🔄 Quay về phòng chờ chơi ván mới
+            <GameIcon name="ui:refresh" size={13} />
+            Quay về phòng chờ chơi ván mới
           </button>
         </div>
       </div>

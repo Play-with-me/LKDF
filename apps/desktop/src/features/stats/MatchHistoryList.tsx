@@ -1,5 +1,6 @@
 import type { ReactElement } from 'react';
 import { HERO_BY_ID, type HeroFaction, type WinningFaction } from '@lkdf/shared';
+import { GameIcon, type GameIconName } from '../../components/icons/index.js';
 import type {
   HeroId,
   IdentityRole,
@@ -35,18 +36,24 @@ const IDENTITY_BADGE_CLASSES: Readonly<Record<IdentityRole, string>> = {
 };
 
 const WINNING_FACTION_META: Readonly<
-  Record<WinningFaction, { readonly labelVi: string; readonly className: string }>
+  Record<
+    WinningFaction,
+    { readonly icon: GameIconName; readonly labelVi: string; readonly className: string }
+  >
 > = {
   LORD_LOYALIST: {
-    labelVi: '👑 Phe Chủ Công & Trung Thần thắng',
+    icon: 'crown',
+    labelVi: 'Phe Chủ Công & Trung Thần thắng',
     className: 'border-[#D99B26]/60 bg-[#D99B26]/15 text-[#FCD34D]',
   },
   REBEL: {
-    labelVi: '⚔️ Phe Phản Tặc thắng',
+    icon: 'crossed-swords',
+    labelVi: 'Phe Phản Tặc thắng',
     className: 'border-[#C83E37]/70 bg-[#C83E37]/20 text-[#FCA5A5]',
   },
   SPY: {
-    labelVi: '🎭 Nội Gián thắng',
+    icon: 'drama-masks',
+    labelVi: 'Nội Gián thắng',
     className: 'border-[#10B981]/60 bg-[#10B981]/15 text-[#6EE7B7]',
   },
 };
@@ -99,8 +106,9 @@ export function MatchHistoryList({
                   Phòng #{match.roomCode}
                 </span>
                 <span
-                  className={`rounded-full border px-2.5 py-0.5 text-xs font-semibold ${winningMeta.className}`}
+                  className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-semibold ${winningMeta.className}`}
                 >
+                  <GameIcon name={winningMeta.icon} size={12} />
                   {winningMeta.labelVi}
                 </span>
                 <span className="text-xs font-medium tabular-nums text-[#9CA3AF]">

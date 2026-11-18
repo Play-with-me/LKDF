@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { GameIcon } from '../../components/icons/index.js';
 import { ApiError, saveClientStatePatch } from '../../lib/api.js';
 import type { LkdfApiClient } from '../../lib/api.js';
 import type { HealthCheckResponse, UserProfile } from '../../lib/types.js';
@@ -250,8 +251,8 @@ export function LoginScreen({
       <div className="my-auto w-full max-w-lg rounded-xl border border-[#2D343C] bg-[#1E2328] p-7 shadow-2xl">
         <div className="mb-5 flex items-start justify-between gap-4">
           <div className="flex items-center gap-3">
-            <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-[#D99B26]/60 bg-[#C83E37] font-serif-title text-lg font-bold text-[#F4EFE6]">
-              Sát
+            <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-[#D99B26]/65 bg-[#C83E37] font-serif-title text-xl font-bold text-[#F4EFE6] shadow-inner">
+              殺
             </span>
             <div>
               <h2 className="font-serif-title text-xl font-bold text-[#F3F4F6]">
@@ -266,19 +267,21 @@ export function LoginScreen({
           <button
             type="button"
             onClick={onRecheckServer}
-            className="shrink-0 rounded-lg border border-[#3A424C] bg-[#14171A] px-3 py-1.5 text-xs font-medium text-[#D1D5DB] transition-colors hover:border-[#D99B26] hover:text-[#F3F4F6] focus:outline-none focus:ring-2 focus:ring-[#D99B26]"
+            className="inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-lg border border-[#3A424C] bg-[#14171A] px-3 py-1.5 text-xs font-medium text-[#D1D5DB] transition-colors hover:border-[#D99B26] hover:text-[#F3F4F6] focus:outline-none focus:ring-2 focus:ring-[#D99B26]"
           >
-            🔄 Kiểm tra máy chủ
+            <GameIcon name="ui:refresh" size={12} />
+            Kiểm tra máy chủ
           </button>
         </div>
 
         {!health.googleConfigured ? (
           <div className="mb-4 rounded-lg border border-[#D97706]/50 bg-[#D97706]/10 p-3.5 text-xs leading-relaxed text-[#FDE68A]">
-            <p className="font-semibold">
-              ⚠️ Máy chủ cục bộ chưa gắn khóa Google OAuth 2.0
+            <p className="flex items-center gap-1.5 font-semibold">
+              <GameIcon name="ui:alert" size={14} />
+              Máy chủ cục bộ chưa gắn khóa Google OAuth 2.0
             </p>
             <p className="mt-1 text-[#E5E7EB]">
-              Cấu hình Google OAuth sẽ được hoàn tất khi triển khai ở Bước 5.1. Bạn vẫn có thể dán mã dự phòng (nếu có) hoặc xem ngay bảng thống kê thật của máy chủ.
+              Cấu hình Google OAuth sẽ được hoàn tất khi triển khai. Bạn vẫn có thể dán mã dự phòng (nếu có) hoặc xem ngay bảng thống kê thật của máy chủ.
             </p>
           </div>
         ) : null}
@@ -291,8 +294,9 @@ export function LoginScreen({
 
         {isPendingGoogle ? (
           <div className="mb-4 rounded-lg border border-[#D99B26]/50 bg-[#14171A] p-4 animate-lkdf-slide">
-            <p className="text-sm font-medium text-[#F3F4F6]">
-              ⏳ {pendingStatusText}
+            <p className="flex items-center gap-2 text-sm font-medium text-[#F3F4F6]">
+              <GameIcon name="ui:loader" size={15} className="animate-spin text-[#D99B26]" />
+              {pendingStatusText}
             </p>
             <p className="mt-1 text-xs text-[#9CA3AF]">
               Sau khi cấp quyền Google trên trình duyệt, ứng dụng sẽ tự động đăng nhập. Nếu bị tường lửa chặn chuyển hướng, hãy dùng ô nhập mã dự phòng bên dưới.
@@ -303,9 +307,10 @@ export function LoginScreen({
                 onClick={() => {
                   void handleCancelGoogleLogin();
                 }}
-                className="rounded-lg border border-[#3A424C] bg-[#1E2328] px-3.5 py-1.5 text-xs font-medium text-[#F3F4F6] transition-colors hover:border-[#DC2626] hover:text-[#FCA5A5]"
+                className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[#3A424C] bg-[#1E2328] px-3.5 py-1.5 text-xs font-medium text-[#F3F4F6] transition-colors hover:border-[#DC2626] hover:text-[#FCA5A5]"
               >
-                ⏹️ Hủy đăng nhập
+                <GameIcon name="ui:x" size={13} />
+                Hủy đăng nhập
               </button>
             </div>
           </div>
@@ -316,9 +321,10 @@ export function LoginScreen({
             onClick={() => {
               void handleStartGoogleLogin();
             }}
-            className="w-full rounded-lg bg-[#C83E37] px-5 py-3 text-sm font-semibold text-[#F4EFE6] shadow transition-colors hover:bg-[#D94A42] focus:outline-none focus:ring-2 focus:ring-[#D99B26] disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-[#C83E37] px-5 py-3 text-sm font-semibold text-[#F4EFE6] shadow transition-colors hover:bg-[#D94A42] focus:outline-none focus:ring-2 focus:ring-[#D99B26] disabled:cursor-not-allowed disabled:opacity-50"
           >
-            🔑 Đăng nhập bằng Google
+            <GameIcon name="ui:key" size={15} />
+            Đăng nhập bằng Google
           </button>
         )}
 
@@ -326,9 +332,11 @@ export function LoginScreen({
           <button
             type="button"
             onClick={() => setShowManualBox((prev) => !prev)}
-            className="text-xs font-medium text-[#D99B26] hover:underline focus:outline-none"
+            className="inline-flex cursor-pointer items-center gap-1.5 text-xs font-medium text-[#D99B26] hover:underline focus:outline-none"
           >
-            📋 Dán mã đăng nhập từ trình duyệt {showManualBox ? '▾' : '▸'}
+            <GameIcon name="ui:copy" size={12} />
+            <span>Dán mã đăng nhập từ trình duyệt</span>
+            <GameIcon name={showManualBox ? 'ui:chevron-down' : 'ui:chevron-right'} size={13} />
           </button>
 
           {showManualBox || isPendingGoogle || !health.googleConfigured ? (
@@ -348,11 +356,10 @@ export function LoginScreen({
               <button
                 type="submit"
                 disabled={isExchangingCode}
-                className="shrink-0 rounded-lg border border-[#D99B26]/60 bg-[#14171A] px-4 py-2 text-xs font-semibold text-[#F3F4F6] transition-colors hover:bg-[#272D35] disabled:opacity-50"
+                className="inline-flex shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-[#D99B26]/60 bg-[#14171A] px-4 py-2 text-xs font-semibold text-[#F3F4F6] transition-colors hover:bg-[#272D35] disabled:opacity-50"
               >
-                {isExchangingCode
-                  ? 'Đang xác thực...'
-                  : '🔓 Xác thực bằng mã dự phòng'}
+                <GameIcon name="ui:check" size={13} />
+                {isExchangingCode ? 'Đang xác thực...' : 'Xác thực mã'}
               </button>
             </form>
           ) : null}
@@ -367,17 +374,19 @@ export function LoginScreen({
               <button
                 type="button"
                 onClick={onOpenDevPreview}
-                className="rounded-lg border border-[#D99B26]/60 bg-[#D99B26]/10 px-3 py-2 text-xs font-semibold text-[#FDE68A] transition-colors hover:bg-[#D99B26]/20 focus:outline-none focus:ring-2 focus:ring-[#D99B26]"
+                className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[#D99B26]/60 bg-[#D99B26]/10 px-3 py-2 text-xs font-semibold text-[#FDE68A] transition-colors hover:bg-[#D99B26]/20 focus:outline-none focus:ring-2 focus:ring-[#D99B26]"
               >
-                🃏 Xem thử Bàn đấu 4–8 ghế (Dev)
+                <GameIcon name="card-play" size={13} />
+                Xem thử Bàn tròn 4–8 ghế (Dev)
               </button>
             ) : null}
             <button
               type="button"
               onClick={onOpenStats}
-              className="rounded-lg border border-[#3A424C] bg-[#14171A] px-3.5 py-2 text-xs font-medium text-[#F3F4F6] transition-colors hover:border-[#D99B26] focus:outline-none focus:ring-2 focus:ring-[#D99B26]"
+              className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[#3A424C] bg-[#14171A] px-3.5 py-2 text-xs font-medium text-[#F3F4F6] transition-colors hover:border-[#D99B26] focus:outline-none focus:ring-2 focus:ring-[#D99B26]"
             >
-              📊 Xem Bảng Thống Kê Máy Chủ
+              <GameIcon name="ui:chart" size={13} />
+              Bảng Thống Kê
             </button>
           </div>
         </div>

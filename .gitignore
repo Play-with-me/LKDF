@@ -21,6 +21,16 @@ out/
 coverage/
 TestResults/
 
+# Raw unoptimized graphic source files (keep compressed .webp inside apps/desktop/src/assets)
+raw-assets/*
+!raw-assets/README.md
+
+# Keep Graphify summary/graph tracked for cross-machine AI onboarding; ignore heavy binary HTML/cache
+graphify-out/cache/
+graphify-out/graph.html
+graphify-out/.graphify_labels.json.sig
+graphify-out/.graphify_labels.pending.json
+
 # OS & IDE files
 .DS_Store
 Thumbs.db

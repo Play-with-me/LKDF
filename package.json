@@ -19,11 +19,17 @@
     "test": "npm run test:unit",
     "dev:server": "npm run build:shared && npm run dev --workspace=@lkdf/server",
     "dev:desktop": "npm run build:shared && npm run dev --workspace=@lkdf/desktop",
-    "dev": "npm run build:shared && concurrently -n shared,server,desktop -c cyan,green,magenta \"npm run dev --workspace=@lkdf/shared\" \"npm run dev --workspace=@lkdf/server\" \"npm run dev --workspace=@lkdf/desktop\""
+    "dev": "npm run build:shared && concurrently -n shared,server,desktop -c cyan,green,magenta \"npm run dev --workspace=@lkdf/shared\" \"npm run dev --workspace=@lkdf/server\" \"npm run dev --workspace=@lkdf/desktop\"",
+    "icons:build": "node scripts/build-game-icons.mjs",
+    "assets:check": "node scripts/assets-pipeline.mjs check",
+    "assets:optimize": "node scripts/assets-pipeline.mjs optimize",
+    "assets:app-icon": "node scripts/assets-pipeline.mjs build-app-icon"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",
     "concurrently": "^10.0.7",
+    "png-to-ico": "^3.0.2",
+    "sharp": "^0.35.5",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2",
     "vitest": "^5.1.0"

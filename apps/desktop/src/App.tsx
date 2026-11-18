@@ -9,6 +9,7 @@ import {
   useState,
 } from 'react';
 import { LoginScreen } from './features/auth/LoginScreen.js';
+import { GameIcon } from './components/icons/index.js';
 import { ServerWakeScreen } from './features/auth/ServerWakeScreen.js';
 import { HomeLobbyHub } from './features/lobby/HomeLobbyHub.js';
 import { WaitingRoomScreen } from './features/lobby/WaitingRoomScreen.js';
@@ -398,10 +399,10 @@ export function App() {
   return (
     <main className="flex h-screen w-screen min-h-0 min-w-0 flex-col overflow-hidden bg-[#14171A] text-[#F3F4F6]">
       {screen !== 'MATCH' && screen !== 'DEV_PREVIEW' ? (
-        <header className="flex h-12 shrink-0 items-center justify-between border-b border-[#2D343C] bg-[#1E2328] px-5">
+        <header className="flex h-11 shrink-0 items-center justify-between border-b border-[#2D343C] bg-[#1E2328] px-5">
         <div className="flex items-center gap-3 min-w-0">
-          <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded border border-[#D99B26]/60 bg-[#C83E37] font-serif-title text-xs font-bold text-[#F4EFE6]">
-            Sát
+          <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded border border-[#D99B26]/65 bg-[#C83E37] font-serif-title text-[13px] font-bold text-[#F4EFE6] shadow-inner">
+            殺
           </span>
           <h1 className="truncate font-serif-title text-base font-semibold tracking-wide text-[#F3F4F6]">
             Tam Quốc Sát LKDF
@@ -440,9 +441,10 @@ export function App() {
             <button
               type="button"
               onClick={() => setIsUpdateModalOpen(true)}
-              className="inline-flex items-center gap-1.5 rounded-full border border-[#D99B26] bg-[#C83E37] px-3 py-1 font-mono-num text-[11px] font-semibold tabular-nums text-[#F4EFE6] shadow transition-colors hover:bg-[#D94A42]"
+              className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-[#D99B26] bg-[#C83E37] px-3 py-1 font-mono-num text-[11px] font-semibold tabular-nums text-[#F4EFE6] shadow transition-colors hover:bg-[#D94A42]"
             >
-              ⬇️ Có bản v{updateState.latestVersion}
+              <GameIcon name="ui:download" size={12} />
+              Có bản v{updateState.latestVersion}
             </button>
           ) : (
             <button
@@ -459,9 +461,10 @@ export function App() {
                   forceRefresh: true,
                 });
               }}
-              className="inline-flex items-center gap-1 rounded-full border border-[#30363D] bg-[#14171A] px-2.5 py-0.5 font-mono-num text-xs tabular-nums text-[#D1D5DB] transition-colors hover:border-[#D99B26] disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-[#30363D] bg-[#14171A] px-2.5 py-0.5 font-mono-num text-xs tabular-nums text-[#D1D5DB] transition-colors hover:border-[#D99B26] disabled:cursor-not-allowed disabled:opacity-60"
             >
-              🔄 v{appVersion}
+              <GameIcon name="ui:refresh" size={11} />
+              v{appVersion}
             </button>
           )}
         </div>
@@ -470,10 +473,13 @@ export function App() {
 
       {screen === 'BOOT' || isRestoringSession ? (
         <section className="flex flex-1 min-h-0 min-w-0 items-center justify-center p-6">
-          <div className="rounded-xl border border-[#2D343C] bg-[#1E2328] px-6 py-4 text-sm text-[#D1D5DB]">
-            ⏳ {isRestoringSession
-              ? 'Đang khôi phục phiên đăng nhập Google...'
-              : 'Đang khởi động ứng dụng LKDF...'}
+          <div className="inline-flex items-center gap-2 rounded-xl border border-[#2D343C] bg-[#1E2328] px-6 py-4 text-sm text-[#D1D5DB]">
+            <GameIcon name="ui:loader" size={16} className="animate-spin text-[#D99B26]" />
+            <span>
+              {isRestoringSession
+                ? 'Đang khôi phục phiên đăng nhập Google...'
+                : 'Đang khởi động ứng dụng LKDF...'}
+            </span>
           </div>
         </section>
       ) : null}
@@ -551,8 +557,9 @@ export function App() {
         <Suspense
           fallback={
             <section className="flex flex-1 min-h-0 min-w-0 items-center justify-center p-6">
-              <div className="rounded-xl border border-[#2D343C] bg-[#1E2328] px-6 py-4 text-sm text-[#D1D5DB]">
-                ⏳ Đang mở bản xem thử Bàn đấu...
+              <div className="inline-flex items-center gap-2 rounded-xl border border-[#2D343C] bg-[#1E2328] px-6 py-4 text-sm text-[#D1D5DB]">
+                <GameIcon name="ui:loader" size={16} className="animate-spin text-[#D99B26]" />
+                Đang mở bản xem thử Bàn đấu...
               </div>
             </section>
           }

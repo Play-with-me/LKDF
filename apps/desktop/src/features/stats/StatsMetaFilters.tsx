@@ -1,4 +1,5 @@
 import type { ReactElement } from 'react';
+import { GameIcon } from '../../components/icons/index.js';
 import type {
   HeroFaction,
   HeroId,
@@ -110,13 +111,13 @@ export function StatsMetaFilters({
                 type="button"
                 onClick={handleToggleMine}
                 aria-pressed={isMyFilterActive}
-                className={`inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D99B26] ${
+                className={`inline-flex cursor-pointer items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D99B26] ${
                   isMyFilterActive
                     ? 'border-[#D99B26] bg-[#C83E37]/20 text-[#F4EFE6]'
                     : 'border-[#3B424C] bg-[#14171A] text-[#F3F4F6] hover:border-[#D99B26]'
                 }`}
               >
-                <span aria-hidden="true">👤</span>
+                <GameIcon name="ui:user" size={14} />
                 <span>{isMyFilterActive ? 'Đang lọc: Của tôi' : 'Chỉ xem của tôi'}</span>
               </button>
             ) : null}
@@ -125,9 +126,9 @@ export function StatsMetaFilters({
               type="button"
               onClick={onRefresh}
               disabled={isLoading}
-              className="inline-flex items-center gap-1.5 rounded-md border border-[#3B424C] bg-[#14171A] px-3 py-1.5 text-sm font-medium text-[#F3F4F6] transition-colors duration-150 hover:border-[#D99B26] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D99B26]"
+              className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-[#3B424C] bg-[#14171A] px-3 py-1.5 text-sm font-medium text-[#F3F4F6] transition-colors duration-150 hover:border-[#D99B26] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D99B26]"
             >
-              <span aria-hidden="true">🔄</span>
+              <GameIcon name="ui:refresh" size={14} className={isLoading ? 'animate-spin' : ''} />
               <span>{isLoading ? 'Đang tải...' : 'Tải lại thống kê'}</span>
             </button>
           </div>
@@ -210,9 +211,10 @@ export function StatsMetaFilters({
               type="button"
               onClick={onResetFilters}
               disabled={!hasActiveFilter}
-              className="w-full rounded-md border border-[#3B424C] bg-[#14171A] px-3 py-1.5 text-sm font-medium text-[#F3F4F6] transition-colors duration-150 hover:border-[#C83E37] hover:text-[#F4EFE6] disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D99B26]"
+              className="inline-flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-md border border-[#3B424C] bg-[#14171A] px-3 py-1.5 text-sm font-medium text-[#F3F4F6] transition-colors duration-150 hover:border-[#C83E37] hover:text-[#F4EFE6] disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D99B26]"
             >
-              ↩️ Xóa bộ lọc
+              <GameIcon name="ui:undo" size={14} />
+              Xóa bộ lọc
             </button>
           </div>
         </div>

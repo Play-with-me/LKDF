@@ -10,6 +10,9 @@ import { playMatchCue } from '../../lib/soundFx.js';
 import type { RoomViewerPayload, UserProfile } from '../../lib/types.js';
 import { createRoomWsClient } from '../../lib/wsClient.js';
 import type { RoomWsClient, WsConnectionStatus } from '../../lib/wsClient.js';
+import { getUiAssetUrl } from '../../lib/assetCatalog.js';
+import { GameIcon } from '../../components/icons/index.js';
+import { ActionLogDialog } from './ActionLogDialog.js';
 import { GameOverSummaryModal } from './GameOverSummaryModal.js';
 import { MatchActionSidebar } from './MatchActionSidebar.js';
 import { MatchArenaLayout } from './MatchArenaLayout.js';
@@ -58,6 +61,7 @@ export function MatchScreen({
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
   const [isTogglingSound, setIsTogglingSound] = useState<boolean>(false);
   const [isLeavingRoom, setIsLeavingRoom] = useState<boolean>(false);
+  const [showLogDialog, setShowLogDialog] = useState<boolean>(false);
   const [showRulesDialog, setShowRulesDialog] = useState<boolean>(false);
   const [showRefereeDialog, setShowRefereeDialog] = useState<boolean>(false);
 
@@ -339,9 +343,11 @@ export function MatchScreen({
         return;
       }
 
-      if (showRulesDialog || showRefereeDialog || isGameOver) {
+      if (showLogDialog || showRulesDialog || showRefereeDialog || isGameOver) {
         if (event.key === 'Escape') {
-          if (showRulesDialog) {
+          if (showLogDialog) {
+            setShowLogDialog(false);
+          } else if (showRulesDialog) {
             setShowRulesDialog(false);
           } else if (showRefereeDialog) {
             setShowRefereeDialog(false);
@@ -406,6 +412,7 @@ export function MatchScreen({
     handleToggleCard,
     isGameOver,
     playerView,
+    showLogDialog,
     showRefereeDialog,
     showRulesDialog,
   ]);
@@ -413,28 +420,39 @@ export function MatchScreen({
   const seatCount = roomPayload.roomState.seats.length;
   const roundNumber = playerView?.roundNumber ?? 1;
   const drawPileCount = playerView?.drawPileCount ?? 0;
+  const headerBgUrl = getUiAssetUrl('tex-header-black');
 
   return (
-    <section className="flex h-screen w-screen min-h-0 min-w-0 flex-col overflow-hidden bg-[#14171A] text-[#F3F4F6]">
-      {/* VÙNG 1: THANH ĐẦU TRANG CỐ ĐỊNH CAO 48px */}
-      <header className="flex h-12 shrink-0 items-center justify-between gap-3 border-b border-[#2D343C] bg-[#1E2328] px-4">
-        <div className="flex min-w-0 items-center gap-3 text-xs">
-          <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded border border-[#D99B26]/60 bg-[#C83E37] font-serif-title text-[11px] font-bold text-[#F4EFE6]">
-            Sát
+    <section className="flex h-screen w-screen min-h-0 min-w-0 flex-col overflow-hidden bg-[#090807] text-[#EFE6D5]">
+      {/* VÙNG 1: THANH ĐẦU TRANG CỐ ĐỊNH CAO 44px */}
+      <header
+        style={
+          headerBgUrl
+            ? {
+                backgroundImage: `linear-gradient(rgba(12,10,8,0.28), rgba(10,8,7,0.42)), url(${headerBgUrl})`,
+                backgroundSize: '100% 100%',
+              }
+            : undefined
+        }
+        className="flex h-11 shrink-0 items-center justify-between gap-2 border-b border-[#A68042]/40 bg-[#14110E] px-3 xl:px-4"
+      >
+        <div className="flex min-w-0 items-center gap-2 text-xs">
+          <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded border border-[#CA9A48]/60 bg-[#9E2B25] font-serif-title text-[12px] font-bold text-[#F5EBDC] shadow-inner">
+            殺
           </span>
-          <span className="font-mono-num font-bold text-[#D99B26]">
-            Phòng #{roomCode} ({seatCount} người)
+          <span className="font-mono-num shrink-0 font-bold text-[#D4A451]">
+            Phòng #{roomCode} <span className="hidden lg:inline">({seatCount} người)</span>
           </span>
           <span className="text-[#4B5563]">·</span>
-          <span className="font-mono-num font-semibold text-[#F3F4F6] tabular-nums">
+          <span className="font-mono-num shrink-0 font-semibold text-[#EFE6D5] tabular-nums">
             Vòng {roundNumber}
           </span>
-          <span className="text-[#4B5563]">·</span>
-          <span className="font-mono-num text-[#D1D5DB] tabular-nums">
-            Bài rút: {drawPileCount}
+          <span className="hidden sm:inline text-[#4B5563]">·</span>
+          <span className="font-mono-num hidden sm:inline shrink-0 text-[#B5A792] tabular-nums">
+            Rút: {drawPileCount}
           </span>
           {actionError ? (
-            <span className="truncate rounded border border-[#DC2626]/50 bg-[#DC2626]/15 px-2 py-0.5 text-[11px] text-[#FCA5A5]">
+            <span className="max-w-[260px] truncate rounded border border-[#DC2626]/50 bg-[#DC2626]/15 px-2 py-0.5 text-[11px] text-[#FCA5A5]">
               {actionError}
             </span>
           ) : null}
@@ -447,25 +465,47 @@ export function MatchScreen({
             onClick={() => {
               void handleToggleSound();
             }}
-            className="rounded-lg border border-[#3A424C] bg-[#14171A] px-2.5 py-1 text-xs font-medium text-[#F3F4F6] hover:border-[#D99B26] disabled:opacity-50"
+            className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-[#9A7B4F]/40 bg-[#14100D]/90 px-2 py-1 text-[11px] font-medium text-[#EFE6D5] hover:border-[#D99B26] disabled:opacity-50 xl:px-2.5 xl:text-xs"
           >
-            {currentUser.preferences.soundEnabled ? '🔊 Âm thanh' : '🔇 Tắt tiếng'}
+            <GameIcon
+              name={currentUser.preferences.soundEnabled ? 'ui:volume-on' : 'ui:volume-off'}
+              size={13}
+            />
+            <span className="hidden lg:inline">
+              {currentUser.preferences.soundEnabled ? 'Âm thanh' : 'Tắt tiếng'}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setShowLogDialog(true)}
+            className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-[#9A7B4F]/40 bg-[#14100D]/90 px-2 py-1 text-[11px] font-medium text-[#EFE6D5] hover:border-[#D99B26] xl:px-2.5 xl:text-xs"
+          >
+            <GameIcon name="scroll-unfurled" size={13} className="text-[#D99B26]" />
+            <span>Nhật ký</span>
+            <span className="font-mono-num rounded bg-[#272D35] px-1 py-0 text-[10px] font-bold text-[#FDE68A] tabular-nums">
+              {playerView?.actionLog.length ?? 0}
+            </span>
           </button>
 
           <button
             type="button"
             onClick={() => setShowRulesDialog(true)}
-            className="rounded-lg border border-[#3A424C] bg-[#14171A] px-2.5 py-1 text-xs font-medium text-[#F3F4F6] hover:border-[#D99B26]"
+            className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-[#9A7B4F]/40 bg-[#14100D]/90 px-2 py-1 text-[11px] font-medium text-[#EFE6D5] hover:border-[#D99B26] xl:px-2.5 xl:text-xs"
           >
-            📖 Luật & Phím tắt
+            <GameIcon name="ui:book-open" size={13} />
+            <span>
+              Luật <span className="hidden xl:inline">&amp; Phím tắt</span>
+            </span>
           </button>
 
           <button
             type="button"
             onClick={() => setShowRefereeDialog(true)}
-            className="rounded-lg border border-[#D99B26]/50 bg-[#D99B26]/10 px-2.5 py-1 text-xs font-semibold text-[#FDE68A] hover:bg-[#D99B26]/20"
+            className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-[#CA9A48]/50 bg-[#D99B26]/12 px-2 py-1 text-[11px] font-semibold text-[#FDE68A] hover:bg-[#D99B26]/22 xl:px-2.5 xl:text-xs"
           >
-            ⚖️ Trọng tài
+            <GameIcon name="scales" size={13} />
+            Trọng tài
           </button>
 
           <button
@@ -474,9 +514,16 @@ export function MatchScreen({
             onClick={() => {
               void handleManualSync();
             }}
-            className="rounded-lg border border-[#3A424C] bg-[#14171A] px-2.5 py-1 text-xs font-medium text-[#D1D5DB] hover:border-[#D99B26] disabled:opacity-50"
+            className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-[#9A7B4F]/40 bg-[#14100D]/90 px-2 py-1 text-[11px] font-medium text-[#D1D5DB] hover:border-[#D99B26] disabled:opacity-50 xl:px-2.5 xl:text-xs"
           >
-            {isSyncing ? '⏳ Đồng bộ...' : '🔄 Đồng bộ'}
+            <GameIcon
+              name={isSyncing ? 'ui:loader' : 'ui:refresh'}
+              size={13}
+              className={isSyncing ? 'animate-spin' : ''}
+            />
+            <span className="hidden md:inline">
+              {isSyncing ? 'Đồng bộ...' : 'Đồng bộ'}
+            </span>
           </button>
 
           <button
@@ -485,14 +532,15 @@ export function MatchScreen({
             onClick={() => {
               void handleLeaveRoom();
             }}
-            className="rounded-lg border border-[#3A424C] bg-[#14171A] px-2.5 py-1 text-xs font-medium text-[#FCA5A5] hover:border-[#DC2626] disabled:opacity-50"
+            className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-[#9A7B4F]/40 bg-[#14100D]/90 px-2 py-1 text-[11px] font-medium text-[#FCA5A5] hover:border-[#DC2626] disabled:opacity-50 xl:px-2.5 xl:text-xs"
           >
-            {isLeavingRoom ? 'Đang rời...' : '🚪 Rời bàn'}
+            <GameIcon name="ui:door-open" size={13} />
+            <span>{isLeavingRoom ? 'Đang rời...' : 'Rời bàn'}</span>
           </button>
         </div>
       </header>
 
-      {/* VÙNG 2, 3, 4: BÀN ĐẤU VÒNG CHỮ U + THANH TAY BÀI & CỘT HÀNH ĐỘNG */}
+      {/* VÙNG 2, 3, 4: BÀN ĐẤU VÒNG CHỮ U + THANH LỆNH NGỮ CẢNH + TRANG BỊ NGỬA + KHOANG KỸ NĂNG */}
       {playerView ? (
         <div className="flex flex-1 min-h-0 min-w-0 flex-col">
           <MatchArenaLayout
@@ -513,10 +561,12 @@ export function MatchScreen({
             onToggleAutoSkipNullification={handleToggleAutoSkipNullification}
             onSendAction={handleSendAction}
             onSelectHero={handleSelectHero}
+            onClearSelection={handleClearSelection}
             renderActionSidebar={() => (
               <MatchActionSidebar
                 view={playerView}
                 selection={selection}
+                layout="bar"
                 onClearSelection={handleClearSelection}
                 onSendAction={handleSendAction}
                 onEndPlayPhase={handleEndPlayPhase}
@@ -526,13 +576,20 @@ export function MatchScreen({
         </div>
       ) : (
         <div className="flex flex-1 min-h-0 min-w-0 items-center justify-center p-6">
-          <div className="rounded-xl border border-[#2D343C] bg-[#1E2328] px-6 py-4 text-sm text-[#D1D5DB]">
-            ⏳ Đang tải trạng thái bàn đấu...
+          <div className="inline-flex items-center gap-2 rounded-xl border border-[#2D343C] bg-[#1E2328] px-6 py-4 text-sm text-[#D1D5DB]">
+            <GameIcon name="ui:loader" size={16} className="animate-spin text-[#D99B26]" />
+            Đang tải trạng thái bàn đấu...
           </div>
         </div>
       )}
 
       {/* CÁC HỘP THOẠI PHỤ (<dialog>) */}
+      <ActionLogDialog
+        open={showLogDialog}
+        actionLog={playerView?.actionLog ?? []}
+        onClose={() => setShowLogDialog(false)}
+      />
+
       <RulesHotkeysDialog
         open={showRulesDialog}
         onClose={() => setShowRulesDialog(false)}

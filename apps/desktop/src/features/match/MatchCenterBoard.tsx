@@ -1,8 +1,4 @@
-import {
-  formatRankLabel,
-  formatSuitSymbol,
-  isRedSuit,
-} from '@lkdf/shared';
+import { formatRankLabel, isRedSuit } from '@lkdf/shared';
 import type {
   CardInstance,
   GameAction,
@@ -11,8 +7,15 @@ import type {
   TargetCardZone,
   TimerPresetConfig,
 } from '@lkdf/shared';
-import { useEffect, useMemo, useState } from 'react';
-import { HeroSelectPanel } from './HeroSelectPanel.js';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { getCardArtUrl, getUiAssetUrl } from '../../lib/assetCatalog.js';
+import {
+  CardBack,
+  GameIcon,
+  SuitGlyph,
+  getCardGameIcon,
+} from '../../components/icons/index.js';
+import { getCardFrameStyle } from './HandCardItem.js';
 import {
   describePendingActorPrompt,
   formatCardShort,
@@ -25,8 +28,9 @@ export interface MatchCenterBoardProps {
   readonly phaseDeadlineAt: string | null;
   readonly pausedRemainingMs: number | null;
   readonly isTimerPaused: boolean;
+  readonly inspectedCardId?: string | null;
   readonly onSendAction: (action: GameAction) => void;
-  readonly onSelectHero: (heroId: NonNullable<PlayerViewState['players'][number]['heroId']>) => void;
+  readonly onInspectCard?: (card: CardInstance, sourceLabel: string) => void;
 }
 
 function useCountdownSeconds(
@@ -93,10 +97,11 @@ function GuanXingPlanner({
   };
 
   return (
-    <div className="rounded-lg border border-[#D99B26]/60 bg-[#14171A] p-3">
+    <div className="rounded-lg border border-[#D99B26]/60 bg-[#14171A] p-2.5">
       <div className="mb-2 flex items-center justify-between gap-2">
-        <span className="text-[13px] font-bold text-[#FBBF24]">
-          🌟 Quan Tinh — Chia bài lên Đầu ({topIds.length}) hoặc Đáy ({bottomIds.length})
+        <span className="inline-flex items-center gap-1.5 text-[12px] font-bold text-[#FBBF24]">
+          <GameIcon name="ui:sparkles" size={13} />
+          Quan Tinh — Đầu ({topIds.length}) / Đáy ({bottomIds.length})
         </span>
         <button
           type="button"
@@ -108,17 +113,17 @@ function GuanXingPlanner({
               bottomCardIds: bottomIds,
             })
           }
-          className="cursor-pointer rounded bg-[#C83E37] px-3 py-1 text-[12px] font-bold text-[#F3F4F6] hover:bg-[#B2342E]"
+          className="cursor-pointer rounded bg-[#C83E37] px-2.5 py-1 text-[11px] font-bold text-[#F3F4F6] hover:bg-[#B2342E]"
         >
-          ✨ Đặt bài theo thứ tự Quan Tinh
+          Xác nhận Quan Tinh
         </button>
       </div>
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
         <div className="rounded border border-[#2D333B] bg-[#1E2328] p-2">
           <div className="mb-1 text-[11px] font-bold text-[#86EFAC]">
-            ⬆️ Đặt lên Đầu chồng bài (rút trước)
+            Đầu chồng bài (rút trước)
           </div>
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap gap-1">
             {topIds.map((id, idx) => {
               const card = cardById.get(id);
               if (!card) return null;
@@ -128,7 +133,7 @@ function GuanXingPlanner({
                   type="button"
                   onClick={() => moveCard(id, 'BOTTOM')}
                   title="Bấm để chuyển xuống đáy"
-                  className="cursor-pointer rounded border border-[#3A424C] bg-[#F4EFE6] px-2 py-1 text-[12px] font-bold text-[#18181B] hover:border-[#D99B26]"
+                  className="lkdf-card-parchment cursor-pointer rounded border border-[#7C5828] px-2 py-0.5 text-[11px] font-bold text-[#1D150D] hover:border-[#D99B26]"
                 >
                   {idx + 1}. {formatCardShort(card)} ↓
                 </button>
@@ -138,9 +143,9 @@ function GuanXingPlanner({
         </div>
         <div className="rounded border border-[#2D333B] bg-[#1E2328] p-2">
           <div className="mb-1 text-[11px] font-bold text-[#93C5FD]">
-            ⬇️ Đặt xuống Đáy chồng bài
+            Đáy chồng bài
           </div>
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap gap-1">
             {bottomIds.map((id) => {
               const card = cardById.get(id);
               if (!card) return null;
@@ -150,7 +155,7 @@ function GuanXingPlanner({
                   type="button"
                   onClick={() => moveCard(id, 'TOP')}
                   title="Bấm để chuyển lên đầu"
-                  className="cursor-pointer rounded border border-[#3A424C] bg-[#F4EFE6] px-2 py-1 text-[12px] font-bold text-[#18181B] hover:border-[#D99B26]"
+                  className="lkdf-card-parchment cursor-pointer rounded border border-[#7C5828] px-2 py-0.5 text-[11px] font-bold text-[#1D150D] hover:border-[#D99B26]"
                 >
                   {formatCardShort(card)} ↑
                 </button>
@@ -212,26 +217,27 @@ function YiJiDistributor({
   };
 
   return (
-    <div className="rounded-lg border border-[#D99B26]/60 bg-[#14171A] p-3">
+    <div className="rounded-lg border border-[#D99B26]/60 bg-[#14171A] p-2.5">
       <div className="mb-2 flex items-center justify-between gap-2">
-        <span className="text-[13px] font-bold text-[#FBBF24]">
-          📜 Di Kế — Chọn người nhận cho từng lá bài
+        <span className="inline-flex items-center gap-1.5 text-[12px] font-bold text-[#FBBF24]">
+          <GameIcon name="scroll-unfurled" size={13} />
+          Di Kế — Chọn người nhận bài
         </span>
         <button
           type="button"
           onClick={handleConfirm}
-          className="cursor-pointer rounded bg-[#C83E37] px-3 py-1 text-[12px] font-bold text-[#F3F4F6] hover:bg-[#B2342E]"
+          className="cursor-pointer rounded bg-[#C83E37] px-2.5 py-1 text-[11px] font-bold text-[#F3F4F6] hover:bg-[#B2342E]"
         >
-          ✨ Chia bài Di Kế
+          Chia bài Di Kế
         </button>
       </div>
       <div className="flex flex-wrap gap-2">
         {cards.map((card) => (
           <div
             key={card.id}
-            className="flex items-center gap-2 rounded border border-[#3A424C] bg-[#1E2328] p-2"
+            className="flex items-center gap-2 rounded border border-[#3A424C] bg-[#1E2328] p-1.5"
           >
-            <span className="rounded bg-[#F4EFE6] px-2 py-0.5 text-[12px] font-bold text-[#18181B]">
+            <span className="lkdf-card-parchment rounded border border-[#7C5828] px-2 py-0.5 text-[11px] font-bold text-[#1D150D]">
               {formatCardShort(card)}
             </span>
             <select
@@ -243,7 +249,7 @@ function YiJiDistributor({
                   [card.id]: Number(e.target.value),
                 }))
               }
-              className="rounded border border-[#3A424C] bg-[#14171A] px-2 py-1 text-[12px] text-[#F3F4F6]"
+              className="rounded border border-[#3A424C] bg-[#14171A] px-2 py-0.5 text-[11px] text-[#F3F4F6]"
             >
               {alivePlayers.map((p) => (
                 <option key={p.seatIndex} value={p.seatIndex}>
@@ -271,31 +277,141 @@ function getPublicTargetZones(player: PublicPlayerView): TargetCardZone[] {
   return zones;
 }
 
+const TABLE_FAN_ROTATIONS_DEG = [-7, -2.5, 2, -4, 3] as const;
+
+function TablePlayedCard({
+  card,
+  isLatest,
+  isInspected,
+  rotationDeg,
+  overlapLeft,
+  onInspect,
+}: {
+  readonly card: CardInstance;
+  readonly isLatest: boolean;
+  readonly isInspected: boolean;
+  readonly rotationDeg: number;
+  readonly overlapLeft: boolean;
+  readonly onInspect?: (card: CardInstance, sourceLabel: string) => void;
+}) {
+  const [artFailed, setArtFailed] = useState(false);
+  const artUrl = getCardArtUrl(card.cardKey);
+  const frameStyle = getCardFrameStyle(card.cardKey, card.category);
+  const isRed = isRedSuit(card.suit);
+  const rankLabel = formatRankLabel(card.rank);
+
+  useEffect(() => {
+    setArtFailed(false);
+  }, [artUrl]);
+
+  return (
+    <button
+      type="button"
+      onClick={onInspect ? () => onInspect(card, 'Bài ngửa giữa bàn') : undefined}
+      title={`Bấm xem kỹ năng ${rankLabel} ${card.nameVi}`}
+      style={{ transform: `rotate(${rotationDeg}deg)` }}
+      className={[
+        'lkdf-card-parchment relative flex h-[92px] w-[66px] shrink-0 flex-col justify-between rounded-lg p-1.5 text-left text-[#1D150D] transition-transform duration-150 select-none',
+        onInspect ? 'cursor-pointer hover:-translate-y-1.5 hover:z-30' : '',
+        overlapLeft ? '-ml-6' : '',
+        isInspected
+          ? 'z-30 border-2 border-[#FDE68A] shadow-[0_12px_24px_rgba(217,155,38,0.45)] ring-2 ring-[#D99B26]/70'
+          : isLatest
+            ? 'z-20 border-[1.5px] border-[#D99B26] shadow-[0_10px_22px_rgba(0,0,0,0.65)] ring-1 ring-[#D99B26]/55'
+            : 'z-10 border-[1.5px] border-[#7C5828] brightness-[0.9] shadow-md',
+      ].join(' ')}
+    >
+      <span className="pointer-events-none absolute inset-[2px] rounded-[5px] border border-[#5C3E1A]/25" />
+
+      <div
+        className={[
+          'relative z-10 flex items-center gap-0.5 leading-none font-bold',
+          isRed ? 'text-[#A61B1B]' : 'text-[#1D150D]',
+        ].join(' ')}
+      >
+        <span className="font-mono-num text-[11px]">{rankLabel}</span>
+        <SuitGlyph suit={card.suit} size={10} />
+      </div>
+
+      <div
+        className={[
+          'relative z-10 my-0.5 flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded border-[1.5px]',
+          frameStyle.tintBg,
+        ].join(' ')}
+      >
+        {artUrl && !artFailed ? (
+          <img
+            src={artUrl}
+            alt={card.nameVi}
+            draggable={false}
+            onError={() => setArtFailed(true)}
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          <GameIcon
+            name={getCardGameIcon(card.cardKey)}
+            size={22}
+            className={frameStyle.emblemColor}
+          />
+        )}
+      </div>
+
+      <div className="font-serif-title relative z-10 line-clamp-2 w-full text-center text-[9.5px] leading-[1.1] font-bold text-[#1D150D]">
+        {card.nameVi}
+      </div>
+    </button>
+  );
+}
+
 export function MatchCenterBoard({
   playerView,
   timerConfig,
   phaseDeadlineAt,
   pausedRemainingMs,
   isTimerPaused,
+  inspectedCardId = null,
   onSendAction,
-  onSelectHero,
+  onInspectCard,
 }: MatchCenterBoardProps) {
+  const [recentDiscards, setRecentDiscards] = useState<readonly CardInstance[]>(() =>
+    playerView.discardPileTop ? [playerView.discardPileTop] : [],
+  );
+  const prevMatchIdRef = useRef<string>(playerView.matchId);
+  const prevDiscardCountRef = useRef<number>(playerView.discardPileCount);
+
+  useEffect(() => {
+    const matchChanged = prevMatchIdRef.current !== playerView.matchId;
+    const discardCount = playerView.discardPileCount;
+    const topCard = playerView.discardPileTop;
+
+    if (matchChanged || discardCount === 0 || !topCard) {
+      prevMatchIdRef.current = playerView.matchId;
+      prevDiscardCountRef.current = discardCount;
+      setRecentDiscards(topCard && discardCount > 0 ? [topCard] : []);
+      return;
+    }
+
+    const wentBackwards = discardCount < prevDiscardCountRef.current;
+    prevDiscardCountRef.current = discardCount;
+
+    setRecentDiscards((prev) => {
+      if (wentBackwards) {
+        const idx = prev.findIndex((c) => c.id === topCard.id);
+        return idx >= 0 ? prev.slice(0, idx + 1) : [topCard];
+      }
+      if (prev.length > 0 && prev[prev.length - 1]?.id === topCard.id) {
+        return prev;
+      }
+      const withoutDup = prev.filter((c) => c.id !== topCard.id);
+      return [...withoutDup, topCard].slice(-5);
+    });
+  }, [playerView.discardPileCount, playerView.discardPileTop, playerView.matchId]);
+
   const remainingSeconds = useCountdownSeconds(
     phaseDeadlineAt,
     pausedRemainingMs,
     isTimerPaused,
   );
-
-  if (playerView.turnPhase === 'HERO_SELECT') {
-    return (
-      <HeroSelectPanel
-        playerView={playerView}
-        remainingSeconds={remainingSeconds}
-        isTimerPaused={isTimerPaused}
-        onSelectHero={onSelectHero}
-      />
-    );
-  }
 
   const prompt = describePendingActorPrompt(playerView);
   const totalSeconds = playerView.activeInterrupt
@@ -315,27 +431,56 @@ export function MatchCenterBoard({
       ? playerView.players.find((p) => p.seatIndex === interrupt.targetSeat)
       : undefined;
 
+  const hasSpecialChoice =
+    isMyInteractiveZone &&
+    ((interrupt.kind === 'WAIT_HARVEST_PICK' && playerView.harvestPool.length > 0) ||
+      (interrupt.kind === 'PICK_TARGET_CARD' && Boolean(pickTargetPlayer)) ||
+      (interrupt.kind === 'WAIT_GUAN_XING' && Boolean(interrupt.guanXingCards)) ||
+      (interrupt.kind === 'WAIT_YI_JI' && Boolean(interrupt.yiJiCards)));
+
+  const topDiscard = recentDiscards[recentDiscards.length - 1] ?? null;
+  const cloudBorderUrl = getUiAssetUrl('tex-cloud-border');
+  const inkBaseUrl = getUiAssetUrl('tex-ink-base');
+  const plaqueStyle = cloudBorderUrl
+    ? {
+        backgroundImage: `linear-gradient(rgba(18,14,11,0.84), rgba(14,11,9,0.92))${inkBaseUrl ? `, url(${inkBaseUrl})` : ''}`,
+        borderStyle: 'solid' as const,
+        borderWidth: '5px 10px',
+        borderColor: 'transparent',
+        borderImage: `url(${cloudBorderUrl}) 16 26 stretch`,
+      }
+    : undefined;
+
   return (
-    <div className="flex h-full min-h-0 min-w-0 flex-col gap-2 rounded-xl border border-[#303740] bg-[#1E2328]/90 p-3 shadow-lg">
-      {/* Banner pha hiện tại & Đồng hồ */}
-      <div className="shrink-0 rounded-lg border border-[#3A424C] bg-[#14171A] px-3 py-2">
-        <div className="flex items-center justify-between gap-2">
-          <div className="min-w-0">
-            <div
-              className={[
-                'truncate text-[14px] font-bold',
-                prompt.isMyTurn ? 'text-[#FBBF24]' : 'text-[#F3F4F6]',
-              ].join(' ')}
-            >
-              🔔 {prompt.headlineVi}
-            </div>
-            <div className="truncate text-[12px] text-[#9CA3AF]">{prompt.detailVi}</div>
-          </div>
+    <div className="flex max-h-full min-h-0 min-w-0 w-full flex-col items-center gap-2">
+      {/* Thanh trạng thái lượt nhỏ gọn khảm viền mây cổ Doanh Trại A */}
+      <div className="flex max-w-full flex-col items-center gap-0.5">
+        <div
+          style={plaqueStyle}
+          className={
+            cloudBorderUrl
+              ? 'inline-flex max-w-full items-center gap-2 px-2.5 py-0.5 shadow-lg'
+              : 'inline-flex max-w-full items-center gap-2 rounded-full border border-[#D99B26]/35 bg-[#14171A]/85 px-3.5 py-1 shadow-md backdrop-blur-sm'
+          }
+        >
+          <span
+            className={`h-2 w-2 shrink-0 rounded-full ${
+              prompt.isMyTurn ? 'bg-[#D99B26]' : 'bg-[#6B7280]'
+            }`}
+          />
+          <span
+            className={[
+              'truncate text-[12px] font-bold',
+              prompt.isMyTurn ? 'text-[#FBBF24]' : 'text-[#F3F4F6]',
+            ].join(' ')}
+          >
+            {prompt.headlineVi}
+          </span>
 
           {remainingSeconds !== null ? (
             <span
               className={[
-                'font-mono-num shrink-0 rounded border px-2 py-0.5 text-[13px] font-bold',
+                'font-mono-num inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-bold tabular-nums',
                 isTimerPaused
                   ? 'border-[#D97706]/50 bg-[#D97706]/15 text-[#FBBF24]'
                   : remainingSeconds <= 5
@@ -343,212 +488,229 @@ export function MatchCenterBoard({
                     : 'border-[#3A424C] bg-[#1E2328] text-[#F3F4F6]',
               ].join(' ')}
             >
-              {isTimerPaused ? `⏸️ Tạm dừng (${remainingSeconds}s)` : `Còn ${remainingSeconds} giây`}
+              <GameIcon name={isTimerPaused ? 'ui:pause' : 'ui:clock'} size={11} />
+              {isTimerPaused ? `Dừng (${remainingSeconds}s)` : `${remainingSeconds}s`}
             </span>
           ) : null}
         </div>
 
-        <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-[#272D35]">
-          <div
-            className={[
-              'h-full transition-all duration-200',
-              remainingSeconds !== null && remainingSeconds <= 5
-                ? 'bg-[#DC2626]'
-                : prompt.isMyTurn
-                  ? 'bg-[#D99B26]'
-                  : 'bg-[#3B82F6]',
-            ].join(' ')}
-            style={{ width: `${progressPercent}%` }}
-          />
-        </div>
-      </div>
-
-      {/* Khu bài đánh ra / Phán xét / Tương tác đặc biệt */}
-      <div className="shrink-0 space-y-2">
-        <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[#2D333B] bg-[#14171A]/80 px-3 py-2">
-          <div className="flex items-center gap-3 text-[12px]">
-            <span className="font-mono-num text-[#D1D5DB]">
-              📚 Chồng rút: <strong className="text-[#F3F4F6]">{playerView.drawPileCount}</strong>
-            </span>
-            <span className="font-mono-num text-[#D1D5DB]">
-              🗑️ Bỏ bài: <strong className="text-[#F3F4F6]">{playerView.discardPileCount}</strong>
-            </span>
-          </div>
-
-          {playerView.discardPileTop ? (
-            <div className="flex items-center gap-2">
-              <span className="text-[12px] text-[#9CA3AF]">Lá mới đánh/bỏ:</span>
-              <span
-                className={[
-                  'rounded border border-[#D6CFC2] bg-[#F4EFE6] px-2 py-0.5 text-[12px] font-bold',
-                  isRedSuit(playerView.discardPileTop.suit)
-                    ? 'text-[#C83E37]'
-                    : 'text-[#18181B]',
-                ].join(' ')}
-              >
-                {formatSuitSymbol(playerView.discardPileTop.suit)}
-                {formatRankLabel(playerView.discardPileTop.rank)}{' '}
-                {playerView.discardPileTop.nameVi}
-              </span>
-            </div>
-          ) : (
-            <span className="text-[12px] text-[#9CA3AF]">Chưa có bài đánh ra</span>
-          )}
-        </div>
-
-        {/* Ngũ Cốc Phong Đăng */}
-        {isMyInteractiveZone &&
-        interrupt.kind === 'WAIT_HARVEST_PICK' &&
-        playerView.harvestPool.length > 0 ? (
-          <div className="rounded-lg border border-[#D99B26]/70 bg-[#14171A] p-2.5">
-            <div className="mb-1.5 text-[12px] font-bold text-[#FBBF24]">
-              🌾 Ngũ Cốc Phong Đăng — Bấm chọn 1 lá bài:
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              {playerView.harvestPool.map((card) => (
-                <button
-                  key={card.id}
-                  type="button"
-                  onClick={() =>
-                    onSendAction({
-                      type: 'RESPOND_HARVEST_PICK',
-                      seatIndex: playerView.viewerSeatIndex,
-                      cardId: card.id,
-                    })
-                  }
-                  className={[
-                    'cursor-pointer rounded border border-[#D99B26] bg-[#F4EFE6] px-2.5 py-1.5 text-[12px] font-bold transition-transform hover:-translate-y-0.5',
-                    isRedSuit(card.suit) ? 'text-[#C83E37]' : 'text-[#18181B]',
-                  ].join(' ')}
-                >
-                  {formatCardShort(card)}
-                </button>
-              ))}
-            </div>
+        {remainingSeconds !== null ? (
+          <div className="h-[3px] w-48 overflow-hidden rounded-full bg-[#272D35]/80">
+            <div
+              className={[
+                'h-full transition-all duration-200',
+                remainingSeconds <= 5
+                  ? 'bg-[#DC2626]'
+                  : prompt.isMyTurn
+                    ? 'bg-[#D99B26]'
+                    : 'bg-[#3B82F6]',
+              ].join(' ')}
+              style={{ width: `${progressPercent}%` }}
+            />
           </div>
         ) : null}
 
-        {/* Thuận Thủ Khiên Dương / Quá Hà Sái Cầu */}
-        {isMyInteractiveZone &&
-        interrupt.kind === 'PICK_TARGET_CARD' &&
-        pickTargetPlayer ? (
-          <div className="rounded-lg border border-[#D99B26]/70 bg-[#14171A] p-2.5">
-            <div className="mb-1.5 text-[12px] font-bold text-[#FBBF24]">
-              🎯 Chọn 1 lá bài từ {getPlayerSeatLabel(playerView.players, pickTargetPlayer.seatIndex)}:
+        <p className="max-w-full truncate px-2 text-center text-[11px] text-[#9CA3AF]">
+          {prompt.detailVi}
+        </p>
+      </div>
+
+      {/* Bàn bài trung tâm: Chồng bài rút + Tụ bài đánh ra kiểu Tiến Lên Miền Nam */}
+      {!hasSpecialChoice ? (
+        <div className="flex items-end justify-center gap-7 py-1">
+          {/* Chồng bài rút dạng xấp bài úp */}
+          <div className="flex flex-col items-center gap-1.5">
+            <div className="relative">
+              <span
+                aria-hidden="true"
+                className="pointer-events-none absolute top-1.5 left-1.5 h-[100px] w-[72px] rounded-lg border border-[#D99B26]/30 bg-[#0F1B2B]"
+              />
+              <span
+                aria-hidden="true"
+                className="pointer-events-none absolute top-0.5 left-0.5 h-[100px] w-[72px] rounded-lg border border-[#D99B26]/50 bg-[#15253A]"
+              />
+              <CardBack size="lg" className="relative z-10 shadow-lg" />
             </div>
-            <div className="flex flex-wrap gap-1.5">
-              {getPublicTargetZones(pickTargetPlayer).map((zone: TargetCardZone) => {
-                if (zone === 'HAND') {
-                  return Array.from({ length: pickTargetPlayer.handCount }, (_, idx) => (
-                    <button
-                      key={`hand-${idx}`}
-                      type="button"
-                      onClick={() =>
-                        onSendAction({
-                          type: 'RESPOND_PICK_TARGET_CARD',
-                          seatIndex: playerView.viewerSeatIndex,
-                          zone: 'HAND',
-                          handIndex: idx,
-                        })
-                      }
-                      className="cursor-pointer rounded border border-[#D99B26]/60 bg-[#272D35] px-2.5 py-1 text-[12px] font-bold text-[#F3F4F6] hover:bg-[#323A45]"
-                    >
-                      🃏 Tay bài #{idx + 1}
-                    </button>
-                  ));
-                }
-                if (zone === 'DELAYED') {
-                  return pickTargetPlayer.delayedScrolls.map((scroll) => (
-                    <button
-                      key={scroll.id}
-                      type="button"
-                      onClick={() =>
-                        onSendAction({
-                          type: 'RESPOND_PICK_TARGET_CARD',
-                          seatIndex: playerView.viewerSeatIndex,
-                          zone: 'DELAYED',
-                          delayedCardId: scroll.id,
-                        })
-                      }
-                      className="cursor-pointer rounded border border-[#D97706] bg-[#D97706]/20 px-2.5 py-1 text-[12px] font-bold text-[#FCD34D] hover:bg-[#D97706]/30"
-                    >
-                      ⏳ {formatCardShort(scroll)}
-                    </button>
-                  ));
-                }
-                const equipCard =
-                  zone === 'WEAPON'
-                    ? pickTargetPlayer.equipments.weapon
-                    : zone === 'ARMOR'
-                      ? pickTargetPlayer.equipments.armor
-                      : zone === 'PLUS_ONE_HORSE'
-                        ? pickTargetPlayer.equipments.plusOneHorse
-                        : pickTargetPlayer.equipments.minusOneHorse;
-                if (!equipCard) return null;
-                return (
+            <span className="font-mono-num inline-flex items-center gap-1 rounded-full border border-[#303740] bg-[#14171A]/85 px-2.5 py-0.5 text-[11px] font-semibold text-[#D1D5DB] tabular-nums">
+              Rút: <strong className="text-[#F3F4F6]">{playerView.drawPileCount}</strong>
+            </span>
+          </div>
+
+          {/* Tụ bài đánh ra kiểu Tiến Lên Miền Nam (xòe ngang đè nhẹ giữa bàn) */}
+          <div className="flex flex-col items-center gap-1.5">
+            <div className="flex min-h-[104px] min-w-[96px] items-center justify-center px-2">
+              {recentDiscards.length > 0 ? (
+                <div className="flex items-center justify-center">
+                  {recentDiscards.map((card, idx) => (
+                    <TablePlayedCard
+                      key={`${card.id}-${idx}`}
+                      card={card}
+                      isLatest={idx === recentDiscards.length - 1}
+                      isInspected={inspectedCardId === card.id}
+                      rotationDeg={TABLE_FAN_ROTATIONS_DEG[idx % TABLE_FAN_ROTATIONS_DEG.length] ?? 0}
+                      overlapLeft={idx > 0}
+                      onInspect={onInspectCard}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="flex h-[98px] w-[72px] flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-[#D99B26]/30 bg-[#14171A]/35 text-center text-[#9CA3AF]">
+                  <GameIcon name="card-play" size={20} className="text-[#D99B26]/55" />
+                  <span className="text-[10px] font-medium leading-tight">
+                    Vùng đánh bài
+                  </span>
+                </div>
+              )}
+            </div>
+            <span className="font-mono-num inline-flex items-center gap-1.5 rounded-full border border-[#303740] bg-[#14171A]/85 px-2.5 py-0.5 text-[11px] font-semibold text-[#D1D5DB] tabular-nums">
+              <GameIcon name="card-discard" size={11} className="text-[#9CA3AF]" />
+              {topDiscard ? (
+                <span className="max-w-[160px] truncate">
+                  {topDiscard.nameVi} · Bỏ: <strong className="text-[#F3F4F6]">{playerView.discardPileCount}</strong>
+                </span>
+              ) : (
+                <span>
+                  Bỏ: <strong className="text-[#F3F4F6]">{playerView.discardPileCount}</strong>
+                </span>
+              )}
+            </span>
+          </div>
+        </div>
+      ) : (
+        /* Khu tương tác đặc biệt (chỉ bật nổi giữa bàn khi tới lượt chọn bài chung/mục tiêu/Quan Tinh/Di Kế) */
+        <div className="lkdf-scroll max-h-[185px] w-full space-y-1.5 overflow-y-auto rounded-xl border border-[#D99B26]/65 bg-[#14171A]/95 p-2.5 shadow-2xl">
+          {/* Ngũ Cốc Phong Đăng */}
+          {interrupt.kind === 'WAIT_HARVEST_PICK' &&
+          playerView.harvestPool.length > 0 ? (
+            <div>
+              <div className="mb-1.5 inline-flex items-center gap-1.5 text-[12px] font-bold text-[#FBBF24]">
+                <GameIcon name="wheat" size={13} />
+                Ngũ Cốc Phong Đăng — Chọn 1 lá bài:
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {playerView.harvestPool.map((card) => (
                   <button
-                    key={zone}
+                    key={card.id}
                     type="button"
                     onClick={() =>
                       onSendAction({
-                        type: 'RESPOND_PICK_TARGET_CARD',
+                        type: 'RESPOND_HARVEST_PICK',
                         seatIndex: playerView.viewerSeatIndex,
-                        zone,
+                        cardId: card.id,
                       })
                     }
-                    className="cursor-pointer rounded border border-[#D99B26] bg-[#F4EFE6] px-2.5 py-1 text-[12px] font-bold text-[#18181B] hover:bg-[#EAE3D5]"
+                    className={[
+                      'lkdf-card-parchment inline-flex cursor-pointer items-center gap-1 rounded border border-[#7C5828] px-2 py-1 text-[11px] font-bold transition-transform hover:-translate-y-0.5 hover:border-[#D99B26]',
+                      isRedSuit(card.suit) ? 'text-[#A61B1B]' : 'text-[#1D150D]',
+                    ].join(' ')}
                   >
-                    🛡️ {formatCardShort(equipCard)}
+                    <SuitGlyph suit={card.suit} size={11} />
+                    <span>{formatRankLabel(card.rank)} {card.nameVi}</span>
                   </button>
-                );
-              })}
-            </div>
-          </div>
-        ) : null}
-
-        {/* Quan Tinh */}
-        {isMyInteractiveZone &&
-        interrupt.kind === 'WAIT_GUAN_XING' &&
-        interrupt.guanXingCards ? (
-          <GuanXingPlanner
-            cards={interrupt.guanXingCards}
-            seatIndex={playerView.viewerSeatIndex}
-            onSendAction={onSendAction}
-          />
-        ) : null}
-
-        {/* Di Kế */}
-        {isMyInteractiveZone &&
-        interrupt.kind === 'WAIT_YI_JI' &&
-        interrupt.yiJiCards ? (
-          <YiJiDistributor
-            cards={interrupt.yiJiCards}
-            playerView={playerView}
-            onSendAction={onSendAction}
-          />
-        ) : null}
-      </div>
-
-      {/* Nhật ký bàn đấu (Cuộn nội bộ) */}
-      <div className="flex min-h-0 flex-1 flex-col rounded-lg border border-[#2D333B] bg-[#14171A] p-2.5">
-        <div className="mb-1 shrink-0 text-[11px] font-bold uppercase tracking-wider text-[#9CA3AF]">
-          📜 Nhật ký bàn đấu ({playerView.actionLog.length})
-        </div>
-        <div className="lkdf-scroll min-h-0 flex-1 space-y-1 overflow-y-auto pr-1 text-[12px] leading-snug text-[#D1D5DB]">
-          {playerView.actionLog.length === 0 ? (
-            <p className="text-[#9CA3AF]">Chưa có diễn biến nào trong ván đấu.</p>
-          ) : (
-            playerView.actionLog.slice(-40).map((entry, idx) => (
-              <div
-                key={`${idx}-${entry.slice(0, 16)}`}
-                className="border-b border-[#1E2328] pb-0.5 last:border-none"
-              >
-                {entry}
+                ))}
               </div>
-            ))
-          )}
+            </div>
+          ) : null}
+
+          {/* Thuận Thủ Khiên Dương / Quá Hà Sái Cầu */}
+          {interrupt.kind === 'PICK_TARGET_CARD' && pickTargetPlayer ? (
+            <div>
+              <div className="mb-1.5 inline-flex items-center gap-1.5 text-[12px] font-bold text-[#FBBF24]">
+                <GameIcon name="archery-target" size={13} />
+                Chọn 1 lá từ {getPlayerSeatLabel(playerView.players, pickTargetPlayer.seatIndex)}:
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {getPublicTargetZones(pickTargetPlayer).map((zone: TargetCardZone) => {
+                  if (zone === 'HAND') {
+                    return Array.from({ length: pickTargetPlayer.handCount }, (_, idx) => (
+                      <button
+                        key={`hand-${idx}`}
+                        type="button"
+                        onClick={() =>
+                          onSendAction({
+                            type: 'RESPOND_PICK_TARGET_CARD',
+                            seatIndex: playerView.viewerSeatIndex,
+                            zone: 'HAND',
+                            handIndex: idx,
+                          })
+                        }
+                        className="inline-flex cursor-pointer items-center gap-1 rounded border border-[#D99B26]/60 bg-[#272D35] px-2 py-1 text-[11px] font-bold text-[#F3F4F6] hover:bg-[#323A45]"
+                      >
+                        <CardBack size="xs" />
+                        Tay #{idx + 1}
+                      </button>
+                    ));
+                  }
+                  if (zone === 'DELAYED') {
+                    return pickTargetPlayer.delayedScrolls.map((scroll) => (
+                      <button
+                        key={scroll.id}
+                        type="button"
+                        onClick={() =>
+                          onSendAction({
+                            type: 'RESPOND_PICK_TARGET_CARD',
+                            seatIndex: playerView.viewerSeatIndex,
+                            zone: 'DELAYED',
+                            delayedCardId: scroll.id,
+                          })
+                        }
+                        className="inline-flex cursor-pointer items-center gap-1 rounded border border-[#D97706] bg-[#D97706]/20 px-2 py-1 text-[11px] font-bold text-[#FCD34D] hover:bg-[#D97706]/30"
+                      >
+                        <GameIcon name="ui:clock" size={11} />
+                        {formatCardShort(scroll)}
+                      </button>
+                    ));
+                  }
+                  const equipCard =
+                    zone === 'WEAPON'
+                      ? pickTargetPlayer.equipments.weapon
+                      : zone === 'ARMOR'
+                        ? pickTargetPlayer.equipments.armor
+                        : zone === 'PLUS_ONE_HORSE'
+                          ? pickTargetPlayer.equipments.plusOneHorse
+                          : pickTargetPlayer.equipments.minusOneHorse;
+                  if (!equipCard) return null;
+                  return (
+                    <button
+                      key={zone}
+                      type="button"
+                      onClick={() =>
+                        onSendAction({
+                          type: 'RESPOND_PICK_TARGET_CARD',
+                          seatIndex: playerView.viewerSeatIndex,
+                          zone,
+                        })
+                      }
+                      className="lkdf-card-parchment inline-flex cursor-pointer items-center gap-1 rounded border border-[#7C5828] px-2 py-1 text-[11px] font-bold text-[#1D150D] hover:border-[#D99B26]"
+                    >
+                      <GameIcon name={getCardGameIcon(equipCard.cardKey)} size={12} />
+                      {formatCardShort(equipCard)}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ) : null}
+
+          {/* Quan Tinh */}
+          {interrupt.kind === 'WAIT_GUAN_XING' && interrupt.guanXingCards ? (
+            <GuanXingPlanner
+              cards={interrupt.guanXingCards}
+              seatIndex={playerView.viewerSeatIndex}
+              onSendAction={onSendAction}
+            />
+          ) : null}
+
+          {/* Di Kế */}
+          {interrupt.kind === 'WAIT_YI_JI' && interrupt.yiJiCards ? (
+            <YiJiDistributor
+              cards={interrupt.yiJiCards}
+              playerView={playerView}
+              onSendAction={onSendAction}
+            />
+          ) : null}
         </div>
-      </div>
+      )}
     </div>
   );
 }

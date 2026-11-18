@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { GameIcon } from '../../components/icons/index.js';
 import { ApiError, createApiClient, normalizeServerUrl } from '../../lib/api.js';
 import type { HealthCheckResponse } from '../../lib/types.js';
 
@@ -166,8 +167,8 @@ export function ServerWakeScreen({
       <div className="my-auto w-full max-w-lg rounded-xl border border-[#2D343C] bg-[#1E2328] p-7 shadow-2xl">
         <div className="mb-5 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
-            <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-[#D99B26]/60 bg-[#C83E37] font-serif-title text-base font-bold text-[#F4EFE6]">
-              Sát
+            <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-[#D99B26]/65 bg-[#C83E37] font-serif-title text-lg font-bold text-[#F4EFE6] shadow-inner">
+              殺
             </span>
             <div className="min-w-0">
               <h2 className="font-serif-title text-lg font-bold text-[#F3F4F6] truncate">
@@ -230,8 +231,11 @@ export function ServerWakeScreen({
         {status === 'WAKING' ? (
           <div className="space-y-4">
             <div className="rounded-lg border border-[#D97706]/40 bg-[#D97706]/10 p-4">
-              <p className="text-sm font-medium text-[#FDE68A] tabular-nums">
-                ⏳ Đang đánh thức máy chủ phòng chơi... (Đã chờ {elapsedSeconds}s / Dự kiến 30–60s)
+              <p className="flex items-center gap-2 text-sm font-medium text-[#FDE68A] tabular-nums">
+                <GameIcon name="ui:loader" size={15} className="animate-spin shrink-0" />
+                <span>
+                  Đang đánh thức máy chủ phòng chơi... (Đã chờ {elapsedSeconds}s / Dự kiến 30–60s)
+                </span>
               </p>
               <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-[#14171A]">
                 <div
@@ -257,9 +261,10 @@ export function ServerWakeScreen({
               <button
                 type="button"
                 onClick={handleCancel}
-                className="rounded-lg border border-[#3A424C] bg-[#14171A] px-4 py-2 text-sm font-medium text-[#F3F4F6] transition-colors hover:border-[#DC2626] hover:text-[#FCA5A5] focus:outline-none focus:ring-2 focus:ring-[#D99B26]"
+                className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[#3A424C] bg-[#14171A] px-4 py-2 text-sm font-medium text-[#F3F4F6] transition-colors hover:border-[#DC2626] hover:text-[#FCA5A5] focus:outline-none focus:ring-2 focus:ring-[#D99B26]"
               >
-                ⏹️ Hủy kết nối
+                <GameIcon name="ui:x" size={14} />
+                Hủy kết nối
               </button>
             </div>
           </div>
@@ -279,9 +284,10 @@ export function ServerWakeScreen({
               <button
                 type="button"
                 onClick={handleRetry}
-                className="rounded-lg bg-[#C83E37] px-5 py-2.5 text-sm font-semibold text-[#F4EFE6] transition-colors hover:bg-[#D94A42] focus:outline-none focus:ring-2 focus:ring-[#D99B26]"
+                className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg bg-[#C83E37] px-5 py-2.5 text-sm font-semibold text-[#F4EFE6] transition-colors hover:bg-[#D94A42] focus:outline-none focus:ring-2 focus:ring-[#D99B26]"
               >
-                🔄 Thử kết nối lại
+                <GameIcon name="ui:refresh" size={14} />
+                Thử kết nối lại
               </button>
             </div>
           </div>

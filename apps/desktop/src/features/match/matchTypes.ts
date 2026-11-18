@@ -1,4 +1,5 @@
 import {
+  STANDARD_DECK_TEMPLATES,
   calculateDistance,
   canReachForSnatch,
   canUseCollateralMurder,
@@ -11,6 +12,7 @@ import {
 import type {
   CardCategory,
   CardInstance,
+  GameAction,
   HeroFaction,
   IdentityRole,
   PlayerViewState,
@@ -85,6 +87,7 @@ export interface FactionVisualStyle {
   readonly labelVi: string;
   readonly badgeClass: string;
   readonly borderClass: string;
+  readonly nameTextClass: string;
 }
 
 const FACTION_STYLES: Readonly<Record<HeroFaction, FactionVisualStyle>> = {
@@ -92,25 +95,29 @@ const FACTION_STYLES: Readonly<Record<HeroFaction, FactionVisualStyle>> = {
     hex: '#C83E37',
     labelVi: 'Thục',
     badgeClass: 'bg-[#C83E37]/20 text-[#F87171] border-[#C83E37]/50',
-    borderClass: 'border-[#C83E37]/60',
+    borderClass: 'border-[#C83E37]/75',
+    nameTextClass: 'text-[#FCA5A5]',
   },
   WEI: {
     hex: '#3B82F6',
     labelVi: 'Ngụy',
     badgeClass: 'bg-[#3B82F6]/20 text-[#60A5FA] border-[#3B82F6]/50',
-    borderClass: 'border-[#3B82F6]/60',
+    borderClass: 'border-[#3B82F6]/75',
+    nameTextClass: 'text-[#93C5FD]',
   },
   WU: {
     hex: '#10B981',
     labelVi: 'Ngô',
     badgeClass: 'bg-[#10B981]/20 text-[#34D399] border-[#10B981]/50',
-    borderClass: 'border-[#10B981]/60',
+    borderClass: 'border-[#10B981]/75',
+    nameTextClass: 'text-[#86EFAC]',
   },
   QUN: {
     hex: '#9CA3AF',
     labelVi: 'Quần',
     badgeClass: 'bg-[#9CA3AF]/20 text-[#D1D5DB] border-[#9CA3AF]/50',
-    borderClass: 'border-[#9CA3AF]/60',
+    borderClass: 'border-[#9CA3AF]/70',
+    nameTextClass: 'text-[#E5E7EB]',
   },
 };
 
@@ -824,7 +831,7 @@ export function describePendingActorPrompt(view: PlayerViewState): TurnActorProm
         return {
           headlineVi:
             interrupt.responderSeat === viewerSeat
-              ? `${targetName} đang hấp hối (0❤️) — Dùng Đào cứu?`
+              ? `${targetName} đang hấp hối (0 máu) — Dùng Đào cứu?`
               : `Đang chờ ${responderName} cứu ${targetName} đang hấp hối...`,
           detailVi: 'Mỗi lá Đào hồi 1 máu cho người đang hấp hối.',
           actorSeat: interrupt.responderSeat ?? null,
@@ -1114,4 +1121,337 @@ export function getDistanceToSeat(
   targetSeat: number,
 ): number {
   return calculateDistance(view, view.viewerSeatIndex, targetSeat);
+}
+
+const DESCRIPTION_BY_CARD_KEY: Readonly<Record<string, string>> =
+  STANDARD_DECK_TEMPLATES.reduce<Record<string, string>>((acc, tpl) => {
+    if (!acc[tpl.cardKey]) {
+      acc[tpl.cardKey] = tpl.descriptionVi;
+    }
+    return acc;
+  }, {});
+
+export function getCardDescriptionVi(cardKey: string, fallbackName = ''): string {
+  return DESCRIPTION_BY_CARD_KEY[cardKey] ?? fallbackName;
+}
+
+export type EquipmentSlotKey = 'weapon' | 'armor' | 'plusOne' | 'minusOne';
+
+export type MatchInspectorTarget =
+  | {
+      readonly kind: 'card';
+      readonly sourceId: string;
+      readonly sourceLabel: string;
+      readonly card: CardInstance;
+    }
+  | {
+      readonly kind: 'hero';
+      readonly seatIndex: number;
+    };
+
+export function getConvertAsCardKey(
+  mode: ConvertCardMode | null,
+): 'sat' | 'qua_ha_sai_cau' | 'lac_bat_tu_thuc' | undefined {
+  if (mode === 'wu_sheng' || mode === 'long_dan_sat' || mode === 'truong_bat') {
+    return 'sat';
+  }
+  if (mode === 'ky_tap') {
+    return 'qua_ha_sai_cau';
+  }
+  if (mode === 'quoc_sac') {
+    return 'lac_bat_tu_thuc';
+  }
+  return undefined;
+}
+
+export type DragDropIntent =
+  | {
+      readonly kind: 'table';
+      readonly actionLabelVi: string;
+      readonly highlightSlot?: EquipmentSlotKey;
+      readonly action: GameAction;
+    }
+  | {
+      readonly kind: 'seat';
+      readonly card: CardInstance;
+      readonly actionVerbVi: string;
+      readonly eligibleSeats: readonly number[];
+      readonly asCardKey?: 'sat' | 'qua_ha_sai_cau' | 'lac_bat_tu_thuc';
+    }
+  | {
+      readonly kind: 'seat_pair_step1';
+      readonly card: CardInstance;
+      readonly actionLabelVi: string;
+      readonly eligibleSeats: readonly number[];
+    }
+  | {
+      readonly kind: 'toggle_select';
+      readonly promptVi: string;
+    }
+  | {
+      readonly kind: 'blocked';
+      readonly reasonVi: string;
+    };
+
+function isCardValidForPlayConvert(
+  card: CardInstance,
+  mode: ConvertCardMode | null,
+): string | null {
+  if (!mode) return null;
+  switch (mode) {
+    case 'wu_sheng':
+      return isRedSuit(card.suit) ? null : 'Võ Thánh cần chọn lá chất Đỏ (Cơ/Rô).';
+    case 'long_dan_sat':
+      return card.cardKey === 'thiem' ? null : 'Long Đảm (chuyển Sát) cần lá Thiểm.';
+    case 'ky_tap':
+      return !isRedSuit(card.suit) ? null : 'Kỳ Tập cần chọn lá chất Đen (Bích/Chuồn).';
+    case 'quoc_sac':
+      return card.suit === 'DIAMOND' ? null : 'Quốc Sắc cần chọn lá chất Rô.';
+    case 'cuu_vien':
+      return isRedSuit(card.suit) ? null : 'Cấp Cứu cần chọn lá chất Đỏ.';
+    default:
+      return null;
+  }
+}
+
+/** Suy luận hành động kéo-thả cho một lá bài từ trạng thái ván đấu hiện tại. */
+export function buildCardDragDropIntent(
+  view: PlayerViewState,
+  card: CardInstance,
+  selection: MatchSelectionState,
+): DragDropIntent {
+  const selfSeat = view.viewerSeatIndex;
+  const selfPlayer = view.players.find((p) => p.seatIndex === selfSeat);
+  if (!selfPlayer || !selfPlayer.alive) {
+    return { kind: 'blocked', reasonVi: 'Ghế của bạn hiện không thể đánh bài.' };
+  }
+
+  const interrupt = view.activeInterrupt;
+  if (interrupt) {
+    if (interrupt.kind === 'WAIT_NULLIFICATION') {
+      if (card.cardKey === 'vo_giai_kha_kich') {
+        return {
+          kind: 'table',
+          actionLabelVi: 'Thả lên bàn để đánh Vô Giải Khả Kích',
+          action: { type: 'RESPOND_NULLIFICATION', seatIndex: selfSeat, cardId: card.id },
+        };
+      }
+      return { kind: 'blocked', reasonVi: 'Cần dùng lá Vô Giải Khả Kích để hưởng ứng.' };
+    }
+    if (
+      (interrupt.kind === 'WAIT_DODGE' || interrupt.kind === 'WAIT_AOE_DODGE') &&
+      interrupt.targetSeat === selfSeat
+    ) {
+      const canLongDan = selfPlayer.heroId === 'zhao_yun' && card.cardKey === 'sat';
+      const canThanhQuoc =
+        selfPlayer.heroId === 'zhen_ji' && (card.suit === 'SPADE' || card.suit === 'CLUB');
+      if (card.cardKey === 'thiem' || canLongDan || canThanhQuoc) {
+        return {
+          kind: 'table',
+          actionLabelVi: `Thả để đánh Thiểm (${card.nameVi}) né đòn`,
+          action: {
+            type: interrupt.kind === 'WAIT_AOE_DODGE' ? 'RESPOND_AOE_DODGE' : 'RESPOND_DODGE',
+            seatIndex: selfSeat,
+            cardId: card.id,
+          },
+        };
+      }
+      return { kind: 'blocked', reasonVi: 'Cần lá Thiểm để né đòn.' };
+    }
+    if (
+      (interrupt.kind === 'WAIT_AOE_SAT' ||
+        interrupt.kind === 'WAIT_DUEL_SAT' ||
+        interrupt.kind === 'WAIT_COLLATERAL_SAT') &&
+      interrupt.targetSeat === selfSeat
+    ) {
+      const canWuSheng = selfPlayer.heroId === 'guan_yu' && isRedSuit(card.suit);
+      const canLongDan = selfPlayer.heroId === 'zhao_yun' && card.cardKey === 'thiem';
+      if (card.cardKey === 'sat' || canWuSheng || canLongDan) {
+        const actionType =
+          interrupt.kind === 'WAIT_AOE_SAT'
+            ? 'RESPOND_AOE_SAT'
+            : interrupt.kind === 'WAIT_DUEL_SAT'
+              ? 'RESPOND_DUEL_SAT'
+              : 'RESPOND_COLLATERAL_SAT';
+        return {
+          kind: 'table',
+          actionLabelVi: `Thả để đánh Sát (${card.nameVi})`,
+          action: { type: actionType, seatIndex: selfSeat, cardIds: [card.id] },
+        };
+      }
+      return { kind: 'blocked', reasonVi: 'Cần lá Sát để hưởng ứng.' };
+    }
+    if (interrupt.kind === 'WAIT_PEACH_RESCUE' && interrupt.responderSeat === selfSeat) {
+      const canJiu =
+        selfPlayer.heroId === 'hua_tuo' &&
+        view.currentTurnSeat !== selfSeat &&
+        isRedSuit(card.suit);
+      if (card.cardKey === 'dao' || canJiu) {
+        return {
+          kind: 'table',
+          actionLabelVi: `Thả để dùng ${card.nameVi} cứu hấp hối`,
+          action: { type: 'RESPOND_PEACH_RESCUE', seatIndex: selfSeat, cardId: card.id },
+        };
+      }
+      return { kind: 'blocked', reasonVi: 'Cần lá Đào để cứu người hấp hối.' };
+    }
+    if (interrupt.kind === 'WAIT_GUI_CAI' && interrupt.targetSeat === selfSeat) {
+      return {
+        kind: 'table',
+        actionLabelVi: `Thả ${card.nameVi} đổi lá phán xét (Quỷ Tài)`,
+        action: { type: 'RESPOND_GUI_CAI', seatIndex: selfSeat, cardId: card.id },
+      };
+    }
+    if (interrupt.kind === 'WAIT_JI_JIANG' && interrupt.responderSeat === selfSeat) {
+      const canWuSheng = selfPlayer.heroId === 'guan_yu' && isRedSuit(card.suit);
+      const canLongDan = selfPlayer.heroId === 'zhao_yun' && card.cardKey === 'thiem';
+      if (card.cardKey === 'sat' || canWuSheng || canLongDan) {
+        return {
+          kind: 'table',
+          actionLabelVi: `Thả ${card.nameVi} đánh Sát hộ Chủ Công`,
+          action: { type: 'RESPOND_JI_JIANG', seatIndex: selfSeat, cardIds: [card.id] },
+        };
+      }
+    }
+    if (interrupt.kind === 'WAIT_HU_JIA' && interrupt.responderSeat === selfSeat) {
+      const canLongDan = selfPlayer.heroId === 'zhao_yun' && card.cardKey === 'sat';
+      const canThanhQuoc =
+        selfPlayer.heroId === 'zhen_ji' && (card.suit === 'SPADE' || card.suit === 'CLUB');
+      if (card.cardKey === 'thiem' || canLongDan || canThanhQuoc) {
+        return {
+          kind: 'table',
+          actionLabelVi: `Thả ${card.nameVi} đánh Thiểm hộ Chủ Công`,
+          action: { type: 'RESPOND_HU_JIA', seatIndex: selfSeat, cardId: card.id },
+        };
+      }
+    }
+    return {
+      kind: 'blocked',
+      reasonVi: 'Hãy bấm nút phản ứng ở thanh lệnh phía trên dải bài.',
+    };
+  }
+
+  if (view.turnPhase === 'DISCARD' && view.currentTurnSeat === selfSeat) {
+    const handCount = selfPlayer.handCards?.length ?? 0;
+    const discardNeeded = Math.max(0, handCount - Math.max(0, selfPlayer.hp));
+    if (discardNeeded <= 1) {
+      return {
+        kind: 'table',
+        actionLabelVi: `Thả lên bàn để bỏ ${card.nameVi}`,
+        action: { type: 'DISCARD_CARDS', seatIndex: selfSeat, cardIds: [card.id] },
+      };
+    }
+    return {
+      kind: 'toggle_select',
+      promptVi: `Pha bỏ ${discardNeeded} lá — thả để chọn/bỏ chọn lá này`,
+    };
+  }
+
+  if (view.turnPhase === 'PLAY' && view.currentTurnSeat === selfSeat) {
+    if (selection.activeConvertMode === 'truong_bat') {
+      return {
+        kind: 'toggle_select',
+        promptVi: 'Trượng Bát Xà Mâu cần chọn đủ 2 lá trên tay rồi chọn mục tiêu.',
+      };
+    }
+    const convertErr = isCardValidForPlayConvert(card, selection.activeConvertMode);
+    if (convertErr) {
+      return { kind: 'blocked', reasonVi: convertErr };
+    }
+    const hyp: MatchSelectionState = {
+      selectedCardIds: [card.id],
+      selectedTargets: [],
+      activeSkillMode: null,
+      activeConvertMode: selection.activeConvertMode,
+    };
+    const effectiveKey = getEffectivePlayCardKey(hyp, selfPlayer.handCards ?? [card]);
+    if (!effectiveKey) {
+      return { kind: 'blocked', reasonVi: 'Không thể dùng lá bài này lúc này.' };
+    }
+    if (effectiveKey === 'thiem') {
+      return { kind: 'blocked', reasonVi: 'Lá Thiểm chỉ dùng khi né Sát hoặc Vạn Tiễn.' };
+    }
+    if (effectiveKey === 'vo_giai_kha_kich') {
+      return { kind: 'blocked', reasonVi: 'Vô Giải Khả Kích chỉ dùng khi Cẩm nang sắp hiệu lực.' };
+    }
+    if (effectiveKey === 'dao' && selfPlayer.hp >= selfPlayer.maxHp) {
+      return { kind: 'blocked', reasonVi: 'Máu đang đầy — chưa thể dùng Đào.' };
+    }
+    if (effectiveKey === 'sat') {
+      const unlimited =
+        selfPlayer.heroId === 'zhang_fei' ||
+        selfPlayer.equipments.weapon?.cardKey === 'gia_cat_lien_no';
+      if (!unlimited && (view.turnFlags?.satUsedThisTurn ?? 0) >= 1) {
+        return { kind: 'blocked', reasonVi: 'Bạn đã dùng Sát trong lượt đánh này.' };
+      }
+    }
+
+    const spec = getRequiredTargetSpec(view, hyp);
+    const asCardKey = getConvertAsCardKey(selection.activeConvertMode);
+    if (spec.minTargets === 2) {
+      if (spec.eligibleSeats.length === 0) {
+        return { kind: 'blocked', reasonVi: 'Không có người cầm Vũ khí thích hợp.' };
+      }
+      return {
+        kind: 'seat_pair_step1',
+        card,
+        actionLabelVi: 'Thả vào người cầm Vũ khí trước (Bước 1/2)',
+        eligibleSeats: spec.eligibleSeats,
+      };
+    }
+    if (spec.minTargets >= 1 && spec.maxTargets === 1) {
+      if (spec.eligibleSeats.length === 0) {
+        return { kind: 'blocked', reasonVi: 'Không có mục tiêu hợp lệ trong tầm đánh.' };
+      }
+      const actionVerbVi =
+        effectiveKey === 'sat'
+          ? 'đánh Sát'
+          : effectiveKey === 'quyet_dau'
+            ? 'Quyết Đấu'
+            : effectiveKey === 'thuan_thu_khien_duong'
+              ? 'Thuận Thủ'
+              : effectiveKey === 'qua_ha_sai_cau'
+                ? 'Quá Hà'
+                : effectiveKey === 'lac_bat_tu_thuc'
+                  ? 'đặt Lạc'
+                  : 'dùng lên';
+      return {
+        kind: 'seat',
+        card,
+        actionVerbVi,
+        eligibleSeats: spec.eligibleSeats,
+        ...(asCardKey ? { asCardKey } : {}),
+      };
+    }
+
+    const highlightSlot: EquipmentSlotKey | undefined =
+      card.category === 'WEAPON'
+        ? 'weapon'
+        : card.category === 'ARMOR'
+          ? 'armor'
+          : card.category === 'PLUS_ONE_HORSE'
+            ? 'plusOne'
+            : card.category === 'MINUS_ONE_HORSE'
+              ? 'minusOne'
+              : undefined;
+
+    return {
+      kind: 'table',
+      actionLabelVi: highlightSlot
+        ? `Thả lên bàn để trang bị ${card.nameVi}`
+        : `Thả lên bàn để dùng ${card.nameVi}`,
+      ...(highlightSlot ? { highlightSlot } : {}),
+      action: {
+        type: 'PLAY_CARD',
+        seatIndex: selfSeat,
+        cardIds: [card.id],
+        ...(asCardKey ? { asCardKey } : {}),
+      },
+    };
+  }
+
+  return {
+    kind: 'blocked',
+    reasonVi: 'Ngoài lượt — chỉ xem chi tiết bài, chưa thể quăng đánh.',
+  };
 }

@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { GameIcon } from '../../components/icons/index.js';
 import type { DesktopUpdateState } from '../../lib/types.js';
 
 export interface UpdateModalProps {
@@ -83,12 +84,12 @@ export function UpdateModal({
         <div className="flex items-center justify-between border-b border-[#2D343C] px-6 py-4">
           <div className="flex items-center gap-2.5 min-w-0">
             <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[#D99B26]/60 bg-[#C83E37] text-sm font-bold text-[#F4EFE6]">
-              ⬇️
+              <GameIcon name="ui:download" size={16} />
             </span>
             <div className="min-w-0">
               <h2 className="truncate font-serif-title text-base font-bold text-[#F3F4F6]">
                 {updateState.phase === 'AVAILABLE'
-                  ? `🔔 Đã có phiên bản mới (v${updateState.latestVersion ?? ''})!`
+                  ? `Đã có phiên bản mới (v${updateState.latestVersion ?? ''})!`
                   : updateState.phase === 'DOWNLOADING'
                     ? `Đang tải bản cập nhật v${updateState.latestVersion ?? ''}`
                     : updateState.phase === 'INSTALLING'
@@ -111,9 +112,10 @@ export function UpdateModal({
               type="button"
               onClick={onClose}
               aria-label="Đóng hộp thoại cập nhật"
-              className="rounded-lg border border-[#3A424C] bg-[#14171A] px-2.5 py-1 text-xs text-[#D1D5DB] hover:border-[#D99B26]"
+              className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-[#3A424C] bg-[#14171A] px-2.5 py-1 text-xs text-[#D1D5DB] hover:border-[#D99B26]"
             >
-              ✖️ Đóng
+              <GameIcon name="ui:x" size={12} />
+              Đóng
             </button>
           ) : null}
         </div>
@@ -121,14 +123,16 @@ export function UpdateModal({
         {/* Nội dung chính */}
         <div className="lkdf-scroll flex-1 min-h-0 overflow-y-auto px-6 py-5 space-y-4">
           {updateState.phase === 'CHECKING' ? (
-            <div className="rounded-xl border border-[#30363D] bg-[#14171A] p-4 text-sm text-[#D1D5DB]">
-              ⏳ Đang kết nối tới cổng cập nhật của máy chủ để kiểm tra phiên bản mới từ kho phát hành...
+            <div className="flex items-center gap-2 rounded-xl border border-[#30363D] bg-[#14171A] p-4 text-sm text-[#D1D5DB]">
+              <GameIcon name="ui:loader" size={15} className="animate-spin text-[#D99B26]" />
+              Đang kết nối tới cổng cập nhật của máy chủ để kiểm tra phiên bản mới từ kho phát hành...
             </div>
           ) : null}
 
           {updateState.phase === 'UP_TO_DATE' ? (
-            <div className="rounded-xl border border-[#16A34A]/50 bg-[#16A34A]/10 p-4 text-sm text-[#86EFAC]">
-              ✅ {updateState.messageVi ?? `Bạn đang dùng phiên bản mới nhất (v${updateState.currentVersion}).`}
+            <div className="flex items-center gap-2 rounded-xl border border-[#16A34A]/50 bg-[#16A34A]/10 p-4 text-sm text-[#86EFAC]">
+              <GameIcon name="ui:check-circle" size={16} className="shrink-0" />
+              <span>{updateState.messageVi ?? `Bạn đang dùng phiên bản mới nhất (v${updateState.currentVersion}).`}</span>
             </div>
           ) : null}
 
@@ -169,8 +173,9 @@ export function UpdateModal({
           {updateState.phase === 'DOWNLOADING' ? (
             <div className="rounded-xl border border-[#D99B26]/50 bg-[#14171A] p-4 space-y-3">
               <div className="flex items-center justify-between text-sm font-semibold text-[#FDE68A]">
-                <span>
-                  ⬇️ Đang tải bản cập nhật v{updateState.latestVersion ?? ''}...{' '}
+                <span className="inline-flex items-center gap-2">
+                  <GameIcon name="ui:download" size={15} />
+                  Đang tải bản cập nhật v{updateState.latestVersion ?? ''}...{' '}
                   <span className="font-mono-num tabular-nums">{displayPercent}%</span>
                 </span>
               </div>
@@ -195,20 +200,23 @@ export function UpdateModal({
           ) : null}
 
           {updateState.phase === 'INSTALLING' ? (
-            <div className="rounded-xl border border-[#16A34A]/50 bg-[#16A34A]/15 p-4 text-sm text-[#86EFAC]">
-              ⏳ {updateState.messageVi ?? 'Đã tải xong 100%! Đang cài đặt và mở lại ứng dụng Tam Quốc Sát LKDF...'}
+            <div className="flex items-center gap-2 rounded-xl border border-[#16A34A]/50 bg-[#16A34A]/15 p-4 text-sm text-[#86EFAC]">
+              <GameIcon name="ui:loader" size={16} className="animate-spin shrink-0" />
+              <span>{updateState.messageVi ?? 'Đã tải xong 100%! Đang cài đặt và mở lại ứng dụng Tam Quốc Sát LKDF...'}</span>
             </div>
           ) : null}
 
           {updateState.phase === 'DOWNLOADED' ? (
-            <div className="rounded-xl border border-[#16A34A]/50 bg-[#16A34A]/15 p-4 text-xs leading-relaxed text-[#BBF7D0]">
-              ✅ {updateState.messageVi ?? 'Bản cập nhật đã tải xong 100% và sẵn sàng cài đặt.'}
+            <div className="flex items-center gap-2 rounded-xl border border-[#16A34A]/50 bg-[#16A34A]/15 p-4 text-xs leading-relaxed text-[#BBF7D0]">
+              <GameIcon name="ui:check-circle" size={16} className="shrink-0" />
+              <span>{updateState.messageVi ?? 'Bản cập nhật đã tải xong 100% và sẵn sàng cài đặt.'}</span>
             </div>
           ) : null}
 
           {updateState.phase === 'ERROR' ? (
-            <div className="rounded-xl border border-[#DC2626]/60 bg-[#DC2626]/15 p-4 text-xs leading-relaxed text-[#FCA5A5]">
-              ❌ {updateState.messageVi ?? 'Không thể kiểm tra hoặc tải bản cập nhật.'}
+            <div className="flex items-center gap-2 rounded-xl border border-[#DC2626]/60 bg-[#DC2626]/15 p-4 text-xs leading-relaxed text-[#FCA5A5]">
+              <GameIcon name="ui:alert" size={16} className="shrink-0" />
+              <span>{updateState.messageVi ?? 'Không thể kiểm tra hoặc tải bản cập nhật.'}</span>
             </div>
           ) : null}
         </div>
@@ -220,16 +228,18 @@ export function UpdateModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="rounded-lg border border-[#3A424C] bg-[#14171A] px-4 py-2 text-xs font-medium text-[#D1D5DB] hover:border-[#D99B26]"
+                className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[#3A424C] bg-[#14171A] px-4 py-2 text-xs font-medium text-[#D1D5DB] hover:border-[#D99B26]"
               >
-                ⏭️ Để sau
+                <GameIcon name="ui:skip" size={13} />
+                Để sau
               </button>
               <button
                 type="button"
                 onClick={onStartUpdate}
-                className="rounded-lg bg-[#C83E37] px-5 py-2 text-xs font-semibold text-[#F4EFE6] shadow transition-colors hover:bg-[#D94A42] focus:outline-none focus:ring-2 focus:ring-[#D99B26]"
+                className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg bg-[#C83E37] px-5 py-2 text-xs font-semibold text-[#F4EFE6] shadow transition-colors hover:bg-[#D94A42] focus:outline-none focus:ring-2 focus:ring-[#D99B26]"
               >
-                ⬇️ Cập nhật ngay
+                <GameIcon name="ui:download" size={13} />
+                Cập nhật ngay
               </button>
             </>
           ) : null}
@@ -239,18 +249,23 @@ export function UpdateModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="rounded-lg border border-[#3A424C] bg-[#14171A] px-4 py-2 text-xs font-medium text-[#D1D5DB] hover:border-[#D99B26]"
+                className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-[#3A424C] bg-[#14171A] px-4 py-2 text-xs font-medium text-[#D1D5DB] hover:border-[#D99B26]"
               >
-                ✖️ Đóng
+                <GameIcon name="ui:x" size={12} />
+                Đóng
               </button>
               <button
                 type="button"
                 onClick={onInstallNow}
-                className="rounded-lg bg-[#16A34A] px-5 py-2 text-xs font-semibold text-white hover:bg-[#15803D]"
+                className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg bg-[#16A34A] px-5 py-2 text-xs font-semibold text-white hover:bg-[#15803D]"
               >
+                <GameIcon
+                  name={updateState.manualDownloadSavedPath ? 'ui:folder' : 'ui:refresh'}
+                  size={13}
+                />
                 {updateState.manualDownloadSavedPath
-                  ? '📂 Mở tệp cài đặt vừa tải'
-                  : '🔄 Cài đặt & Mở lại ứng dụng'}
+                  ? 'Mở tệp cài đặt vừa tải'
+                  : 'Cài đặt & Mở lại ứng dụng'}
               </button>
             </>
           ) : null}
@@ -260,16 +275,18 @@ export function UpdateModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="rounded-lg border border-[#3A424C] bg-[#14171A] px-4 py-2 text-xs font-medium text-[#D1D5DB]"
+                className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-[#3A424C] bg-[#14171A] px-4 py-2 text-xs font-medium text-[#D1D5DB]"
               >
-                ✖️ Đóng
+                <GameIcon name="ui:x" size={12} />
+                Đóng
               </button>
               <button
                 type="button"
                 onClick={updateState.latestVersion ? onStartUpdate : onRecheck}
-                className="rounded-lg bg-[#C83E37] px-4 py-2 text-xs font-semibold text-[#F4EFE6] hover:bg-[#D94A42]"
+                className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg bg-[#C83E37] px-4 py-2 text-xs font-semibold text-[#F4EFE6] hover:bg-[#D94A42]"
               >
-                🔄 {updateState.latestVersion ? 'Thử tải lại' : 'Kiểm tra lại'}
+                <GameIcon name="ui:refresh" size={13} />
+                {updateState.latestVersion ? 'Thử tải lại' : 'Kiểm tra lại'}
               </button>
             </>
           ) : null}
@@ -279,16 +296,18 @@ export function UpdateModal({
               <button
                 type="button"
                 onClick={onRecheck}
-                className="rounded-lg border border-[#3A424C] bg-[#14171A] px-4 py-2 text-xs font-medium text-[#D1D5DB] hover:border-[#D99B26]"
+                className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[#3A424C] bg-[#14171A] px-4 py-2 text-xs font-medium text-[#D1D5DB] hover:border-[#D99B26]"
               >
-                🔄 Kiểm tra lại
+                <GameIcon name="ui:refresh" size={13} />
+                Kiểm tra lại
               </button>
               <button
                 type="button"
                 onClick={onClose}
-                className="rounded-lg bg-[#C83E37] px-4 py-2 text-xs font-semibold text-[#F4EFE6] hover:bg-[#D94A42]"
+                className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg bg-[#C83E37] px-4 py-2 text-xs font-semibold text-[#F4EFE6] hover:bg-[#D94A42]"
               >
-                ✖️ Đóng hộp thoại
+                <GameIcon name="ui:x" size={12} />
+                Đóng hộp thoại
               </button>
             </>
           ) : null}

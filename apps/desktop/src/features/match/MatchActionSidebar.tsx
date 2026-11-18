@@ -1,5 +1,11 @@
 import { formatRankLabel, formatSuitSymbol, getHeroDefinition } from '@lkdf/shared';
 import type { CardInstance, GameAction, PlayerViewState, PublicPlayerView, Suit } from '@lkdf/shared';
+import {
+  GameIcon,
+  SuitGlyph,
+  getCardGameIcon,
+  type GameIconName,
+} from '../../components/icons/index.js';
 import type { MatchSelectionState } from './matchTypes.js';
 import {
   describePendingActorPrompt,
@@ -10,12 +16,16 @@ import {
 export interface MatchActionSidebarProps {
   readonly view: PlayerViewState;
   readonly selection: MatchSelectionState;
+  readonly layout?: 'sidebar' | 'bar';
   readonly onClearSelection: () => void;
   readonly onSendAction: (action: GameAction) => void;
   readonly onEndPlayPhase: () => void;
 }
 
-function getShortName(players: readonly PublicPlayerView[], seatIndex: number | null | undefined): string {
+function getShortName(
+  players: readonly PublicPlayerView[],
+  seatIndex: number | null | undefined,
+): string {
   if (seatIndex === null || seatIndex === undefined) {
     return 'đối thủ';
   }
@@ -34,9 +44,7 @@ function findMatchingCardId(
   if (selection.selectedCardIds.length === 1) {
     const picked = handCards.find((c) => c.id === selection.selectedCardIds[0]);
     if (picked) {
-      if (picked.cardKey === preferredKey) {
-        return picked.id;
-      }
+      if (picked.cardKey === preferredKey) return picked.id;
       if (
         selection.activeConvertMode === 'long_dan_thiem' &&
         preferredKey === 'thiem' &&
@@ -78,12 +86,12 @@ function findMatchingCardId(
   return direct ? direct.id : null;
 }
 
-function getPlayButtonLabel(
+function getPlayButtonSpec(
   cardKey: string,
   handCards: readonly CardInstance[],
   selection: MatchSelectionState,
   players: readonly PublicPlayerView[],
-): string {
+): { readonly icon: GameIconName; readonly label: string } {
   const firstTargetName = getShortName(players, selection.selectedTargets[0]);
   const secondTargetName = getShortName(players, selection.selectedTargets[1]);
   const selectedCard =
@@ -91,75 +99,111 @@ function getPlayButtonLabel(
       ? handCards.find((c) => c.id === selection.selectedCardIds[0])
       : undefined;
 
-  if (selectedCard && (
-    selectedCard.category === 'WEAPON' ||
-    selectedCard.category === 'ARMOR' ||
-    selectedCard.category === 'PLUS_ONE_HORSE' ||
-    selectedCard.category === 'MINUS_ONE_HORSE'
-  )) {
-    return `🛡️ Trang bị ${selectedCard.nameVi}`;
+  if (
+    selectedCard &&
+    (selectedCard.category === 'WEAPON' ||
+      selectedCard.category === 'ARMOR' ||
+      selectedCard.category === 'PLUS_ONE_HORSE' ||
+      selectedCard.category === 'MINUS_ONE_HORSE')
+  ) {
+    return {
+      icon: getCardGameIcon(selectedCard.cardKey),
+      label: `Trang bị ${selectedCard.nameVi}`,
+    };
   }
 
   switch (cardKey) {
     case 'sat':
       if (selection.selectedTargets.length > 1) {
-        return `⚔️ Đánh Sát vào ${selection.selectedTargets.length} mục tiêu`;
+        return {
+          icon: 'saber-slash',
+          label: `Đánh Sát vào ${selection.selectedTargets.length} mục tiêu`,
+        };
       }
       if (selection.selectedTargets.length === 1) {
-        return `⚔️ Đánh Sát vào ${firstTargetName}`;
+        return { icon: 'saber-slash', label: `Đánh Sát vào ${firstTargetName}` };
       }
-      return '⚔️ Đánh Sát';
+      return { icon: 'saber-slash', label: 'Đánh Sát' };
     case 'dao':
-      return '🍑 Dùng Đào hồi 1 máu';
+      return { icon: 'heart-plus', label: 'Dùng Đào hồi 1 máu' };
     case 'vo_trung_sinh_huu':
-      return '📜 Dùng Vô Trung Sinh Hữu';
+      return { icon: 'card-draw', label: 'Dùng Vô Trung Sinh Hữu' };
     case 'nam_man_nhap_xam':
-      return '💥 Phát động Nam Man Nhập Xâm';
+      return { icon: 'elephant', label: 'Phát động Nam Man Nhập Xâm' };
     case 'van_tien_te_phat':
-      return '🏹 Phát động Vạn Tiễn Tề Phát';
+      return { icon: 'arrow-cluster', label: 'Phát động Vạn Tiễn Tề Phát' };
     case 'dao_vien_ket_nghia':
-      return '🌸 Dùng Đào Viên Kết Nghĩa';
+      return { icon: 'flower-twirl', label: 'Dùng Đào Viên Kết Nghĩa' };
     case 'ngu_coc_phong_dang':
-      return '🌾 Dùng Ngũ Cốc Phong Đăng';
+      return { icon: 'wheat', label: 'Dùng Ngũ Cốc Phong Đăng' };
     case 'quyet_dau':
-      return selection.selectedTargets.length === 1
-        ? `⚔️ Khiêu chiến Quyết Đấu với ${firstTargetName}`
-        : '⚔️ Khiêu chiến Quyết Đấu';
+      return {
+        icon: 'duel',
+        label:
+          selection.selectedTargets.length === 1
+            ? `Quyết Đấu với ${firstTargetName}`
+            : 'Khiêu chiến Quyết Đấu',
+      };
     case 'qua_ha_sai_cau':
-      return selection.selectedTargets.length === 1
-        ? `🔥 Dùng Quá Hà Sái Cầu lên ${firstTargetName}`
-        : '🔥 Dùng Quá Hà Sái Cầu';
+      return {
+        icon: 'bridge',
+        label:
+          selection.selectedTargets.length === 1
+            ? `Quá Hà Sái Cầu lên ${firstTargetName}`
+            : 'Dùng Quá Hà Sái Cầu',
+      };
     case 'thuan_thu_khien_duong':
-      return selection.selectedTargets.length === 1
-        ? `🫳 Dùng Thuận Thủ Khiên Dương lên ${firstTargetName}`
-        : '🫳 Dùng Thuận Thủ Khiên Dương';
+      return {
+        icon: 'grab',
+        label:
+          selection.selectedTargets.length === 1
+            ? `Thuận Thủ lên ${firstTargetName}`
+            : 'Dùng Thuận Thủ Khiên Dương',
+      };
     case 'ta_dao_sat_nhan':
-      return selection.selectedTargets.length === 2
-        ? `🗡️ Tá Đao: ${firstTargetName} đánh ${secondTargetName}`
-        : '🗡️ Dùng Tá Đao Sát Nhân';
+      return {
+        icon: 'cloak-dagger',
+        label:
+          selection.selectedTargets.length === 2
+            ? `Tá Đao: ${firstTargetName} đánh ${secondTargetName}`
+            : 'Dùng Tá Đao Sát Nhân',
+      };
     case 'lac_bat_tu_thuc':
-      return selection.selectedTargets.length === 1
-        ? `🎭 Đặt Lạc Bất Tư Thục lên ${firstTargetName}`
-        : '🎭 Đặt Lạc Bất Tư Thục';
+      return {
+        icon: 'lantern',
+        label:
+          selection.selectedTargets.length === 1
+            ? `Đặt Lạc Bất Tư Thục lên ${firstTargetName}`
+            : 'Đặt Lạc Bất Tư Thục',
+      };
     case 'thiem_dien':
-      return '⚡ Đặt Thiểm Điện lên bàn';
+      return { icon: 'lightning-storm', label: 'Đặt Thiểm Điện lên bàn' };
     default:
-      return selectedCard ? `📜 Dùng ${selectedCard.nameVi}` : '📜 Thực hiện hành động';
+      return {
+        icon: getCardGameIcon(selectedCard?.cardKey),
+        label: selectedCard ? `Dùng ${selectedCard.nameVi}` : 'Thực hiện hành động',
+      };
   }
 }
 
 export function MatchActionSidebar({
   view,
   selection,
+  layout = 'sidebar',
   onClearSelection,
   onSendAction,
   onEndPlayPhase,
 }: MatchActionSidebarProps) {
+  const isBar = layout === 'bar';
   const selfSeat = view.viewerSeatIndex;
   const selfPlayer = view.players.find((p) => p.seatIndex === selfSeat);
   const handCards = selfPlayer?.handCards ?? [];
   const interrupt = view.activeInterrupt;
   const actorPrompt = describePendingActorPrompt(view);
+
+  if (isBar && (!selfPlayer || !selfPlayer.alive)) {
+    return null;
+  }
 
   const hasSelection =
     selection.selectedCardIds.length > 0 ||
@@ -167,14 +211,18 @@ export function MatchActionSidebar({
     selection.activeSkillMode !== null ||
     selection.activeConvertMode !== null;
 
+  const sidebarShellClass = isBar
+    ? 'lkdf-action-bar flex w-full min-w-0 flex-wrap items-center justify-between gap-2 rounded-lg border bg-[#120F0C]/94 px-2.5 py-1 shadow-md'
+    : 'flex h-full min-h-0 w-full flex-col justify-between gap-2 rounded-xl border bg-[#14171A] p-3';
+
   // 1. PHẢN ỨNG KHẨN CẤP (ACTIVE INTERRUPT)
   if (interrupt && selfPlayer) {
     if (interrupt.kind === 'WAIT_NULLIFICATION') {
       const nullCardId = findMatchingCardId(handCards, selection, 'vo_giai_kha_kich');
       const canNullify = selfPlayer.alive && nullCardId !== null;
       return (
-        <aside className="flex h-full min-h-0 w-[230px] shrink-0 flex-col justify-between gap-2 border-l border-[#2D343C] bg-[#191E23] p-3">
-          <div className="space-y-1.5">
+        <aside className={`${sidebarShellClass} border-[#D99B26]/50`}>
+          <div className="space-y-1">
             <span className="inline-block rounded bg-[#D99B26]/20 px-2 py-0.5 text-[11px] font-bold text-[#FDE68A]">
               Chờ Vô Giải Khả Kích
             </span>
@@ -195,9 +243,10 @@ export function MatchActionSidebar({
                   });
                   onClearSelection();
                 }}
-                className="w-full rounded-lg bg-[#C83E37] px-3 py-2 text-xs font-bold text-white hover:bg-[#D84B43]"
+                className="inline-flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg bg-[#C83E37] px-3 py-2 text-xs font-bold text-white hover:bg-[#D84B43]"
               >
-                🛡️ Đánh Vô Giải Khả Kích
+                <GameIcon name="eye-shield" size={14} />
+                Đánh Vô Giải Khả Kích
               </button>
             ) : null}
             {selfPlayer.alive ? (
@@ -211,9 +260,10 @@ export function MatchActionSidebar({
                   });
                   onClearSelection();
                 }}
-                className="w-full rounded-lg border border-[#3A424C] bg-[#14171A] px-3 py-2 text-xs font-semibold text-[#E5E7EB] hover:border-[#D99B26]"
+                className="inline-flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-[#3A424C] bg-[#1E2328] px-3 py-2 text-xs font-semibold text-[#E5E7EB] hover:border-[#D99B26]"
               >
-                ⏭️ Tôi bỏ qua
+                <GameIcon name="ui:skip" size={13} />
+                Tôi bỏ qua
               </button>
             ) : (
               <p className="text-xs text-[#9CA3AF]">Đang chờ người chơi khác phản ứng...</p>
@@ -234,7 +284,7 @@ export function MatchActionSidebar({
       const canUseHuJia = Boolean(isCaoCaoLord && !interrupt.huJiaTried);
 
       return (
-        <aside className="flex h-full min-h-0 w-[230px] shrink-0 flex-col justify-between gap-2 border-l border-[#C83E37]/60 bg-[#191E23] p-3">
+        <aside className={`${sidebarShellClass} border-[#C83E37]/60`}>
           <div className="space-y-1">
             <span className="inline-block rounded bg-[#C83E37]/25 px-2 py-0.5 text-[11px] font-bold text-[#FCA5A5]">
               Cần bạn né đòn
@@ -259,9 +309,10 @@ export function MatchActionSidebar({
                 });
                 onClearSelection();
               }}
-              className="w-full rounded-lg bg-[#C83E37] px-3 py-2 text-xs font-bold text-white hover:bg-[#D84B43] disabled:cursor-not-allowed disabled:opacity-45"
+              className="inline-flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg bg-[#C83E37] px-3 py-1.5 text-xs font-bold text-white hover:bg-[#D84B43] disabled:cursor-not-allowed disabled:opacity-45"
             >
-              💨 Đánh Thiểm né đòn
+              <GameIcon name="sprint" size={14} />
+              Đánh Thiểm né đòn
             </button>
             {canUseBagua ? (
               <button
@@ -275,9 +326,10 @@ export function MatchActionSidebar({
                   });
                   onClearSelection();
                 }}
-                className="w-full rounded-lg border border-[#D99B26]/60 bg-[#D99B26]/15 px-3 py-1.5 text-xs font-semibold text-[#FDE68A] hover:bg-[#D99B26]/25"
+                className="inline-flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-[#D99B26]/60 bg-[#D99B26]/15 px-3 py-1.5 text-xs font-semibold text-[#FDE68A] hover:bg-[#D99B26]/25"
               >
-                ☯️ Phán xét Bát Quái Trận
+                <GameIcon name="yin-yang" size={13} />
+                Phán xét Bát Quái Trận
               </button>
             ) : null}
             {canUseHuJia ? (
@@ -292,9 +344,10 @@ export function MatchActionSidebar({
                   });
                   onClearSelection();
                 }}
-                className="w-full rounded-lg border border-[#3B82F6]/60 bg-[#3B82F6]/15 px-3 py-1.5 text-xs font-semibold text-[#93C5FD] hover:bg-[#3B82F6]/25"
+                className="inline-flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-[#3B82F6]/60 bg-[#3B82F6]/15 px-3 py-1.5 text-xs font-semibold text-[#93C5FD] hover:bg-[#3B82F6]/25"
               >
-                🛡️ Xin Ngụy Hộ Giá
+                <GameIcon name="bordered-shield" size={13} />
+                Xin Ngụy Hộ Giá
               </button>
             ) : null}
             <button
@@ -307,9 +360,10 @@ export function MatchActionSidebar({
                 });
                 onClearSelection();
               }}
-              className="w-full rounded-lg border border-[#3A424C] bg-[#14171A] px-3 py-1.5 text-xs font-semibold text-[#FCA5A5] hover:border-[#DC2626]"
+              className="inline-flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-[#3A424C] bg-[#1E2328] px-3 py-1.5 text-xs font-semibold text-[#FCA5A5] hover:border-[#DC2626]"
             >
-              💔 Chịu mất 1 máu
+              <GameIcon name="death-skull" size={13} />
+              Chịu mất 1 máu
             </button>
           </div>
         </aside>
@@ -332,7 +386,7 @@ export function MatchActionSidebar({
             : 'RESPOND_COLLATERAL_SAT';
 
       return (
-        <aside className="flex h-full min-h-0 w-[230px] shrink-0 flex-col justify-between gap-2 border-l border-[#C83E37]/60 bg-[#191E23] p-3">
+        <aside className={`${sidebarShellClass} border-[#C83E37]/60`}>
           <div className="space-y-1">
             <span className="inline-block rounded bg-[#C83E37]/25 px-2 py-0.5 text-[11px] font-bold text-[#FCA5A5]">
               Cần đánh Sát
@@ -357,9 +411,10 @@ export function MatchActionSidebar({
                 });
                 onClearSelection();
               }}
-              className="w-full rounded-lg bg-[#C83E37] px-3 py-2 text-xs font-bold text-white hover:bg-[#D84B43] disabled:cursor-not-allowed disabled:opacity-45"
+              className="inline-flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg bg-[#C83E37] px-3 py-2 text-xs font-bold text-white hover:bg-[#D84B43] disabled:cursor-not-allowed disabled:opacity-45"
             >
-              ⚔️ Đánh Sát để hưởng ứng
+              <GameIcon name="saber-slash" size={14} />
+              Đánh Sát để hưởng ứng
             </button>
             <button
               type="button"
@@ -371,9 +426,10 @@ export function MatchActionSidebar({
                 });
                 onClearSelection();
               }}
-              className="w-full rounded-lg border border-[#3A424C] bg-[#14171A] px-3 py-2 text-xs font-semibold text-[#FCA5A5] hover:border-[#DC2626]"
+              className="inline-flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-[#3A424C] bg-[#1E2328] px-3 py-2 text-xs font-semibold text-[#FCA5A5] hover:border-[#DC2626]"
             >
-              {isCollateral ? '🗡️ Giao Vũ khí' : '💔 Chịu mất 1 máu (Không đánh Sát)'}
+              <GameIcon name={isCollateral ? 'broadsword' : 'death-skull'} size={13} />
+              {isCollateral ? 'Giao Vũ khí' : 'Chịu mất 1 máu'}
             </button>
           </div>
         </aside>
@@ -384,13 +440,13 @@ export function MatchActionSidebar({
       const daoCardId = findMatchingCardId(handCards, selection, 'dao');
       const dyingName = getShortName(view.players, interrupt.targetSeat);
       return (
-        <aside className="flex h-full min-h-0 w-[230px] shrink-0 flex-col justify-between gap-2 border-l border-[#C83E37]/60 bg-[#191E23] p-3">
+        <aside className={`${sidebarShellClass} border-[#C83E37]/60`}>
           <div className="space-y-1">
             <span className="inline-block rounded bg-[#C83E37]/25 px-2 py-0.5 text-[11px] font-bold text-[#FCA5A5]">
               Cầu cứu hấp hối
             </span>
             <p className="text-xs text-[#D1D5DB]">
-              <strong>{dyingName}</strong> đang hấp hối (0❤️). Bạn có dùng Đào cứu không?
+              <strong>{dyingName}</strong> đang hấp hối (0 máu). Dùng Đào cứu?
             </p>
           </div>
           <div className="flex flex-col gap-1.5">
@@ -407,9 +463,10 @@ export function MatchActionSidebar({
                 });
                 onClearSelection();
               }}
-              className="w-full rounded-lg bg-[#16A34A] px-3 py-2 text-xs font-bold text-white hover:bg-[#15803D] disabled:cursor-not-allowed disabled:opacity-45"
+              className="inline-flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg bg-[#16A34A] px-3 py-2 text-xs font-bold text-white hover:bg-[#15803D] disabled:cursor-not-allowed disabled:opacity-45"
             >
-              🍑 Dùng Đào cứu {dyingName} (+1 máu)
+              <GameIcon name="heart-plus" size={14} />
+              Dùng Đào cứu {dyingName}
             </button>
             <button
               type="button"
@@ -421,9 +478,10 @@ export function MatchActionSidebar({
                 });
                 onClearSelection();
               }}
-              className="w-full rounded-lg border border-[#3A424C] bg-[#14171A] px-3 py-2 text-xs font-semibold text-[#E5E7EB] hover:border-[#D99B26]"
+              className="inline-flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-[#3A424C] bg-[#1E2328] px-3 py-2 text-xs font-semibold text-[#E5E7EB] hover:border-[#D99B26]"
             >
-              ⏭️ Không cứu
+              <GameIcon name="ui:skip" size={13} />
+              Không cứu
             </button>
           </div>
         </aside>
@@ -433,7 +491,7 @@ export function MatchActionSidebar({
     if (interrupt.kind === 'ASK_TU_HUNG' && interrupt.targetSeat === selfSeat) {
       const pickedCardId = selection.selectedCardIds[0] ?? null;
       return (
-        <aside className="flex h-full min-h-0 w-[230px] shrink-0 flex-col justify-between gap-2 border-l border-[#D99B26]/50 bg-[#191E23] p-3">
+        <aside className={`${sidebarShellClass} border-[#D99B26]/50`}>
           <div className="space-y-1">
             <span className="inline-block rounded bg-[#D99B26]/20 px-2 py-0.5 text-[11px] font-bold text-[#FDE68A]">
               Thư Hùng Song Cổ Kiếm
@@ -456,9 +514,10 @@ export function MatchActionSidebar({
                 });
                 onClearSelection();
               }}
-              className="w-full rounded-lg bg-[#C83E37] px-3 py-2 text-xs font-bold text-white disabled:opacity-45"
+              className="inline-flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg bg-[#C83E37] px-3 py-2 text-xs font-bold text-white disabled:opacity-45"
             >
-              🗑️ Bỏ 1 lá bài đã chọn (Từ Hùng)
+              <GameIcon name="ui:trash" size={13} />
+              Bỏ 1 lá bài đã chọn
             </button>
             <button
               type="button"
@@ -470,9 +529,10 @@ export function MatchActionSidebar({
                 });
                 onClearSelection();
               }}
-              className="w-full rounded-lg border border-[#3A424C] bg-[#14171A] px-3 py-2 text-xs font-semibold text-[#E5E7EB]"
+              className="inline-flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-[#3A424C] bg-[#1E2328] px-3 py-2 text-xs font-semibold text-[#E5E7EB]"
             >
-              ⏭️ Để đối thủ rút 1 lá
+              <GameIcon name="ui:skip" size={13} />
+              Để đối thủ rút 1 lá
             </button>
           </div>
         </aside>
@@ -482,7 +542,7 @@ export function MatchActionSidebar({
     if (interrupt.kind === 'ASK_QUAN_THACH_PHU' && interrupt.targetSeat === selfSeat) {
       const ready = selection.selectedCardIds.length === 2;
       return (
-        <aside className="flex h-full min-h-0 w-[230px] shrink-0 flex-col justify-between gap-2 border-l border-[#D99B26]/50 bg-[#191E23] p-3">
+        <aside className={`${sidebarShellClass} border-[#D99B26]/50`}>
           <div className="space-y-1">
             <span className="inline-block rounded bg-[#D99B26]/20 px-2 py-0.5 text-[11px] font-bold text-[#FDE68A]">
               Quán Thạch Phủ
@@ -501,13 +561,17 @@ export function MatchActionSidebar({
                   type: 'RESPOND_QUAN_THACH_PHU',
                   seatIndex: selfSeat,
                   activate: true,
-                  discardCardIds: [selection.selectedCardIds[0]!, selection.selectedCardIds[1]!],
+                  discardCardIds: [
+                    selection.selectedCardIds[0]!,
+                    selection.selectedCardIds[1]!,
+                  ],
                 });
                 onClearSelection();
               }}
-              className="w-full rounded-lg bg-[#C83E37] px-3 py-2 text-xs font-bold text-white disabled:opacity-45"
+              className="inline-flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg bg-[#C83E37] px-3 py-2 text-xs font-bold text-white disabled:opacity-45"
             >
-              🪓 Bỏ 2 lá ép trúng Sát
+              <GameIcon name="stone-axe" size={13} />
+              Bỏ 2 lá ép trúng Sát
             </button>
             <button
               type="button"
@@ -519,9 +583,10 @@ export function MatchActionSidebar({
                 });
                 onClearSelection();
               }}
-              className="w-full rounded-lg border border-[#3A424C] bg-[#14171A] px-3 py-2 text-xs font-semibold text-[#E5E7EB]"
+              className="inline-flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-[#3A424C] bg-[#1E2328] px-3 py-2 text-xs font-semibold text-[#E5E7EB]"
             >
-              ⏭️ Không kích hoạt Quán Thạch Phủ
+              <GameIcon name="ui:skip" size={13} />
+              Không kích hoạt
             </button>
           </div>
         </aside>
@@ -531,7 +596,7 @@ export function MatchActionSidebar({
     if (interrupt.kind === 'ASK_THANH_LONG' && interrupt.targetSeat === selfSeat) {
       const satCardId = findMatchingCardId(handCards, selection, 'sat');
       return (
-        <aside className="flex h-full min-h-0 w-[230px] shrink-0 flex-col justify-between gap-2 border-l border-[#D99B26]/50 bg-[#191E23] p-3">
+        <aside className={`${sidebarShellClass} border-[#D99B26]/50`}>
           <div className="space-y-1">
             <span className="inline-block rounded bg-[#D99B26]/20 px-2 py-0.5 text-[11px] font-bold text-[#FDE68A]">
               Thanh Long Yển Nguyệt Đao
@@ -551,9 +616,10 @@ export function MatchActionSidebar({
                 });
                 onClearSelection();
               }}
-              className="w-full rounded-lg bg-[#C83E37] px-3 py-2 text-xs font-bold text-white disabled:opacity-45"
+              className="inline-flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg bg-[#C83E37] px-3 py-2 text-xs font-bold text-white disabled:opacity-45"
             >
-              🐉 Đánh thêm Sát truy kích
+              <GameIcon name="glaive" size={14} />
+              Đánh thêm Sát truy kích
             </button>
             <button
               type="button"
@@ -565,9 +631,10 @@ export function MatchActionSidebar({
                 });
                 onClearSelection();
               }}
-              className="w-full rounded-lg border border-[#3A424C] bg-[#14171A] px-3 py-2 text-xs font-semibold text-[#E5E7EB]"
+              className="inline-flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-[#3A424C] bg-[#1E2328] px-3 py-2 text-xs font-semibold text-[#E5E7EB]"
             >
-              ⏭️ Không truy kích
+              <GameIcon name="ui:skip" size={13} />
+              Không truy kích
             </button>
           </div>
         </aside>
@@ -576,13 +643,13 @@ export function MatchActionSidebar({
 
     if (interrupt.kind === 'ASK_HAN_BANG_KIEM' && interrupt.targetSeat === selfSeat) {
       return (
-        <aside className="flex h-full min-h-0 w-[230px] shrink-0 flex-col justify-between gap-2 border-l border-[#3B82F6]/60 bg-[#191E23] p-3">
+        <aside className={`${sidebarShellClass} border-[#3B82F6]/60`}>
           <div className="space-y-1">
             <span className="inline-block rounded bg-[#3B82F6]/20 px-2 py-0.5 text-[11px] font-bold text-[#93C5FD]">
               Hàn Băng Kiếm
             </span>
             <p className="text-xs text-[#D1D5DB]">
-              Chọn bỏ qua hoặc chọn bài trên hộp thoại Hàn Băng Kiếm.
+              Chọn bỏ qua hoặc kích hoạt Hàn Băng Kiếm.
             </p>
           </div>
           <button
@@ -595,9 +662,10 @@ export function MatchActionSidebar({
               });
               onClearSelection();
             }}
-            className="w-full rounded-lg border border-[#3A424C] bg-[#14171A] px-3 py-2 text-xs font-semibold text-[#E5E7EB]"
+            className="inline-flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-[#3A424C] bg-[#1E2328] px-3 py-2 text-xs font-semibold text-[#E5E7EB]"
           >
-            ⏭️ Gây 1 sát thương như thường
+            <GameIcon name="ui:skip" size={13} />
+            Gây 1 sát thương như thường
           </button>
         </aside>
       );
@@ -605,7 +673,7 @@ export function MatchActionSidebar({
 
     if (interrupt.kind === 'ASK_KY_LAN_CUNG' && interrupt.targetSeat === selfSeat) {
       return (
-        <aside className="flex h-full min-h-0 w-[230px] shrink-0 flex-col justify-between gap-2 border-l border-[#D99B26]/50 bg-[#191E23] p-3">
+        <aside className={`${sidebarShellClass} border-[#D99B26]/50`}>
           <span className="inline-block rounded bg-[#D99B26]/20 px-2 py-0.5 text-[11px] font-bold text-[#FDE68A]">
             Kỳ Lân Cung
           </span>
@@ -619,9 +687,10 @@ export function MatchActionSidebar({
                   horseZone: 'PLUS_ONE_HORSE',
                 });
               }}
-              className="w-full rounded-lg bg-[#C83E37] px-3 py-1.5 text-xs font-bold text-white"
+              className="inline-flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg bg-[#C83E37] px-3 py-1.5 text-xs font-bold text-white"
             >
-              🏹 Hủy Ngựa +1 của mục tiêu
+              <GameIcon name="bow-arrow" size={13} />
+              Hủy Ngựa +1 của mục tiêu
             </button>
             <button
               type="button"
@@ -632,9 +701,10 @@ export function MatchActionSidebar({
                   horseZone: 'MINUS_ONE_HORSE',
                 });
               }}
-              className="w-full rounded-lg bg-[#C83E37] px-3 py-1.5 text-xs font-bold text-white"
+              className="inline-flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg bg-[#C83E37] px-3 py-1.5 text-xs font-bold text-white"
             >
-              🏹 Hủy Ngựa -1 của mục tiêu
+              <GameIcon name="bow-arrow" size={13} />
+              Hủy Ngựa -1 của mục tiêu
             </button>
             <button
               type="button"
@@ -645,9 +715,10 @@ export function MatchActionSidebar({
                   horseZone: null,
                 });
               }}
-              className="w-full rounded-lg border border-[#3A424C] bg-[#14171A] px-3 py-1.5 text-xs font-semibold text-[#E5E7EB]"
+              className="inline-flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-[#3A424C] bg-[#1E2328] px-3 py-1.5 text-xs font-semibold text-[#E5E7EB]"
             >
-              ⏭️ Không hủy ngựa
+              <GameIcon name="ui:skip" size={13} />
+              Không hủy ngựa
             </button>
           </div>
         </aside>
@@ -657,7 +728,7 @@ export function MatchActionSidebar({
     if (interrupt.kind === 'WAIT_TU_XI' && interrupt.targetSeat === selfSeat) {
       const picked = selection.selectedTargets.slice(0, 2);
       return (
-        <aside className="flex h-full min-h-0 w-[230px] shrink-0 flex-col justify-between gap-2 border-l border-[#3B82F6]/60 bg-[#191E23] p-3">
+        <aside className={`${sidebarShellClass} border-[#3B82F6]/60`}>
           <div className="space-y-1">
             <span className="inline-block rounded bg-[#3B82F6]/20 px-2 py-0.5 text-[11px] font-bold text-[#93C5FD]">
               Đột Tập (Trương Liêu)
@@ -678,9 +749,10 @@ export function MatchActionSidebar({
                 });
                 onClearSelection();
               }}
-              className="w-full rounded-lg bg-[#C83E37] px-3 py-2 text-xs font-bold text-white disabled:opacity-45"
+              className="inline-flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg bg-[#C83E37] px-3 py-2 text-xs font-bold text-white disabled:opacity-45"
             >
-              🤏 Rút bài từ {picked.length} mục tiêu
+              <GameIcon name="grab" size={13} />
+              Rút bài từ {picked.length} mục tiêu
             </button>
             <button
               type="button"
@@ -692,9 +764,10 @@ export function MatchActionSidebar({
                 });
                 onClearSelection();
               }}
-              className="w-full rounded-lg border border-[#3A424C] bg-[#14171A] px-3 py-1.5 text-xs font-semibold text-[#E5E7EB]"
+              className="inline-flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-[#3A424C] bg-[#1E2328] px-3 py-1.5 text-xs font-semibold text-[#E5E7EB]"
             >
-              ⏭️ Rút bài bình thường
+              <GameIcon name="ui:skip" size={13} />
+              Rút bài bình thường
             </button>
           </div>
         </aside>
@@ -706,7 +779,7 @@ export function MatchActionSidebar({
       const newTargetSeat = selection.selectedTargets[0] ?? null;
       const ready = cardId !== null && newTargetSeat !== null;
       return (
-        <aside className="flex h-full min-h-0 w-[230px] shrink-0 flex-col justify-between gap-2 border-l border-[#10B981]/60 bg-[#191E23] p-3">
+        <aside className={`${sidebarShellClass} border-[#10B981]/60`}>
           <div className="space-y-1">
             <span className="inline-block rounded bg-[#10B981]/20 px-2 py-0.5 text-[11px] font-bold text-[#34D399]">
               Lưu Ly (Đại Kiều)
@@ -730,9 +803,10 @@ export function MatchActionSidebar({
                 });
                 onClearSelection();
               }}
-              className="w-full rounded-lg bg-[#C83E37] px-3 py-2 text-xs font-bold text-white disabled:opacity-45"
+              className="inline-flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg bg-[#C83E37] px-3 py-2 text-xs font-bold text-white disabled:opacity-45"
             >
-              💃 Chuyển Sát sang {getShortName(view.players, newTargetSeat)}
+              <GameIcon name="ui:convert" size={13} />
+              Chuyển Sát sang {getShortName(view.players, newTargetSeat)}
             </button>
             <button
               type="button"
@@ -744,9 +818,10 @@ export function MatchActionSidebar({
                 });
                 onClearSelection();
               }}
-              className="w-full rounded-lg border border-[#3A424C] bg-[#14171A] px-3 py-1.5 text-xs font-semibold text-[#E5E7EB]"
+              className="inline-flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-[#3A424C] bg-[#1E2328] px-3 py-1.5 text-xs font-semibold text-[#E5E7EB]"
             >
-              ⏭️ Không dùng Lưu Ly
+              <GameIcon name="ui:skip" size={13} />
+              Không dùng Lưu Ly
             </button>
           </div>
         </aside>
@@ -759,7 +834,7 @@ export function MatchActionSidebar({
         ? `${formatSuitSymbol(interrupt.judgeCard.suit)}${formatRankLabel(interrupt.judgeCard.rank)}`
         : 'lá hiện tại';
       return (
-        <aside className="flex h-full min-h-0 w-[230px] shrink-0 flex-col justify-between gap-2 border-l border-[#3B82F6]/60 bg-[#191E23] p-3">
+        <aside className={`${sidebarShellClass} border-[#3B82F6]/60`}>
           <div className="space-y-1">
             <span className="inline-block rounded bg-[#3B82F6]/20 px-2 py-0.5 text-[11px] font-bold text-[#93C5FD]">
               Quỷ Tài (Tư Mã Ý)
@@ -781,9 +856,10 @@ export function MatchActionSidebar({
                 });
                 onClearSelection();
               }}
-              className="w-full rounded-lg bg-[#C83E37] px-3 py-2 text-xs font-bold text-white disabled:opacity-45"
+              className="inline-flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg bg-[#C83E37] px-3 py-2 text-xs font-bold text-white disabled:opacity-45"
             >
-              ⚡ Đổi lá phán xét bằng lá đã chọn
+              <GameIcon name="lightning-storm" size={13} />
+              Đổi lá phán xét
             </button>
             <button
               type="button"
@@ -795,9 +871,10 @@ export function MatchActionSidebar({
                 });
                 onClearSelection();
               }}
-              className="w-full rounded-lg border border-[#3A424C] bg-[#14171A] px-3 py-1.5 text-xs font-semibold text-[#E5E7EB]"
+              className="inline-flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-[#3A424C] bg-[#1E2328] px-3 py-1.5 text-xs font-semibold text-[#E5E7EB]"
             >
-              ⏭️ Giữ nguyên lá phán xét
+              <GameIcon name="ui:skip" size={13} />
+              Giữ nguyên lá phán xét
             </button>
           </div>
         </aside>
@@ -807,7 +884,7 @@ export function MatchActionSidebar({
     if (interrupt.kind === 'WAIT_GANG_LIE_CHOICE' && interrupt.targetSeat === selfSeat) {
       const ready = selection.selectedCardIds.length === 2;
       return (
-        <aside className="flex h-full min-h-0 w-[230px] shrink-0 flex-col justify-between gap-2 border-l border-[#C83E37]/60 bg-[#191E23] p-3">
+        <aside className={`${sidebarShellClass} border-[#C83E37]/60`}>
           <div className="space-y-1">
             <span className="inline-block rounded bg-[#C83E37]/25 px-2 py-0.5 text-[11px] font-bold text-[#FCA5A5]">
               Cương Liệt (Hạ Hầu Đôn)
@@ -826,13 +903,17 @@ export function MatchActionSidebar({
                   type: 'RESPOND_GANG_LIE_CHOICE',
                   seatIndex: selfSeat,
                   choice: 'DISCARD_TWO',
-                  discardCardIds: [selection.selectedCardIds[0]!, selection.selectedCardIds[1]!],
+                  discardCardIds: [
+                    selection.selectedCardIds[0]!,
+                    selection.selectedCardIds[1]!,
+                  ],
                 });
                 onClearSelection();
               }}
-              className="w-full rounded-lg bg-[#C83E37] px-3 py-2 text-xs font-bold text-white disabled:opacity-45"
+              className="inline-flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg bg-[#C83E37] px-3 py-2 text-xs font-bold text-white disabled:opacity-45"
             >
-              🗑️ Bỏ 2 lá bài đã chọn
+              <GameIcon name="ui:trash" size={13} />
+              Bỏ 2 lá bài đã chọn
             </button>
             <button
               type="button"
@@ -844,9 +925,10 @@ export function MatchActionSidebar({
                 });
                 onClearSelection();
               }}
-              className="w-full rounded-lg border border-[#3A424C] bg-[#14171A] px-3 py-1.5 text-xs font-semibold text-[#FCA5A5]"
+              className="inline-flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-[#3A424C] bg-[#1E2328] px-3 py-1.5 text-xs font-semibold text-[#FCA5A5]"
             >
-              💔 Chịu 1 sát thương
+              <GameIcon name="death-skull" size={13} />
+              Chịu 1 sát thương
             </button>
           </div>
         </aside>
@@ -855,20 +937,20 @@ export function MatchActionSidebar({
 
     if (interrupt.kind === 'WAIT_FAN_JIAN_GUESS' && interrupt.targetSeat === selfSeat) {
       const suits: readonly { readonly suit: Suit; readonly label: string }[] = [
-        { suit: 'SPADE', label: '♠️ Đoán Bích' },
-        { suit: 'HEART', label: '♥️ Đoán Cơ' },
-        { suit: 'CLUB', label: '♣️ Đoán Chuồn' },
-        { suit: 'DIAMOND', label: '♦️ Đoán Rô' },
+        { suit: 'SPADE', label: 'Đoán Bích' },
+        { suit: 'HEART', label: 'Đoán Cơ' },
+        { suit: 'CLUB', label: 'Đoán Chuồn' },
+        { suit: 'DIAMOND', label: 'Đoán Rô' },
       ];
       return (
-        <aside className="flex h-full min-h-0 w-[230px] shrink-0 flex-col justify-between gap-2 border-l border-[#10B981]/60 bg-[#191E23] p-3">
+        <aside className={`${sidebarShellClass} border-[#10B981]/60`}>
           <div className="space-y-1">
             <span className="inline-block rounded bg-[#10B981]/20 px-2 py-0.5 text-[11px] font-bold text-[#34D399]">
               Phản Gián (Chu Du)
             </span>
             <p className="text-xs text-[#D1D5DB]">Chọn 1 chất để đoán lá bài sắp rút:</p>
           </div>
-          <div className="grid grid-cols-2 gap-1.5">
+          <div className={isBar ? 'flex flex-wrap items-center gap-1.5' : 'grid grid-cols-2 gap-1.5'}>
             {suits.map((item) => (
               <button
                 key={item.suit}
@@ -880,9 +962,10 @@ export function MatchActionSidebar({
                     suit: item.suit,
                   });
                 }}
-                className="rounded-lg border border-[#3A424C] bg-[#14171A] px-2 py-2 text-xs font-semibold text-[#F3F4F6] hover:border-[#D99B26]"
+                className="inline-flex cursor-pointer items-center justify-center gap-1 rounded-lg border border-[#3A424C] bg-[#1E2328] px-2 py-2 text-xs font-semibold text-[#F3F4F6] hover:border-[#D99B26]"
               >
-                {item.label}
+                <SuitGlyph suit={item.suit} size={12} />
+                <span>{item.label}</span>
               </button>
             ))}
           </div>
@@ -893,7 +976,7 @@ export function MatchActionSidebar({
     if (interrupt.kind === 'WAIT_JI_JIANG' && interrupt.responderSeat === selfSeat) {
       const satCardId = findMatchingCardId(handCards, selection, 'sat');
       return (
-        <aside className="flex h-full min-h-0 w-[230px] shrink-0 flex-col justify-between gap-2 border-l border-[#C83E37]/60 bg-[#191E23] p-3">
+        <aside className={`${sidebarShellClass} border-[#C83E37]/60`}>
           <div className="space-y-1">
             <span className="inline-block rounded bg-[#C83E37]/25 px-2 py-0.5 text-[11px] font-bold text-[#FCA5A5]">
               Kích Tướng (Chủ Công Thục)
@@ -913,9 +996,10 @@ export function MatchActionSidebar({
                 });
                 onClearSelection();
               }}
-              className="w-full rounded-lg bg-[#C83E37] px-3 py-2 text-xs font-bold text-white disabled:opacity-45"
+              className="inline-flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg bg-[#C83E37] px-3 py-2 text-xs font-bold text-white disabled:opacity-45"
             >
-              ⚔️ Đánh Sát giúp Chủ Công
+              <GameIcon name="saber-slash" size={14} />
+              Đánh Sát giúp Chủ Công
             </button>
             <button
               type="button"
@@ -927,9 +1011,10 @@ export function MatchActionSidebar({
                 });
                 onClearSelection();
               }}
-              className="w-full rounded-lg border border-[#3A424C] bg-[#14171A] px-3 py-1.5 text-xs font-semibold text-[#E5E7EB]"
+              className="inline-flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-[#3A424C] bg-[#1E2328] px-3 py-1.5 text-xs font-semibold text-[#E5E7EB]"
             >
-              ⏭️ Không có Sát giúp
+              <GameIcon name="ui:skip" size={13} />
+              Không có Sát giúp
             </button>
           </div>
         </aside>
@@ -939,7 +1024,7 @@ export function MatchActionSidebar({
     if (interrupt.kind === 'WAIT_HU_JIA' && interrupt.responderSeat === selfSeat) {
       const dodgeCardId = findMatchingCardId(handCards, selection, 'thiem');
       return (
-        <aside className="flex h-full min-h-0 w-[230px] shrink-0 flex-col justify-between gap-2 border-l border-[#3B82F6]/60 bg-[#191E23] p-3">
+        <aside className={`${sidebarShellClass} border-[#3B82F6]/60`}>
           <div className="space-y-1">
             <span className="inline-block rounded bg-[#3B82F6]/20 px-2 py-0.5 text-[11px] font-bold text-[#93C5FD]">
               Hộ Giá (Chủ Công Ngụy)
@@ -959,9 +1044,10 @@ export function MatchActionSidebar({
                 });
                 onClearSelection();
               }}
-              className="w-full rounded-lg bg-[#3B82F6] px-3 py-2 text-xs font-bold text-white disabled:opacity-45"
+              className="inline-flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg bg-[#3B82F6] px-3 py-2 text-xs font-bold text-white disabled:opacity-45"
             >
-              💨 Đánh Thiểm hộ Chủ Công
+              <GameIcon name="sprint" size={14} />
+              Đánh Thiểm hộ Chủ Công
             </button>
             <button
               type="button"
@@ -973,22 +1059,23 @@ export function MatchActionSidebar({
                 });
                 onClearSelection();
               }}
-              className="w-full rounded-lg border border-[#3A424C] bg-[#14171A] px-3 py-1.5 text-xs font-semibold text-[#E5E7EB]"
+              className="inline-flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-[#3A424C] bg-[#1E2328] px-3 py-1.5 text-xs font-semibold text-[#E5E7EB]"
             >
-              ⏭️ Không có Thiểm hộ
+              <GameIcon name="ui:skip" size={13} />
+              Không có Thiểm hộ
             </button>
           </div>
         </aside>
       );
     }
 
-    // Các ASK_* nhị phân (Yes/No) dành cho chính mình
     const binarySkillMap: Partial<
       Record<
         typeof interrupt.kind,
         {
           readonly title: string;
           readonly desc: string;
+          readonly yesIcon: GameIconName;
           readonly yesLabel: string;
           readonly noLabel: string;
           readonly actionType:
@@ -1006,57 +1093,65 @@ export function MatchActionSidebar({
       ASK_LUO_SHEN: {
         title: 'Lạc Thần (Chân Cơ)',
         desc: 'Phán xét lá đầu chồng bài rút (nếu Đen được giữ và lật tiếp).',
-        yesLabel: '🌙 Phán xét Lạc Thần',
-        noLabel: '⏭️ Dừng Lạc Thần',
+        yesIcon: 'ui:sparkles',
+        yesLabel: 'Phán xét Lạc Thần',
+        noLabel: 'Dừng Lạc Thần',
         actionType: 'RESPOND_LUO_SHEN',
       },
       ASK_LUO_YI: {
         title: 'Lỏa Y (Hứa Chử)',
         desc: 'Rút ít hơn 1 lá nhưng Sát & Quyết Đấu gây +1 sát thương lượt này.',
-        yesLabel: '🔥 Kích hoạt Lỏa Y',
-        noLabel: '⏭️ Rút bài bình thường',
+        yesIcon: 'broadsword',
+        yesLabel: 'Kích hoạt Lỏa Y',
+        noLabel: 'Rút bài bình thường',
         actionType: 'RESPOND_LUO_YI',
       },
       ASK_KE_JI: {
         title: 'Khắc Kỷ (Lữ Mông)',
         desc: 'Bạn chưa dùng Sát trong lượt — có thể bỏ qua pha bỏ bài.',
-        yesLabel: '🛡️ Kích hoạt Khắc Kỷ',
-        noLabel: '⏭️ Bỏ bài bình thường',
+        yesIcon: 'bordered-shield',
+        yesLabel: 'Kích hoạt Khắc Kỷ',
+        noLabel: 'Bỏ bài bình thường',
         actionType: 'RESPOND_KE_JI',
       },
       ASK_TIE_QI: {
         title: 'Thiết Kỵ (Mã Siêu)',
         desc: 'Phán xét: nếu ra chất Đỏ, mục tiêu không thể dùng Thiểm.',
-        yesLabel: '🐎 Phán xét Thiết Kỵ',
-        noLabel: '⏭️ Không dùng Thiết Kỵ',
+        yesIcon: 'cavalry',
+        yesLabel: 'Phán xét Thiết Kỵ',
+        noLabel: 'Không dùng Thiết Kỵ',
         actionType: 'RESPOND_TIE_QI',
       },
       ASK_TIAN_DO: {
         title: 'Thiên Đố (Quách Gia)',
         desc: 'Lấy lá bài phán xét vừa lật về tay.',
-        yesLabel: '📜 Lấy lá phán xét (Thiên Đố)',
-        noLabel: '⏭️ Bỏ qua Thiên Đố',
+        yesIcon: 'card-draw',
+        yesLabel: 'Lấy lá phán xét (Thiên Đố)',
+        noLabel: 'Bỏ qua Thiên Đố',
         actionType: 'RESPOND_TIAN_DO',
       },
       ASK_JIAN_XIONG: {
         title: 'Gian Hùng (Tào Tháo)',
         desc: 'Lấy các lá bài vừa gây sát thương cho bạn về tay.',
-        yesLabel: '🦅 Lấy bài gây sát thương (Gian Hùng)',
-        noLabel: '⏭️ Không lấy bài',
+        yesIcon: 'card-pickup',
+        yesLabel: 'Lấy bài gây sát thương',
+        noLabel: 'Không lấy bài',
         actionType: 'RESPOND_JIAN_XIONG',
       },
       ASK_FAN_KUI: {
         title: 'Phản Quỷ (Tư Mã Ý)',
         desc: `Lấy 1 lá bài từ ${getShortName(view.players, interrupt.sourceSeat)}.`,
-        yesLabel: `🫳 Lấy 1 lá của ${getShortName(view.players, interrupt.sourceSeat)}`,
-        noLabel: '⏭️ Không dùng Phản Quỷ',
+        yesIcon: 'grab',
+        yesLabel: `Lấy 1 lá của ${getShortName(view.players, interrupt.sourceSeat)}`,
+        noLabel: 'Không dùng Phản Quỷ',
         actionType: 'RESPOND_FAN_KUI',
       },
       ASK_GANG_LIE: {
         title: 'Cương Liệt (Hạ Hầu Đôn)',
         desc: 'Phán xét phản đòn người vừa gây sát thương cho bạn.',
-        yesLabel: '💢 Phán xét Cương Liệt',
-        noLabel: '⏭️ Không dùng Cương Liệt',
+        yesIcon: 'duel',
+        yesLabel: 'Phán xét Cương Liệt',
+        noLabel: 'Không dùng Cương Liệt',
         actionType: 'RESPOND_GANG_LIE',
       },
     };
@@ -1064,7 +1159,7 @@ export function MatchActionSidebar({
     const binaryCfg = binarySkillMap[interrupt.kind];
     if (binaryCfg && interrupt.targetSeat === selfSeat) {
       return (
-        <aside className="flex h-full min-h-0 w-[230px] shrink-0 flex-col justify-between gap-2 border-l border-[#D99B26]/50 bg-[#191E23] p-3">
+        <aside className={`${sidebarShellClass} border-[#D99B26]/50`}>
           <div className="space-y-1">
             <span className="inline-block rounded bg-[#D99B26]/20 px-2 py-0.5 text-[11px] font-bold text-[#FDE68A]">
               {binaryCfg.title}
@@ -1082,8 +1177,9 @@ export function MatchActionSidebar({
                   activate: true,
                 });
               }}
-              className="w-full rounded-lg bg-[#C83E37] px-3 py-2 text-xs font-bold text-white hover:bg-[#D84B43]"
+              className="inline-flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg bg-[#C83E37] px-3 py-2 text-xs font-bold text-white hover:bg-[#D84B43]"
             >
+              <GameIcon name={binaryCfg.yesIcon} size={13} />
               {binaryCfg.yesLabel}
             </button>
             <button
@@ -1095,8 +1191,9 @@ export function MatchActionSidebar({
                   activate: false,
                 });
               }}
-              className="w-full rounded-lg border border-[#3A424C] bg-[#14171A] px-3 py-1.5 text-xs font-semibold text-[#E5E7EB]"
+              className="inline-flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-[#3A424C] bg-[#1E2328] px-3 py-1.5 text-xs font-semibold text-[#E5E7EB]"
             >
+              <GameIcon name="ui:skip" size={13} />
               {binaryCfg.noLabel}
             </button>
           </div>
@@ -1104,9 +1201,12 @@ export function MatchActionSidebar({
       );
     }
 
-    // Đang chờ người chơi khác xử lý interrupt
+    if (isBar) {
+      return null;
+    }
+
     return (
-      <aside className="flex h-full min-h-0 w-[230px] shrink-0 flex-col justify-center gap-2 border-l border-[#2D343C] bg-[#191E23] p-3 text-xs text-[#9CA3AF]">
+      <aside className="flex h-full min-h-0 w-full flex-col justify-center gap-2 rounded-xl border border-[#2D343C] bg-[#14171A] p-3 text-xs text-[#9CA3AF]">
         <p className="font-semibold text-[#FDE68A]">{actorPrompt.headlineVi}</p>
         <p className="leading-relaxed">{actorPrompt.detailVi}</p>
       </aside>
@@ -1119,7 +1219,7 @@ export function MatchActionSidebar({
     const selectedCount = selection.selectedCardIds.length;
     const readyToDiscard = selectedCount === discardNeeded;
     return (
-      <aside className="flex h-full min-h-0 w-[230px] shrink-0 flex-col justify-between gap-2 border-l border-[#D99B26]/50 bg-[#191E23] p-3">
+      <aside className={`${sidebarShellClass} border-[#D99B26]/50`}>
         <div className="space-y-1">
           <span className="inline-block rounded bg-[#D99B26]/20 px-2 py-0.5 text-[11px] font-bold text-[#FDE68A]">
             Pha bỏ bài
@@ -1142,17 +1242,19 @@ export function MatchActionSidebar({
               });
               onClearSelection();
             }}
-            className="w-full rounded-lg bg-[#C83E37] px-3 py-2 text-xs font-bold text-white hover:bg-[#D84B43] disabled:cursor-not-allowed disabled:opacity-45"
+            className="inline-flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg bg-[#C83E37] px-3 py-2 text-xs font-bold text-white hover:bg-[#D84B43] disabled:cursor-not-allowed disabled:opacity-45"
           >
-            🗑️ Bỏ {discardNeeded} lá bài đã chọn
+            <GameIcon name="card-discard" size={14} />
+            Bỏ {discardNeeded} lá bài đã chọn
           </button>
           {hasSelection ? (
             <button
               type="button"
               onClick={onClearSelection}
-              className="w-full rounded-lg border border-[#3A424C] bg-[#14171A] px-3 py-1.5 text-xs font-semibold text-[#D1D5DB]"
+              className="inline-flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-[#3A424C] bg-[#1E2328] px-3 py-1.5 text-xs font-semibold text-[#D1D5DB]"
             >
-              ↩️ Hủy chọn (Esc)
+              <GameIcon name="ui:undo" size={13} />
+              Hủy chọn (Esc)
             </button>
           ) : null}
         </div>
@@ -1165,7 +1267,6 @@ export function MatchActionSidebar({
     const targetSpec = getRequiredTargetSpec(view, selection);
     const hasEnoughTargets = selection.selectedTargets.length >= targetSpec.minTargets;
 
-    // 3a. Đang bật chế độ kỹ năng chủ động (Nhân Đức, Chế Hành, Phản Gián, Kết Hôn, Thanh Nang, Ly Gián)
     if (selection.activeSkillMode) {
       const skill = selection.activeSkillMode;
       const cardCount = selection.selectedCardIds.length;
@@ -1173,44 +1274,50 @@ export function MatchActionSidebar({
       const secondTargetName = getShortName(view.players, selection.selectedTargets[1]);
 
       let requiredCards = 0;
-      let skillActionLabel = '✨ Kích hoạt kỹ năng';
+      let skillIcon: GameIconName = 'ui:sparkles';
+      let skillActionLabel = 'Kích hoạt kỹ năng';
       let cardHint = '';
       if (skill === 'ren_de') {
         requiredCards = 1;
         skillActionLabel =
           selection.selectedTargets.length === 1
-            ? `✨ Giao ${cardCount} lá cho ${firstTargetName} (Nhân Đức)`
-            : '✨ Kích hoạt Nhân Đức';
+            ? `Giao ${cardCount} lá cho ${firstTargetName}`
+            : 'Kích hoạt Nhân Đức';
         if (cardCount === 0) cardHint = 'Chọn ít nhất 1 lá bài trên tay';
       } else if (skill === 'zhi_heng') {
         requiredCards = 1;
-        skillActionLabel = `🔄 Bỏ ${cardCount} lá rút ${cardCount} lá (Chế Hành)`;
+        skillIcon = 'ui:convert';
+        skillActionLabel = `Bỏ ${cardCount} lá rút ${cardCount} lá`;
         if (cardCount === 0) cardHint = 'Chọn ít nhất 1 lá bài muốn đổi';
       } else if (skill === 'fan_jian') {
+        skillIcon = 'drama-masks';
         skillActionLabel =
           selection.selectedTargets.length === 1
-            ? `🎭 Chọn ${firstTargetName} đoán chất (Phản Gián)`
-            : '🎭 Kích hoạt Phản Gián';
+            ? `Chọn ${firstTargetName} (Phản Gián)`
+            : 'Kích hoạt Phản Gián';
       } else if (skill === 'jie_yin') {
         requiredCards = 2;
+        skillIcon = 'heart-plus';
         skillActionLabel =
           selection.selectedTargets.length === 1
-            ? `💞 Kết Hôn cùng ${firstTargetName}`
-            : '💞 Kích hoạt Kết Hôn';
+            ? `Kết Hôn cùng ${firstTargetName}`
+            : 'Kích hoạt Kết Hôn';
         if (cardCount !== 2) cardHint = `Cần chọn đúng 2 lá bài (${cardCount}/2)`;
       } else if (skill === 'qing_nang') {
         requiredCards = 1;
+        skillIcon = 'heart-plus';
         skillActionLabel =
           selection.selectedTargets.length === 1
-            ? `💊 Hồi 1 máu cho ${firstTargetName} (Thanh Nang)`
-            : '💊 Kích hoạt Thanh Nang';
+            ? `Hồi 1 máu cho ${firstTargetName}`
+            : 'Kích hoạt Thanh Nang';
         if (cardCount !== 1) cardHint = 'Cần chọn đúng 1 lá bài trên tay';
       } else if (skill === 'li_jian') {
         requiredCards = 1;
+        skillIcon = 'duel';
         skillActionLabel =
           selection.selectedTargets.length === 2
-            ? `⚔️ Ly Gián: ${firstTargetName} vs ${secondTargetName}`
-            : '⚔️ Kích hoạt Ly Gián';
+            ? `Ly Gián: ${firstTargetName} vs ${secondTargetName}`
+            : 'Kích hoạt Ly Gián';
         if (cardCount !== 1) cardHint = 'Cần chọn 1 lá bài để bỏ';
       }
 
@@ -1223,7 +1330,7 @@ export function MatchActionSidebar({
       const canExecuteSkill = cardOk && hasEnoughTargets;
 
       return (
-        <aside className="flex h-full min-h-0 w-[230px] shrink-0 flex-col justify-between gap-2 border-l border-[#D99B26]/60 bg-[#191E23] p-3">
+        <aside className={`${sidebarShellClass} border-[#D99B26]/60`}>
           <div className="space-y-1">
             <span className="inline-block rounded bg-[#D99B26]/20 px-2 py-0.5 text-[11px] font-bold text-[#FDE68A]">
               Kỹ năng đang chọn
@@ -1256,30 +1363,32 @@ export function MatchActionSidebar({
                 });
                 onClearSelection();
               }}
-              className="w-full rounded-lg bg-[#C83E37] px-3 py-2 text-xs font-bold text-white hover:bg-[#D84B43] disabled:cursor-not-allowed disabled:opacity-45"
+              className="inline-flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg bg-[#C83E37] px-3 py-2 text-xs font-bold text-white hover:bg-[#D84B43] disabled:cursor-not-allowed disabled:opacity-45"
             >
+              <GameIcon name={skillIcon} size={13} />
               {skillActionLabel}
             </button>
             <button
               type="button"
               onClick={onClearSelection}
-              className="w-full rounded-lg border border-[#3A424C] bg-[#14171A] px-3 py-1.5 text-xs font-semibold text-[#D1D5DB] hover:border-[#D99B26]"
+              className="inline-flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-[#3A424C] bg-[#1E2328] px-3 py-1.5 text-xs font-semibold text-[#D1D5DB] hover:border-[#D99B26]"
             >
-              ↩️ Hủy chọn (Esc)
+              <GameIcon name="ui:undo" size={13} />
+              Hủy chọn (Esc)
             </button>
             <button
               type="button"
               onClick={onEndPlayPhase}
-              className="w-full rounded-lg border border-[#3A424C] bg-[#14171A] px-3 py-1.5 text-xs font-semibold text-[#E5E7EB] hover:border-[#D99B26]"
+              className="inline-flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-[#3A424C] bg-[#1E2328] px-3 py-1.5 text-xs font-semibold text-[#E5E7EB] hover:border-[#D99B26]"
             >
-              ⏭️ Kết thúc lượt đánh (E)
+              <GameIcon name="ui:skip" size={13} />
+              Kết thúc lượt đánh (E)
             </button>
           </div>
         </aside>
       );
     }
 
-    // 3b. Đang chọn lá bài (hoặc chuyển hóa bài)
     const effectiveKey = getEffectivePlayCardKey(selection, handCards);
     const needTruongBatCards =
       selection.activeConvertMode === 'truong_bat' && selection.selectedCardIds.length !== 2;
@@ -1289,9 +1398,9 @@ export function MatchActionSidebar({
       selection.selectedCardIds.length >= 1 &&
       hasEnoughTargets;
 
-    const actionLabel = effectiveKey
-      ? getPlayButtonLabel(effectiveKey, handCards, selection, view.players)
-      : 'Chọn 1 lá bài trên tay';
+    const actionSpec = effectiveKey
+      ? getPlayButtonSpec(effectiveKey, handCards, selection, view.players)
+      : null;
 
     const hintText = needTruongBatCards
       ? `Trượng Bát: chọn đủ 2 lá (${selection.selectedCardIds.length}/2)`
@@ -1299,10 +1408,10 @@ export function MatchActionSidebar({
         ? targetSpec.promptVi || 'Hãy bấm chọn 1 mục tiêu sáng viền vàng trên bàn'
         : effectiveKey
           ? 'Sẵn sàng thực hiện hành động.'
-          : 'Bấm chọn bài hoặc kỹ năng ở bên trái.';
+          : 'Chọn lá bài hoặc kỹ năng ở bên trái.';
 
     return (
-      <aside className="flex h-full min-h-0 w-[230px] shrink-0 flex-col justify-between gap-2 border-l border-[#2D343C] bg-[#191E23] p-3">
+      <aside className={`${sidebarShellClass} border-[#2D343C]`}>
         <div className="space-y-1">
           <span className="inline-block rounded bg-[#16A34A]/20 px-2 py-0.5 text-[11px] font-bold text-[#86EFAC]">
             Lượt đánh của bạn
@@ -1310,7 +1419,7 @@ export function MatchActionSidebar({
           <p className="text-xs leading-snug text-[#D1D5DB]">{hintText}</p>
         </div>
         <div className="flex flex-col gap-1.5">
-          {effectiveKey ? (
+          {actionSpec ? (
             <button
               type="button"
               data-primary-action={canPlayCard ? 'true' : undefined}
@@ -1345,9 +1454,10 @@ export function MatchActionSidebar({
                 });
                 onClearSelection();
               }}
-              className="w-full rounded-lg bg-[#C83E37] px-3 py-2 text-xs font-bold text-white hover:bg-[#D84B43] disabled:cursor-not-allowed disabled:opacity-45"
+              className="inline-flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg bg-[#C83E37] px-3 py-2 text-xs font-bold text-white hover:bg-[#D84B43] disabled:cursor-not-allowed disabled:opacity-45"
             >
-              {actionLabel}
+              <GameIcon name={actionSpec.icon} size={14} />
+              <span className="truncate">{actionSpec.label}</span>
             </button>
           ) : null}
 
@@ -1355,18 +1465,20 @@ export function MatchActionSidebar({
             <button
               type="button"
               onClick={onClearSelection}
-              className="w-full rounded-lg border border-[#3A424C] bg-[#14171A] px-3 py-1.5 text-xs font-semibold text-[#D1D5DB] hover:border-[#D99B26]"
+              className="inline-flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-[#3A424C] bg-[#1E2328] px-3 py-1.5 text-xs font-semibold text-[#D1D5DB] hover:border-[#D99B26]"
             >
-              ↩️ Hủy chọn (Esc)
+              <GameIcon name="ui:undo" size={13} />
+              Hủy chọn (Esc)
             </button>
           ) : null}
 
           <button
             type="button"
             onClick={onEndPlayPhase}
-            className="w-full rounded-lg border border-[#3A424C] bg-[#14171A] px-3 py-1.5 text-xs font-semibold text-[#E5E7EB] hover:border-[#D99B26]"
+            className="inline-flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-[#3A424C] bg-[#1E2328] px-3 py-1.5 text-xs font-semibold text-[#E5E7EB] hover:border-[#D99B26]"
           >
-            ⏭️ Kết thúc lượt đánh (E)
+            <GameIcon name="ui:skip" size={13} />
+            Kết thúc lượt đánh (E)
           </button>
         </div>
       </aside>
@@ -1374,9 +1486,13 @@ export function MatchActionSidebar({
   }
 
   // 4. ĐANG CHỜ LƯỢT NGƯỜI KHÁC
+  if (isBar) {
+    return null;
+  }
+
   const heroName = selfPlayer?.heroId ? getHeroDefinition(selfPlayer.heroId).nameVi : null;
   return (
-    <aside className="flex h-full min-h-0 w-[230px] shrink-0 flex-col justify-center gap-1.5 border-l border-[#2D343C] bg-[#191E23] p-3 text-xs text-[#9CA3AF]">
+    <aside className="flex h-full min-h-0 w-full flex-col justify-center gap-1.5 rounded-xl border border-[#2D343C] bg-[#14171A] p-3 text-xs text-[#9CA3AF]">
       <p className="font-semibold text-[#E5E7EB]">{actorPrompt.headlineVi}</p>
       <p className="leading-relaxed">{actorPrompt.detailVi}</p>
       {heroName ? (

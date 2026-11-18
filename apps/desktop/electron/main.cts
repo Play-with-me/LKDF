@@ -241,9 +241,9 @@ function createMainWindow(): BrowserWindow {
   const win = new BrowserWindow({
     width: 1280,
     height: 720,
-    minWidth: 1280,
-    minHeight: 720,
-    backgroundColor: '#14171A',
+    minWidth: 960,
+    minHeight: 600,
+    backgroundColor: '#090807',
     title: 'Tam Quốc Sát LKDF',
     autoHideMenuBar: true,
     webPreferences: {

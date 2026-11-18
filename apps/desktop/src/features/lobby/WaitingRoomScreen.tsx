@@ -1,5 +1,6 @@
 import { TIMER_PRESETS } from '@lkdf/shared';
 import { useCallback, useEffect, useState } from 'react';
+import { GameIcon } from '../../components/icons/index.js';
 import { ApiError } from '../../lib/api.js';
 import type { LkdfApiClient } from '../../lib/api.js';
 import type {
@@ -233,14 +234,19 @@ export function WaitingRoomScreen({
               onClick={() => {
                 void handleManualSync();
               }}
-              className="rounded-lg border border-[#3A424C] bg-[#14171A] px-3.5 py-2 text-xs font-medium text-[#F3F4F6] hover:border-[#D99B26] disabled:opacity-50"
+              className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[#3A424C] bg-[#14171A] px-3.5 py-2 text-xs font-medium text-[#F3F4F6] hover:border-[#D99B26] disabled:opacity-50"
             >
-              {isSyncing ? 'Đang đồng bộ...' : '🔄 Đồng bộ lại'}
+              <GameIcon
+                name={isSyncing ? 'ui:loader' : 'ui:refresh'}
+                size={13}
+                className={isSyncing ? 'animate-spin' : ''}
+              />
+              {isSyncing ? 'Đang đồng bộ...' : 'Đồng bộ lại'}
             </button>
           </div>
 
           <p className="mt-3 text-sm leading-relaxed text-[#D1D5DB]">
-            Ván đấu đã bắt đầu — Giao diện Bàn đấu 4–8 ghế sẽ được lắp đặt hoàn chỉnh ở Bước 4.2.
+            Ván đấu đang diễn ra trên bàn tròn. Hãy bấm Đồng bộ lại để vào bàn ngay lập tức.
           </p>
 
           <div className="mt-4 grid grid-cols-2 gap-3 rounded-lg border border-[#2D343C] bg-[#14171A] p-4 text-xs sm:grid-cols-4">
@@ -282,9 +288,10 @@ export function WaitingRoomScreen({
               onClick={() => {
                 void handleLeaveRoom();
               }}
-              className="rounded-lg border border-[#3A424C] bg-[#14171A] px-4 py-2 text-xs font-medium text-[#FCA5A5] hover:border-[#DC2626] disabled:opacity-50"
+              className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[#3A424C] bg-[#14171A] px-4 py-2 text-xs font-medium text-[#FCA5A5] hover:border-[#DC2626] disabled:opacity-50"
             >
-              {isLeavingRoom ? 'Đang rời...' : '🚪 Rời phòng chờ'}
+              <GameIcon name="ui:door-open" size={13} />
+              {isLeavingRoom ? 'Đang rời...' : 'Rời phòng chờ'}
             </button>
           </div>
         </div>
@@ -308,9 +315,14 @@ export function WaitingRoomScreen({
                 onClick={() => {
                   void handleCopyRoomCode();
                 }}
-                className="rounded-lg border border-[#3A424C] bg-[#14171A] px-3 py-1.5 text-xs font-medium text-[#F3F4F6] transition-colors hover:border-[#D99B26] focus:outline-none focus:ring-2 focus:ring-[#D99B26]"
+                className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[#3A424C] bg-[#14171A] px-3 py-1.5 text-xs font-medium text-[#F3F4F6] transition-colors hover:border-[#D99B26] focus:outline-none focus:ring-2 focus:ring-[#D99B26]"
               >
-                {copiedCode ? '✅ Đã sao chép!' : '📋 Sao chép mã phòng'}
+                <GameIcon
+                  name={copiedCode ? 'ui:check' : 'ui:copy'}
+                  size={13}
+                  className={copiedCode ? 'text-[#86EFAC]' : 'text-[#D99B26]'}
+                />
+                {copiedCode ? 'Đã sao chép!' : 'Sao chép mã phòng'}
               </button>
             </div>
           </div>
@@ -340,9 +352,14 @@ export function WaitingRoomScreen({
             onClick={() => {
               void handleManualSync();
             }}
-            className="rounded-lg border border-[#3A424C] bg-[#14171A] px-3 py-1.5 text-xs font-medium text-[#D1D5DB] hover:border-[#D99B26] disabled:opacity-50"
+            className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[#3A424C] bg-[#14171A] px-3 py-1.5 text-xs font-medium text-[#D1D5DB] hover:border-[#D99B26] disabled:opacity-50"
           >
-            {isSyncing ? 'Đang đồng bộ...' : '🔄 Đồng bộ'}
+            <GameIcon
+              name={isSyncing ? 'ui:loader' : 'ui:refresh'}
+              size={12}
+              className={isSyncing ? 'animate-spin' : ''}
+            />
+            {isSyncing ? 'Đang đồng bộ...' : 'Đồng bộ'}
           </button>
         </div>
       </div>
@@ -406,13 +423,15 @@ export function WaitingRoomScreen({
                           Ghế #{seat.seatIndex + 1}
                         </span>
                         {isOwner ? (
-                          <span className="rounded bg-[#D99B26]/20 px-1.5 py-0.5 text-[11px] font-semibold text-[#FDE68A]">
-                            👑 Chủ phòng
+                          <span className="inline-flex items-center gap-1 rounded bg-[#D99B26]/20 px-1.5 py-0.5 text-[11px] font-semibold text-[#FDE68A]">
+                            <GameIcon name="crown" size={11} />
+                            Chủ phòng
                           </span>
                         ) : null}
                         {isTempHost ? (
-                          <span className="rounded bg-[#3B82F6]/20 px-1.5 py-0.5 text-[11px] font-semibold text-[#93C5FD]">
-                            ⚖️ Trọng Tài tạm
+                          <span className="inline-flex items-center gap-1 rounded bg-[#3B82F6]/20 px-1.5 py-0.5 text-[11px] font-semibold text-[#93C5FD]">
+                            <GameIcon name="scales" size={11} />
+                            Trọng Tài tạm
                           </span>
                         ) : null}
                       </div>
@@ -507,9 +526,10 @@ export function WaitingRoomScreen({
                 <button
                   type="button"
                   disabled
-                  className="w-full cursor-not-allowed rounded-lg bg-[#C83E37] px-4 py-3 text-sm font-semibold text-[#F4EFE6] opacity-50"
+                  className="inline-flex w-full cursor-not-allowed items-center justify-center gap-2 rounded-lg bg-[#C83E37] px-4 py-3 text-sm font-semibold text-[#F4EFE6] opacity-50"
                 >
-                  ▶️ Bắt đầu ván đấu
+                  <GameIcon name="ui:play" size={14} />
+                  Bắt đầu ván đấu
                 </button>
                 <p className="mt-2 text-center text-xs font-medium text-[#FDE68A]">
                   Cần thêm {missingPlayers} người chơi thật nữa để bắt đầu (Tối thiểu 4 người)
@@ -522,15 +542,17 @@ export function WaitingRoomScreen({
                 onClick={() => {
                   void handleStartMatch();
                 }}
-                className="w-full rounded-lg bg-[#C83E37] px-4 py-3 text-sm font-semibold text-[#F4EFE6] shadow transition-colors hover:bg-[#D94A42] focus:outline-none focus:ring-2 focus:ring-[#D99B26] disabled:opacity-50"
+                className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-[#C83E37] px-4 py-3 text-sm font-semibold text-[#F4EFE6] shadow transition-colors hover:bg-[#D94A42] focus:outline-none focus:ring-2 focus:ring-[#D99B26] disabled:opacity-50"
               >
+                <GameIcon name={isStartingMatch ? 'ui:loader' : 'ui:play'} size={14} className={isStartingMatch ? 'animate-spin' : ''} />
                 {isStartingMatch
                   ? 'Đang chia bài & khởi tạo ván...'
-                  : `▶️ Bắt đầu ván đấu (${seatCount} người)`}
+                  : `Bắt đầu ván đấu (${seatCount} người)`}
               </button>
             ) : (
-              <div className="rounded-lg border border-[#30363D] bg-[#14171A] px-4 py-3 text-center text-xs text-[#D1D5DB]">
-                ⏳ Đang chờ Chủ phòng bấm Bắt đầu ván đấu...
+              <div className="flex items-center justify-center gap-2 rounded-lg border border-[#30363D] bg-[#14171A] px-4 py-3 text-center text-xs text-[#D1D5DB]">
+                <GameIcon name="ui:clock" size={13} className="text-[#D99B26]" />
+                Đang chờ Chủ phòng bấm Bắt đầu ván đấu...
               </div>
             )}
 
@@ -540,9 +562,10 @@ export function WaitingRoomScreen({
               onClick={() => {
                 void handleLeaveRoom();
               }}
-              className="w-full rounded-lg border border-[#3A424C] bg-[#14171A] px-4 py-2.5 text-xs font-medium text-[#FCA5A5] transition-colors hover:border-[#DC2626] disabled:opacity-50"
+              className="inline-flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-[#3A424C] bg-[#14171A] px-4 py-2.5 text-xs font-medium text-[#FCA5A5] transition-colors hover:border-[#DC2626] disabled:opacity-50"
             >
-              {isLeavingRoom ? 'Đang rời phòng...' : '🚪 Rời phòng chờ'}
+              <GameIcon name="ui:door-open" size={13} />
+              {isLeavingRoom ? 'Đang rời phòng...' : 'Rời phòng chờ'}
             </button>
           </div>
         </div>

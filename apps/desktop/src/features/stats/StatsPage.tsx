@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
 import { HERO_BY_ID, HERO_CATALOG, type HeroFaction } from '@lkdf/shared';
+import { GameIcon } from '../../components/icons/index.js';
 import { ApiError, type LkdfApiClient } from '../../lib/api.js';
 import type {
   DetailedStatEntry,
@@ -263,9 +264,10 @@ export function StatsPage({
                   <button
                     type="button"
                     onClick={handleCancelLoading}
-                    className="rounded-md border border-[#3B424C] bg-[#14171A] px-3 py-1.5 text-xs font-medium text-[#F3F4F6] hover:border-[#C83E37] focus-visible:outline-2 focus-visible:outline-[#D99B26]"
+                    className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-[#3B424C] bg-[#14171A] px-3 py-1.5 text-xs font-medium text-[#F3F4F6] hover:border-[#C83E37] focus-visible:outline-2 focus-visible:outline-[#D99B26]"
                   >
-                    ⏹️ Hủy tải
+                    <GameIcon name="ui:x" size={13} />
+                    Hủy tải
                   </button>
                   <button
                     type="button"
@@ -295,9 +297,10 @@ export function StatsPage({
                 <button
                   type="button"
                   onClick={handleRefresh}
-                  className="rounded-md bg-[#C83E37] px-4 py-2 text-sm font-semibold text-[#F4EFE6] hover:bg-[#B2342E] focus-visible:outline-2 focus-visible:outline-[#D99B26]"
+                  className="inline-flex cursor-pointer items-center gap-1.5 rounded-md bg-[#C83E37] px-4 py-2 text-sm font-semibold text-[#F4EFE6] hover:bg-[#B2342E] focus-visible:outline-2 focus-visible:outline-[#D99B26]"
                 >
-                  🔄 Tải lại thống kê
+                  <GameIcon name="ui:refresh" size={14} />
+                  Tải lại thống kê
                 </button>
                 <button
                   type="button"
@@ -323,16 +326,17 @@ export function StatsPage({
               <button
                 type="button"
                 onClick={handleRefresh}
-                className="shrink-0 rounded-md bg-[#C83E37] px-4 py-2 text-sm font-semibold text-[#F4EFE6] transition-colors duration-150 hover:bg-[#B2342E] focus-visible:outline-2 focus-visible:outline-[#D99B26]"
+                className="inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-md bg-[#C83E37] px-4 py-2 text-sm font-semibold text-[#F4EFE6] transition-colors duration-150 hover:bg-[#B2342E] focus-visible:outline-2 focus-visible:outline-[#D99B26]"
               >
-                🔄 Tải lại thống kê
+                <GameIcon name="ui:refresh" size={14} />
+                Tải lại thống kê
               </button>
             </div>
           ) : stats && stats.summary.totalDistinctMatches === 0 ? (
             /* Trạng thái 2: Chưa có dữ liệu (phân biệt chưa có ván nào vs lọc ra 0) */
             <div className="flex flex-col items-center justify-center gap-4 rounded-lg border border-[#2D333B] bg-[#1E2328] p-10 text-center">
-              <div className="text-3xl" aria-hidden="true">
-                {hasActiveFilter ? '🔍' : '📜'}
+              <div className="rounded-full border border-[#30363D] bg-[#14171A] p-3 text-[#D99B26]" aria-hidden="true">
+                <GameIcon name={hasActiveFilter ? 'ui:layers' : 'scroll-unfurled'} size={28} />
               </div>
               <p className="max-w-lg text-sm leading-relaxed text-[#F3F4F6]">
                 {hasActiveFilter
@@ -343,9 +347,10 @@ export function StatsPage({
                 <button
                   type="button"
                   onClick={handleResetFilters}
-                  className="rounded-md bg-[#C83E37] px-4 py-2 text-sm font-semibold text-[#F4EFE6] transition-colors duration-150 hover:bg-[#B2342E] focus-visible:outline-2 focus-visible:outline-[#D99B26]"
+                  className="inline-flex cursor-pointer items-center gap-1.5 rounded-md bg-[#C83E37] px-4 py-2 text-sm font-semibold text-[#F4EFE6] transition-colors duration-150 hover:bg-[#B2342E] focus-visible:outline-2 focus-visible:outline-[#D99B26]"
                 >
-                  ↩️ Xóa bộ lọc
+                  <GameIcon name="ui:undo" size={14} />
+                  Xóa bộ lọc
                 </button>
               ) : (
                 <button
@@ -473,37 +478,40 @@ export function StatsPage({
                   type="button"
                   aria-pressed={activeTab === 'ALL'}
                   onClick={() => setActiveTab('ALL')}
-                  className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-[#D99B26] ${
+                  className={`inline-flex cursor-pointer items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-[#D99B26] ${
                     activeTab === 'ALL'
                       ? 'bg-[#C83E37] text-[#F4EFE6]'
                       : 'border border-[#2D333B] bg-[#1E2328] text-[#9CA3AF] hover:text-[#F3F4F6]'
                   }`}
                 >
-                  📋 Xem tất cả
+                  <GameIcon name="ui:layers" size={13} />
+                  Xem tất cả
                 </button>
                 <button
                   type="button"
                   aria-pressed={activeTab === 'PLAYERS_HEROES'}
                   onClick={() => setActiveTab('PLAYERS_HEROES')}
-                  className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-[#D99B26] ${
+                  className={`inline-flex cursor-pointer items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-[#D99B26] ${
                     activeTab === 'PLAYERS_HEROES'
                       ? 'bg-[#C83E37] text-[#F4EFE6]'
                       : 'border border-[#2D333B] bg-[#1E2328] text-[#9CA3AF] hover:text-[#F3F4F6]'
                   }`}
                 >
-                  👥 Bảng xếp hạng &amp; 25 Tướng ({sortedPlayers.length})
+                  <GameIcon name="ui:users" size={13} />
+                  Bảng xếp hạng &amp; 25 Tướng ({sortedPlayers.length})
                 </button>
                 <button
                   type="button"
                   aria-pressed={activeTab === 'HISTORY'}
                   onClick={() => setActiveTab('HISTORY')}
-                  className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-[#D99B26] ${
+                  className={`inline-flex cursor-pointer items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-[#D99B26] ${
                     activeTab === 'HISTORY'
                       ? 'bg-[#C83E37] text-[#F4EFE6]'
                       : 'border border-[#2D333B] bg-[#1E2328] text-[#9CA3AF] hover:text-[#F3F4F6]'
                   }`}
                 >
-                  📜 Lịch sử các ván đấu gần đây ({recentMatches.length})
+                  <GameIcon name="scroll-unfurled" size={13} />
+                  Lịch sử các ván đấu gần đây ({recentMatches.length})
                 </button>
               </div>
 

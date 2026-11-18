@@ -1,5 +1,6 @@
 import { TIMER_PRESETS } from '@lkdf/shared';
 import { useEffect, useState } from 'react';
+import { GameIcon } from '../../components/icons/index.js';
 import { ApiError } from '../../lib/api.js';
 import type { LkdfApiClient } from '../../lib/api.js';
 import type {
@@ -216,7 +217,10 @@ export function HomeLobbyHub({
       <div className="my-auto w-full max-w-4xl space-y-5">
       {justLoggedIn ? (
         <div className="flex w-full items-center justify-between rounded-lg border border-[#16A34A]/50 bg-[#16A34A]/15 px-4 py-2.5 text-sm text-[#86EFAC] animate-lkdf-slide">
-          <span>✅ Đã đăng nhập: {profile.displayName}</span>
+          <span className="inline-flex items-center gap-2">
+            <GameIcon name="ui:check-circle" size={15} />
+            Đã đăng nhập: {profile.displayName}
+          </span>
           <button
             type="button"
             onClick={onDismissWelcomeToast}
@@ -257,19 +261,22 @@ export function HomeLobbyHub({
               onClick={() => {
                 void handleToggleSound();
               }}
-              className="rounded-lg border border-[#3A424C] bg-[#14171A] px-3 py-2 text-xs font-medium text-[#F3F4F6] transition-colors hover:border-[#D99B26] disabled:opacity-50"
+              className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[#3A424C] bg-[#14171A] px-3 py-2 text-xs font-medium text-[#F3F4F6] transition-colors hover:border-[#D99B26] disabled:opacity-50"
             >
-              {profile.preferences.soundEnabled
-                ? '🔊 Âm thanh: Bật'
-                : '🔇 Âm thanh: Tắt'}
+              <GameIcon
+                name={profile.preferences.soundEnabled ? 'ui:volume-on' : 'ui:volume-off'}
+                size={13}
+              />
+              {profile.preferences.soundEnabled ? 'Âm thanh: Bật' : 'Âm thanh: Tắt'}
             </button>
 
             <button
               type="button"
               onClick={onOpenStats}
-              className="rounded-lg border border-[#3A424C] bg-[#14171A] px-3.5 py-2 text-xs font-medium text-[#F3F4F6] transition-colors hover:border-[#D99B26]"
+              className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[#3A424C] bg-[#14171A] px-3.5 py-2 text-xs font-medium text-[#F3F4F6] transition-colors hover:border-[#D99B26]"
             >
-              📊 Xem Thống Kê &amp; Lịch Sử
+              <GameIcon name="ui:chart" size={13} />
+              Thống Kê &amp; Lịch Sử
             </button>
 
             <button
@@ -278,16 +285,18 @@ export function HomeLobbyHub({
               onClick={() => {
                 void handleLogout();
               }}
-              className="rounded-lg border border-[#3A424C] bg-[#14171A] px-3.5 py-2 text-xs font-medium text-[#FCA5A5] transition-colors hover:border-[#DC2626] disabled:opacity-50"
+              className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[#3A424C] bg-[#14171A] px-3.5 py-2 text-xs font-medium text-[#FCA5A5] transition-colors hover:border-[#DC2626] disabled:opacity-50"
             >
-              {isLoggingOut ? 'Đang thoát...' : '🚪 Đăng xuất'}
+              <GameIcon name="ui:door-open" size={13} />
+              {isLoggingOut ? 'Đang thoát...' : 'Đăng xuất'}
             </button>
           </div>
         </div>
 
         {isCheckingActiveRoom ? (
-          <div className="rounded-xl border border-[#2D343C] bg-[#1E2328] p-6 text-center text-sm text-[#D1D5DB]">
-            ⏳ Đang kiểm tra phòng chơi hiện tại của tài khoản...
+          <div className="flex items-center justify-center gap-2 rounded-xl border border-[#2D343C] bg-[#1E2328] p-6 text-sm text-[#D1D5DB]">
+            <GameIcon name="ui:loader" size={15} className="animate-spin text-[#D99B26]" />
+            Đang kiểm tra phòng chơi hiện tại của tài khoản...
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
@@ -335,11 +344,12 @@ export function HomeLobbyHub({
                 onClick={() => {
                   void handleCreateRoom();
                 }}
-                className="mt-5 w-full rounded-lg bg-[#C83E37] px-4 py-3 text-sm font-semibold text-[#F4EFE6] shadow transition-colors hover:bg-[#D94A42] focus:outline-none focus:ring-2 focus:ring-[#D99B26] disabled:opacity-50"
+                className="mt-5 inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-[#C83E37] px-4 py-3 text-sm font-semibold text-[#F4EFE6] shadow transition-colors hover:bg-[#D94A42] focus:outline-none focus:ring-2 focus:ring-[#D99B26] disabled:opacity-50"
               >
+                <GameIcon name="castle" size={15} />
                 {isCreatingRoom
                   ? 'Đang mở phòng...'
-                  : '🏯 Tạo phòng mới (4–8 người)'}
+                  : 'Tạo phòng mới (4–8 người)'}
               </button>
             </div>
 
@@ -391,11 +401,12 @@ export function HomeLobbyHub({
               <button
                 type="submit"
                 disabled={isJoiningRoom}
-                className="mt-5 w-full rounded-lg border border-[#D99B26]/70 bg-[#14171A] px-4 py-3 text-sm font-semibold text-[#F3F4F6] transition-colors hover:bg-[#262C34] focus:outline-none focus:ring-2 focus:ring-[#D99B26] disabled:opacity-50"
+                className="mt-5 inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-[#D99B26]/70 bg-[#14171A] px-4 py-3 text-sm font-semibold text-[#F3F4F6] transition-colors hover:bg-[#262C34] focus:outline-none focus:ring-2 focus:ring-[#D99B26] disabled:opacity-50"
               >
+                <GameIcon name="ui:door-open" size={15} className="text-[#D99B26]" />
                 {isJoiningRoom
                   ? 'Đang vào phòng...'
-                  : `🚪 Vào phòng ${displayCodeTarget}`}
+                  : `Vào phòng ${displayCodeTarget}`}
               </button>
             </form>
           </div>

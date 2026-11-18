@@ -1,6 +1,7 @@
 import { IDENTITY_DISTRIBUTIONS } from '@lkdf/shared';
 import type { PlayerCount } from '@lkdf/shared';
 import { useEffect, useRef } from 'react';
+import { GameIcon } from '../../components/icons/index.js';
 
 export interface RulesHotkeysDialogProps {
   readonly open: boolean;
@@ -99,16 +100,18 @@ export function RulesHotkeysDialog({ open, onClose }: RulesHotkeysDialogProps) {
     >
       <div className="flex max-h-[85vh] flex-col">
         <div className="flex items-center justify-between border-b border-[#2D343C] px-5 py-3.5">
-          <h2 id="rules-hotkeys-title" className="font-serif-title text-lg font-bold text-[#F3F4F6]">
-            📖 Luật Chơi Nhanh & Phím Tắt Bàn Đấu
+          <h2 id="rules-hotkeys-title" className="font-serif-title flex items-center gap-2 text-lg font-bold text-[#F3F4F6]">
+            <GameIcon name="ui:book-open" size={18} className="text-[#D99B26]" />
+            Luật Chơi Nhanh &amp; Phím Tắt Bàn Đấu
           </h2>
           <button
             type="button"
             autoFocus
             onClick={onClose}
-            className="rounded-lg border border-[#3A424C] bg-[#14171A] px-3 py-1.5 text-xs font-semibold text-[#F3F4F6] hover:border-[#D99B26] focus-visible:outline-2 focus-visible:outline-[#D99B26]"
+            className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-[#3A424C] bg-[#14171A] px-3 py-1.5 text-xs font-semibold text-[#F3F4F6] hover:border-[#D99B26] focus-visible:outline-2 focus-visible:outline-[#D99B26]"
           >
-            ✕ Đóng hộp thoại (Esc)
+            <GameIcon name="ui:x" size={13} />
+            Đóng hộp thoại (Esc)
           </button>
         </div>
 
@@ -150,10 +153,10 @@ export function RulesHotkeysDialog({ open, onClose }: RulesHotkeysDialogProps) {
                 <thead className="bg-[#14171A] text-[#9CA3AF]">
                   <tr>
                     <th className="px-3 py-2 text-left font-semibold">Sĩ số</th>
-                    <th className="px-3 py-2 font-semibold text-[#FCA5A5]">👑 Chủ Công</th>
-                    <th className="px-3 py-2 font-semibold text-[#FDE68A]">🛡️ Trung Thần</th>
-                    <th className="px-3 py-2 font-semibold text-[#86EFAC]">⚔️ Phản Tặc</th>
-                    <th className="px-3 py-2 font-semibold text-[#93C5FD]">🎭 Nội Gián</th>
+                    <th className="px-3 py-2 font-semibold text-[#FCA5A5]">Chủ Công</th>
+                    <th className="px-3 py-2 font-semibold text-[#FDE68A]">Trung Thần</th>
+                    <th className="px-3 py-2 font-semibold text-[#86EFAC]">Phản Tặc</th>
+                    <th className="px-3 py-2 font-semibold text-[#93C5FD]">Nội Gián</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#2D343C] bg-[#191E23] font-mono-num tabular-nums">
@@ -195,6 +198,10 @@ export function RulesHotkeysDialog({ open, onClose }: RulesHotkeysDialogProps) {
                 </div>
               ))}
             </div>
+          </section>
+
+          <section className="border-t border-[#2D343C] pt-3 text-[11px] text-[#9CA3AF]">
+            Nguồn biểu tượng: Lucide Icons (MIT) &amp; Lorc, Delapouite cùng cộng tác viên từ Game-icons.net (CC BY 3.0).
           </section>
         </div>
       </div>
