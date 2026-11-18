@@ -382,20 +382,34 @@ export const WU_QUN_HERO_SKILLS: Partial<Record<HeroId, HeroSkillHandler>> = {
       ) {
         throw new Error('Ly Gián chỉ có thể chọn 2 tướng nam.');
       }
+      if (!rt.canTargetPlayerWithCard(state, p2, 'quyet_dau')) {
+        throw new Error('Không thể chọn Gia Cát Lượng đang Không Thành làm mục tiêu Quyết Đấu.');
+      }
 
       let next = rt.discardAnyCard(state, action.seatIndex, cardIds[0]!, rng).state;
       next = withTurnFlag(next, { liJianUsedThisTurn: true });
-      const requiredCount = p1.heroId === 'lu_bu' ? 2 : 1;
-      const { state: s1, id } = rt.nextFrameId(next, 'duel');
-      next = rt.pushInterrupt(s1, {
-        id,
-        kind: 'WAIT_DUEL_SAT',
-        targetSeat: secondSeat,
-        otherSeat: firstSeat,
+      const virtualDuelCard = {
+        id: `li_jian_${(next.nextFrameSeq ?? 0) + 1}_quyet_dau`,
+        cardKey: 'quyet_dau',
+        nameVi: 'Quyết Đấu (Ly Gián)',
+        category: 'NORMAL_SCROLL',
+        suit: 'SPADE',
+        rank: 1,
+      } as const;
+      next = rt.pushPendingEffect(next, {
+        kind: 'RESOLVE_SCROLL',
+        cancelled: false,
         casterSeat: firstSeat,
-        requiredCount,
-        playedSoFar: 0,
+        targetSeat: secondSeat,
+        scrollKey: 'quyet_dau',
+        scrollCard: virtualDuelCard,
       });
+      next = rt.openNullificationWindow(
+        next,
+        secondSeat,
+        firstSeat,
+        virtualDuelCard.nameVi,
+      );
       return appendLog(
         next,
         `${player.displayName} kích hoạt Ly Gián, buộc ${p1.displayName} và ${p2.displayName} Quyết Đấu!`,

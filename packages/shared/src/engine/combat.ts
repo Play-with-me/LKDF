@@ -15,6 +15,8 @@ import {
   applyDamage,
   beginStrikeAgainstTarget,
   canTargetPlayerWithCard,
+  canUseCardAs,
+  completeStrikeDodged,
   hasTruongBat,
   maybeOfferKyLanCung,
   notifyEquipLost,
@@ -30,7 +32,7 @@ import {
   startJudgment,
   stepEngine,
 } from './combatCore.js';
-import type { GameAction, VirtualCardKey } from './combatTypes.js';
+import type { GameAction } from './combatTypes.js';
 import {
   appendToDiscardPile,
   dealCardsToSeat,
@@ -97,20 +99,6 @@ export function startMatchCombat(
   };
 
   return stepEngine(next, rng);
-}
-
-function canUseCardAs(
-  state: MasterGameState,
-  player: PlayerCombatState,
-  card: CardInstance,
-  asCardKey: VirtualCardKey,
-  inTurn: boolean,
-): boolean {
-  if (card.cardKey === asCardKey) {
-    return true;
-  }
-  const handler = getHeroSkillHandler(player.heroId);
-  return handler?.canConvertCardAs?.(state, player, card, asCardKey, inTurn) ?? false;
 }
 
 function findCardOnPlayer(
@@ -734,13 +722,29 @@ export function applyGameAction(
 
       if (action.cardId !== null) {
         const actor = getPlayerBySeat(state, action.seatIndex);
-        const { nextPlayer, removed } = removeCardsFromHand(actor, [action.cardId]);
-        const card = removed[0]!;
+        const card = actor.handCards.find((c) => c.id === action.cardId);
+        if (!card) {
+          throw new Error(`CARD_NOT_IN_HAND:${action.cardId}`);
+        }
         if (card.cardKey !== 'vo_giai_kha_kich') {
           throw new Error('NOT_A_NULLIFICATION_CARD');
         }
-        let next = updatePlayer(state, action.seatIndex, () => nextPlayer);
-        next = appendToDiscardPile(next, [card]);
+        let next = SKILL_RUNTIME.discardHandCards(
+          state,
+          action.seatIndex,
+          [action.cardId],
+          rng,
+        ).state;
+        const actorAfterDiscard = getPlayerBySeat(next, action.seatIndex);
+        const actorHandler = getHeroSkillHandler(actorAfterDiscard.heroId);
+        if (actorHandler?.onNormalScrollPlayed) {
+          next = actorHandler.onNormalScrollPlayed(
+            next,
+            action.seatIndex,
+            rng,
+            SKILL_RUNTIME,
+          );
+        }
         next = popInterrupt(next).state;
         next = pushPendingEffect(next, {
           kind: 'RESOLVE_NULLIFICATION_COUNTER',
@@ -786,9 +790,12 @@ export function applyGameAction(
 
       if (action.choice === 'DISCARD_HAND' && target.handCards.length > 0) {
         const cardId = action.discardCardId ?? target.handCards[0]!.id;
-        const { nextPlayer, removed } = removeCardsFromHand(target, [cardId]);
-        next = updatePlayer(next, top.targetSeat, () => nextPlayer);
-        next = appendToDiscardPile(next, removed);
+        next = SKILL_RUNTIME.discardHandCards(
+          next,
+          top.targetSeat,
+          [cardId],
+          rng,
+        ).state;
         next = {
           ...next,
           actionLog: [
@@ -885,53 +892,23 @@ export function applyGameAction(
         return replaceTopInterrupt(next, {
           ...top,
           dodgedSoFar: nextDodged,
+          baguaTriedThisStrike: false,
+          huJiaTriedThisStrike: false,
         });
       }
 
-      // Đã né đủ -> hủy RESOLVE_STRIKE_HIT nằm dưới
+      // Đã né đủ -> hoàn tất né Sát và kiểm tra Quán Thạch Phủ / Thanh Long Đao
       next = popInterrupt(next).state;
-      const pending = [...(next.pendingEffects ?? [])];
-      let strikeCards: readonly CardInstance[] = [];
-      if (pending[pending.length - 1]?.kind === 'RESOLVE_STRIKE_HIT') {
-        const hitFrame = pending.pop()!;
-        if (hitFrame.kind === 'RESOLVE_STRIKE_HIT') {
-          strikeCards = hitFrame.strikeCards;
-        }
-        next = { ...next, pendingEffects: pending };
-      }
-
-      const source = getPlayerBySeat(next, top.sourceSeat);
-      if (top.canBeForcedByQuanThachPhu) {
-        const frameSeq = { ...next, nextFrameSeq: (next.nextFrameSeq ?? 0) + 1 };
-        next = pushInterrupt(frameSeq, {
-          id: `qtp_${frameSeq.nextFrameSeq}`,
-          kind: 'ASK_QUAN_THACH_PHU',
-          targetSeat: top.targetSeat,
-          sourceSeat: top.sourceSeat,
-          strikeCards,
-        });
-        return next;
-      }
-
-      if (
-        source.equipments.weapon?.cardKey === 'thanh_long_yen_nguyet_dao' &&
-        !top.isFangTianMultiTarget &&
-        (source.handCards.some((c) =>
-          canUseCardAs(next, source, c, 'sat', top.sourceSeat === next.currentTurnSeat),
-        ) ||
-          hasTruongBat(source))
-      ) {
-        const frameSeq = { ...next, nextFrameSeq: (next.nextFrameSeq ?? 0) + 1 };
-        next = pushInterrupt(frameSeq, {
-          id: `thanhlong_${frameSeq.nextFrameSeq}`,
-          kind: 'ASK_THANH_LONG',
-          targetSeat: top.targetSeat,
-          sourceSeat: top.sourceSeat,
-        });
-        return next;
-      }
-
-      return stepEngine(next, rng);
+      return stepEngine(
+        completeStrikeDodged(
+          next,
+          top.sourceSeat,
+          top.targetSeat,
+          top.isCollateralStrike,
+          top.isFangTianMultiTarget,
+        ),
+        rng,
+      );
     }
 
     case 'RESPOND_QUAN_THACH_PHU': {
@@ -951,10 +928,6 @@ export function applyGameAction(
         throw new Error('QUAN_THACH_PHU_REQUIRES_2_CARDS');
       }
       const source = getPlayerBySeat(next, top.sourceSeat);
-      const weaponId = source.equipments.weapon?.id;
-      if (action.discardCardIds.some((id) => id === weaponId)) {
-        throw new Error('CANNOT_DISCARD_QUAN_THACH_PHU_ITSELF');
-      }
       next = SKILL_RUNTIME.discardAnyCard(
         next,
         top.sourceSeat,
@@ -1999,14 +1972,18 @@ export function applyGameAction(
             next = replaceTopInterrupt(next, {
               ...dodgeTop,
               dodgedSoFar: nextDodged,
+              baguaTriedThisStrike: false,
+              huJiaTriedThisStrike: false,
             });
           } else {
             next = popInterrupt(next).state;
-            const pending = [...(next.pendingEffects ?? [])];
-            if (pending[pending.length - 1]?.kind === 'RESOLVE_STRIKE_HIT') {
-              pending.pop();
-              next = { ...next, pendingEffects: pending };
-            }
+            next = completeStrikeDodged(
+              next,
+              dodgeTop.sourceSeat,
+              dodgeTop.targetSeat,
+              dodgeTop.isCollateralStrike,
+              dodgeTop.isFangTianMultiTarget,
+            );
           }
         }
         return stepEngine(next, rng);

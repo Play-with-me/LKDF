@@ -619,7 +619,7 @@ describe('Bộ 11 Tướng Ngô & Quần (Bước 1.3)', () => {
       }),
     ).toThrow();
 
-    // Chọn 2 nam -> mở WAIT_DUEL_SAT
+    // Chọn 2 nam -> mở nhịp chờ Vô Giải Khả Kích trước khi vào Quyết Đấu
     let next = applyGameAction(state, {
       type: 'ACTIVATE_HERO_SKILL',
       seatIndex: 0,
@@ -627,6 +627,8 @@ describe('Bộ 11 Tướng Ngô & Quần (Bước 1.3)', () => {
       cardIds: [cost.id],
       targetSeats: [1, 2],
     });
+    expect(getPendingPrompt(next)?.kind).toBe('WAIT_NULLIFICATION');
+    next = applyGameAction(next, { type: 'RESOLVE_SIMULATED_NULLIFICATION' });
     expect(getPendingPrompt(next)?.kind).toBe('WAIT_DUEL_SAT');
 
     // Ghế 2 không có Sát -> chịu 1 sát thương từ ghế 1

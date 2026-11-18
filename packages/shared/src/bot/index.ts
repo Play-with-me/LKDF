@@ -425,14 +425,20 @@ function decidePlayPhaseAction(view: PlayerViewState): GameAction {
       (p) => p.heroId !== null && getHeroDefinition(p.heroId).gender === 'MALE',
     );
     if (maleTargets.length >= 2) {
-      const discard = sortCardsLowestFirst(hand)[0]!;
-      return {
-        type: 'ACTIVATE_HERO_SKILL',
-        seatIndex,
-        skillId: 'li_jian',
-        cardIds: [discard.id],
-        targetSeats: [maleTargets[0]!.seatIndex, maleTargets[1]!.seatIndex],
-      };
+      const validSecond = maleTargets.find((p) => canTargetWithBasicCard(p, 'quyet_dau'));
+      const first = validSecond
+        ? maleTargets.find((p) => p.seatIndex !== validSecond.seatIndex)
+        : undefined;
+      if (first && validSecond) {
+        const discard = sortCardsLowestFirst(hand)[0]!;
+        return {
+          type: 'ACTIVATE_HERO_SKILL',
+          seatIndex,
+          skillId: 'li_jian',
+          cardIds: [discard.id],
+          targetSeats: [first.seatIndex, validSecond.seatIndex],
+        };
+      }
     }
   }
 

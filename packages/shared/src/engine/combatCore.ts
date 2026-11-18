@@ -11,7 +11,7 @@ import type {
   PendingEffect,
   PlayerCombatState,
 } from '../types/game.js';
-import type { PendingPrompt } from './combatTypes.js';
+import type { PendingPrompt, VirtualCardKey } from './combatTypes.js';
 import {
   appendToDiscardPile,
   dealCardsToSeat,
@@ -90,11 +90,26 @@ export function hasTruongBat(player: PlayerCombatState): boolean {
   return player.equipments.weapon?.cardKey === 'truong_bat_xa_mau';
 }
 
+export function canUseCardAs(
+  state: MasterGameState,
+  player: PlayerCombatState,
+  card: CardInstance,
+  asCardKey: VirtualCardKey,
+  inTurn: boolean,
+): boolean {
+  if (card.cardKey === asCardKey) {
+    return true;
+  }
+  const handler = getHeroSkillHandler(player.heroId);
+  return handler?.canConvertCardAs?.(state, player, card, asCardKey, inTurn) ?? false;
+}
+
 export function hasQuanThachPhuCards(player: PlayerCombatState): boolean {
   if (player.equipments.weapon?.cardKey !== 'quan_thach_phu') {
     return false;
   }
   const equipCount =
+    (player.equipments.weapon ? 1 : 0) +
     (player.equipments.armor ? 1 : 0) +
     (player.equipments.plusOneHorse ? 1 : 0) +
     (player.equipments.minusOneHorse ? 1 : 0);
@@ -223,6 +238,8 @@ export const SKILL_RUNTIME: SkillRuntime = {
     }
     return { state: next, removed };
   },
+  openNullificationWindow,
+  canTargetPlayerWithCard,
 };
 
 /** Gây sát thương và mở Cầu Đào theo chiều kim đồng hồ từ ghế đang trong lượt nếu hp <= 0. */
@@ -519,6 +536,78 @@ export function resolveStrikeAfterTieQi(
   return next;
 }
 
+export function completeStrikeDodged(
+  state: MasterGameState,
+  sourceSeat: number,
+  targetSeat: number,
+  isCollateralStrike: boolean,
+  isFangTianMultiTarget: boolean,
+): MasterGameState {
+  const pending = [...(state.pendingEffects ?? [])];
+  const hitIdx = pending.findLastIndex(
+    (e) =>
+      e.kind === 'RESOLVE_STRIKE_HIT' &&
+      e.targetSeat === targetSeat &&
+      e.sourceSeat === sourceSeat,
+  );
+  let strikeCards: readonly CardInstance[] = [];
+  let next = state;
+  if (hitIdx !== -1) {
+    const hitEff = pending[hitIdx] as Extract<
+      PendingEffect,
+      { kind: 'RESOLVE_STRIKE_HIT' }
+    >;
+    strikeCards = hitEff.strikeCards;
+    pending.splice(hitIdx, 1);
+    next = { ...next, pendingEffects: pending };
+  }
+
+  const source = getPlayerBySeat(next, sourceSeat);
+  if (!source.alive) {
+    return next;
+  }
+
+  if (hasQuanThachPhuCards(source)) {
+    const { state: s1, id } = nextFrameId(next, 'quanthach');
+    return pushInterrupt(s1, {
+      id,
+      kind: 'ASK_QUAN_THACH_PHU',
+      targetSeat,
+      sourceSeat,
+      strikeCards,
+    });
+  }
+
+  const inSourceTurn = sourceSeat === next.currentTurnSeat;
+  const sourceEquips = [
+    source.equipments.weapon,
+    source.equipments.armor,
+    source.equipments.plusOneHorse,
+    source.equipments.minusOneHorse,
+  ].filter((eq): eq is CardInstance => eq !== null);
+  const canFollowStrike =
+    source.handCards.some((c) => canUseCardAs(next, source, c, 'sat', inSourceTurn)) ||
+    sourceEquips.some((c) => canUseCardAs(next, source, c, 'sat', inSourceTurn)) ||
+    hasTruongBat(source);
+
+  if (
+    !isCollateralStrike &&
+    !isFangTianMultiTarget &&
+    source.equipments.weapon?.cardKey === 'thanh_long_yen_nguyet_dao' &&
+    canFollowStrike
+  ) {
+    const { state: s1, id } = nextFrameId(next, 'thanhlong');
+    return pushInterrupt(s1, {
+      id,
+      kind: 'ASK_THANH_LONG',
+      targetSeat,
+      sourceSeat,
+    });
+  }
+
+  return next;
+}
+
 export function resolveStrikeHit(
   state: MasterGameState,
   sourceSeat: number,
@@ -804,55 +893,17 @@ function resolveJudgmentEffect(
             next = pushInterrupt(next, {
               ...saved,
               dodgedSoFar: nextDodged,
-              baguaTriedThisStrike: true,
+              baguaTriedThisStrike: false,
+              huJiaTriedThisStrike: false,
             });
           } else {
-            // Đã né thành công: gỡ bỏ RESOLVE_STRIKE_HIT đang chờ bên dưới
-            const effects = [...(next.pendingEffects ?? [])];
-            const hitIdx = effects.findLastIndex(
-              (e) =>
-                e.kind === 'RESOLVE_STRIKE_HIT' &&
-                e.targetSeat === saved.targetSeat &&
-                e.sourceSeat === saved.sourceSeat,
+            next = completeStrikeDodged(
+              next,
+              saved.sourceSeat,
+              saved.targetSeat,
+              saved.isCollateralStrike,
+              saved.isFangTianMultiTarget,
             );
-            let strikeCards: readonly CardInstance[] = [];
-            if (hitIdx !== -1) {
-              const hitEff = effects[hitIdx] as Extract<
-                PendingEffect,
-                { kind: 'RESOLVE_STRIKE_HIT' }
-              >;
-              strikeCards = hitEff.strikeCards;
-              effects.splice(hitIdx, 1);
-              next = { ...next, pendingEffects: effects };
-            }
-            const source = getPlayerBySeat(next, saved.sourceSeat);
-            if (
-              source.alive &&
-              source.equipments.weapon?.cardKey === 'quan_thach_phu' &&
-              hasQuanThachPhuCards(source)
-            ) {
-              const { state: s1, id } = nextFrameId(next, 'quanthach');
-              next = pushInterrupt(s1, {
-                id,
-                kind: 'ASK_QUAN_THACH_PHU',
-                targetSeat: saved.targetSeat,
-                sourceSeat: saved.sourceSeat,
-                strikeCards,
-              });
-            } else if (
-              source.alive &&
-              !saved.isCollateralStrike &&
-              !saved.isFangTianMultiTarget &&
-              source.equipments.weapon?.cardKey === 'thanh_long_yen_nguyet_dao'
-            ) {
-              const { state: s1, id } = nextFrameId(next, 'thanhlong');
-              next = pushInterrupt(s1, {
-                id,
-                kind: 'ASK_THANH_LONG',
-                targetSeat: saved.targetSeat,
-                sourceSeat: saved.sourceSeat,
-              });
-            }
           }
         } else {
           next = pushInterrupt(next, {

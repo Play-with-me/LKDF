@@ -81,6 +81,19 @@ export interface SkillRuntime {
     cardId: string,
     rng: () => number,
   ): { readonly state: MasterGameState; readonly removed: CardInstance };
+  /** Mở cửa sổ hỏi Vô Giải Khả Kích toàn bàn cho hiệu ứng Cẩm nang sắp thực thi. */
+  openNullificationWindow(
+    state: MasterGameState,
+    targetSeat: number,
+    sourceSeat: number,
+    scrollNameVi: string,
+  ): MasterGameState;
+  /** Kiểm tra mục tiêu có miễn nhiễm hiệu ứng lá bài / kỹ năng (như Không Thành, Khiêm Tốn) hay không. */
+  canTargetPlayerWithCard(
+    state: MasterGameState,
+    target: PlayerCombatState,
+    cardKey: string,
+  ): boolean;
 }
 
 /**

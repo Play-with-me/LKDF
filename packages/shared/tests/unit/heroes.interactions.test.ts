@@ -795,4 +795,217 @@ describe('Bước 1.3 — Kiểm chứng Tương tác Khó & Chéo giữa 25 Tư
     });
     expect(lordSunQuan.players[0]!.hp).toBe(2);
   });
+
+  it('Chuẩn Yoka: Điêu Thuyền Ly Gián bị Vô Giải Khả Kích chặn được & tôn trọng Không Thành mục tiêu thứ 2', () => {
+    const cost = card('thiem', 'Thiểm', 'BASIC', 'DIAMOND', 4);
+    const voGiai = card('vo_giai_kha_kich', 'Vô Giải Khả Kích', 'NORMAL_SCROLL', 'SPADE', 11);
+    const state = makeControlledState(4, {
+      0: { heroId: 'diao_chan', hp: 3, maxHp: 3, handCards: [cost] },
+      1: { heroId: 'zhuge_liang', hp: 3, maxHp: 3, handCards: [] },
+      2: { heroId: 'zhang_fei', hp: 4, maxHp: 4, handCards: [] },
+      3: { heroId: 'guan_yu', hp: 4, maxHp: 4, handCards: [voGiai] },
+    });
+
+    // Gia Cát Lượng hết bài không thể làm mục tiêu thứ 2 (người bị Quyết Đấu)
+    expect(() =>
+      applyGameAction(state, {
+        type: 'ACTIVATE_HERO_SKILL',
+        seatIndex: 0,
+        skillId: 'li_jian',
+        cardIds: [cost.id],
+        targetSeats: [2, 1],
+      }),
+    ).toThrow();
+
+    // Nhưng Gia Cát Lượng CÓ THỂ là người thứ nhất thách đấu Trương Phi, và Ghế 3 dùng Vô Giải chặn được!
+    let next = applyGameAction(state, {
+      type: 'ACTIVATE_HERO_SKILL',
+      seatIndex: 0,
+      skillId: 'li_jian',
+      cardIds: [cost.id],
+      targetSeats: [1, 2],
+    });
+    expect(getPendingPrompt(next)?.kind).toBe('WAIT_NULLIFICATION');
+
+    next = applyGameAction(next, {
+      type: 'RESPOND_NULLIFICATION',
+      seatIndex: 3,
+      cardId: voGiai.id,
+    });
+    expect(getPendingPrompt(next)?.kind).toBe('WAIT_NULLIFICATION');
+    next = applyGameAction(next, { type: 'RESOLVE_SIMULATED_NULLIFICATION' });
+
+    // Bị Vô Giải vô hiệu hóa nên không có Quyết Đấu nào xảy ra, cả hai giữ nguyên 4 & 3 máu
+    expect(next.interruptStack).toHaveLength(0);
+    expect(next.players[1]!.hp).toBe(3);
+    expect(next.players[2]!.hp).toBe(4);
+  });
+
+  it('Chuẩn Yoka: Bát Quái Trận được bói tối đa 2 lần trước Vô Song (Lữ Bố) & Hộ Giá kích hoạt Quán Thạch Phủ tự bỏ mình', () => {
+    const bagua = card('bat_quai_tran', 'Bát Quái Trận', 'ARMOR', 'SPADE', 2);
+    const sat1 = card('sat', 'Sát', 'BASIC', 'HEART', 10);
+    const red1 = card('dao', 'Đào 1', 'BASIC', 'HEART', 3);
+    const red2 = card('dao', 'Đào 2', 'BASIC', 'DIAMOND', 12);
+
+    // 1) Bát Quái Trận phán xét Đỏ 2 lần liên tiếp để né trọn Vô Song của Lữ Bố mà không tốn bài tay
+    let baguaState = makeControlledState(
+      4,
+      {
+        0: { heroId: 'lu_bu', handCards: [sat1] },
+        1: {
+          heroId: 'zhang_fei',
+          equipments: { weapon: null, armor: bagua, plusOneHorse: null, minusOneHorse: null },
+        },
+      },
+      [red1, red2],
+    );
+    baguaState = applyGameAction(baguaState, {
+      type: 'PLAY_CARD',
+      seatIndex: 0,
+      cardIds: [sat1.id],
+      targetSeats: [1],
+    });
+    expect(getPendingPrompt(baguaState)?.kind).toBe('WAIT_DODGE');
+
+    baguaState = applyGameAction(baguaState, {
+      type: 'RESPOND_DODGE',
+      seatIndex: 1,
+      cardId: null,
+      useBagua: true,
+    });
+    expect(getPendingPrompt(baguaState)?.kind).toBe('WAIT_DODGE');
+
+    baguaState = applyGameAction(baguaState, {
+      type: 'RESPOND_DODGE',
+      seatIndex: 1,
+      cardId: null,
+      useBagua: true,
+    });
+    expect(baguaState.interruptStack).toHaveLength(0);
+    expect(baguaState.players[1]!.hp).toBe(4);
+
+    // 2) Tào Tháo Chủ Công dùng Hộ Giá né xong -> địch cầm Quán Thạch Phủ được bỏ chính Quán Thạch Phủ + 1 lá ép trúng!
+    const sat2 = card('sat', 'Sát', 'BASIC', 'SPADE', 9);
+    const qtp = card('quan_thach_phu', 'Quán Thạch Phủ', 'WEAPON', 'DIAMOND', 5, 3);
+    const handExtra = card('dao', 'Đào dư', 'BASIC', 'HEART', 9);
+    const allyThiem = card('thiem', 'Thiểm', 'BASIC', 'DIAMOND', 2);
+
+    let huJiaState = makeControlledState(4, {
+      0: {
+        heroId: 'zhang_fei',
+        identity: 'REBEL',
+        handCards: [sat2, handExtra],
+        equipments: { weapon: qtp, armor: null, plusOneHorse: null, minusOneHorse: null },
+      },
+      1: { heroId: 'cao_cao', identity: 'LORD', hp: 4, maxHp: 5 },
+      2: { heroId: 'zhen_ji', identity: 'LOYALIST', handCards: [allyThiem] },
+    });
+    huJiaState = applyGameAction(huJiaState, {
+      type: 'PLAY_CARD',
+      seatIndex: 0,
+      cardIds: [sat2.id],
+      targetSeats: [1],
+    });
+    huJiaState = applyGameAction(huJiaState, {
+      type: 'RESPOND_DODGE',
+      seatIndex: 1,
+      cardId: null,
+      useHuJia: true,
+    });
+    expect(getPendingPrompt(huJiaState)?.kind).toBe('WAIT_HU_JIA');
+
+    huJiaState = applyGameAction(huJiaState, {
+      type: 'RESPOND_HU_JIA',
+      seatIndex: 2,
+      cardId: allyThiem.id,
+    });
+    // Sau khi Hộ Giá né đủ -> phải hỏi ASK_QUAN_THACH_PHU và cho bỏ chính lá qtp + handExtra
+    expect(getPendingPrompt(huJiaState)?.kind).toBe('ASK_QUAN_THACH_PHU');
+    huJiaState = applyGameAction(huJiaState, {
+      type: 'RESPOND_QUAN_THACH_PHU',
+      seatIndex: 0,
+      activate: true,
+      discardCardIds: [qtp.id, handExtra.id],
+    });
+    expect(huJiaState.players[0]!.equipments.weapon).toBeNull();
+    expect(huJiaState.players[1]!.hp).toBe(3);
+  });
+
+  it('Chuẩn Yoka: Hoàng Nguyệt Anh (Tập Trí) rút bài khi đánh Vô Giải & Lục Tốn (Liên Doanh) rút bài khi hết tay qua Vô Giải / Từ Hùng', () => {
+    const voTrung = card('vo_trung_sinh_huu', 'Vô Trung Sinh Hữu', 'NORMAL_SCROLL', 'HEART', 7);
+    const voGiaiYue = card('vo_giai_kha_kich', 'Vô Giải (Nguyệt Anh)', 'NORMAL_SCROLL', 'CLUB', 12);
+    const voGiaiLu = card('vo_giai_kha_kich', 'Vô Giải (Lục Tốn)', 'NORMAL_SCROLL', 'SPADE', 11);
+    const draw1 = card('sat', 'Sát rút 1', 'BASIC', 'CLUB', 5);
+    const draw2 = card('dao', 'Đào rút 2', 'BASIC', 'HEART', 4);
+    const draw3 = card('thiem', 'Thiểm rút 3', 'BASIC', 'DIAMOND', 6);
+
+    let state1 = makeControlledState(
+      4,
+      {
+        0: { heroId: 'zhang_fei', handCards: [voTrung] },
+        1: { heroId: 'huang_yue_ying', hp: 3, maxHp: 3, handCards: [voGiaiYue] },
+        2: { heroId: 'lu_xun', hp: 3, maxHp: 3, handCards: [voGiaiLu] },
+      },
+      [draw1, draw2, draw3],
+    );
+
+    state1 = applyGameAction(state1, {
+      type: 'PLAY_CARD',
+      seatIndex: 0,
+      cardIds: [voTrung.id],
+    });
+    expect(getPendingPrompt(state1)?.kind).toBe('WAIT_NULLIFICATION');
+
+    // Hoàng Nguyệt Anh đánh Vô Giải -> Tập Trí rút ngay 1 lá (draw1)
+    state1 = applyGameAction(state1, {
+      type: 'RESPOND_NULLIFICATION',
+      seatIndex: 1,
+      cardId: voGiaiYue.id,
+    });
+    expect(state1.players[1]!.handCards).toHaveLength(1);
+    expect(state1.players[1]!.handCards[0]!.id).toBe(draw1.id);
+
+    // Lục Tốn đánh lá Vô Giải cuối cùng trên tay để chặn lại -> Liên Doanh rút ngay 1 lá (draw2)
+    state1 = applyGameAction(state1, {
+      type: 'RESPOND_NULLIFICATION',
+      seatIndex: 2,
+      cardId: voGiaiLu.id,
+    });
+    expect(state1.players[2]!.handCards).toHaveLength(1);
+    expect(state1.players[2]!.handCards[0]!.id).toBe(draw2.id);
+
+    // Từ Hùng Song Cổ Kiếm ép Lục Tốn bỏ lá cuối cùng trên tay -> Liên Doanh rút 1 lá bù
+    const tuHung = card('tu_hung_song_co_kiem', 'Từ Hùng Song Cổ Kiếm', 'WEAPON', 'SPADE', 2, 2);
+    const satMale = card('sat', 'Sát', 'BASIC', 'SPADE', 8);
+    const lastLuCard = card('dao', 'Đào cuối', 'BASIC', 'HEART', 8);
+    const luDraw = card('thiem', 'Thiểm Liên Doanh', 'BASIC', 'DIAMOND', 10);
+
+    let state2 = makeControlledState(
+      4,
+      {
+        0: {
+          heroId: 'zhen_ji',
+          handCards: [satMale],
+          equipments: { weapon: tuHung, armor: null, plusOneHorse: null, minusOneHorse: null },
+        },
+        1: { heroId: 'lu_xun', hp: 3, maxHp: 3, handCards: [lastLuCard] },
+      },
+      [luDraw],
+    );
+    state2 = applyGameAction(state2, {
+      type: 'PLAY_CARD',
+      seatIndex: 0,
+      cardIds: [satMale.id],
+      targetSeats: [1],
+    });
+    expect(getPendingPrompt(state2)?.kind).toBe('ASK_TU_HUNG');
+    state2 = applyGameAction(state2, {
+      type: 'RESPOND_TU_HUNG',
+      seatIndex: 1,
+      choice: 'DISCARD_HAND',
+      discardCardId: lastLuCard.id,
+    });
+    expect(state2.players[1]!.handCards).toHaveLength(1);
+    expect(state2.players[1]!.handCards[0]!.id).toBe(luDraw.id);
+  });
 });
