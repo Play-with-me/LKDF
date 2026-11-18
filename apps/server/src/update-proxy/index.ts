@@ -48,6 +48,8 @@ export interface LatestUpdateInfoPayload {
   readonly messageVi?: string;
 }
 
+export type UpdateDownloadMode = 'redirect' | 'stream';
+
 export interface AssetDownloadResult {
   readonly statusCode: number;
   readonly fileName: string;
@@ -57,6 +59,17 @@ export interface AssetDownloadResult {
   readonly acceptRanges: string | null;
   readonly stream: Readable;
 }
+
+export type AssetDownloadOutcome =
+  | {
+      readonly kind: 'REDIRECT';
+      readonly fileName: string;
+      readonly redirectUrl: string;
+    }
+  | {
+      readonly kind: 'STREAM';
+      readonly asset: AssetDownloadResult;
+    };
 
 export type ServiceOutcome<T> =
   | { readonly ok: true; readonly data: T }
@@ -72,6 +85,7 @@ export interface UpdateProxyConfig {
   readonly githubReleaseToken: string;
   readonly githubApiBaseUrl: string;
   readonly cacheTtlMs: number;
+  readonly downloadMode?: UpdateDownloadMode;
 }
 
 interface CachedReleaseSnapshot {
@@ -310,6 +324,10 @@ export class UpdateProxyService {
     );
   }
 
+  get downloadMode(): UpdateDownloadMode {
+    return this.config.downloadMode ?? 'redirect';
+  }
+
   private buildGitHubHeaders(accept: string): Record<string, string> {
     const headers: Record<string, string> = {
       Accept: accept,
@@ -339,6 +357,16 @@ export class UpdateProxyService {
     }
   }
 
+  private isRedirectStatus(status: number): boolean {
+    return (
+      status === 301 ||
+      status === 302 ||
+      status === 303 ||
+      status === 307 ||
+      status === 308
+    );
+  }
+
   private async fetchAssetResponse(
     assetApiUrl: string,
     rangeHeader?: string,
@@ -354,13 +382,7 @@ export class UpdateProxyService {
       redirect: 'manual',
     });
 
-    if (
-      firstRes.status === 301 ||
-      firstRes.status === 302 ||
-      firstRes.status === 303 ||
-      firstRes.status === 307 ||
-      firstRes.status === 308
-    ) {
+    if (this.isRedirectStatus(firstRes.status)) {
       const location = firstRes.headers.get('location');
       await firstRes.body?.cancel().catch(() => undefined);
       if (!location || !this.isAllowedAssetRedirect(location)) {
@@ -621,10 +643,9 @@ export class UpdateProxyService {
     return { ok: true, data: rewrittenYaml };
   }
 
-  async openAssetDownloadStream(options: {
-    readonly requestedAssetName?: string;
-    readonly rangeHeader?: string;
-  }): Promise<ServiceOutcome<AssetDownloadResult>> {
+  private async resolveTargetAsset(
+    requestedAssetName?: string,
+  ): Promise<ServiceOutcome<GitHubReleaseAsset>> {
     const snapshotRes = await this.loadSnapshot(false);
     if (!snapshotRes.ok) {
       return snapshotRes;
@@ -641,8 +662,8 @@ export class UpdateProxyService {
     }
 
     let targetAsset: GitHubReleaseAsset | null = null;
-    if (options.requestedAssetName !== undefined) {
-      const sanitized = sanitizeRequestedAssetName(options.requestedAssetName);
+    if (requestedAssetName !== undefined) {
+      const sanitized = sanitizeRequestedAssetName(requestedAssetName);
       if (!sanitized) {
         return {
           ok: false,
@@ -665,21 +686,13 @@ export class UpdateProxyService {
       };
     }
 
-    let upstreamRes: Response;
-    try {
-      upstreamRes = await this.fetchAssetResponse(
-        targetAsset.apiUrl,
-        options.rangeHeader,
-      );
-    } catch {
-      return {
-        ok: false,
-        statusCode: 502,
-        code: 'GITHUB_ASSET_FETCH_FAILED',
-        messageVi: 'Không thể tải tệp cập nhật từ kho GitHub Private.',
-      };
-    }
+    return { ok: true, data: targetAsset };
+  }
 
+  private toAssetStreamResult(
+    targetAsset: GitHubReleaseAsset,
+    upstreamRes: Response,
+  ): ServiceOutcome<AssetDownloadResult> {
     if (!upstreamRes.ok || !upstreamRes.body) {
       return {
         ok: false,
@@ -710,5 +723,112 @@ export class UpdateProxyService {
         stream,
       },
     };
+  }
+
+  async prepareAssetDownload(options: {
+    readonly requestedAssetName?: string;
+    readonly rangeHeader?: string;
+    readonly mode?: UpdateDownloadMode;
+  }): Promise<ServiceOutcome<AssetDownloadOutcome>> {
+    const targetRes = await this.resolveTargetAsset(options.requestedAssetName);
+    if (!targetRes.ok) {
+      return targetRes;
+    }
+
+    const targetAsset = targetRes.data;
+    const effectiveMode = options.mode ?? this.downloadMode;
+
+    if (effectiveMode === 'redirect') {
+      const initialHeaders = this.buildGitHubHeaders('application/octet-stream');
+      if (options.rangeHeader) {
+        initialHeaders['Range'] = options.rangeHeader;
+      }
+
+      let firstRes: Response;
+      try {
+        firstRes = await fetch(targetAsset.apiUrl, {
+          method: 'GET',
+          headers: initialHeaders,
+          redirect: 'manual',
+        });
+      } catch {
+        return {
+          ok: false,
+          statusCode: 502,
+          code: 'GITHUB_ASSET_FETCH_FAILED',
+          messageVi: 'Không thể lấy đường dẫn tải tệp từ kho GitHub Private.',
+        };
+      }
+
+      if (this.isRedirectStatus(firstRes.status)) {
+        const location = firstRes.headers.get('location');
+        await firstRes.body?.cancel().catch(() => undefined);
+        if (!location || !this.isAllowedAssetRedirect(location)) {
+          return {
+            ok: false,
+            statusCode: 502,
+            code: 'INVALID_GITHUB_REDIRECT',
+            messageVi: 'Đường dẫn chuyển hướng tải gói cập nhật từ GitHub không hợp lệ.',
+          };
+        }
+        return {
+          ok: true,
+          data: {
+            kind: 'REDIRECT',
+            fileName: targetAsset.name,
+            redirectUrl: location,
+          },
+        };
+      }
+
+      const streamRes = this.toAssetStreamResult(targetAsset, firstRes);
+      if (!streamRes.ok) {
+        return streamRes;
+      }
+      return { ok: true, data: { kind: 'STREAM', asset: streamRes.data } };
+    }
+
+    let upstreamRes: Response;
+    try {
+      upstreamRes = await this.fetchAssetResponse(
+        targetAsset.apiUrl,
+        options.rangeHeader,
+      );
+    } catch {
+      return {
+        ok: false,
+        statusCode: 502,
+        code: 'GITHUB_ASSET_FETCH_FAILED',
+        messageVi: 'Không thể tải tệp cập nhật từ kho GitHub Private.',
+      };
+    }
+
+    const streamRes = this.toAssetStreamResult(targetAsset, upstreamRes);
+    if (!streamRes.ok) {
+      return streamRes;
+    }
+    return { ok: true, data: { kind: 'STREAM', asset: streamRes.data } };
+  }
+
+  async openAssetDownloadStream(options: {
+    readonly requestedAssetName?: string;
+    readonly rangeHeader?: string;
+  }): Promise<ServiceOutcome<AssetDownloadResult>> {
+    const outcome = await this.prepareAssetDownload({
+      ...options,
+      mode: 'stream',
+    });
+    if (!outcome.ok) {
+      return outcome;
+    }
+    if (outcome.data.kind !== 'STREAM') {
+      return {
+        ok: false,
+        statusCode: 502,
+        code: 'UNEXPECTED_REDIRECT_OUTCOME',
+        messageVi: 'Không thể mở luồng tải trực tiếp cho tệp cập nhật.',
+      };
+    }
+    return { ok: true, data: outcome.data.asset };
   }
 }

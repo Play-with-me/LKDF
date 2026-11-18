@@ -292,19 +292,30 @@ describe('Bước 5.1 — Update Proxy GitHub Private (/api/update/latest, lates
     );
     expect(parsedYaml.files[0]?.sha512).toBe(olderJson.primaryInstaller.sha512);
 
-    // Tải tệp đầy đủ qua proxy (tự xác nhận 302 redirect không truyền Authorization sang CDN)
-    const downloadRes = await server.app.inject({
+    // Mặc định dùng 302 Redirect sang CDN tạm (tiết kiệm băng thông Render 0đ & tuyệt đối không lộ token)
+    const redirectRes = await server.app.inject({
       method: 'GET',
       url: '/api/update/download/TamQuocSat-LKDF-Setup-1.0.1.exe',
+    });
+    expect(redirectRes.statusCode).toBe(302);
+    expect(redirectRes.headers.location).toBe(
+      `${mockGitHub.baseUrl}/cdn/installer.exe?token=cdn-sig`,
+    );
+    expect(redirectRes.headers.location).not.toContain(secretToken);
+
+    // Chế độ stream dự phòng (?mode=stream) vẫn hỗ trợ tải xuyên proxy + Range 206 không lộ Authorization sang CDN
+    const downloadRes = await server.app.inject({
+      method: 'GET',
+      url: '/api/update/download/TamQuocSat-LKDF-Setup-1.0.1.exe?mode=stream',
     });
     expect(downloadRes.statusCode).toBe(200);
     expect(downloadRes.rawPayload.equals(fakeInstallerBytes)).toBe(true);
     expect(mockGitHub.cdnSawAuthHeader()).toBe(false);
 
-    // Hỗ trợ Range request (206 Partial Content) và fallback /api/update/download mặc định
+    // Hỗ trợ Range request (206 Partial Content) và fallback /api/update/download mặc định ở chế độ stream
     const rangeRes = await server.app.inject({
       method: 'GET',
-      url: '/api/update/download',
+      url: '/api/update/download?mode=stream',
       headers: { range: 'bytes=0-13' },
     });
     expect(rangeRes.statusCode).toBe(206);

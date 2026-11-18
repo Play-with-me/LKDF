@@ -86,6 +86,7 @@ export async function createServer(
     githubReleaseToken: config.githubReleaseToken,
     githubApiBaseUrl: config.githubApiBaseUrl,
     cacheTtlMs: config.updateCacheTtlMs,
+    downloadMode: config.updateDownloadMode,
   });
 
   const app = Fastify({ logger: false });

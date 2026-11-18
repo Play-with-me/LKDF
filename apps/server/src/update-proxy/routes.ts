@@ -9,24 +9,27 @@ const LatestQuerySchema = z.object({
 
 const DownloadQuerySchema = z.object({
   asset: z.string().trim().max(255).optional(),
+  mode: z.enum(['redirect', 'stream']).optional(),
 });
 
 function toSafeHeaderFilename(fileName: string): string {
   return fileName.replace(/[^A-Za-z0-9._ -]/g, '_');
 }
 
-async function handleStreamDownload(
+async function handleAssetDownload(
   updateProxy: UpdateProxyService,
   requestedAssetName: string | undefined,
   request: FastifyRequest,
   reply: FastifyReply,
+  explicitMode?: 'redirect' | 'stream',
 ) {
   const rangeHeader =
     typeof request.headers.range === 'string' ? request.headers.range : undefined;
 
-  const result = await updateProxy.openAssetDownloadStream({
+  const result = await updateProxy.prepareAssetDownload({
     ...(requestedAssetName !== undefined ? { requestedAssetName } : {}),
     ...(rangeHeader !== undefined ? { rangeHeader } : {}),
+    ...(explicitMode !== undefined ? { mode: explicitMode } : {}),
   });
 
   if (!result.ok) {
@@ -37,7 +40,15 @@ async function handleStreamDownload(
     });
   }
 
-  const asset = result.data;
+  if (result.data.kind === 'REDIRECT') {
+    return reply
+      .status(302)
+      .header('Location', result.data.redirectUrl)
+      .header('Cache-Control', 'no-store')
+      .send();
+  }
+
+  const asset = result.data.asset;
   const safeName = toSafeHeaderFilename(asset.fileName);
 
   void reply.status(asset.statusCode);
@@ -108,13 +119,22 @@ export function registerUpdateProxyRoutes(
 
   app.get('/api/update/download/:asset', async (request, reply) => {
     const params = request.params as { readonly asset?: string };
-    return handleStreamDownload(updateProxy, params.asset ?? '', request, reply);
+    const parsed = DownloadQuerySchema.safeParse(request.query ?? {});
+    const mode = parsed.success ? parsed.data.mode : undefined;
+    return handleAssetDownload(
+      updateProxy,
+      params.asset ?? '',
+      request,
+      reply,
+      mode,
+    );
   });
 
   app.get('/api/update/download', async (request, reply) => {
     const parsed = DownloadQuerySchema.safeParse(request.query ?? {});
     const requested =
       parsed.success && parsed.data.asset ? parsed.data.asset : undefined;
-    return handleStreamDownload(updateProxy, requested, request, reply);
+    const mode = parsed.success ? parsed.data.mode : undefined;
+    return handleAssetDownload(updateProxy, requested, request, reply, mode);
   });
 }

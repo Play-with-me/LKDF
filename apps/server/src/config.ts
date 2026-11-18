@@ -16,6 +16,7 @@ export interface ServerConfig {
   readonly githubReleaseToken: string;
   readonly githubApiBaseUrl: string;
   readonly updateCacheTtlMs: number;
+  readonly updateDownloadMode: 'redirect' | 'stream';
 }
 
 export interface MatchCoordinatorConfig {
@@ -73,6 +74,14 @@ export function loadServerConfig(overrides?: Partial<ServerConfig>): ServerConfi
   const updateCacheTtlRaw =
     overrides?.updateCacheTtlMs ??
     Number(process.env.UPDATE_CACHE_TTL_MS ?? 60_000);
+  const updateDownloadModeRaw =
+    overrides?.updateDownloadMode ??
+    process.env.UPDATE_PROXY_DOWNLOAD_MODE ??
+    'redirect';
+  const updateDownloadMode =
+    updateDownloadModeRaw.trim().toLowerCase() === 'stream'
+      ? 'stream'
+      : 'redirect';
 
   return {
     port: overrides?.port ?? Number(process.env.PORT ?? 3001),
@@ -102,5 +111,6 @@ export function loadServerConfig(overrides?: Partial<ServerConfig>): ServerConfi
       Number.isFinite(updateCacheTtlRaw) && updateCacheTtlRaw >= 0
         ? updateCacheTtlRaw
         : 60_000,
+    updateDownloadMode,
   };
 }
