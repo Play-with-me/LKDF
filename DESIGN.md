@@ -1,17 +1,17 @@
 # DESIGN.md — Giao Diện và Trải Nghiệm Người Dùng (Phiên Bản v1)
 
 > **Dự án:** LKDF — Game Thẻ Bài Tam Quốc Sát (Windows Native Online 4–8 Người)
-> **Cập nhật lần cuối:** 2026-11-16 · **Phong cách chủ đạo:** Sơn Thủy Mặc & Chu Sa (2D Tinh Gọn, Tương Phản Cao)
+> **Cập nhật lần cuối:** 2026-11-18 · **Phong cách chủ đạo:** Doanh Trại A (Đêm Xích Bích & Đĩa Rồng Chạm Khắc OL) · Cổ Thư & Gỗ Mun (2D Tinh Gọn, Tương Phản Cao)
 > **Tài liệu liên quan:** [REQUIREMENTS.md](./REQUIREMENTS.md) · [ARCHITECTURE.md](./ARCHITECTURE.md) · [DATA_MODEL.md](./DATA_MODEL.md)
 
 ---
 
 ## 1. Phong Cách Hình Ảnh & Định Hướng Thẩm Mỹ
 
-- **Chủ đề thị giác:** **Sơn Thủy Mặc & Chu Sa (Ink & Vermilion Tabletop)** — lấy cảm hứng từ bàn gỗ tối màu, giấy tuyên chỉ cổ điển và con dấu chu sa đỏ trầm, giúp người chơi tập trung hoàn toàn vào **thông tin thẻ bài, máu, khoảng cách và pha phản ứng** mà không bị mỏi mắt khi chơi nhiều ván liên tiếp.
-- **Đồ họa 2D tinh gọn ở v1:**
-  - Chưa sử dụng tranh vẽ minh họa chân dung riêng cho từng tướng hay từng lá bài ở v1; thay bằng **khung thẻ 2D sắc nét**, **biểu tượng thế lực** (*Thục – Ngụy – Ngô – Quần*), **biểu tượng chất bài lớn** (`♠ ♥ ♣ ♦`), **biểu tượng loại bài** (*⚔️ Cơ bản · 📜 Cẩm nang · 🛡️ Trang bị*) và **văn bản tiếng Việt rõ ràng**.
-  - **Không dùng hiệu ứng 3D/WebGL nặng:** Mọi chuyển động (chọn bài, đánh bài, mất máu, đếm ngược) đều là hoạt ảnh 2D mượt dưới `200ms` (`150ms–220ms`), đảm bảo chạy nhẹ trên mọi máy tính Windows tích hợp card đồ họa cơ bản.
+- **Chủ đề thị giác:** **Doanh Trại A — Đêm Xích Bích, Gỗ Mun & Cổ Thư (`Campfire Obsidian & Parchment`)** — kết hợp nền doanh trại đêm trầm ấm (`#090807`), đĩa bàn tròn chạm khắc Rồng OL, thẻ tướng gỗ mun làm mờ chân dung bên phải (**Cách 2**) và mặt bài Cổ Thư Lụa Vàng (`#DEC79C → #C6A673`), giúp người chơi tập trung hoàn toàn vào **thông tin thẻ bài, máu, trang bị ngửa, khoảng cách và pha phản ứng** mà không bị mỏi mắt khi chơi nhiều ván liên tiếp.
+- **Đồ họa 2D tinh gọn & 100% Tài nguyên Nghệ sĩ Thực tế (0 ảnh AI):**
+  - Sử dụng **hệ thống icon vector SVG sắc nét đóng gói offline** (`Game-icons.net CC BY 3.0` + `Lucide`), **ấn triện 4 thế lực (`蜀 魏 吴 群`)**, **thanh ngọc máu**, **mặt lưng Long Văn Xanh Chàm**, **25 chân dung tướng HD**, **32 tranh lá bài cắt sạch** và **8 lớp họa tiết bàn đấu Doanh Trại A** (`camp-zhanhuo`, `table-ol-dragon`, `tex-*`) được tối ưu `.webp`/`.ogg`.
+  - **Không dùng hiệu ứng 3D/WebGL nặng:** Mọi chuyển động (chọn bài, kéo-thả bài, đánh bài, mất máu, đếm ngược) đều là hoạt ảnh 2D mượt dưới `250ms` (`150ms–220ms`), đảm bảo chạy nhẹ trên mọi máy tính Windows tích hợp card đồ họa cơ bản.
 
 ---
 
@@ -21,13 +21,13 @@
 
 | Vai trò | Tên màu | Mã màu (Hex) | Mục đích sử dụng |
 | :--- | :--- | :---: | :--- |
-| **Nền chính bàn đấu** | Mặc Thạch (Đá mực tối) | `#14171A` | Nền tổng thể của cửa sổ ứng dụng, chống chói mắt. |
-| **Nền ô ghế & Bảng nổi** | Huyền Mộc (Gỗ mun ấm) | `#1E2328` | Nền các ô ghế đối thủ, bảng Nhật ký và khung tay bài. |
-| **Nền mặt thẻ bài** | Tuyên Chỉ (Giấy cổ sáng) | `#F4EFE6` | Nền lá bài trên tay và dưới bàn giúp chữ đen/đỏ nổi bật. |
-| **Chữ chính trên nền tối** | Bạch Ngọc | `#F3F4F6` | Tên người chơi, tên tướng, nhật ký ván đấu, tiêu đề. |
-| **Chữ chính trên mặt bài** | Mặc Đen | `#18181B` | Tên lá bài, mô tả tác dụng bài và chất Bích/Chuồn (`♠ ♣`). |
-| **Điểm nhấn chính & Chất Đỏ** | Chu Sa (Đỏ son) | `#C83E37` | Nút hành động chính (`Đánh Sát`), chất Cơ/Rô (`♥ ♦`), cảnh báo hấp hối. |
-| **Viền chọn & Mục tiêu hợp lệ** | Hoàng Kim (Vàng đồng sáng) | `#D99B26` | Viền lá bài đang chọn, viền ghế đối thủ nằm trong tầm đánh hợp lệ. |
+| **Nền chính bàn đấu** | Mặc Đêm Xích Bích | `#090807` | Nền tổng thể cửa sổ ứng dụng & viền ngoài bàn, chống chói mắt. |
+| **Nền ô ghế & Bảng nổi** | Huyền Mộc (Gỗ mun ấm) | `#181B20` | Nền các ô ghế đối thủ (Cách 2), bảng Nhật ký và Khoang xem kỹ năng. |
+| **Nền mặt thẻ bài** | Cổ Thư Lụa Vàng | `#DEC79C` → `#C6A673` | Nền thẻ bài cổ trang ấm viền `#7C5828`, đồng điệu tranh mực tàu & chống chói trên bàn tối. |
+| **Chữ chính trên nền tối** | Bạch Ngọc Cổ | `#EFE6D5` | Tên người chơi, tên tướng, nhật ký ván đấu, tiêu đề. |
+| **Chữ chính trên mặt bài** | Mặc Nâu Đậm | `#1D150D` | Tên lá bài, mô tả tác dụng bài và chất Bích/Chuồn (`♠ ♣`). |
+| **Điểm nhấn chính & Chất Đỏ** | Chu Sa (Đỏ son) | `#9E2B25` / `#C83E37` | Nút hành động chính (`Đánh Sát`), chất Cơ/Rô (`♥ ♦`), cảnh báo hấp hối. |
+| **Viền chọn & Mục tiêu hợp lệ** | Hoàng Kim (Vàng đồng cổ) | `#C89B4B` / `#D99B26` | Viền lá bài đang chọn, viền ghế đối thủ nằm trong tầm đánh hợp lệ & xung thả bài. |
 | **Trạng thái Thế lực (4 phe)** | Thục / Ngụy / Ngô / Quần | `#C83E37` / `#3B82F6` / `#10B981` / `#9CA3AF` | Nhãn màu phân biệt thế lực của 25 tướng (*Thục Đỏ, Ngụy Lam, Ngô Lục, Quần Xám*). |
 | **Trạng thái Hệ thống** | Thành công / Chờ / Lỗi | `#16A34A` / `#D97706` / `#DC2626` | Trạng thái kết nối mạng, đồng hồ đếm ngược sắp hết giờ, thông báo lỗi. |
 
@@ -42,8 +42,8 @@
 
 ### 2.3. Nhịp khoảng cách & Thành phần dùng chung
 - **Nhịp khoảng cách (Spacing):** Bội số của `4px` và `8px` (`4px, 8px, 12px, 16px, 24px`).
-- **Thẻ bài (`CardItem`):** Kích thước chuẩn trên tay `108px × 152px`; góc trên trái ghi rõ **Số + Chất bài** (`♠7`, `♥K`), chính giữa là **Tên lá bài tiếng Việt**, góc dưới là nhãn loại bài (*Cơ bản / Cẩm nang / Vũ khí (Tầm X) / Giáp / Ngựa +1 / Ngựa -1*). Khi bấm chọn, lá bài nhô cao lên `16px` và sáng viền vàng `#D99B26`.
-- **Huy hiệu Khoảng cách (`DistanceBadge`):** Gắn ngay góc trên phải của mỗi ghế đối thủ, ghi rõ **`Cách: 1`**, **`Cách: 2`**... (đã tự động cộng/trừ ngựa `+1/-1` của hai bên để người chơi không phải nhẩm tay).
+- **Thẻ bài (`HandCardItem`):** Kích thước co giãn mượt theo CSS Container Query (`--card-w: clamp(60px, 6.2cqw, 86px)`, `--card-h: clamp(84px, 14.8cqh, 118px)`); góc trên trái ghi rõ **Số + Chất bài SVG** (`♠7`, `♥K`), chính giữa là khung hiển thị tranh `.webp`, góc dưới là **Tên lá bài tiếng Việt** & nhãn loại bài (*Cơ bản / Cẩm nang / Vũ khí / Giáp / Ngựa +1/-1*). Hỗ trợ **Nhấn giữ & Quăng bài** (`>= 8px` kéo thả mượt 60fps lên ghế mục tiêu hoặc vùng thả trung tâm) lẫn **Bấm nhẹ** để xem kỹ năng lá bài ở Khoang Xem Kỹ Năng bên phải hoặc đánh nhiều lá/chọn nhiều mục tiêu; không phủ tooltip che bàn đấu.
+- **Huy hiệu Khoảng cách (`DistanceBadge`) & Nút Soi Tướng (`ⓘ`):** Nằm gọn ở góc trên phải mỗi ghế đối thủ trên cùng dòng tên người chơi, tách hẳn khỏi dòng **Tên Tướng & Thân Phận** bên dưới để tên Tướng hiển thị đầy đủ không bị cắt từ `960×600` trở lên.
 
 ---
 
@@ -52,40 +52,33 @@
 ### 3.1. Bố cục trên Điện thoại
 - **Quy định phạm vi v1:** Ứng dụng v1 **chỉ thiết kế và phát hành cho máy tính Windows Desktop**, cố tình **không hỗ trợ màn hình điện thoại** để đảm bảo bàn chơi 8 người hiển thị đầy đủ thông tin trên một mặt phẳng mà không bị chồng chéo chữ.
 
-### 3.2. Bố cục trên Máy tính Windows (`1280×720` trở lên — Cố định 100% khung hình, không cuộn trang)
-Toàn bộ cửa sổ ứng dụng lúc đánh bài được chia thành **4 vùng cố định** (`height: 100vh; overflow: hidden`), đảm bảo các vùng bên trong co giãn an toàn (`min-h-0`, `min-w-0`):
+### 3.2. Bố cục Responsive trên Máy tính Windows (`960×600` tối thiểu · Mở mặc định `1280×720` · Co giãn mượt tới `2K`)
+Toàn bộ cửa sổ ứng dụng lúc đánh bài được chia thành **4 vùng cố định** (`height: 100vh; overflow: hidden`), sử dụng CSS Container Queries (`.lkdf-arena-stage`) để tự co giãn theo kích thước cửa sổ (`960×600` chia đôi màn hình đến `1920×1080`/2K, 0 thanh cuộn trang):
 
 ```text
 ┌──────────────────────────────────────────────────────────────────────────────────┐
-│ [VÙNG 1: THANH ĐẦU TRANG - Cao 48px]                                             │
-│ Phòng #K9M2P4 (8 người) │ Vòng 3 │ Bài rút: 54 │ [🔊 Âm thanh] [📖 Luật] [⚖️ Trọng tài]│
+│ [VÙNG 1: THANH ĐẦU TRANG CỐ ĐỊNH - Cao 44px]                                     │
+│ [殺] Phòng #K9M2P4 (8p) · Vòng 3 · Rút: 54  [Âm thanh][Nhật ký][Luật][Trọng tài] │
 ├──────────────────────────────────────────────────────────────────────────────────┤
-│ [VÙNG 2 & 3: BÀN ĐẤU VÒNG CHỮ U (3–7 ĐỐI THỦ) + TRUNG TÂM BÀN - Co giãn tự động] │
+│ [VÙNG 2 & 3: BÀN TRÒN DOANH TRẠI + ĐĨA RỒNG OL (3–7 ĐỐI THỦ) + MẶT BÀN]         │
 │                                                                                  │
-│     [Ghế 4 - Đối diện trái]   [Ghế 5 - Chính giữa trên]   [Ghế 6 - Đối diện phải]│
-│                                                                                  │
-│ [Ghế 3 - Trái trên]     ┌──────────────────────────────────┐  [Ghế 7 - Phải trên]│
-│                         │ 🔔 BANNER PHA HIỆN TẠI & ĐỒNG HỒ │                     │
-│                         │ [████████████░░░░░░] Còn 11 giây │                     │
-│                         ├──────────────────────────────────┤                     │
-│ [Ghế 2 - Trái dưới]     │ 🃏 VÙNG BÀI ĐÁNH RA & PHÁN XÉT   │  [Ghế 8 - Phải dưới]│
-│                         ├──────────────────────────────────┤                     │
-│                         │ 📜 NHẬT KÝ BÀN ĐẤU (Cuộn nội bộ) │                     │
-│                         └──────────────────────────────────┘                     │
-├──────────────────────────────────────────────────────────────────────────────────┤
-│ [VÙNG 4: THANH ĐIỀU KHIỂN CỦA BẠN GHIM CỐ ĐỊNH Ở ĐÁY - Cao 210px]                │
-│ ┌──────────────────────┬───────────────────────────────────────┬───────────────┐ │
-│ │ 👤 TƯỚNG & TRANG BỊ  │ 🃏 TAY BÀI XÒE NGANG CỦA BẠN          │ 🎯 THANH NÚT  │ │
-│ │ • Quách Gia (3/3❤️)  │ [♠7 Sát*] [♥K Thiểm] [♦Q Đào] [♣J Vô] │ HÀNH ĐỘNG RÕ  │ │
-│ │ • Thân phận: Nội Gián│ [☑️ Tự bỏ qua Vô Giải lượt này]       │ TÊN VIỆC      │ │
-│ │ • Kỹ năng: [Thiên Đố]│                                       │ [⚔️ Đánh Sát  │ │
-│ │ • Vũ khí/Giáp/Ngựa   │                                       │  vào Hải]     │ │
-│ └──────────────────────┴───────────────────────────────────────┴───────────────┘ │
-└──────────────────────────────────────────────────────────────────────────────────┘
+│                 [Ghế 4 (10:45)]   [Ghế 5 (12:00)]   [Ghế 6 (1:15)]               │
+│                 (+ Trang bị ngửa) (+ Trang bị ngửa) (+ Trang bị ngửa)            │
+│   [Ghế 3]       [ ● Lượt của bạn — Pha Đánh Bài (25s) ]               [Ghế 7]    │
+│                    [Xấp bài úp]     [♠7] [♥K] [♣Q] (xòe Tiến Lên)                │
+│   [Ghế 2]            Rút: 54         Vừa đánh (bấm soi chiêu)         [Ghế 8]    │
+├───────────────────────────┬──────────────────────────────────┬───────────────────┤
+│ [VÙNG 4: THANH ĐÁY RESPONSIVE — Chiều cao co giãn `--dock-h` (188–224px)]         │
+│ Trái (`--left-w`: 2 phần) │ Giữa (`flex-1`: Lệnh + Quăng)    │ Phải (`--right-w`)│
+│ • Tướng Cách 2 + Máu/Chiêu│ [Thanh Lệnh Ngữ Cảnh Ẩn/Hiện]    │ Khoang Xem Kỹ Năng│
+│ • Chừa sẵn 4 Ô Trang Bị   │ (Chỉ hiện khi tới lượt/phản ứng) │ • Mặc định: Chiêu │
+│   Ngửa (Vũ khí/Giáp/+1/-1)│ [♠7 Sát][♥K Thiểm][♦Q Đào][♣J Vô]│   tướng bạn       │
+│   + Cẩm nang Phán xét     │ (Neo đáy 0px giật + Nhấn thả)    │ • Bấm bài/ⓘ -> soi│
+└───────────────────────────┴──────────────────────────────────┴───────────────────┘
 ```
 
-- **Quy tắc tự ẩn ghế trống theo sĩ số thực tế (4–8 người):**
-  - Chỉ hiển thị đúng số ghế có người chơi trong ván đó (từ 4 đến 8 ghế), sắp xếp theo chiều ngược kim đồng hồ tính từ ghế của bạn ở dưới đáy; các ghế không dùng được ẩn hoàn toàn để không chiếm diện tích.
+- **Quy tắc Bàn Tròn & Trang bị Ngửa:**
+  - Ghế hàng trên neo giãn hướng xuống (`translate-y-0`), không bao giờ đụng thanh tiêu đề khi gắn thêm nhiều trang bị/cẩm nang ngửa; khi có `> 2` lá ngửa trên ghế đối thủ, khu trang bị tự xếp lưới gọn `2×2`. Khi sang pha **Chọn Tướng**, bảng chọn mở nổi chính giữa bàn tròn để hiển thị rõ `3–5` ứng viên tướng.
 
 ---
 
@@ -97,7 +90,7 @@ Mọi màn hình trong ứng dụng (Đăng nhập, Sảnh chính, Phòng chờ,
 | :--- | :--- | :--- |
 | **1. Đang tải (Loading / Pending)** | • Khi máy chủ Cloud 0đ đang ngủ: Hiện khung **`[⏳ Đang đánh thức máy chủ phòng chơi... (Đã chờ 14s / Dự kiến 30–60s)]`** kèm nút **`[⏹️ Hủy kết nối]`**.<br>• Khi đang tải bản cập nhật 1-click: Hiện thanh tiến trình **`[⬇️ Đang tải bản cập nhật v1.0.3... 65%]`**. | • Khi đang chờ người chơi khác chọn tướng hoặc phản ứng *Vô Giải / Thiểm / Đào*: Hiện thanh đếm ngược thời gian kèm tên người đang được chờ (hoặc thông báo *"Đang chờ phản ứng Vô Giải Khả Kích toàn bàn..."*). |
 | **2. Chưa có dữ liệu (Empty / Initial)** | • Mở app lần đầu chưa đăng nhập: Hiện màn hình chào mừng với nút duy nhất **`[🔑 Đăng nhập bằng Google]`**.<br>• Sảnh chính mới vào: Ô nhập mã phòng trống kèm gợi ý rõ `Nhập 6 ký tự (VD: K9M2P4)`. | • Trang *Thống kê & Lịch sử* khi tài khoản mới chưa chơi ván nào: Hiện thông báo *"Bạn chưa có ván đấu nào được ghi nhận. Hãy hoàn thành ván đầu tiên để xem thống kê theo Thân Phận và Tướng!"*. |
-| **3. Đang thực hiện dở (Partial / In-Progress)** | • Phòng chờ mới có **1–3 người chơi thật**: Nút **`[▶️ Bắt đầu ván đấu]`** chuyển sang trạng thái khóa (mờ) kèm dòng chữ giải thích ngay bên dưới: **`"Cần thêm X người chơi thật nữa để bắt đầu (Tối thiểu 4 người)"`**. | • Khi bạn vừa bấm chọn lá `[♠7 Sát]` hoặc `[📜 Thuận Thủ Khiên Dương]` nhưng **chưa chọn ghế mục tiêu**: Các ghế đối thủ hợp lệ sáng viền vàng kèm nhãn `[🎯 Bấm để chọn]`, còn nút hành động hiện nhắc nhở: **`"Hãy bấm chọn 1 mục tiêu sáng viền vàng trên bàn"`**. |
+| **3. Đang thực hiện dở (Partial / In-Progress)** | • Phòng chờ mới có **1–3 người chơi thật**: Nút **`[▶️ Bắt đầu ván đấu]`** chuyển sang trạng thái khóa (mờ) kèm dòng chữ giải thích ngay bên dưới: **`"Cần thêm X người chơi thật nữa để bắt đầu (Tối thiểu 4 người)"`**. | • Khi bạn **bấm chọn** hoặc **nhấn giữ & kéo** `[♠7 Sát]` / `[📜 Thuận Thủ]` lên bàn: Các ghế đối thủ hợp lệ phát sáng viền vàng kèm nhãn `[🎯 Chọn mục tiêu / Thả vào mục tiêu]`, lá không cần mục tiêu hiện vùng thả nổi giữa bàn, còn Thanh Lệnh Ngữ Cảnh hiện nhắc nhở rõ hành động. |
 | **4. Thành công (Completed / Success)** | • Đăng nhập Google xong: Tự chuyển thẳng vào Sảnh chính kèm thông báo góc màn hình *"Đã đăng nhập: [Tên Google của bạn]"*.<br>• Đủ 4–8 người thật: Nút **`[▶️ Bắt đầu ván đấu (X người)]`** bật sáng màu đỏ Chu Sa. | • Kết thúc ván đấu: Hiện **Bảng Tổng Kết Ván Đấu** lật công khai toàn bộ Thân Phận của 4–8 người, ghi rõ Phe Chiến Thắng, thông báo *"Đã lưu kết quả vào Thống kê tài khoản"*, và nút **`[🔄 Quay về phòng chờ chơi ván mới]`**. |
 | **5. Gặp lỗi hoặc Không đủ quyền (Error / Permission)** | • Nhập sai mã phòng / phòng đã đủ 8 người: Hiện thông báo đỏ ngay dưới ô nhập.<br>• Trình duyệt bị tường lửa chặn trả kết quả đăng nhập Google: Hiện ô **`[📋 Dán mã đăng nhập từ trình duyệt]`**.<br>• Phiên bản app cũ hơn phòng chơi: Khóa nút vào phòng và hiện nút **`[⬇️ Cập nhật ngay (1 nhấp chuột)]`**. | • **Rớt mạng giữa ván:** Hiện thanh cảnh báo vàng trên đầu màn hình **`[📡 Mất kết nối mạng — Đang tự động kết nối lại... Ghế của bạn đang được Máy đánh hộ tạm thời]`** kèm nút **`[🔄 Kết nối lại ngay]`**.<br>• **Không đủ quyền Trọng Tài:** Người chơi thường bấm vào `[⚖️ Trọng tài]` sẽ thấy bảng ở chế độ *Chỉ xem* với ghi chú *"Chỉ Chủ phòng (hoặc Chủ phòng tạm thời khi Chủ phòng mất mạng >30s) mới được bấm các nút này"*. |
 

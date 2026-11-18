@@ -1,7 +1,7 @@
 # AGENTS.md — Quy Tắc Làm Việc Bắt Buộc Dành Cho AI
 
 > **Dự án:** LKDF — Game Thẻ Bài Tam Quốc Sát (Windows Native Online 4–8 Người)
-> **Cập nhật lần cuối:** 2026-11-16
+> **Cập nhật lần cuối:** 2026-11-18
 
 Tài liệu này quy định các nguyên tắc bắt buộc cho mọi AI Agent tham gia phân tích, lập trình, kiểm thử hoặc bảo trì dự án này.
 
@@ -9,12 +9,12 @@ Tài liệu này quy định các nguyên tắc bắt buộc cho mọi AI Agent 
 
 ## 1. Thứ Tự Đọc Tài Liệu & Kiểm Tra Đầu Phiên Trước Khi Làm Bất Kỳ Việc Gì
 
-Khi bắt đầu một phiên làm việc mới, AI **bắt buộc thực hiện theo thứ tự sau** trước khi đề xuất kế hoạch hoặc sửa code:
-1. **[PROJECT_MEMORY.md](./PROJECT_MEMORY.md)**, **[`.agents/PROJECT_MEMORY.md`](./.agents/PROJECT_MEMORY.md)** và **[HUONG_DAN_CHO_TOI.md](./HUONG_DAN_CHO_TOI.md)** — Nắm trạng thái hiện tại, các quyết định đã khóa, ghi chú bàn giao kỹ thuật từ phiên trước và bước kế tiếp đang chờ.
-2. **Chạy kiểm tra `git status --short` và `git log -n 3 --oneline`** — Phát hiện ngay mọi file phiên trước đang làm dở hoặc chưa kịp `commit` để bảo vệ công việc hiện có, tuyệt đối không ghi đè mù quáng.
-3. **[REQUIREMENTS.md](./REQUIREMENTS.md)** — Nắm yêu cầu chức năng, bảng Thân Phận 4–8 người, 25 tướng chuẩn, 108 lá chuẩn và tiêu chí nghiệm thu.
-4. **[DESIGN.md](./DESIGN.md)** — Khi làm việc liên quan đến giao diện, bố cục 4–8 ghế, nhãn nút hoặc 5 trạng thái màn hình.
-5. **[ARCHITECTURE.md](./ARCHITECTURE.md)** & **[DATA_MODEL.md](./DATA_MODEL.md)** — Khi làm việc với lõi luật, máy chủ, đăng nhập Google, lưu trữ Cloud 0đ hoặc tự cập nhật 1-Click.
+Khi bắt đầu một phiên làm việc mới (kể cả khi vừa chuyển sang máy tính / AI khác), AI **bắt buộc thực hiện theo thứ tự sau** trước khi đề xuất kế hoạch hoặc sửa code:
+1. **[CONTEXT.md](./CONTEXT.md)**, **[PROJECT_MEMORY.md](./PROJECT_MEMORY.md)**, **[`.agents/PROJECT_MEMORY.md`](./.agents/PROJECT_MEMORY.md)** và **[HUONG_DAN_CHO_TOI.md](./HUONG_DAN_CHO_TOI.md)** — Nắm toàn bộ lịch sử từ Bước 0.1 đến hiện tại, các quyết định đã khóa, ghi chú bàn giao kỹ thuật từ phiên trước và bước kế tiếp đang chờ.
+2. **Chạy kiểm tra `git status --short`, `git log -n 3 --oneline` và đọc [`graphify-out/GRAPH_REPORT.md`](./graphify-out/GRAPH_REPORT.md)** — Phát hiện ngay mọi file chưa `commit` để bảo vệ công việc hiện có và nắm bản đồ mô-đun kiến trúc ngay lập tức.
+3. **[REQUIREMENTS.md](./REQUIREMENTS.md)** & **[RULES_STANDARD.md](./RULES_STANDARD.md)** — Nắm yêu cầu chức năng, bảng Thân Phận 4–8 người, 25 tướng chuẩn, 108 lá chuẩn Yoka (không lẫn bản mở rộng) và 8 tiêu chí nghiệm thu.
+4. **[DESIGN.md](./DESIGN.md)** — Khi làm việc liên quan đến giao diện **Doanh Trại A Responsive (`960×600`–`2K`)**, Cổ Thư & Gỗ Mun Cách 2, Nhấn giữ & Quăng bài, 4 ô Trang bị ngửa hoặc 5 trạng thái màn hình.
+5. **[ARCHITECTURE.md](./ARCHITECTURE.md)** & **[DATA_MODEL.md](./DATA_MODEL.md)** — Khi làm việc với lõi luật, máy chủ, đăng nhập Google, lưu trữ Cloud 0đ hoặc tự cập nhật 1-Click (`302` CDN).
 6. **[TASKS.md](./TASKS.md)** — Kiểm tra đúng đầu việc đang thực hiện và điều kiện hoàn thành của đầu việc đó.
 
 ---

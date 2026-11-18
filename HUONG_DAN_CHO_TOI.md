@@ -42,7 +42,12 @@ Vì bạn là người mới và không lập trình, bạn **không cần đọ
 > - 🔄 **Giai đoạn 5 — Đóng gói Windows, Cập nhật 1-Click & Nghiệm thu:**
 >   - ✅ **Đã xong Bước 5.1** (Cổng cập nhật `/api/update/*` đọc GitHub Private, hộp thoại `[⬇️ Cập nhật ngay]` trong app, đóng gói Windows NSIS `.exe` + GitHub Actions & hướng dẫn bật Cloud 0đ).
 >   - ✅ **Đã kiểm chứng kỹ thuật & đối chiếu 8/8 tiêu chí `AC-1`–`AC-8` (Bước 5.2):** Toàn bộ `typecheck` (0 lỗi), `test:unit` (82/82), `test:fuzz` (500/500 ván, 0 deadlock), `test:integration` (23/23), kiểm tra rò rỉ bí mật (`42` file = 0 lỗi) & đóng gói `.exe` đều **ĐẠT 100%**.
-> - 👉 **BẠN ĐANG Ở ĐÂY — Việc cuối cùng của bạn (Nghiệm thu thực tế):** Push code lên GitHub, làm theo **Mục 5** để bật Cloud 0đ + Google OAuth, gửi bộ cài cho hội bạn chơi thử theo **Mục 6** và nhắn AI chốt nghiệm thu hoàn tất!
+>   - ✅ **Đã xong Nền Đồ họa Pre-Artwork, Bàn Tròn 4–8 Ghế (`Tiến Lên`), Update `302` CDN & Vá Chuẩn Luật Yoka (2026-11-18):** Thay toàn bộ emoji bằng icon Vector offline, sửa lại thành **1 Bàn Tròn** kèm tụ bài đánh ra xòe kiểu Tiến Lên Miền Nam + nút `Nhật ký` riêng, xuất bản sổ tay luật chuẩn `RULES_STANDARD.md` và vá sạch 5 lỗi luật thực tế.
+>   - ✅ **Đã nạp Trọn Bộ 25 Tướng + 32 Lá Bài + Nền Rừng Trúc + 7 SFX & Đổi Khung Cổ Thư + Mặt Sau Long Văn Xanh Chàm (2026-11-18):** Nén gọn tổng cộng chỉ **1.45 MB** (`.webp` 2x + `.ogg`), bỏ nền trắng chói chuyển sang lụa vàng cổ `#DEC79C` đồng điệu tranh mực tàu, mặt sau Long Văn Xanh Chàm vector sắc nét, vượt qua **85/85 unit tests + 23/23 integration tests + 0 ảnh lỗi ở `1280×720`**.
+>   - ✅ **Đã nâng cấp Đồng Bộ Thẻ Nhân Vật / Ghế Tướng Nền Mờ Nghệ Thuật & Khung Gỗ Mun (Cách 2 — 2026-11-18):** Áp dụng đồng nhất trên cả ghế đối thủ (`SeatCard`), thẻ bản thân góc dưới-trái và màn hình chọn tướng (`HeroSelectPanel`); giữ nguyên kích thước bàn tròn `4–8P`, không cắt huy hiệu nổi `"Chọn mục tiêu"`, sửa hiển thị `Lưu Bị · Chủ` không bị cắt chữ `L...`, đạt **85/85 unit + 23/23 integration + 0 lỗi `typecheck`/`build` + 0 ảnh vỡ ở `1280×720`**.
+>   - ✅ **Đã hoàn thành Bàn Đấu Doanh Trại A Responsive (`960×600`–`2K`), Nhấn Giữ & Quăng Bài, Phóng To Ngọc Máu & 4 Ô Trang Bị Ngửa, Khoang Soi Kỹ Năng Thống Nhất (2026-11-18):** Nạp 8 họa tiết Doanh Trại A thật (0 ảnh AI, `1.69 MB`), phóng to ngọc sinh lực (`~12px` có viền sáng + số trắng rõ), ô trang bị ngửa ảnh lớn + chất bài vector sáng rõ trên nền tối, xếp 2 cột gọn không chạm ghế từ `960×600` tới `1280×720` (`7P–8P`), nhấn giữ kéo-thả bài trực tiếp (`8♦ Sát`, `4♥ Đào`), ẩn thanh lệnh ngoài lượt (`0px` giật bài), và soi chiêu ở khoang phải; đạt **0 lỗi `typecheck`, 85/85 unit, 23/23 integration, `build` sạch, `0` đè ghế & `0` lỗi console**.
+> - 👉 **BẠN ĐANG Ở ĐÂY — Chỉ còn đúng bước Đóng gói, Đưa lên GitHub & Bật Cloud 0đ (Bước 5.2 cuối):**
+>   - Xem thử trực tiếp cửa sổ game Electron vừa mở; nếu ưng ý rồi thì nhắn tôi **`Commit và push lên cho tôi`** (có thể bảo chạy thêm `npm run package:win` nếu muốn test file `.exe` ngay trên máy), sau đó làm theo **Mục 5** để bật Cloud 0đ + Google OAuth, gửi bộ cài cho hội bạn chơi thử theo **Mục 6** và nhắn tôi chốt nghiệm thu!
 
 ---
 
@@ -120,9 +125,9 @@ Vì bạn là người mới và không lập trình, bạn **không cần đọ
 
 ## 3. Bộ "Câu Lệnh Cứu Hộ" Khi Bạn Gặp Tình Huống Đặc Biệt
 
-### 3.1. Khi bạn tắt máy đi ngủ, hôm sau mở một cuộc trò chuyện (cửa sổ chat) mới
-Bạn chỉ cần copy nguyên câu này dán vào ô chat mới:
-> `Hãy đọc PROJECT_MEMORY.md, HUONG_DAN_CHO_TOI.md, REQUIREMENTS.md và TASKS.md trong thư mục dự án, tóm tắt ngắn gọn chúng ta đã làm tới bước nào rồi thực hiện tiếp bước kế tiếp cho tôi (nhớ cập nhật lại HUONG_DAN_CHO_TOI.md sau khi làm xong).`
+### 3.1. Khi bạn tắt máy đi ngủ, sang máy mới, hoặc mở một cuộc trò chuyện (cửa sổ chat) mới
+Bạn chỉ cần copy nguyên câu này dán vào ô chat mới (kể cả AI ở máy tính mới hoàn toàn):
+> `Hãy đọc AGENTS.md, CONTEXT.md, PROJECT_MEMORY.md, .agents/PROJECT_MEMORY.md, HUONG_DAN_CHO_TOI.md, graphify-out/GRAPH_REPORT.md, REQUIREMENTS.md, DESIGN.md và TASKS.md trong thư mục dự án, kiểm tra git status --short, tóm tắt ngắn gọn chúng ta đã làm tới bước nào rồi thực hiện tiếp bước kế tiếp cho tôi (nhớ giữ đúng chuẩn Báo cáo Sếp và cập nhật 4 file tiến độ sau khi làm xong).`
 
 ### 3.2. Khi bạn thấy có lỗi hoặc muốn sửa một chỗ trên màn hình
 Bạn không cần biết tên kỹ thuật, chỉ cần mô tả đúng những gì mắt bạn nhìn thấy:
@@ -227,7 +232,7 @@ Hãy gọi kèm `/honest-advisor` và `/ultrathinking` như bạn đã dùng r�
 | **AC-5** | Chính xác 108 lá, 25 Tướng & 2 Nội Gián (`>= 500` ván không treo) | ✅ **82/82** Unit Tests + **500/500 ván Fuzz Test** (`8.82s`, 0 deadlock, 0 rò rỉ `PlayerViewState`, đủ 25 tướng & 3 phe thắng) | ⏳ Chơi thực tế cùng nhóm bạn kiểm tra cảm giác mượt mà của lá bài & kỹ năng |
 | **AC-6** | Giữ nhịp chờ *Vô Giải Khả Kích* `2–3.5s` chống lộ bài | ✅ `ws-match-flow.test.ts` (3/3) kiểm chứng thời gian dừng giả lập đồng nhất không rò rỉ cờ ẩn | ⏳ Khi đánh Cẩm nang lúc bàn không có *Vô Giải*, quan sát thấy vẫn dừng tự nhiên `2–3.5s` |
 | **AC-7** | Tự kết nối lại / Máy đánh hộ, Trọng Tài 4 nút, chuyển quyền 30s, khôi phục Server Restart | ✅ `ws-match-flow.test.ts` (3/3), `referee-host-failover.test.ts` (3/3), `rooms-snapshot.test.ts` (3/3) | ⏳ Thử tắt app 1 người rồi mở lại đúng ghế/bài; thử 4 nút Trọng Tài & ngắt mạng Chủ phòng > 30s |
-| **AC-8** | 1 khung Windows `1280×720` không cuộn, nháy Taskbar & hỏi thoát `[X]` | ✅ Browser `4P–8P` 0 tràn khung + chạy thử `Tam Quoc Sat LKDF.exe` đóng gói + IPC `flashFrame` & hộp thoại `[X]` | ⏳ Thu nhỏ cửa sổ lúc chưa tới lượt để thấy Taskbar nháy cam; thử bấm `[X]` giữa ván thấy bảng hỏi xác nhận |
+| **AC-8** | 1 khung Windows `960×600` -> `2K` không cuộn, nháy Taskbar & hỏi thoát `[X]` | ✅ Browser `960×600`, `1280×720` (`4P–8P`) & `1600×900` 0 tràn khung, kéo-thả bài + Electron `minWidth: 960×600` + chạy thử `Tam Quoc Sat LKDF.exe` đóng gói + IPC `flashFrame` & hộp thoại `[X]` | ⏳ Thu nhỏ cửa sổ lúc chưa tới lượt để thấy Taskbar nháy cam; thử bấm `[X]` giữa ván thấy bảng hỏi xác nhận |
 
 ---
 

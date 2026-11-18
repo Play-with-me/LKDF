@@ -53,7 +53,7 @@ Người dùng tải bộ cài đặt Windows (`.exe`/`.msi`) 1 lần duy nhất
 - Không làm nút cộng/trừ máu hay rút/hủy bài thủ công trong Bảng Trọng Tài.
 - Không làm đăng nhập bằng mật khẩu tự tạo hay Discord (chỉ dùng duy nhất Đăng nhập bằng Google).
 - Chưa đưa bộ bài mở rộng *Quân Tranh* (*Tửu, Sát Lôi, Sát Hỏa, Thiết Tác Liên Hoàn, Đằng Giáp, Hỏa Công, Binh Lương Thốn Đoạn*) vào v1.
-- Chưa vẽ tranh chân dung minh họa riêng cho từng tướng/lá bài, không làm đồ họa 3D/WebGL.
+- Không làm đồ họa 3D/WebGL nặng; ưu tiên biểu tượng vector SVG sắc nét (`Game-icons.net` & `Lucide`) và dựng sẵn khung chờ tự nạp tranh 2D WebP (25 Tướng, 32 loại bài, nền bàn) cùng âm thanh `.ogg/.mp3` khi bổ sung gói đồ họa.
 - Không làm bất kỳ tính năng thu phí/thương mại nào (cửa hàng, nạp tiền, vật phẩm), không ghép trận công khai với người lạ, không làm chat giọng nói trong ứng dụng.
 
 ---
@@ -97,12 +97,12 @@ Người dùng tải bộ cài đặt Windows (`.exe`/`.msi`) 1 lần duy nhất
   - *Sát (30 lá):* Gây 1 sát thương cho mục tiêu trong tầm đánh (mặc định tối đa 1 lần/lượt chính).
   - *Thiểm (15 lá):* Phản ứng né tránh lá *Sát* hoặc *Vạn Tiễn Tề Phát*.
   - *Đào (8 lá):* Hồi 1 máu cho bản thân trong lượt chính (khi chưa đầy máu) hoặc cứu 1 máu cho người đang ở trạng thái *Hấp hối* (`❤️ <= 0`).
-- **Bài Cẩm Nang Thường (32 lá) & Cẩm Nang Thời Gian (4 lá):**
+- **Bài Cẩm Nang Thường (31 lá) & Cẩm Nang Thời Gian (5 lá):**
   - *Vô Trung Sinh Hữu (4 lá)*, *Thuận Thủ Khiên Dương (5 lá — khoảng cách 1)*, *Quá Hà Sái Cầu (6 lá)*, *Quyết Đấu (3 lá)*, *Tá Đao Sát Nhân (2 lá)*, *Nam Man Nhập Xâm (3 lá)*, *Vạn Tiễn Tề Phát (1 lá)*, *Đào Viên Kết Nghĩa (1 lá)*, *Ngũ Cốc Phong Đăng (2 lá)*, *Vô Giải Khả Kích (4 lá — gồm 1 lá EX)*.
   - *Lạc Bất Tư Thục (3 lá)*: Phán xét khác chất Cơ (`♥`) thì mất giai đoạn Đánh bài.
   - *Thiểm Điện / Sét (2 lá — gồm 1 lá EX)*: Phán xét trúng Bích từ `2–9` (`2♠–9♠`) thì nhận 3 sát thương Lôi và hủy lá *Thiểm Điện*; nếu không trúng thì chuyển sang khu Phán xét của người kế tiếp.
 - **Bài Trang Bị (19 lá):**
-  - *Vũ khí (8 lá):* Gia Cát Liên Nỗ (tầm 1, đánh Sát không giới hạn), Thanh Công Kiếm (tầm 2, bỏ qua giáp), Phương Thiên Họa Kích (tầm 4, lá Sát cuối cùng trên tay chọn tối đa 3 mục tiêu), Thanh Long Yển Nguyệt Đao (tầm 3, bị Thiểm được đánh tiếp Sát), Trượng Bát Xà Mâu (tầm 3, 2 lá trên tay thành Sát), Quán Thạch Phủ (tầm 3, bị Thiểm bỏ 2 lá để ép trúng), Từ Hùng Song Cổ Kiếm (tầm 2, đánh khác giới), **Hàn Băng Kiếm** (tầm 2 — EX, thay sát thương bằng hủy 2 lá của mục tiêu).
+  - *Vũ khí (10 lá):* Gia Cát Liên Nỗ (2 lá, tầm 1, đánh Sát không giới hạn), Thanh Công Kiếm (tầm 2, bỏ qua giáp), Phương Thiên Họa Kích (tầm 4, lá Sát cuối cùng trên tay chọn tối đa 3 mục tiêu), Thanh Long Yển Nguyệt Đao (tầm 3, bị Thiểm được đánh tiếp Sát), Trượng Bát Xà Mâu (tầm 3, 2 lá trên tay thành Sát), Quán Thạch Phủ (tầm 3, bị Thiểm bỏ 2 lá để ép trúng), Từ Hùng Song Cổ Kiếm (tầm 2, đánh khác giới), **Hàn Băng Kiếm** (tầm 2 — EX, thay sát thương bằng hủy 2 lá của mục tiêu).
   - *Giáp (3 lá):* Bát Quái Trận (phán xét chất Đỏ coi như có Thiểm), **Nhân Vương Thuẫn** (EX — Sát màu Đen vô hiệu).
   - *Ngựa `+1` Phòng thủ (3 lá):* Đích Lố, Tuyệt Ảnh, Trảo Hoàng Phi Điện.
   - *Ngựa `-1` Tấn công (3 lá):* Xích Thố, Đại Uyên, Tử Tinh.

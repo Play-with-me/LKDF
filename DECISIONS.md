@@ -1,12 +1,12 @@
 # DECISIONS.md — Lịch Sử Các Quyết Định Quan Trọng (ADR)
 
 > **Dự án:** LKDF — Game Thẻ Bài Tam Quốc Sát (Windows Native Online 4–8 Người)
-> **Cập nhật lần cuối:** 2026-11-16
+> **Cập nhật lần cuối:** 2026-11-18
 > **Tài liệu liên quan:** [REQUIREMENTS.md](./REQUIREMENTS.md) · [ARCHITECTURE.md](./ARCHITECTURE.md) · [PROJECT_MEMORY.md](./PROJECT_MEMORY.md)
 
 ---
 
-## Bảng Tổng Hợp 10 Quyết Định Đã Chốt Chính Thức
+## Bảng Tổng Hợp 12 Quyết Định Đã Chốt Chính Thức
 
 | Mã quyết định | Nội dung quyết định | Trạng thái | Ngày chốt |
 | :---: | :--- | :---: | :---: |
@@ -18,8 +18,10 @@
 | **ADR-006** | Bảng Trọng Tài gồm **4 nút cơ bản** + Tự chuyển quyền Trọng Tài tạm thời nếu Chủ phòng mất mạng `>30s` | Đã khóa | 2026-11-16 |
 | **ADR-007** | Sử dụng duy nhất **Đăng nhập bằng Google (OAuth 2.0)** để định danh và phân lọc dữ liệu người dùng | Đã khóa | 2026-11-16 |
 | **ADR-008** | Vận hành trên **Cloud 0 đồng + Kho dữ liệu Cloud 0 đồng** có lưu bản chụp chống mất ván | Đã khóa | 2026-11-16 |
-| **ADR-009** | Kho GitHub để **Private**, cập nhật bản mới bằng **1 cú nhấp chuột ngay trong App** qua Update Proxy | Đã khóa | 2026-11-16 |
+| **ADR-009** | Kho GitHub để **Private**, cập nhật bản mới bằng **1 cú nhấp chuột ngay trong App** qua Update Proxy (`302` CDN) | Đã khóa | 2026-11-18 |
 | **ADR-010** | Chuẩn hóa bộ **11 tài liệu dự án** đầy đủ thay cho các tên nháp rời rạc | Đã khóa | 2026-11-16 |
+| **ADR-011** | Chuẩn hóa **Bàn Tròn cân đối 4–8 ghế**, **Icon SVG offline** (`Game-icons CC-BY-3.0` + `Lucide`) & **Hạ tầng tự nạp WebP** (`25` Tướng, `32` Loại bài) | Đã khóa | 2026-11-18 |
+| **ADR-012** | **Doanh Trại A + Cổ Thư/Gỗ Mun (Cách 2)**, Responsive **`960×600`–`2K`**, **Nhấn giữ & Quăng bài**, Thanh lệnh ẩn ngoài lượt & Khoang Soi Kỹ Năng thống nhất | Đã khóa | 2026-11-18 |
 
 ---
 
@@ -74,5 +76,15 @@
 - **Bối cảnh:** Muốn vận hành 0 đồng/tháng, giữ kho mã nguồn GitHub ở chế độ **Private** nội bộ nhóm, nhưng mỗi khi đẩy bản mới lên GitHub thì bạn bè mở app chỉ cần nhấp chuột 1 lần ngay trên app để cập nhật (không phải vào lại GitHub tải file).
 - **Quyết định:**
   - Ghép **Máy chủ Cloud 0 đồng** với **Kho dữ liệu Cloud 0 đồng** đi kèm để lưu hồ sơ Google, thống kê và bản chụp ván đấu (`RoomSnapshot`).
-  - Máy chủ đóng vai trò **Cổng trung gian cập nhật (`Update Proxy`)** sử dụng biến môi trường `GITHUB_RELEASE_TOKEN` để ứng dụng Windows kiểm tra và tải bản cập nhật bằng **1 cú nhấp chuột ngay trong app**.
-- **Lý do:** Đạt đồng thời cả 3 yêu cầu: 0 đồng chi phí, kho code kín đáo (Private), và trải nghiệm cập nhật 1 nhấp chuột tiện lợi nhất cho người chơi.
+  - Máy chủ đóng vai trò **Cổng trung gian cập nhật (`Update Proxy`)** sử dụng biến môi trường `GITHUB_RELEASE_TOKEN` để kiểm tra phiên bản (`~2 KB`) và mặc định trả **chuyển hướng `302` sang link CDN tạm thời của GitHub** (không kèm token, không tiêu tốn hạn mức `5 GB/tháng` của Render Free; vẫn có tùy chọn `UPDATE_PROXY_DOWNLOAD_MODE=stream` dự phòng).
+- **Lý do:** Đạt đồng thời cả 3 yêu cầu: 0 đồng chi phí (kể cả khi gói cài đặt có thêm nhiều tài nguyên đồ họa), kho code kín đáo (Private), và trải nghiệm cập nhật 1 nhấp chuột tiện lợi nhất cho người chơi.
+
+### ADR-011: Bàn Tròn cân đối 4–8 ghế, Icon SVG Offline & Hạ tầng Tự nạp Tranh WebP
+- **Bối cảnh:** Giao diện chữ + emoji ban đầu quá sơ xài, bố cục 3 khối chữ nhật cũ làm khoảng trống không đều và thanh điều khiển dưới bị lệch `20px`; đồng thời cần chuẩn bị sẵn hạ tầng đón tranh 25 Tướng, 32 Loại bài và âm thanh mà không làm phình dung lượng hay phải sửa lại code React sau này.
+- **Quyết định:** Chuyển bàn đấu sang **1 Bàn Tròn thống nhất** (`SeatCard` đồng đều chiều cao, `256px · flex-1 · 248px` cân đối), thay sạch emoji bằng **vector SVG offline** (`Lucide` + 46 biểu tượng cherry-pick từ `Game-icons.net CC-BY-3.0` có ghi nguồn trong hộp thoại Luật), dựng sẵn `assetCatalog` (`import.meta.glob`) cùng công cụ nén `sharp` WebP 2x (`scripts/assets-pipeline.mjs`).
+- **Lý do:** Nâng chất lượng game ngay lập tức với chi phí 0đ, bundle nhẹ, và biến việc thêm tranh tướng/lá bài về sau thành thao tác thả file đơn giản.
+
+### ADR-012: Giao diện Doanh Trại A, Responsive (`960×600`–`2K`), Nhấn giữ & Quăng bài & Khoang Soi Kỹ Năng
+- **Bối cảnh:** Sau khi có đủ bộ tranh 25 Tướng & 32 Lá bài, người dùng yêu cầu bàn đấu mang khí chất doanh trại Tam Quốc cổ trang trầm tĩnh (100% họa tiết nghệ sĩ thật, 0 đồ AI), co giãn được khi thu hẹp cửa sổ Windows xuống `960×600`, đánh bài nhanh bằng kéo-thả (*nhấn giữ & quăng*), nhìn rõ trang bị ngửa + ngọc máu, ẩn thanh nút lệnh khi ngoài lượt và dồn mô tả chiêu Tướng/Bài ngửa vào một khoang cố định không che mặt bàn.
+- **Quyết định:** Áp dụng chủ đề **Doanh Trại A (Xích Bích & Đĩa Rồng OL)** kết hợp **Cổ Thư Mẫu 3** & **Gỗ Mun Cách 2**, hạ `minWidth: 960 × minHeight: 600` cùng CSS Container Queries (`.lkdf-arena-stage`), thêm động cơ Pointer Drag-and-Drop (`>= 8px` + `createPortal`), chừa sẵn 4 ô trang bị ngửa & phóng to `HpJadeMeter` + `SuitGlyph` tương phản nền tối, đặt thanh lệnh nằm ngang ẩn ngoài lượt phía trên dải bài neo đáy, và dành riêng ô góc dưới-phải cho `MatchInspectorBox`.
+- **Lý do:** Giảm mỏi mắt khi chơi nhiều giờ, đánh mượt bằng 1 thao tác kéo-thả mà vẫn an toàn cho các bài đa mục tiêu (bấm chọn/phím tắt), và đảm bảo đọc rõ trạng thái bàn chơi từ cửa sổ chia đôi màn hình đến màn 2K.

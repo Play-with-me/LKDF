@@ -167,6 +167,67 @@ Xem đầy đủ 10 quyết định (`ADR-001` đến `ADR-010`) tại [DECISION
     - `npm run build`: biên dịch sản phẩm sạch sẽ (`vite build` 156 modules + `tsc`), `exit code 0`.
     - Quét bảo mật `42` file mã nguồn & gói build `apps/desktop/{dist,dist-electron}`: **0** bí mật server (`GOOGLE_CLIENT_SECRET`, `GITHUB_RELEASE_TOKEN`, `DATABASE_AUTH_TOKEN`, `JWT_SESSION_SECRET`, `TAURI_SIGNING_PRIVATE_KEY`), **0** mã `DEV_PREVIEW_ONLY` lọt vào gói chính.
 
+- **[Hoàn thành — 2026-11-18] Nền tảng Đồ họa Pre-Artwork, Biểu tượng Vector Offline, Bàn Tròn Thống Nhất 4–8 Ghế & Cổng Update `302` CDN:**
+  - **Xây nền Tài nguyên & Âm thanh (sẵn sàng cho 25 Tướng + 32 Lá bài + SFX):**
+    - Thay toàn bộ emoji hệ điều hành rời rạc bằng hệ thống icon Vector 100% offline (`apps/desktop/src/components/icons/`): **46 biểu tượng Game-Icons** trích lọc (`scripts/build-game-icons.mjs` -> `gameIconsData.ts`), `lucide-react`, 4 **Ấn triện Hán tự SVG** (`蜀 · 魏 · 吴 · 群` trong `FactionSeal.tsx`), SVG chất bài (`SuitGlyph.tsx`), Ngọc HP (`HpJadeMeter.tsx`) và Mặt lưng bài (`CardBack.tsx`), kèm ghi nhận bản quyền `CC BY 3.0` trong `RulesHotkeysDialog.tsx`.
+    - Xây dựng bộ tự nạp tài nguyên Vite `import.meta.glob` (`apps/desktop/src/lib/assetCatalog.ts`), nâng cấp `soundFx.ts` ưu tiên file âm thanh `.ogg/.mp3/.wav` thật với Web Audio fallback ấm hơn, và tạo công cụ dòng lệnh `scripts/assets-pipeline.mjs` (`npm run assets:check`, `assets:optimize`, `assets:app-icon` dùng `sharp` + `png-to-ico`) kèm thư mục đầu vào `raw-assets/` (loại khỏi Git qua `.gitignore`) và bộ icon ứng dụng mới `apps/desktop/assets/icon.{png,ico}`.
+  - **Thiết kế lại Bàn Đấu thành 1 Bàn Tròn (`Bàn tròn`) Thống Nhất & Thu gọn Bảng Trung Tâm:**
+    - Chuyển `MatchArenaLayout.tsx` từ lưới 3 hộp chữ U thành **1 Bàn Tròn Thống Nhất** với viền vàng đồng tâm, thanh đáy chia 3 cột cân đối (`256px · flex-1 · 248px`, `h-[204px]`), toàn bộ ghế đối thủ giữ đồng nhất kích thước (`224×106px` cho `4P–6P`, `208×100px` cho `7P–8P`), bật `line-clamp-2` trong `HandCardItem.tsx` tránh cắt chữ tên bài dài, sửa lệch chiều rộng `MatchActionSidebar.tsx`, và xóa ghi chú cũ ở `WaitingRoomScreen.tsx` & `StatsPage.tsx`.
+    - Dọn sạch khung chữ giữa bàn thành **mặt bàn bài thuần túy (`MatchCenterBoard.tsx`)**: bỏ hoàn toàn khung nhật ký khỏi lòng bàn tròn, chỉ giữ thanh trạng thái lượt nổi gọn + xấp bài rút úp (`CardBack size="lg"`) + **tụ tối đa 5 lá bài đánh ra xòe ngang đè lên nhau kiểu Tiến Lên Miền Nam** (tự nạp ảnh `.webp`/icon Vector); đưa toàn bộ nhật ký chi tiết vào hộp thoại `ActionLogDialog.tsx` chỉ mở khi bấm nút **`Nhật ký (X)`** ở thanh đầu trang (`MatchScreen.tsx` & `DevMatchPreview.tsx`), và ẩn badge `0s` đỏ trong `DevMatchPreview`.
+  - **Cổng Update `302` Redirect tiết kiệm Render Free:**
+    - Cập nhật `apps/server/src/update-proxy/{index,routes}.ts`, `config.ts`, `server.ts` mặc định trả **`302` chuyển hướng thẳng sang CDN ký tên của GitHub** (không kèm `Authorization`, giữ `?mode=stream` cho tương thích tùy chọn) để Render Free (`5 GB/tháng`) không gánh lưu lượng file cài lớn khi app chứa nhiều đồ họa. Cập nhật `DESIGN.md`, `REQUIREMENTS.md` và `DECISIONS.md` (`ADR-009`, `ADR-011`).
+  - **Bằng chứng kiểm tra thực tế sau chỉnh sửa cuối (2026-11-18):**
+    - `npm run typecheck`: `0 lỗi` trên cả 3 workspace.
+    - `npm run test:unit`: **11 files · 82/82 passed** (`635ms`), `exit code 0`.
+    - `npm run test:integration`: **7 files · 23/23 passed** (`4.97s`, gồm `update-proxy.test.ts` kiểm chứng `302` CDN redirect + `?mode=stream`), `exit code 0`.
+    - `npm run build` (`vite build` `2269` modules -> `714.37 kB` / `207.12 kB` gzip + `tsc`): `exit code 0`. (`npm run assets:check`, quét emoji `13` chất bài trong `matchTypes.ts` & quét bí mật `SECRET_HITS=0` đã chạy trước đó và giữ nguyên).
+    - Kiểm tra trình duyệt tại `1280×720`: **0 lỗi console, 0 thanh cuộn trang, 0 chồng lấn ghế-ghế & ghế-giữa bàn** qua đủ **5 mốc `4P, 5P, 6P, 7P, 8P`** (`centerBox: 440×197px`, khoảng trống nhỏ nhất `34.95px–69.41px`), thanh đầu 1 hàng gọn, xác nhận mở/đóng `Nhật ký` (`ActionLogDialog`) và tụ 3 lá bài đánh ra xòe kiểu Tiến Lên Miền Nam trên `6P`.
+
+- **[Hoàn thành — 2026-11-18] Đặc tả Chuẩn Yoka (`RULES_STANDARD.md`) & Vá 5 Lỗi Luật Thực Tế (`packages/shared`):**
+  - Viết trọn bộ tài liệu [RULES_STANDARD.md](./RULES_STANDARD.md) cho Bản Tiêu Chuẩn (`108` lá = `104 + 4 EX` & `25` Tướng gốc, không lẫn Giới Hạn Đột Phá / Quân Tranh), đồng bộ [README.md](./README.md) và chỉnh nhãn `31/5/10` trong [REQUIREMENTS.md](./REQUIREMENTS.md).
+  - Vá 5 lỗi luật thực tế & cập nhật Bot AI (`packages/shared/src/`): (1) `Điêu Thuyền · Ly Gián` qua cửa sổ *Vô Giải Khả Kích* & chặn Gia Cát *Không Thành* làm mục tiêu thứ 2; (2) *Bát Quái Trận* & *Hộ Giá* cho phép lật/hỏi ở từng *Thiểm* gặp Lữ Bố *Vô Song* + gom hậu xử lý `completeStrikeDodged` (`Quán Thạch Phủ` / `Thanh Long Đao`); (3) *Quán Thạch Phủ* được bỏ chính mình; (4) `Vô Giải Khả Kích` kích hoạt *Tập Trí* (Hoàng Nguyệt Anh) & dùng chung `SKILL_RUNTIME.discardHandCards` ở `RESPOND_NULLIFICATION` + `RESPOND_TU_HUNG` cho *Liên Doanh* (Lục Tốn).
+  - **Bằng chứng kiểm tra toàn diện sau khi sửa luật (2026-11-18):**
+    - `npm run typecheck`: `0 lỗi` toàn Monorepo.
+    - `npm run test:unit`: **11 files · 85/85 passed** (`550ms`, bổ sung 3 kịch bản kiểm tra 5 lỗi chuẩn Yoka vừa vá).
+    - `npm run test:fuzz`: **500/500 ván** (`100 ván × 4P/5P/6P/7P/8P` trong **`9.08s`**, 0 deadlock, 0 rò rỉ `PlayerViewState`, đủ 25 tướng & 3 phe thắng).
+    - `npm run test:integration`: **7 files · 23/23 passed** (`4.79s`).
+    - `npm run build` (`vite build` `2269` modules -> `714.44 kB` / `207.13 kB` gzip + `tsc`): `exit code 0`.
+
+- **[Hoàn thành — 2026-11-18] Nạp Đủ Bộ Tranh 25 Tướng + 32 Lá Bài + Nền Rừng Trúc, 7 SFX & Đổi Khung Lá Bài Cổ Thư + Mặt Sau Long Văn Xanh Chàm (Mẫu 3):**
+  - Đã kiểm tra 3 kho khách hàng gửi (`tluannn/tamquocsat`, `Duylam0290/tamquocsat`, `shin419/tamquocsat`) và tìm ra nguồn đầy đủ/sạch nhất từ `holynova/sanguosha_hero_images` (25/25 tướng `750×950` không khung chữ), `Mogara/QSanguosha` + `gaodayihao/QSanguosha` (32/32 lá bài cắt gọn riêng phần tranh ở giữa sạch chữ Hán, `table-bg` rừng trúc thủy mặc, 7 SFX `.ogg` ngắn không thoại Trung Quốc) và `tluannn` (`lobby-banner` núi non thủy mặc).
+  - Tinh chỉnh `scripts/assets-pipeline.mjs` nén tranh lá bài theo tỷ lệ `320×260` (giữ nguyên đầu vũ khí & Bát Quái không bị xén cạnh) và chỉnh căn khung khuôn mặt `object-[50%_18%]` trong `SeatCard.tsx`, `MatchArenaLayout.tsx`, `HeroSelectPanel.tsx`.
+  - Áp dụng **Mẫu 3** theo duyệt của Khách hàng: thay nền giấy trắng bằng **Cổ Thư Lụa Vàng Trầm (`#DEC79C → #C6A673`, viền `#7C5828`, chữ `#1D150D`/`#A61B1B`)** trong `index.css`, `HandCardItem.tsx`, `MatchCenterBoard.tsx` và `DESIGN.md`, đồng thời thiết kế lại **Mặt Sau Long Văn Xanh Chàm Cổ Điển SVG (`#1E3756 → #0F1B2B` + Rồng Vàng `#F6D365`)** trong `CardBack.tsx` & chồng bài rút `MatchCenterBoard.tsx`.
+  - **Bằng chứng kiểm tra thực tế sau chỉnh sửa cuối (2026-11-18):**
+    - `npm run assets:optimize` & `assets:check`: `25/25` tướng `.webp`, `32/32` lá bài `.webp`, `2/3` UI (giữ `CardBack` SVG thuần Việt), `7` tệp SFX `.ogg` — tổng dung lượng thêm chỉ **`1.45 MB`**.
+    - `npm run typecheck`: `0 lỗi` toàn Monorepo.
+    - `npm run test:unit`: **11 files · 85/85 passed** (`553ms`).
+    - `npm run test:integration`: **7 files · 23/23 passed** (`4.84s`).
+    - `npm run build` (`vite build` `2335` modules + `tsc`): `exit code 0`.
+    - Kiểm tra trực quan ở `1280×720` (`DevMatchPreview 8P` chọn bài `Q♣ Tá Đao Sát Nhân`, `TablePlayedCard 10♥ Sát`, `CardBack` xấp bài rút & ghế): **0 ảnh vỡ, 0 lỗi console, 0 tràn khung**, và cửa sổ **Electron Desktop** đang tự cập nhật (HMR) hiển thị ngay trên máy Khách hàng.
+- **[Hoàn thành — 2026-11-18] Thẻ Nhân Vật / Ghế Tướng Nền Mờ Nghệ Thuật & Khung Gỗ Mun (Cách 2):**
+  - Áp dụng đồng bộ **Cách 2** theo duyệt của Khách hàng lên cả 3 điểm hiển thị tướng: ghế đối thủ (`SeatCard.tsx`), thẻ bản thân góc dưới-trái (`MatchArenaLayout.tsx`) và 3/5 thẻ chọn tướng (`HeroSelectPanel.tsx`).
+  - Tạo thành phần dùng chung `HeroCardWatermark.tsx` (lớp bọc riêng `overflow-hidden rounded-[inherit]` cho ảnh nền mờ bên phải + mặt nạ tan vào nền gỗ mun `#181B20`) giúp giữ nguyên huy hiệu nổi `-top-2.5 "Chọn mục tiêu"` phía trên ghế không bị xén viền và giữ nguyên kích thước ghế bàn tròn (`224×106px` cho 4–6P, `208×100px` cho 7–8P).
+  - Thêm `nameTextClass` theo phe trong `matchTypes.ts` (`SHU` `#FCA5A5`, `WEI` `#93C5FD`, `WU` `#86EFAC`, `QUN` `#E5E7EB`) giúp tên tướng tương phản rõ trên nền tối, đồng thời sửa lỗi cắt chữ `L...` cạnh nhãn `Chủ` ở ghế 8 người (`Lưu Bị · Chủ` hiển thị trọn vẹn).
+  - **Bằng chứng kiểm tra thực tế sau chỉnh sửa cuối (2026-11-18):**
+    - `npm run typecheck`: `0 lỗi` toàn Monorepo (`shared`, `desktop`, `server`).
+    - `npm run test:unit`: **11 files · 85/85 passed** (`546ms`).
+    - `npm run test:integration`: **7 files · 23/23 passed** (`4.78s`).
+    - `npm run build`: `vite build` `2336` modules (`597ms`) + `tsc` `0 lỗi`, `exit code 0`.
+    - Kiểm tra trực quan thực tế ở `1280×720` trên cả **Pha Đánh Bài (8P)** (chọn `8♣ Sát`, hiện 2 huy hiệu nổi `"Chọn mục tiêu"` nguyên vẹn) và **Pha Chọn Tướng (`HeroSelectPanel`)**: **0 lỗi console, 0 request ảnh lỗi, 0 tràn khung trang**. (`npm run test:fuzz` `500/500` ván trước đó ở `packages/shared`, lõi luật không thay đổi).
+- **[Hoàn thành — 2026-11-18] Đại Tu Giao Diện Doanh Trại A Responsive (`960×600`–`2K`), Nhấn Giữ & Quăng Bài, 4 Ô Trang Bị Ngửa & Khoang Xem Kỹ Năng Thống Nhất:**
+  - Nạp trọn bộ **8 lớp họa tiết nghệ sĩ thực tế 100% (0 ảnh AI)** (`camp-zhanhuo`, `table-ol-dragon`, `tex-header-black`, `tex-dragon-hand`, `tex-ink-base`, `tex-cloud-border`, `tex-wood-btn`, `tex-mountain-deco`, `254 KB` WebP) vào `apps/desktop/src/assets/art/ui/` & `assetCatalog.ts`, áp dụng chủ đề Doanh Trại A đồng bộ lên bàn đấu (`MatchArenaLayout`, `MatchCenterBoard`, `HeroSelectPanel`, `MatchScreen`, `DevMatchPreview`).
+  - **Responsive chống bể khung (`960×600` -> `1280×720` -> `2K`):** Hạ ngưỡng tối thiểu Electron `electron/main.cts` (`minWidth: 960, minHeight: 600`), dùng CSS Container Queries (`.lkdf-arena-stage` `--seat-w/h`, `--dock-h`, `--card-w/h`, `--left-w`, `--prof-w`, `--right-w`) trong `index.css`; tách dòng `Tên Tướng` xuống dưới dòng `Tên #Ghế · Cách: X · ⓘ` trong `SeatCard.tsx`, neo ghế hàng trên giãn xuống (`translate-y-0`) và chia lưới `2×2` trang bị khi `> 2` lá.
+  - **Nhấn giữ & Quăng bài (`Hold-and-Throw` 60fps):** Thêm động cơ kéo thả bằng Pointer (`MatchArenaLayout.tsx` + `DragDropIntent` trong `matchTypes.ts`, bóng thẻ bài qua `createPortal(..., document.body)`, ngưỡng `8px` giữ nguyên click nhẹ & phím tắt `1–9/Enter/Esc/E` cho đa mục tiêu/2 lá), xung sáng ghế `[data-drop-seat]` và vùng thả nổi `[data-drop-table]`.
+  - **Thanh Lệnh Ngữ Cảnh Ẩn Ngoài Lượt + 4 Ô Trang Bị Ngửa + Khoang Soi Kỹ Năng Thống Nhất:** Ẩn hoàn toàn `.lkdf-action-bar` (`null`) khi ngoài lượt/không có phản ứng (`MatchActionSidebar.tsx`), neo đáy dải bài `0px` giật dọc; chừa sẵn 4 ô trang bị ngửa bấm soi được cạnh hồ sơ Tướng (`MatchArenaLayout.tsx`); dựng mới `MatchInspectorBox.tsx` bên phải mặc định hiển thị kỹ năng tướng bản thân và tự cập nhật khi bấm vào bất kỳ lá bài trên tay, ô trang bị ngửa, bài giữa bàn hay nút `ⓘ`/chân dung tướng đối thủ (có nút `✕ Về tướng bạn`).
+  - **Bằng chứng kiểm tra thực tế sau chỉnh sửa cuối (2026-11-18 — Phóng to Ngọc máu, Ô Trang bị & `SuitGlyph` tương phản nền tối):**
+    - Phóng to ngọc sinh lực `HpJadeMeter.tsx` (`8px` → `11.8px` có viền & ánh sáng rõ + số trắng đậm), nâng kích thước ảnh thu nhỏ (`18×22px`), cỡ chữ (`clamp(10px, 0.92cqw, 11.5px)`) & SVG chất bài `SuitGlyph tone="darkSurface"` cho cả ô trang bị ngửa đối thủ (`SeatCard.tsx`, xếp gọn 2 cột ngay từ 2 lá trở lên) lẫn 4 ô trang bị ngửa bản thân (`MatchArenaLayout.tsx`) và cân lại tọa độ vòng ghế `7P–8P` (`MatchArenaLayout.tsx`, `MatchCenterBoard` `top-[58%]`).
+    - `npm run typecheck`: `0 lỗi` toàn Monorepo (`@lkdf/shared`, `@lkdf/desktop` renderer + Electron, `@lkdf/server`).
+    - `npm run test:unit`: **11 files · 85/85 passed** (`477ms`).
+    - `npm run test:integration`: **7 files · 23/23 passed** (`4.74s`).
+    - `npm run build` (`vite build 2345 modules` `607ms` + `tsc -p tsconfig.electron.json`): `exit code 0`.
+    - `npm run assets:check`: `25/25` Tướng, `32/32` Lá bài, `7` SFX + `8` họa tiết `art/ui/` (`1.69 MB`), `exit code 0`.
+    - Kiểm tra trình duyệt trực tiếp khi nhiều ghế gắn trang bị/cẩm nang ngửa (`6♣ Lạc Bất Tư`, `A♦ Gia Cát Liên Nỗ`, `K♠ -1 Đại Uyên`, `K♦ -1 Tử Tinh`, `5♠ +1 Tuyệt Ảnh`, `A♠ Thiểm Điện` + Self `5♥ Xích Thố`) ở **`960×600` (`8P`)** và **`1280×720` (`7P & 8P`)**: **`seatOverlaps: 0` (`40.1px` min gap ở `1280×720`), `otherOverlaps: 0`, `scrollbars: 0`, `consoleErrors: 0`, `failedRequests: 0`**; ứng dụng Electron Desktop chạy ổn định ở `minWidth: 960, minHeight: 600`.
+
 ---
 
 ## 4. Vấn Đề Đang Tồn Tại & Câu Hỏi Chưa Giải Quyết
@@ -185,4 +246,4 @@ Xem đầy đủ 10 quyết định (`ADR-001` đến `ADR-010`) tại [DECISION
   2. Báo cáo cho khách hàng theo đúng **phong cách "Báo cáo Sếp"**: ngắn gọn, đi thẳng vào trọng tâm gồm 4 mục (*✅ Đã hoàn thành · 📊 Bằng chứng kiểm tra · ⚠️ Tồn đọng/Lưu ý · 👉 Bước tiếp theo kèm câu lệnh copy*).
   3. Luôn kèm mục **Phản biện thẳng (`/honest-advisor` & `/ultrathinking`)** và **Gợi ý chia quân (`/swarm`)**.
   4. **Bàn giao ca trực khép kín giữa các phiên:** Đầu phiên mới luôn đọc sổ nhớ + chạy `git status --short`; cuối mỗi bước luôn ghi *Ghi chú bàn giao kỹ thuật (Handoff Notes)* vào [`.agents/PROJECT_MEMORY.md`](./.agents/PROJECT_MEMORY.md).
-- **Bước tiếp theo ngay sau đây:** Khách hàng nhắn `Commit và push lên cho tôi` để đưa mã nguồn Bước 5.1 & 5.2 lên kho GitHub Private, làm theo **Mục 5** trong [HUONG_DAN_CHO_TOI.md](./HUONG_DAN_CHO_TOI.md) (bật Turso + GitHub Token + Google OAuth + Render Cloud 0đ + build tag `v1.0.0`), gửi bộ cài cho nhóm bạn 4–8 người theo **Mục 6** và xác nhận nghiệm thu cuối cùng để đóng dấu `[x]` Bước 5.2.
+- **Bước tiếp theo ngay sau đây:** Sau khi Sếp kiểm tra trực tiếp bàn đấu Doanh Trại A vừa nâng cấp, chạy `npm run package:win` (nếu muốn xuất bản `.exe` mới chứa toàn bộ nâng cấp UI trên máy), rồi nhắn `Commit và push lên cho tôi`, làm theo **Mục 5** trong [HUONG_DAN_CHO_TOI.md](./HUONG_DAN_CHO_TOI.md) (bật Turso + GitHub Token + Google OAuth + Render Cloud 0đ + build tag `v1.0.0`), gửi bộ cài cho nhóm bạn 4–8 người theo **Mục 6** và xác nhận nghiệm thu cuối cùng để đóng dấu `[x]` Bước 5.2.

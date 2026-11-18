@@ -6,8 +6,8 @@
 
 ## 1. Tình Trạng Hiện Tại Của Dự Án
 
-- **Giai đoạn hiện tại:** Hoàn thành trọn vẹn mã nguồn và đóng gói từ **Giai đoạn 0 đến Bước 5.1** trong [TASKS.md](./TASKS.md) (Lõi luật 108 lá & 25 Tướng, Cloud 0đ + Google OAuth + Snapshot, WebSocket + Trọng Tài 4 nút + Chuyển quyền 30s, Giao diện Electron Windows 2D Sơn Thủy Mặc 100vh không cuộn, Cổng Update 1-Click GitHub Private & bộ cài NSIS `.exe`). Đã vượt 100% cổng kiểm chứng kỹ thuật của **Bước 5.2** (82 unit tests, 500 ván Fuzz Test không deadlock, 23 integration tests, quét bảo mật gói build & đóng gói thành công `TamQuocSat-LKDF-Setup-*.exe`).
-- **Bước tiếp theo:** Khách hàng đẩy code lên GitHub Private, bật dịch vụ Cloud 0đ theo **Mục 5** và gửi bộ cài cho nhóm 4–8 bạn chơi thử nghiệm thu theo **Mục 6** trong [HUONG_DAN_CHO_TOI.md](./HUONG_DAN_CHO_TOI.md).
+- **Giai đoạn hiện tại:** Hoàn thành trọn vẹn mã nguồn và đóng gói từ **Giai đoạn 0 đến Bước 5.1** trong [TASKS.md](./TASKS.md), chuẩn hóa đặc tả luật Yoka ([RULES_STANDARD.md](./RULES_STANDARD.md)), nạp đủ **25 Tướng + 32 Lá bài + 8 Họa tiết Doanh Trại A + 7 SFX (`.webp`/`.ogg`, `1.69 MB`)**, và nâng cấp toàn diện **Giao diện bàn đấu Doanh Trại A Responsive (`960×600`–`2K`) + Nhấn Giữ & Quăng Bài + Phóng to Ngọc Máu & 4 Ô Trang Bị Ngửa + Thanh Lệnh Ẩn Ngoài Lượt + Khoang Soi Kỹ Năng Thống Nhất**. Đã vượt 100% cổng kiểm chứng kỹ thuật của **Bước 5.2** (**85/85** unit tests, **500/500** ván Fuzz Test `0` deadlock, **23/23** integration tests, kiểm tra trực quan `960×600`, `1280×720` `4P–8P`, `1600×900` đạt `0` đè ghế / `0` lỗi console, quét bảo mật gói build & đóng gói thành công `TamQuocSat-LKDF-Setup-*.exe`).
+- **Bước tiếp theo:** Bật dịch vụ Cloud 0đ theo **Mục 5** và gửi bộ cài cho nhóm 4–8 bạn chơi thử nghiệm thu theo **Mục 6** trong [HUONG_DAN_CHO_TOI.md](./HUONG_DAN_CHO_TOI.md).
 
 ---
 
@@ -19,19 +19,21 @@ Mỗi tài liệu dưới đây phụ trách một mảng thông tin duy nhất 
 | :---: | :--- | :--- |
 | **1** | **[README.md](./README.md)** *(File này)* | Điểm bắt đầu, giới thiệu dự án, tình trạng hiện tại và mục lục dẫn tới toàn bộ tài liệu khác. |
 | **2** | **[REQUIREMENTS.md](./REQUIREMENTS.md)** | Mục tiêu, người dùng, phạm vi v1, bảng Thân Phận 4–8 người, danh sách 25 tướng & 108 lá bài chuẩn, đặc tả chi tiết 5 chức năng lớn và 8 tiêu chí nghiệm thu (`AC-1` đến `AC-8`). |
-| **3** | **[DESIGN.md](./DESIGN.md)** | Phong cách 2D *Sơn Thủy Mặc & Chu Sa*, bảng màu, chữ viết, bố cục bàn 4–8 ghế không cuộn trang, 5 trạng thái màn hình, nhãn nút rõ hành động và phím tắt. |
-| **4** | **[ARCHITECTURE.md](./ARCHITECTURE.md)** | Cấu trúc Monorepo (`packages/shared`, `apps/server`, `apps/desktop`), bảo mật giấu bài, luồng đăng nhập Google OAuth 2.0, lưu bản chụp trên Cloud 0đ và cổng cập nhật 1-Click từ GitHub Private. |
+| **3** | **[DESIGN.md](./DESIGN.md)** | Giao diện **Doanh Trại A & Cổ Thư / Gỗ Mun** responsive (`960×600`–`2K`) không cuộn trang, Nhấn giữ & Quăng bài, 4 ô Trang bị ngửa, ma trận 5 trạng thái màn hình, phím tắt và tiện ích Windows. |
+| **4** | **[ARCHITECTURE.md](./ARCHITECTURE.md)** | Cấu trúc Monorepo (`packages/shared`, `apps/server`, `apps/desktop`), bảo mật giấu bài, luồng đăng nhập Google OAuth 2.0, lưu bản chụp trên Cloud 0đ và cổng cập nhật 1-Click (`302` CDN) từ GitHub Private. |
 | **5** | **[DATA_MODEL.md](./DATA_MODEL.md)** | Mô hình dữ liệu người dùng (`UserProfile`, `UserStats`, `MatchHistory`), phòng chơi, trạng thái ván đấu (`MasterGameState` vs `PlayerViewState`), bảng phân quyền và vòng đời dữ liệu. |
 | **6** | **[AGENTS.md](./AGENTS.md)** | Quy tắc làm việc bắt buộc dành cho AI: thứ tự đọc tài liệu, ranh giới tự quyết vs hỏi khách hàng, quy trình kiểm thử và bàn giao. |
 | **7** | **[TASKS.md](./TASKS.md)** | Kế hoạch thực hiện chia nhỏ theo 6 giai đoạn, thứ tự phụ thuộc, sản phẩm bàn giao và điều kiện hoàn thành kiểm tra được. |
 | **8** | **[PROJECT_MEMORY.md](./PROJECT_MEMORY.md)** | Ghi nhớ mục tiêu, phạm vi đã xác nhận, phần đã hoàn thành, vấn đề tồn tại và bước tiếp theo *(đồng bộ cùng [`.agents/PROJECT_MEMORY.md`](./.agents/PROJECT_MEMORY.md))*. |
 | **9** | **[TESTING.md](./TESTING.md)** | Chiến lược 4 tầng kiểm thử: Unit Test 108 lá & 25 tướng, Fuzz Test >= 500 ván (0 deadlock), Integration Test và Kịch bản nghiệm thu thực tế trên Windows. |
-| **10** | **[DECISIONS.md](./DECISIONS.md)** | Lịch sử 10 quyết định quan trọng (`ADR-001` đến `ADR-010`) kèm bối cảnh, lý do và đánh đổi. |
+| **10** | **[DECISIONS.md](./DECISIONS.md)** | Lịch sử 12 quyết định quan trọng (`ADR-001` đến `ADR-012`) kèm bối cảnh, lý do và đánh đổi. |
 | **11** | **[DEPLOYMENT.md](./DEPLOYMENT.md)** | Hướng dẫn triển khai Cloud 0 đồng, thiết lập Google OAuth, cấu hình GitHub Private Actions cho cập nhật 1-Click và cách khôi phục khi có lỗi. |
 
-### Tài liệu ngữ cảnh bổ trợ & Sổ tay dành riêng cho Chủ dự án
+### Tài liệu ngữ cảnh bổ trợ & Bàn giao AI giữa các máy
+- **[CONTEXT.md](./CONTEXT.md)** — **Bản tổng hợp toàn bộ dự án từ Giai đoạn 0 đến hiện tại** giúp thành viên hoặc AI mới đọc 1 lượt nắm đủ 100% ngữ cảnh khi chuyển sang máy khác.
+- **[graphify-out/GRAPH_REPORT.md](./graphify-out/GRAPH_REPORT.md)** — Bản đồ kiến trúc mã nguồn (`graphify`) giúp AI tra cứu cụm mô-đun & mối liên kết hàm trong vài giây.
+- **[RULES_STANDARD.md](./RULES_STANDARD.md)** — **Đặc tả Luật Chơi & Kỹ Năng Bản Tiêu Chuẩn (108 lá & 25 Tướng, chuẩn viết code)** kèm đối chiếu loại bỏ bản nâng cấp và rà soát sai lệch mã nguồn.
 - **[HUONG_DAN_CHO_TOI.md](./HUONG_DAN_CHO_TOI.md)** — **Sổ tay điều khiển dự án dành riêng cho bạn (Người mới 100% không cần biết lập trình):** tổng hợp sẵn các câu lệnh Copy–Dán cho từng bước từ đầu đến cuối.
-- **[CONTEXT.md](./CONTEXT.md)** — Bức tranh tổng hợp nhanh cho các thành viên trong nhóm.
 - **[docs/intent/v1-tam-quoc-sat.md](./docs/intent/v1-tam-quoc-sat.md)** — Bản chốt ý định gốc của phiên bản đầu (v1).
 
 ---
