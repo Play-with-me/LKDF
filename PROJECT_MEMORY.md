@@ -277,3 +277,10 @@ Xem đầy đủ 10 quyết định (`ADR-001` đến `ADR-010`) tại [DECISION
   3. Luôn kèm mục **Phản biện thẳng (`/honest-advisor` & `/ultrathinking`)** và **Gợi ý chia quân (`/swarm`)**.
   4. **Bàn giao ca trực khép kín giữa các phiên:** Đầu phiên mới luôn đọc sổ nhớ + chạy `git status --short`; cuối mỗi bước luôn ghi *Ghi chú bàn giao kỹ thuật (Handoff Notes)* vào [`.agents/PROJECT_MEMORY.md`](./.agents/PROJECT_MEMORY.md).
 - **Bước tiếp theo ngay sau đây:** Sau khi Sếp xem app Electron vừa mở trên máy, nhắn **`Commit và push bản vá lên GitHub cho tôi`**, rồi làm theo **Mục 5** trong [HUONG_DAN_CHO_TOI.md](./HUONG_DAN_CHO_TOI.md) (bật Turso + GitHub Token + Google OAuth + Render Cloud 0đ + build tag `v1.0.0`), gửi bộ cài cho nhóm bạn 4–8 người theo **Mục 6** và xác nhận nghiệm thu cuối cùng để đóng dấu `[x]` Bước 5.2.
+
+### 2026-11-19 · Bản thử kỹ năng trong Bước 4.4
+Đã dựng riêng Quan Tinh (xếp 5 lá theo đầu/đáy), Võ Thánh (Đào đỏ hóa Sát giữ chất/số), Nhân Đức (giao 2 lá rồi hồi máu). Nguồn diễn tập được ghi rõ là dựng sẵn. Kiểm tra trình duyệt đạt trạng thái cuối 3/3 cảnh, kiểm tra cú pháp motion-scenes.js đạt. Mỹ thuật và hiệu năng trong app còn chờ nghiệm thu.
+Handoff Notes — apps/desktop/motion-scenes.js cung cấp playSkill, được motion-demo.html gọi với tọa độ ghế và generation để hủy cảnh cũ. Trang game trong iframe vẫn là tình huống độc lập, tên tướng ở ghế có thể khác nhân vật được diễn tập. Tiếp tục cần dựng sân khấu dữ liệu đồng nhất và thử kích thước nhỏ trước khi tích hợp vào trận thật.
+
+### Bước 4.4 · Đồng bộ một phần vào bàn chính
+Lớp hiệu ứng bàn chính đã nối các thay đổi xác nhận được từ trạng thái công khai. `typecheck` và `build` qua, unit 85/85, integration 24/24. Đã mở bàn chính trong trình duyệt để kiểm tra lớp hiệu ứng tải. Các nhánh cần sự kiện kết quả riêng và nghiệm thu trận thật vẫn đang chờ. [Bàn giao kỹ thuật](.agents/PROJECT_MEMORY.md).

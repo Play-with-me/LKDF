@@ -22,8 +22,9 @@ import { HandCardItem, PlayingCardFace } from './HandCardItem.js';
 import { HeroCardWatermark } from './HeroCardWatermark.js';
 import { HeroSelectPanel } from './HeroSelectPanel.js';
 import { MatchCenterBoard } from './MatchCenterBoard.js';
-import { MatchInspectorBox } from './MatchInspectorBox.js';
+import { cardHover, MatchHoverTooltip } from './MatchHoverTooltip.js';
 import { SeatCard } from './SeatCard.js';
+import { useMatchMotion } from './useMatchMotion.js';
 import {
   buildCardDragDropIntent,
   describePendingActorPrompt,
@@ -178,6 +179,26 @@ function DragGhostCard({
   );
 }
 
+function FuseTimer({ deadline, paused, pausedRemainingMs, totalSeconds }: {
+  deadline: string | null;
+  paused: boolean;
+  pausedRemainingMs: number | null;
+  totalSeconds: number;
+}) {
+  const remaining = paused ? pausedRemainingMs : deadline ? Date.parse(deadline) - Date.now() : null;
+  if (remaining === null || !Number.isFinite(remaining) || totalSeconds <= 0) return null;
+  const total = totalSeconds * 1000;
+  const progress = Math.min(100, Math.max(0, remaining / total * 100));
+  return (
+    <div className="lkdf-timer-fuse" role="img" aria-label={paused ? 'Đồng hồ đang dừng' : 'Thời gian còn lại'}>
+      <div className="lkdf-timer-fuel" data-burning={!paused && progress > 0}
+        style={{ width: progress + '%', animationDuration: Math.max(0, remaining) + 'ms' }}>
+        <span className="lkdf-timer-spark" />
+      </div>
+    </div>
+  );
+}
+
 export function MatchArenaLayout({
   playerView,
   roomSeats,
@@ -199,6 +220,9 @@ export function MatchArenaLayout({
   onClearSelection,
   renderActionSidebar,
 }: MatchArenaLayoutProps) {
+  const arenaRef = useRef<HTMLDivElement>(null);
+  const motionLayerRef = useRef<HTMLDivElement>(null);
+  useMatchMotion(arenaRef, motionLayerRef, playerView, connectionLost || playerView.turnPhase === 'HERO_SELECT');
   const ordered = getOrderedSeatsClockwiseFromSelf(
     playerView.players,
     playerView.viewerSeatIndex,
@@ -553,6 +577,7 @@ export function MatchArenaLayout({
           : undefined;
 
     const isTopBand = coord.topPct <= 24;
+    const isActiveBot = isActor && opp.isBotTakeover;
     return (
       <div
         key={opp.seatIndex}
@@ -567,6 +592,7 @@ export function MatchArenaLayout({
         className={[
           'absolute z-20 -translate-x-1/2',
           isTopBand ? 'translate-y-0' : '-translate-y-1/2',
+          isActiveBot ? 'lkdf-bot-active-seat' : '',
         ].join(' ')}
       >
         <SeatCard
@@ -586,6 +612,13 @@ export function MatchArenaLayout({
           onInspectHero={handleInspectHero}
           onInspectCard={handleInspectCard}
         />
+        {isActiveBot ? (
+          <div className="lkdf-bot-seat-clock">
+            <FuseTimer key={phaseDeadlineAt ?? 'paused'} deadline={phaseDeadlineAt}
+              paused={isTimerPaused} pausedRemainingMs={pausedRemainingMs}
+              totalSeconds={playerView.activeInterrupt ? timerConfig.reactionSeconds : timerConfig.mainTurnSeconds} />
+          </div>
+        ) : null}
       </div>
     );
   };
@@ -597,7 +630,8 @@ export function MatchArenaLayout({
     (dragState.intent.kind === 'table' || dragState.intent.kind === 'toggle_select');
 
   return (
-    <div className="lkdf-arena-stage flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-[#090807]">
+    <div ref={arenaRef} className="lkdf-arena-stage relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-[#090807]">
+      <div ref={motionLayerRef} className="lkdf-motion-layer" aria-hidden="true" />
       {dragState ? <DragGhostCard card={dragState.card} ghostRef={ghostRef} /> : null}
 
       {/* Thanh cảnh báo rớt mạng / Máy đánh hộ */}
@@ -752,6 +786,7 @@ export function MatchArenaLayout({
           {/* Nửa Trái: Hồ sơ Tướng bản thân (Bấm quay về kỹ năng tướng mình) */}
           <div
             onClick={() => setInspector(null)}
+            data-motion-self={selfPlayer?.seatIndex}
             title="Bấm xem lại kỹ năng tướng của bạn"
             className="lkdf-battle-profile relative flex w-[var(--prof-w,152px)] shrink-0 cursor-pointer flex-col justify-between overflow-hidden p-2"
           >
@@ -831,15 +866,31 @@ export function MatchArenaLayout({
                       ) : null}
                     </div>
 
-                    {(availableSkills.length > 0 || availableConverts.length > 0) ? (
+
+                  </div>
+
+                </>
+              ) : (
+                <div className="text-[11px] text-[#9CA3AF]">Đang tải thông tin ghế...</div>
+              )}
+            </div>
+          </div>
+
+          {/* Nửa Phải Cột Trái: 4 Ô Trang Bị Ngửa tinh gọn (Bấm xem được kỹ năng!) */}
+          <aside className="lkdf-self-skills" aria-label="Kỹ năng của bạn">
+            <strong className="lkdf-self-skills-heading">Kỹ năng</strong>
+                    {(selfHero || availableSkills.length > 0 || availableConverts.length > 0) ? (
                       <div
-                        className="lkdf-scroll flex min-h-0 flex-1 flex-wrap content-start gap-1 overflow-y-auto pr-0.5"
+                        className="lkdf-scroll min-h-0 overflow-y-auto space-y-1.5 pr-0.5"
                         onClick={(e) => e.stopPropagation()}
                       >
+                        {selfHero?.skills.filter(skill => !availableSkills.some(candidate => candidate.id === skill.id)).map(skill => (
+                          <div key={skill.id}><strong>{skill.nameVi}</strong><p>{skill.descriptionVi}</p></div>
+                        ))}
                         {availableSkills.map((skill) => {
                           const active = selection.activeSkillMode === skill.id;
                           return (
-                            <button
+                            <div key={skill.id}><button
                               key={skill.id}
                               type="button"
                               title={skill.descriptionVi}
@@ -853,7 +904,7 @@ export function MatchArenaLayout({
                             >
                               <GameIcon name="ui:sparkles" size={10} />
                               {skill.nameVi}
-                            </button>
+                            </button><p>{skill.descriptionVi}</p></div>
                           );
                         })}
                         {availableConverts.map((opt) => {
@@ -878,16 +929,7 @@ export function MatchArenaLayout({
                         })}
                       </div>
                     ) : null}
-                  </div>
-
-                </>
-              ) : (
-                <div className="text-[11px] text-[#9CA3AF]">Đang tải thông tin ghế...</div>
-              )}
-            </div>
-          </div>
-
-          {/* Nửa Phải Cột Trái: 4 Ô Trang Bị Ngửa tinh gọn (Bấm xem được kỹ năng!) */}
+          </aside>
           <div className="lkdf-battle-equip flex min-h-0 min-w-0 flex-1 flex-col gap-1 border-l border-[#94A3B8]/25 bg-[#0B0E14]/90 p-1.5">
             <div className="flex shrink-0 items-center justify-between text-[9.5px] font-bold tracking-wide text-[#B89352] uppercase">
               <span className="truncate">Trang bị</span>
@@ -926,7 +968,7 @@ export function MatchArenaLayout({
                     key={slotKey}
                     type="button"
                     onClick={() => handleInspectCard(card, sid, 'Trang bị của bạn')}
-                    title={`Bấm xem công dụng ${card.nameVi}`}
+                    {...cardHover(card)}
                     className={[
                       'flex min-h-0 w-full flex-1 cursor-pointer items-center gap-1.5 rounded border px-1.5 text-left transition-colors',
                       active
@@ -970,6 +1012,7 @@ export function MatchArenaLayout({
                         return (
                           <button
                             key={s.id}
+                            {...cardHover(s)}
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
@@ -998,6 +1041,9 @@ export function MatchArenaLayout({
 
         {/* Cột Giữa: Meta + Thanh Lệnh Ngữ Cảnh (Ẩn khi ngoài lượt) + Dải Bài Quăng Thả */}
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+          <FuseTimer key={phaseDeadlineAt ?? 'paused'} deadline={phaseDeadlineAt}
+            paused={isTimerPaused} pausedRemainingMs={pausedRemainingMs}
+            totalSeconds={playerView.activeInterrupt ? timerConfig.reactionSeconds : timerConfig.mainTurnSeconds} />
           <div className="flex shrink-0 items-center justify-between gap-2 pb-0.5 text-[clamp(9.5px,0.85cqw,11.5px)]">
             <div className="flex min-w-0 items-center gap-3">
               <label className="inline-flex cursor-pointer items-center gap-1.5 font-semibold text-[#D1D5DB] select-none">
@@ -1020,16 +1066,16 @@ export function MatchArenaLayout({
           </div>
 
           {/* Thanh Lệnh Ngữ Cảnh: TỰ ĐỘNG ẨN (null) khi ngoài lượt, hiện gọn khi tới lượt hoặc cần phản ứng */}
-          <div className="shrink-0">{!showCenterReaction ? renderActionSidebar() : null}</div>
+          <div className="lkdf-hand-turn-bar shrink-0">{!showCenterReaction ? renderActionSidebar() : null}</div>
 
           {/* Dải bài neo đáy cố định (0px giật bài khi thanh lệnh bật/tắt) */}
-          <div className="lkdf-battle-hand lkdf-scroll flex min-h-0 flex-1 items-end overflow-x-auto px-1 pt-1 pb-0.5">
+          <div className="lkdf-battle-hand lkdf-scroll flex min-h-0 flex-1 items-end overflow-x-auto overflow-y-hidden px-1">
             {handCards.length === 0 ? (
               <div className="flex h-full w-full items-center justify-center rounded-xl border border-dashed border-[#A68042]/30 text-[12px] text-[#9CA3AF]">
                 Không còn lá bài nào trên tay
               </div>
             ) : (
-              <div className="mx-auto flex items-end">
+              <div className="lkdf-hand-row mx-auto flex h-full items-end">
                 {handCards.map((card, index) => (
                   <div
                     key={card.id}
@@ -1058,14 +1104,9 @@ export function MatchArenaLayout({
           </div>
         </div>
 
-        {/* Cột Phải (Thay thế Action Sidebar cũ): Khoang Xem Kỹ Năng Thống Nhất */}
-        <MatchInspectorBox
-          inspector={inspector}
-          selfPlayer={selfPlayer}
-          players={playerView.players}
-          onResetToSelf={() => setInspector(null)}
-        />
+
       </div>
+      <MatchHoverTooltip />
     </div>
   );
 }

@@ -331,7 +331,6 @@ function TablePlayedCard({
 
 export function MatchCenterBoard({
   playerView,
-  timerConfig,
   phaseDeadlineAt,
   pausedRemainingMs,
   isTimerPaused,
@@ -380,13 +379,6 @@ export function MatchCenterBoard({
   );
 
   const prompt = describePendingActorPrompt(playerView);
-  const totalSeconds = playerView.activeInterrupt
-    ? timerConfig.reactionSeconds
-    : timerConfig.mainTurnSeconds;
-  const progressPercent =
-    remainingSeconds !== null && totalSeconds > 0
-      ? Math.max(0, Math.min(100, Math.round((remainingSeconds / totalSeconds) * 100)))
-      : 100;
 
   const interrupt = playerView.activeInterrupt;
   const isMyInteractiveZone =
@@ -460,21 +452,7 @@ export function MatchCenterBoard({
           ) : null}
         </div>
 
-        {remainingSeconds !== null ? (
-          <div className="h-[3px] w-48 overflow-hidden rounded-full bg-[#272D35]/80">
-            <div
-              className={[
-                'h-full transition-all duration-200',
-                remainingSeconds <= 5
-                  ? 'bg-[#DC2626]'
-                  : prompt.isMyTurn
-                    ? 'bg-[#D99B26]'
-                    : 'bg-[#3B82F6]',
-              ].join(' ')}
-              style={{ width: `${progressPercent}%` }}
-            />
-          </div>
-        ) : null}
+
 
         <p className="max-w-full truncate px-2 text-center text-[11px] text-[#9CA3AF]">
           {prompt.detailVi}

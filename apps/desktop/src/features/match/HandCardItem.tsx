@@ -1,7 +1,7 @@
+import { cardHover } from './MatchHoverTooltip.js';
 import { useEffect, useState } from 'react';
 import {
   formatRankLabel,
-  formatSuitSymbol,
 } from '@lkdf/shared';
 import type { CardCategory, CardInstance } from '@lkdf/shared';
 import { getCardArtUrl } from '../../lib/assetCatalog.js';
@@ -10,7 +10,7 @@ import {
   SuitGlyph,
   getCardGameIcon,
 } from '../../components/icons/index.js';
-import { getCardCategoryLabelVi, getCardDescriptionVi } from './matchTypes.js';
+import { getCardCategoryLabelVi } from './matchTypes.js';
 
 export function getCardFrameStyle(
   cardKey: string,
@@ -65,6 +65,7 @@ export function PlayingCardFace({
   compact = false,
   showCategoryTag = true,
 }: PlayingCardFaceProps) {
+
   const rankLabel = formatRankLabel(card.rank);
   const categoryLabel = getCardCategoryLabelVi(card.category, card.attackRange);
   const artUrl = getCardArtUrl(card.cardKey);
@@ -80,6 +81,7 @@ export function PlayingCardFace({
 
   return (
     <>
+      <span hidden {...cardHover(card)} />
       {/* Góc trên-trái: Cột Số + Chất bài dọc (đọc rõ ngay cả khi xòe nhiều lá) */}
       <div
         className={[
@@ -179,10 +181,6 @@ export function HandCardItem({
   onToggle,
   onPointerDownCard,
 }: HandCardItemProps) {
-  const suitSymbol = formatSuitSymbol(card.suit);
-  const rankLabel = formatRankLabel(card.rank);
-  const description = getCardDescriptionVi(card.cardKey, card.nameVi);
-
   return (
     <button
       type="button"
@@ -193,7 +191,6 @@ export function HandCardItem({
           : undefined
       }
       onClick={() => onToggle(card.id)}
-      title={`${suitSymbol}${rankLabel} ${card.nameVi} — ${description} (Giữ kéo lên bàn/ghế để đánh, bấm nhẹ để chọn xem)`}
       aria-pressed={selected}
       style={{ touchAction: 'none' }}
       className={[

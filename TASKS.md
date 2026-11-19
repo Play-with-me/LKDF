@@ -144,3 +144,7 @@
   - **Phụ thuộc:** Bước 5.1.
   - **Kết quả bàn giao:** Bản cài đặt Windows hoàn chỉnh, cấu hình Cloud 0đ (`render.yaml`, `.github/workflows/*.yml`, `HUONG_DAN_CHO_TOI.md` Mục 5 & Mục 6), bảng đối chiếu từng tiêu chí nghiệm thu tại [REQUIREMENTS.md](./REQUIREMENTS.md) và hướng dẫn gửi bộ cài cho hội bạn 4–8 người.
   - **Điều kiện hoàn thành:** Đạt đủ 8/8 tiêu chí nghiệm thu (`AC-1` đến `AC-8`) và được khách hàng xác nhận hoàn thành. *(Đã kiểm chứng kỹ thuật thực tế sau đợt vá tiền triển khai + Biệt danh Tướng quân + nâng cấp toàn bộ Card & UI sang Mẫu B Gwent & bỏ chữ `LKDF` thành `Tam Quốc Sát` ngày 2026-11-18, và nâng cấp tiếp **Cổng Vào Vô Khung Quốc Phong Mẫu 2** ngày 2026-11-19 (`GuofengPortalStage.tsx`, `LoginScreen.tsx`, `FirstTimeNicknameCard.tsx`, `App.tsx`, `index.css`); chạy sau sửa cuối `npm run typecheck` **0 lỗi**, `npm run test:unit` **85/85**, `npm run test:integration` **24/24**, `npm run build` (`vite build 2347 modules` + `tsc`) thoát `0`, `npm run assets:check` (`1.69 MB`), kiểm tra trình duyệt app thật `1280×720` & `960×600`. Còn lại Commit & Push lên GitHub → bật Cloud 0đ thật theo Mục 5 → chạy thực tế cùng nhóm bạn 4–8 người theo Mục 6 để Khách hàng xác nhận đóng dấu `[x]` cuối cùng.)*
+
+- Bước 4.4, ghi nhận thử nghiệm — 3/3 cảnh Quan Tinh, Võ Thánh và Nhân Đức đạt trạng thái cuối trên trình duyệt. Chờ duyệt mỹ thuật và đo app, giữ bước chính chưa hoàn thành.
+
+- Bước 4.4, đồng bộ vào bàn chính đang thực hiện. Kiểm tra kỹ thuật của lớp hiệu ứng đã qua. Còn các cảnh nhiều nhánh và nghiệm thu trận thật. Giữ ô Bước 4.4 mở.

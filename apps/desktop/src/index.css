@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
 :root {
+  --lkdf-font-ui: 'Segoe UI', system-ui, -apple-system, sans-serif;
   --lkdf-bg-ink: #090807;
   --lkdf-bg-wood: #181b20;
   --lkdf-card-paper: #dec79c;
@@ -20,16 +21,16 @@
     overflow: hidden;
     background-color: var(--lkdf-bg-ink);
     color: var(--lkdf-text-jade);
-    font-family: 'Be Vietnam Pro', 'Segoe UI', system-ui, -apple-system, sans-serif;
+    font-family: var(--lkdf-font-ui);
   }
 }
 
 .font-serif-title {
-  font-family: 'Noto Serif', 'Segoe UI Semibold', Georgia, serif;
+  font-family: var(--lkdf-font-ui);
 }
 
 .font-mono-num {
-  font-family: 'JetBrains Mono', Consolas, monospace;
+  font-family: var(--lkdf-font-ui);
   font-variant-numeric: tabular-nums;
 }
 
@@ -43,7 +44,7 @@
   --seat-w: clamp(186px, 17.6cqw, 238px);
   --seat-h: clamp(72px, 11.4cqh, 96px);
   --dock-h: clamp(154px, 26cqh, 193px);
-  --left-w: clamp(250px, 24cqw, 348px);
+  --left-w: clamp(375px, 36cqw, 540px);
   --prof-w: clamp(98px, 9.6cqw, 143px);
   --right-w: clamp(169px, 17cqw, 235px);
   --card-w: clamp(68px, 7.4cqw, 101px);
@@ -431,3 +432,173 @@ dialog[open]::backdrop {
 .tqs-talisman-btn:disabled::after {
   animation: none;
 }
+
+.lkdf-hover-description {
+  position: fixed;
+  z-index: 80;
+  width: min(280px, calc(100vw - 16px));
+  padding: 10px 12px;
+  border: 1px solid #b68c5b;
+  border-radius: 6px;
+  background: #261c18;
+  color: #f8e7c4;
+  font-size: 13px;
+  line-height: 1.45;
+  pointer-events: none;
+  box-shadow: 0 8px 25px #000a;
+}
+.lkdf-hover-description p { margin: 4px 0 0; }
+.lkdf-hero-skill-label {
+  padding: 1px 4px;
+  border: 1px solid #806452;
+  border-radius: 3px;
+  color: #f6dfa8;
+  background: #241a15;
+  font-size: 10px;
+  line-height: 1.25;
+}
+
+.lkdf-self-skills {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: clamp(120px, 13cqw, 190px);
+  flex-shrink: 0;
+  min-height: 0;
+  padding: 6px;
+  border-left: 1px solid #806452;
+  background: #201814;
+  color: #f6dfa8;
+  font-size: 11px;
+  line-height: 1.3;
+}
+.lkdf-self-skills-heading { font-size: 10px; color: #dfb975; }
+.lkdf-self-skills p { margin: 2px 0 0; color: #e3d5c3; }
+.lkdf-hand-turn-bar:not(:empty) { margin-bottom: 4px; }
+.lkdf-battle-hand { padding-top: 12px; }
+.lkdf-hand-row > div { display: flex; height: 100%; align-items: flex-end; }
+.lkdf-hand-row .lkdf-card-gwent { max-height: 100%; }
+
+.lkdf-timer-fuse {
+  display: flex;
+  justify-content: flex-end;
+  flex-shrink: 0;
+  height: 5px;
+  margin: 4px 8px 7px 0;
+  border-radius: 4px;
+  background: #453226;
+}
+.lkdf-timer-fuel {
+  position: relative;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(270deg, #7e321d, #dd723c 75%, #ffda86);
+}
+.lkdf-timer-fuel[data-burning='true'] { animation: lkdf-fuse-drain linear forwards; }
+.lkdf-timer-fuel[data-burning='true'] .lkdf-timer-spark {
+  position: absolute;
+  left: -4px;
+  top: -3px;
+  width: 11px;
+  height: 11px;
+  background: radial-gradient(circle, #fffbe2 17%, #ffcf70 35%, transparent 72%);
+  filter: drop-shadow(0 0 4px #ff7734);
+}
+.lkdf-timer-spark::before, .lkdf-timer-spark::after {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  border-radius: 50%;
+  background: #ffd99a;
+  animation: lkdf-fuse-spark 400ms ease-out infinite;
+}
+.lkdf-timer-spark::after { animation-delay: 180ms; --spark-y: 8px; }
+@keyframes lkdf-fuse-drain { to { width: 0; visibility: hidden; } }
+@keyframes lkdf-fuse-spark { to { opacity: 0; transform: translate(-9px, var(--spark-y, -7px)) scale(.35); } }
+@media (prefers-reduced-motion: reduce) {
+  .lkdf-timer-fuel .lkdf-timer-spark::before, .lkdf-timer-fuel .lkdf-timer-spark::after { animation: none; }
+}
+
+
+.lkdf-bot-active-seat {
+  z-index: 23;
+  translate: 0 -3px;
+}
+.lkdf-bot-active-seat > [data-drop-seat] {
+  outline: 1px solid #f9c676;
+  box-shadow: 0 0 14px #e69d4b70;
+}
+.lkdf-bot-seat-clock {
+  position: absolute;
+  inset: auto 9px 2px;
+  pointer-events: none;
+}
+.lkdf-bot-seat-clock .lkdf-timer-fuse {
+  height: 3px;
+  margin: 0;
+}
+
+.lkdf-motion-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 24;
+  overflow: hidden;
+  pointer-events: none;
+}
+.lkdf-motion-layer > * { position: absolute; pointer-events: none; }
+.lkdf-motion-damage {
+  z-index: 3;
+  color: #ff9b7c;
+  font: 800 30px/1 var(--lkdf-font-ui);
+  text-shadow: 0 2px 4px #190906, 0 0 8px #511b12;
+}
+.lkdf-motion-heal {
+  border: 2px solid #a6eb9a;
+  border-radius: 7px;
+  box-shadow: 0 0 14px #59be66, inset 0 0 14px #59be66;
+}
+.lkdf-motion-plus {
+  color: #c8ffb5;
+  font: 800 23px/1 var(--lkdf-font-ui);
+  text-shadow: 0 1px 4px #10271b, 0 0 10px #51b960;
+}
+.lkdf-motion-horse {
+  width: 142px;
+  height: 115px;
+  object-fit: cover;
+  mix-blend-mode: screen;
+  filter: grayscale(1) sepia(.24);
+  mask-image: radial-gradient(ellipse, #000 35%, transparent 75%);
+}
+.lkdf-motion-strike {
+  display: grid;
+  grid-template-rows: 1fr auto;
+  width: 60px;
+  height: 82px;
+  overflow: hidden;
+  border: 1px solid #d2ac67;
+  border-radius: 5px;
+  background: #1b1715;
+  color: #f7e4bb;
+  font-size: 12px;
+  text-align: center;
+}
+.lkdf-motion-strike img { width: 100%; height: 100%; min-height: 0; object-fit: cover; }
+.lkdf-motion-duel {
+  object-fit: cover;
+  object-position: bottom;
+  mix-blend-mode: screen;
+  mask-image: radial-gradient(ellipse at 50% 26%, transparent 34%, #000 75%);
+}
+
+.lkdf-motion-transfer {
+  z-index: 2;
+  width: 44px;
+  height: 62px;
+  overflow: hidden;
+  border: 1px solid #b59359;
+  border-radius: 5px;
+  background: radial-gradient(ellipse, #42516c, #172236 68%);
+  box-shadow: inset 0 0 0 4px #202e44, 0 4px 10px #090809;
+}
+.lkdf-motion-transfer img { width: 100%; height: 100%; object-fit: cover; }

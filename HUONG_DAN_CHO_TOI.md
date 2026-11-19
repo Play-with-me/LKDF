@@ -255,3 +255,8 @@ Hãy gọi kèm `/honest-advisor` và `/ultrathinking` như bạn đã dùng r�
    > 6. Từ bản cập nhật sau (`v1.0.1` trở đi), mở game sẽ tự báo chỉ cần bấm **1 nút `⬇️ Cập nhật ngay`** ngay trong app!
 4. **Trong buổi test đầu tiên (10–15 phút):** Bạn tạo phòng, thử cố bấm `[▶️ Bắt đầu ván đấu]` lúc mới có 2–3 bạn để thấy hệ thống tự khóa an toàn, đợi đủ 4–8 bạn rồi vào ván kiểm tra chọn tướng, đánh Cẩm nang, thu nhỏ cửa sổ xem nháy Taskbar, bấm thử 4 nút `[⚖️ Trọng tài]` và xem trang `[📊 Thống kê]` sau ván.
 5. **Chốt nghiệm thu cuối cùng:** Chơi thử xong ngon lành, bạn quay lại khung chat nhắn AI: **`Đã kiểm tra thực tế trên Cloud 0đ và chơi thử cùng nhóm bạn thành công, chốt hoàn thành 100% dự án!`**.
+
+- Bước 4.4 đang duyệt tại http://localhost:5174/motion-demo.html. Ba mẫu mới gồm Quan Tinh, Võ Thánh và Nhân Đức đã được kiểm tra phát tới cuối cảnh. Câu lệnh tiếp nối — “Tiếp tục hoàn thiện sân khấu demo để tên tướng, vùng bài và kết quả cùng khớp một tình huống.”
+
+### Bước 4.4 · Duyệt hiệu ứng trong bàn chính
+Đã nối các hiệu ứng có thể xác định từ dữ liệu trận hiện tại. Các cảnh nhiều nhánh vẫn xem ở demo trong khi bổ sung dữ liệu kết quả cho bàn chính. Xem [tiến độ và bằng chứng](PROJECT_MEMORY.md).

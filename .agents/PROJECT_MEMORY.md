@@ -26,3 +26,10 @@
 - **Cảnh báo nhỏ còn lại:** Khi test giả lập ở cửa sổ tối thiểu `960×600`, nếu ghế #5 chính giữa hàng trên mặc đủ 2 trang bị/phán xét (`h=117px`), rìa dưới thẻ ghế #5 chạm nhẹ rìa trên biểu ngữ trung tâm `~10px`; ở `1280×720` khoảng hở đạt `>= 80px` rất thoáng. Ở `?devPreview=nickname` riêng cho developer, thanh đáy hiện `Đang kết nối` vì bỏ qua bước `WAKE` lấy `/api/health`; khi chạy luồng đăng nhập thật từ `WAKE -> LOGIN -> NICKNAME_SETUP`, `health` đã có sẵn nên hiện `Máy chủ sẵn sàng`.
 - **Chú ý môi trường:** Node.js LTS `v26.13.1` (`npm.cmd` trên PowerShell), `@lkdf/server` cổng `3001`, Vite `5173`.
 - **Chốt Bước 5.2 cuối:** Commit + Push lên `origin/main` -> bật Render + Turso + Google OAuth + tag `v1.0.0` (Mục 5) -> UAT 4–8 người (Mục 6) -> đánh dấu `[x]` Bước 5.2 & `AC-1..AC-8`.
+
+### 2026-11-19 · Bản thử kỹ năng trong Bước 4.4
+Đã dựng riêng Quan Tinh (xếp 5 lá theo đầu/đáy), Võ Thánh (Đào đỏ hóa Sát giữ chất/số), Nhân Đức (giao 2 lá rồi hồi máu). Nguồn diễn tập được ghi rõ là dựng sẵn. Kiểm tra trình duyệt đạt trạng thái cuối 3/3 cảnh, kiểm tra cú pháp motion-scenes.js đạt. Mỹ thuật và hiệu năng trong app còn chờ nghiệm thu.
+Handoff Notes — apps/desktop/motion-scenes.js cung cấp playSkill, được motion-demo.html gọi với tọa độ ghế và generation để hủy cảnh cũ. Trang game trong iframe vẫn là tình huống độc lập, tên tướng ở ghế có thể khác nhân vật được diễn tập. Tiếp tục cần dựng sân khấu dữ liệu đồng nhất và thử kích thước nhỏ trước khi tích hợp vào trận thật.
+
+### Bước 4.4 · Handoff đồng bộ hiệu ứng vào bàn chính
+`MatchArenaLayout` dùng `useMatchMotion` với dữ liệu `PlayerViewState` công khai. Đã nối biến động máu, Sát–Thiểm khi xác nhận được phản ứng, lửa Quyết Đấu, bóng ngựa và một số chuyển lá xác định được. Khi nhận lại trạng thái sau rớt mạng hoặc hoàn tác, tạo mốc mới. Bước tiếp theo cần sự kiện công khai có định danh cho từng kết quả Tá Đao, Vô Giải, phán xét, đòn toàn bàn và trang bị tương tác, rồi nối các cảnh theo sự kiện đó. Kiểm tra riêng snapshot cũ, hoàn tác và ẩn bài đối thủ trước khi chốt Bước 4.4.

@@ -192,10 +192,18 @@ export function DevMatchPreview({
     };
   }, [isPaused, masterState]);
 
-  const playerView = useMemo(
-    () => projectStateForPlayer(masterState, 'dev_user_0'),
-    [masterState],
-  );
+  const isFuseDemo = new URLSearchParams(window.location.search).has('demoFuse');
+  const playerView = useMemo(() => {
+    const view = projectStateForPlayer(masterState, 'dev_user_0');
+    if (!isFuseDemo) return view;
+    return {
+      ...view,
+      players: view.players.map((player) => ({
+        ...player,
+        isBotTakeover: player.seatIndex !== view.viewerSeatIndex,
+      })),
+    };
+  }, [isFuseDemo, masterState]);
 
   const roomState: RoomState = useMemo(
     () => ({
@@ -426,7 +434,11 @@ export function DevMatchPreview({
 
   const prompt = describePendingActorPrompt(playerView);
   // Ở chế độ xem thử cục bộ không ép hết giờ đỏ 0s gây hiểu nhầm khi đang quan sát
-  const phaseDeadlineAt: string | null = null;
+  const [phaseDeadlineAt] = useState(() =>
+    new URLSearchParams(window.location.search).has('demoFuse')
+      ? new Date(Date.now() + 20_000).toISOString()
+      : null,
+  );
   const headerBgUrl = getUiAssetUrl('tex-header-black');
 
   return (
@@ -555,7 +567,7 @@ export function DevMatchPreview({
         <MatchArenaLayout
           playerView={playerView}
           roomSeats={roomState.seats}
-          timerConfig={TIMER_PRESETS.STANDARD}
+          timerConfig={phaseDeadlineAt ? { ...TIMER_PRESETS.STANDARD, mainTurnSeconds: 20, reactionSeconds: 20 } : TIMER_PRESETS.STANDARD}
           phaseDeadlineAt={phaseDeadlineAt}
           pausedRemainingMs={isPaused ? 20_000 : null}
           isTimerPaused={isPaused}

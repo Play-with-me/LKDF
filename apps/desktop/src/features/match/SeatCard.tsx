@@ -1,3 +1,4 @@
+import { cardHover } from './MatchHoverTooltip.js';
 import { useEffect, useState } from 'react';
 import {
   calculateDistance,
@@ -143,6 +144,7 @@ export function SeatCard({
   return (
     <div
       data-drop-seat={player.seatIndex}
+      data-seat-name={player.displayName}
       data-lkdf-battle-rest={!isDragHovered && !isDragTargetEligible && !isSelectedTarget && !isTargetEligible && !isActiveActor && !isInspectedHero}
       role={canClick ? 'button' : undefined}
       tabIndex={canClick ? 0 : undefined}
@@ -313,6 +315,15 @@ export function SeatCard({
       </div>
 
       {/* Hàng 3: Ngọc sinh lực + Bài úp + Thân Phận gọn góc dưới-phải */}
+      {hero && (
+        <div className="relative z-10 flex flex-wrap gap-1">
+          {hero.skills.map(skill => (
+            <button key={skill.id} type="button" className="lkdf-hero-skill-label"
+              data-hover-name={skill.nameVi} data-hover-description={skill.descriptionVi}
+              onClick={event => event.stopPropagation()}>{skill.nameVi}</button>
+          ))}
+        </div>
+      )}
       <div className="lkdf-battle-seat-summary relative z-10 mt-1 flex items-center justify-between gap-1.5">
         <HpJadeMeter hp={player.hp} maxHp={player.maxHp} size="sm" />
 
@@ -358,29 +369,55 @@ export function SeatCard({
         </div>
       </div>
 
-      {/* Hàng 4: Trang bị & Cẩm nang ngửa (CHỈ hiển thị khi thực sự có trang bị — Bỏ dòng lặp vô ích) */}
-      {openCards.length > 0 ? (
-        <div
-          className={[
-            'lkdf-battle-seat-equipment relative z-10 mt-1 border-t border-[#94A3B8]/25 pt-1',
-            openCards.length >= 2
-              ? 'grid grid-cols-2 gap-1'
-              : 'flex flex-col gap-1',
-          ].join(' ')}
-        >
-          {openCards.map((item) => {
+      <div className="lkdf-battle-seat-equipment relative z-10 grid grid-cols-2 gap-1 border-t border-[#94A3B8]/25">
+        {[
+          ['weapon', 'Vũ khí'],
+          ['armor', 'Giáp'],
+          ['plusOne', 'Ngựa +1'],
+          ['minusOne', 'Ngựa -1'],
+        ].map(([slot, label]) => {
+          const item = openCards.find(card => card.sourceId === `seat:${player.seatIndex}:${slot}`);
+          const artUrl = item ? getCardArtUrl(item.card.cardKey) : null;
+          const slotClass = 'flex h-[24px] min-w-0 items-center gap-1 overflow-hidden px-1 rounded border border-[#B89352]/35 bg-[#0B0E14] text-[9px] text-[#D9C4A5]';
+          if (!item) {
+            return <span key={slot} data-equipment-slot={slot} className={slotClass} title={label}>{label}</span>;
+          }
+          return (
+            <button
+              key={slot}
+              type="button"
+              data-equipment-slot={slot}
+              {...cardHover(item.card)}
+              className={slotClass}
+              aria-label={`${label} · ${item.card.nameVi}`}
+              onClick={(event) => {
+                event.stopPropagation();
+                onInspectCard?.(item.card, item.sourceId, item.sourceLabel);
+              }}
+            >
+              {artUrl ? <img src={artUrl} alt="" className="h-[19px] w-[15px] shrink-0 rounded-sm object-cover" /> : null}
+              <span className="shrink-0">{formatRankLabel(item.card.rank)}</span>
+              <SuitGlyph suit={item.card.suit} size={9} tone="darkSurface" className="shrink-0" />
+              <span className="min-w-0 truncate">{item.card.nameVi}</span>
+            </button>
+          );
+        })}
+      </div>
+      {player.delayedScrolls.length > 0 ? (
+        <div className="relative z-10 grid grid-cols-2 gap-1">
+          {openCards.filter(item => item.sourceId.includes(':delayed:')).map((item) => {
             const artUrl = getCardArtUrl(item.card.cardKey);
             const active = inspectedCardSourceId === item.sourceId;
             const red = isCardRed(item.card);
             return (
               <button
                 key={item.sourceId}
+                {...cardHover(item.card)}
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
                   onInspectCard?.(item.card, item.sourceId, item.sourceLabel);
                 }}
-                title={`Bấm xem chiêu ${item.card.nameVi}`}
                 className={[
                   'inline-flex w-full min-w-0 cursor-pointer items-center gap-1.5 rounded border px-1.5 py-0.5 text-left transition-colors',
                   active
@@ -403,7 +440,7 @@ export function SeatCard({
                     red ? 'text-[#FCA5A5]' : 'text-[#F1F5F9]'
                   }`}
                 >
-                  <span>{formatRankLabel(item.card.rank)}</span>
+                  <span className="shrink-0">{formatRankLabel(item.card.rank)}</span>
                   <SuitGlyph suit={item.card.suit} size={10} tone="darkSurface" />
                   <span className="sr-only">{formatSuitSymbol(item.card.suit)}</span>
                 </span>
