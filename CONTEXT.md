@@ -85,6 +85,6 @@ npm --workspace=@lkdf/desktop run dev:renderer
 npm run package:win
 ```
 
-- **Lưu ý phát triển:** Nếu cổng `127.0.0.1:3001` trên máy bị chiếm, chạy server tạm ở cổng khác (`$env:PORT='3012'; npm run dev --workspace=@lkdf/server`).
+- **Lưu ý phát triển:** Trên Windows có bật chính sách chặn script PowerShell (`npm.ps1`), dùng `npm.cmd` thay cho `npm`. Nếu cổng `127.0.0.1:3001` bị chiếm, chạy server tạm ở cổng khác (`$env:PORT='3012'; npm.cmd run dev --workspace=@lkdf/server`).
 - **Quy tắc bắt buộc với AI mới:** Khi mở phiên trên máy mới, đọc [`AGENTS.md`](./AGENTS.md) và [`graphify-out/GRAPH_REPORT.md`](./graphify-out/GRAPH_REPORT.md) trước, sau mỗi bước nhớ cập nhật đồng bộ 4 file (`HUONG_DAN_CHO_TOI.md`, `TASKS.md`, `PROJECT_MEMORY.md`, `.agents/PROJECT_MEMORY.md`), cập nhật `graphify update .`, và trình bày theo chuẩn **"Báo cáo Sếp" + `/honest-advisor` & `/ultrathinking` + gợi ý `/swarm`**.
-- **Việc duy nhất còn lại để chốt hoàn toàn dự án (Bước 5.2 cuối):** Khách hàng làm theo **Mục 5** trong [`HUONG_DAN_CHO_TOI.md`](./HUONG_DAN_CHO_TOI.md) (bật Turso + Google OAuth + GitHub PAT + Render Cloud 0đ + Action tag `v1.0.0`) và test thực tế 1 ván 4–8 người theo **Mục 6** để đóng dấu `[x]` cuối cùng.
+- **Việc duy nhất còn lại để chốt hoàn toàn dự án (Bước 5.2 cuối):** Commit & Push toàn bộ bản vá tiền triển khai + bản nâng cấp giao diện Mẫu B **`Tam Quốc Sát`** (đã bỏ `LKDF` hiển thị, thêm màn Biệt danh & bộ cài `TamQuocSat-Setup-*.exe`) lên `origin/main`, rồi Khách hàng làm theo **Mục 5** trong [`HUONG_DAN_CHO_TOI.md`](./HUONG_DAN_CHO_TOI.md) (bật Turso + Google OAuth + GitHub PAT + Render Cloud 0đ + Action tag `v1.0.0`) và test thực tế 1 ván 4–8 người theo **Mục 6** để đóng dấu `[x]` cuối cùng.

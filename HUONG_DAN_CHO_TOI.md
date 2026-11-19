@@ -46,8 +46,12 @@ Vì bạn là người mới và không lập trình, bạn **không cần đọ
 >   - ✅ **Đã nạp Trọn Bộ 25 Tướng + 32 Lá Bài + Nền Rừng Trúc + 7 SFX & Đổi Khung Cổ Thư + Mặt Sau Long Văn Xanh Chàm (2026-11-18):** Nén gọn tổng cộng chỉ **1.45 MB** (`.webp` 2x + `.ogg`), bỏ nền trắng chói chuyển sang lụa vàng cổ `#DEC79C` đồng điệu tranh mực tàu, mặt sau Long Văn Xanh Chàm vector sắc nét, vượt qua **85/85 unit tests + 23/23 integration tests + 0 ảnh lỗi ở `1280×720`**.
 >   - ✅ **Đã nâng cấp Đồng Bộ Thẻ Nhân Vật / Ghế Tướng Nền Mờ Nghệ Thuật & Khung Gỗ Mun (Cách 2 — 2026-11-18):** Áp dụng đồng nhất trên cả ghế đối thủ (`SeatCard`), thẻ bản thân góc dưới-trái và màn hình chọn tướng (`HeroSelectPanel`); giữ nguyên kích thước bàn tròn `4–8P`, không cắt huy hiệu nổi `"Chọn mục tiêu"`, sửa hiển thị `Lưu Bị · Chủ` không bị cắt chữ `L...`, đạt **85/85 unit + 23/23 integration + 0 lỗi `typecheck`/`build` + 0 ảnh vỡ ở `1280×720`**.
 >   - ✅ **Đã hoàn thành Bàn Đấu Doanh Trại A Responsive (`960×600`–`2K`), Nhấn Giữ & Quăng Bài, Phóng To Ngọc Máu & 4 Ô Trang Bị Ngửa, Khoang Soi Kỹ Năng Thống Nhất (2026-11-18):** Nạp 8 họa tiết Doanh Trại A thật (0 ảnh AI, `1.69 MB`), phóng to ngọc sinh lực (`~12px` có viền sáng + số trắng rõ), ô trang bị ngửa ảnh lớn + chất bài vector sáng rõ trên nền tối, xếp 2 cột gọn không chạm ghế từ `960×600` tới `1280×720` (`7P–8P`), nhấn giữ kéo-thả bài trực tiếp (`8♦ Sát`, `4♥ Đào`), ẩn thanh lệnh ngoài lượt (`0px` giật bài), và soi chiêu ở khoang phải; đạt **0 lỗi `typecheck`, 85/85 unit, 23/23 integration, `build` sạch, `0` đè ghế & `0` lỗi console**.
-> - 👉 **BẠN ĐANG Ở ĐÂY — Chỉ còn đúng bước Đóng gói, Đưa lên GitHub & Bật Cloud 0đ (Bước 5.2 cuối):**
->   - Xem thử trực tiếp cửa sổ game Electron vừa mở; nếu ưng ý rồi thì nhắn tôi **`Commit và push lên cho tôi`** (có thể bảo chạy thêm `npm run package:win` nếu muốn test file `.exe` ngay trên máy), sau đó làm theo **Mục 5** để bật Cloud 0đ + Google OAuth, gửi bộ cài cho hội bạn chơi thử theo **Mục 6** và nhắn tôi chốt nghiệm thu!
+>   - ✅ **Đã sửa 3 điểm nghẽn tiền triển khai Render & Mạng (`2026-11-18`):** Thêm `--include=dev` vào `render.yaml` & `DEPLOYMENT.md`, chuẩn hóa dấu `/` cuối cho `feedUrl` cập nhật 1-Click trong `updater.cts` & `electron-builder.yml`, và bổ sung nhịp `ping` mỗi `25s` + tự động kết nối lại WebSocket trong `wsClient.ts`.
+>   - ✅ **Đã tái thiết kế Giao Diện Đăng Nhập & Đăng Ký + Biệt Danh Tướng Quân (`2026-11-18`):** Bổ sung màn thiết lập biệt danh lần đầu (`FirstTimeNicknameCard` + `PATCH /api/profile/display-name` lưu bền vững qua `has_custom_name`), sửa tên ngay tại Sảnh và sửa 2 chỗ cắt chữ trên bàn đấu (`MatchCenterBoard`, `MatchArenaLayout`).
+>   - ✅ **Đã nâng cấp Toàn Bộ Card & UI/UX sang Mẫu B (Gwent Tràn Viền) + Bỏ Chữ `LKDF` Đổi Tên Thành `Tam Quốc Sát` (`2026-11-18`):** Làm lại thẻ bài (`PlayingCardFace` cột Số+Chất dọc góc trái, tranh tràn mượt, hiện trọn tên dài `Từ Hùng Song Cổ Kiếm`), ghế tướng tràn chân dung 3 nấc tối & **xóa sạch dòng lặp `"Chưa gắn trang bị ngửa"`**, dọn gọn Cổng Đăng nhập / Biệt danh / Sảnh Hổ Phù / Phòng chờ / Thống kê (bỏ hộp lồng hộp & cảnh báo thừa), đồng bộ bộ cài `TamQuocSat-Setup-*.exe` & mã `TQS-...`; kiểm chứng sau sửa cuối đạt **0 lỗi `typecheck`, 85/85 unit (`535ms`), 24/24 integration (`4.54s`), 500/500 fuzz (`9.64s`), `build` (`2346` modules) sạch, `assets:check` (`1.69 MB`), 0 lỗi console & 0 `LKDF` hiển thị**.
+>   - ✅ **Đã nâng cấp Cổng Đăng Nhập / Đăng Ký / Đặt Biệt Danh sang Mẫu 2 Vô Khung Quốc Phong (`2026-11-19`):** Tham khảo phong cách *Tam Quốc Sát OL / Naraka / Hắc Thần Thoại* — ẩn thanh đầu trang ở màn đăng nhập & đặt tên, mở thoáng cảnh núi Xích Bích giữa Triệu Vân & Lữ Bố kèm **Parallax chuột 3 lớp**, **tàn lửa bay chậm**, **triện đá `殺 TAM QUỐC SÁT`**, nút **Google Lưu Quang** và thanh đáy `44px`; kiểm chứng app thật (`LOGIN` & `?devPreview=nickname`) ở `1280×720` và `960×600` đạt **`0` lỗi console, `0` lỗi mạng, `0` tràn khung**.
+> - 👉 **BẠN ĐANG Ở ĐÂY — Bước 5.2 cuối (Đẩy toàn bộ cập nhật lên GitHub → Bật Cloud 0đ → Chơi thử chốt nghiệm thu):**
+>   - Kiểm tra trực tiếp giao diện **`Tam Quốc Sát` (Mẫu B)** đang mở sẵn tại `http://localhost:5173/`; khi ưng ý, nhắn tôi **`Commit và push lên GitHub cho tôi`**, sau đó làm theo **Mục 5** để bật Turso + Google OAuth + Render Cloud 0đ + build `v1.0.0`, gửi bộ cài `TamQuocSat-Setup-1.0.0.exe` cho hội bạn theo **Mục 6** và nhắn tôi chốt nghiệm thu!
 
 ---
 
@@ -114,11 +118,11 @@ Vì bạn là người mới và không lập trình, bạn **không cần đọ
   - Đã hoàn thiện Hộp thoại **`🔔 Đã có phiên bản mới!`** ngay khi mở app kèm nút **`[⬇️ Cập nhật ngay]`**, thanh tiến trình **`XX%`**, kiểm tra SHA-512 và tự cài đặt mở lại app bằng `electron-updater`.
   - Đã cấu hình đóng gói bộ cài Windows NSIS (`.exe` + `.blockmap` + `latest.yml`), kiểm tra đóng gói thành công thực tế file `TamQuocSat-LKDF-Setup-0.1.0.exe`, cấu hình GitHub Actions (`.github/workflows/ci.yml`, `release-windows.yml`), file triển khai `render.yaml` và hướng dẫn chi tiết ở **Mục 5** bên dưới.
 
-#### 🔄 Bước 5.2 — Kiểm Tra Nghiệm Thu Cuối Cùng (8 Tiêu Chí `AC-1`–`AC-8`) & Gửi Cho Hội Bạn *(ĐÃ ĐẠT KỸ THUẬT — CHỜ SẾP CHẠY THỬ THỰC TẾ)*
-- **Kết quả kiểm tra kỹ thuật mới nhất:** Đã kiểm chứng toàn bộ **8/8 tiêu chí** ở tầng tự động & đóng gói trên máy (`typecheck`: 0 lỗi, `test:unit`: **82/82**, `test:fuzz`: **500/500 ván** trong `8.82s` — 0 deadlock, `test:integration`: **23/23**, kiểm tra bảo mật `42` file gói build = **0 bí mật lộ & 0 dữ liệu giả**, `package:win` sinh thật `TamQuocSat-LKDF-Setup-0.1.0.exe` + `latest.yml`).
+#### 🔄 Bước 5.2 — Kiểm Tra Nghiệm Thu Cuối Cùng (8 Tiêu Chí `AC-1`–`AC-8`) & Gửi Cho Hội Bạn *(ĐÃ ĐẠT KỸ THUẬT, VÁ TIỀN TRIỂN KHAI & NÂNG CẤP MẪU B "TAM QUỐC SÁT" — CHỜ ĐẨY LÊN RENDER & TEST THỰC TẾ)*
+- **Kết quả kiểm tra kỹ thuật mới nhất (2026-11-18):** Đã vá 3 điểm nghẽn tiền triển khai, nâng cấp toàn diện Card & UI sang **Mẫu B (Tràn Viền Gwent)**, bỏ hoàn toàn chữ `LKDF` hiển thị để dùng tên **`Tam Quốc Sát`**, thêm luồng **Đặt Biệt danh lần đầu** và kiểm chứng đủ 4 tầng sau chỉnh sửa cuối (`typecheck`: 0 lỗi, `test:unit`: **85/85** `535ms`, `test:fuzz`: **500/500 ván** `9.64s`, `test:integration`: **24/24** `4.54s`, `build` sạch `2346` modules, `assets:check` `1.69 MB`, kiểm tra trình duyệt `1280×720` & `960×600` đạt 0 lỗi console / 0 `LKDF`).
 - **👀 Việc duy nhất còn lại của bạn để đóng dấu `[x]` hoàn thành tuyệt đối:**
-  1. Nhắn AI `Commit và push lên cho tôi` để đưa mã nguồn mới nhất lên GitHub Private.
-  2. Bấm theo **Mục 5** bên dưới (~15 phút) để bật Turso + Google OAuth + Render Cloud 0đ và xuất file `TamQuocSat-LKDF-Setup-1.0.0.exe`.
+  1. Nhắn AI `Commit và push lên GitHub cho tôi` để đẩy toàn bộ bản vá & giao diện Mẫu B lên nhánh `main` của GitHub Private.
+  2. Bấm theo **Mục 5** bên dưới (~15 phút) để bật Turso + Google OAuth + Render Cloud 0đ và xuất file `TamQuocSat-Setup-1.0.0.exe`.
   3. Gửi file cài đặt cho 3–7 người bạn theo **Mục 6** bên dưới, chơi thử 1 ván rồi nhắn lại AI: **`Tôi đã test thực tế với bạn bè xong, xác nhận nghiệm thu hoàn tất Bước 5.2!`**.
 
 ---
@@ -215,7 +219,7 @@ Hãy gọi kèm `/honest-advisor` và `/ultrathinking` như bạn đã dùng r�
    - **Name:** `LKDF_SERVER_URL`
    - **Value:** `https://<ten-service-cua-ban>.onrender.com` *(không có dấu `/` ở cuối)* → bấm **Add variable**.
 2. Vào tab **Actions** trên GitHub → bên trái chọn **Release Windows Installer (.exe + latest.yml)** → bấm **Run workflow** → gõ phiên bản `1.0.0` → bấm **Run workflow**.
-3. Chờ khoảng 4–5 phút để GitHub đóng gói xong → vào mục **Releases** bên phải trang chủ kho GitHub của bạn tải file **`TamQuocSat-LKDF-Setup-1.0.0.exe`** gửi cho hội bạn 4–8 người! *(Lần đầu cài trên Windows, dặn bạn bè nếu thấy bảng xanh "Windows protected your PC" thì bấm `More info` → `Run anyway`; từ các bản `1.0.1`, `1.0.2` sau này bạn bè chỉ cần mở app và bấm 1 nút **`[⬇️ Cập nhật ngay]`**).*
+3. Chờ khoảng 4–5 phút để GitHub đóng gói xong → vào mục **Releases** bên phải trang chủ kho GitHub của bạn tải file **`TamQuocSat-Setup-1.0.0.exe`** gửi cho hội bạn 4–8 người! *(Lần đầu cài trên Windows, dặn bạn bè nếu thấy bảng xanh "Windows protected your PC" thì bấm `More info` → `Run anyway`; từ các bản `1.0.1`, `1.0.2` sau này bạn bè chỉ cần mở app và bấm 1 nút **`[⬇️ Cập nhật ngay]`**).*
 
 ---
 
@@ -238,10 +242,10 @@ Hãy gọi kèm `/honest-advisor` và `/ultrathinking` như bạn đã dùng r�
 
 ### 6.2. Checklist 5 Bước Gửi File Cài Đặt Đầu Tiên Cho Nhóm Bạn 4–8 Người
 1. **Xin trước Gmail của 3–7 người bạn** → Dán đủ vào mục **Test users** trong Google Cloud Console (theo Phần 5.3 ở trên) trước khi gửi file, nếu không bạn bè sẽ bị Google chặn lúc đăng nhập.
-2. **Tải file `TamQuocSat-LKDF-Setup-1.0.0.exe` (~118 MB)** từ mục *Releases* trên kho GitHub Private về máy bạn, rồi tải lên Google Drive cá nhân (chế độ *Bất kỳ ai có liên kết đều xem được*) hoặc gửi trực tiếp qua Zalo PC / Discord / Telegram. *(Không cần đưa tài khoản GitHub cho bạn bè)*.
+2. **Tải file `TamQuocSat-Setup-1.0.0.exe` (~118 MB)** từ mục *Releases* trên kho GitHub Private về máy bạn, rồi tải lên Google Drive cá nhân (chế độ *Bất kỳ ai có liên kết đều xem được*) hoặc gửi trực tiếp qua Zalo PC / Discord / Telegram. *(Không cần đưa tài khoản GitHub cho bạn bè)*.
 3. **Copy đoạn tin nhắn hướng dẫn sẵn dưới đây gửi vào nhóm chat bạn bè:**
-   > 🎴 **Mời anh em cài game Tam Quốc Sát LKDF (Bản nội bộ Windows 10/11):**
-   > 1. Tải file `TamQuocSat-LKDF-Setup-1.0.0.exe` về máy và nhấp đúp để cài (cài 1 phát xong luôn, không cần quyền Admin).
+   > 🎴 **Mời anh em cài game Tam Quốc Sát (Bản nội bộ Windows 10/11):**
+   > 1. Tải file `TamQuocSat-Setup-1.0.0.exe` về máy và nhấp đúp để cài (cài 1 phát xong luôn, không cần quyền Admin).
    > 2. **Lưu ý duy nhất lần đầu:** Nếu Windows hiện bảng xanh *"Windows protected your PC"* (do app nội bộ không mua chữ ký Microsoft), anh em bấm **`More info`** → **`Run anyway`** là mở bình thường.
    > 3. Mở game → nếu thấy bảng *"Đang đánh thức máy chủ (~30–60s)"* thì chờ vài chục giây cho máy chủ miễn phí bật dậy → bấm **`🔑 Đăng nhập bằng Google`** (chọn đúng Gmail đã gửi cho mình).
    > 4. Vào Sảnh chính, nhập **mã phòng 6 ký tự** mình nhắn trong nhóm để vào bàn (tối thiểu đủ **4 đến 8 người thật** mới bấm Bắt đầu được).

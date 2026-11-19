@@ -228,14 +228,42 @@ Xem đầy đủ 10 quyết định (`ADR-001` đến `ADR-010`) tại [DECISION
     - `npm run assets:check`: `25/25` Tướng, `32/32` Lá bài, `7` SFX + `8` họa tiết `art/ui/` (`1.69 MB`), `exit code 0`.
     - Kiểm tra trình duyệt trực tiếp khi nhiều ghế gắn trang bị/cẩm nang ngửa (`6♣ Lạc Bất Tư`, `A♦ Gia Cát Liên Nỗ`, `K♠ -1 Đại Uyên`, `K♦ -1 Tử Tinh`, `5♠ +1 Tuyệt Ảnh`, `A♠ Thiểm Điện` + Self `5♥ Xích Thố`) ở **`960×600` (`8P`)** và **`1280×720` (`7P & 8P`)**: **`seatOverlaps: 0` (`40.1px` min gap ở `1280×720`), `otherOverlaps: 0`, `scrollbars: 0`, `consoleErrors: 0`, `failedRequests: 0`**; ứng dụng Electron Desktop chạy ổn định ở `minWidth: 960, minHeight: 600`.
 
+- **[Hoàn thành — 2026-11-18] Vá 3 Lỗi Tiền Triển Khai Render/Mạng + Đăng Ký Biệt Danh + Nâng Cấp Card & UI Mẫu B (`Tam Quốc Sát`, Bỏ `LKDF`):**
+  - **Tiền triển khai:** `render.yaml` & `DEPLOYMENT.md` (`npm ci --include=dev`); `updater.cts` & `electron-builder.yml` (trailing slash `/api/update/`); `wsClient.ts` (heartbeat `25s` + auto-reconnect dừng sạch khi `4001/4009`).
+  - **Hồ sơ Biệt danh & Thương hiệu `Tam Quốc Sát` (Bỏ `LKDF` hiển thị):**
+    - Backend (`apps/server/src/{persistence,auth}/*`): thêm `has_custom_name`, API `PATCH /api/profile/display-name` (2–20 ký tự), `isNewUser`, mã dự phòng `TQS-XXXX-YYYY`, trang OAuth hiển thị `Tam Quốc Sát`; giữ nguyên ID kỹ thuật ngầm (`@lkdf/*`, DB/env/repo slug) để không gãy dữ liệu.
+    - Desktop & Bộ cài (`index.html`, `package.json`, `electron/main.cts`, `electron/updater.cts`, `electron-builder.yml`, `.github/workflows/release-windows.yml`, `App.tsx`, `UpdateModal.tsx`): đổi toàn bộ tiêu đề hiển thị sang **`Tam Quốc Sát`** và file cài sang **`TamQuocSat-Setup-<version>.exe`**.
+  - **Mẫu B — Thẻ Bài & Giao Diện Phong Cách Gwent Tràn Viền:**
+    - `PlayingCardFace` trong `HandCardItem.tsx` (dùng chung cho `TablePlayedCard` & `DragGhostCard`), `matchTypes.ts`, `index.css`: khung đá tối `#161B23`, cột Số+Chất dọc góc trên-trái, tranh tràn mượt xuống bảng tên serif hiện trọn tên dài (`Từ Hùng Song Cổ Kiếm`, 0 cắt `...`).
+    - `HeroCardWatermark.tsx`, `SeatCard.tsx`, `HeroSelectPanel.tsx`, `MatchArenaLayout.tsx`, `MatchInspectorBox.tsx`, `MatchActionSidebar.tsx`: chân dung tràn viền 3 nấc tối tương phản cao, **bỏ sạch dòng lặp `"Chưa gắn trang bị ngửa"`**, nền tối đồng bộ 4 ô trang bị & bảng soi.
+    - `LoginScreen.tsx`, `FirstTimeNicknameCard.tsx`, `ServerWakeScreen.tsx`, `HomeLobbyHub.tsx`, `WaitingRoomScreen.tsx`, `StatsPage.tsx`, `StatsMetaFilters.tsx`, `MatchHistoryList.tsx`: dẹp box-in-box, tab gạch chân, bỏ hộp cảnh báo OAuth lớn giữa form đăng nhập, đồng bộ nền Doanh Trại xuyên suốt cả trang Thống Kê.
+  - **Bằng chứng kiểm tra thực tế sau chỉnh sửa cuối (2026-11-18):**
+    - `npm.cmd run typecheck`: **0 lỗi** cả 3 workspace.
+    - `npm.cmd run test:unit`: **11 files · 85/85 passed** (`535ms`).
+    - `npm.cmd run test:integration`: **7 files · 24/24 passed** (`4.54s`).
+    - `npm.cmd run test:fuzz`: **6 tests · 500/500 ván** (`9.64s`, 0 deadlock, 0 rò rỉ `PlayerViewState`, đủ 25 tướng & 3 phe thắng).
+    - `npm.cmd run build` (`vite build 2346 modules` `769ms` + `tsc -p tsconfig.electron.json`): `exit code 0`.
+    - `npm.cmd run assets:check`: `25/25` Tướng, `32/32` Lá bài, `2/3` UI + `7` SFX (`1.69 MB`), `exit code 0`.
+    - Kiểm tra trình duyệt trên `http://localhost:5173/` (`LoginScreen`, `StatsPage`, `?devPreview=nickname`, `?devPreviewSeats=8` ở `1280×720` & `960×600`): 0 lỗi console, 0 lỗi HTTP 4xx/5xx, 0 `LKDF` hiển thị, `Chủ` & `Kỹ năng` đọc rõ.
+
+- **[Hoàn thành — 2026-11-19] Tái Thiết Kế Cổng Đăng Nhập / Đăng Ký / Đặt Biệt Danh Chuẩn Game Quốc Phong Vô Khung (Mẫu 2 — Tham chiếu *Naraka / Tam Quốc Sát OL*):**
+  - Dựng sân khấu dùng chung `apps/desktop/src/features/auth/GuofengPortalStage.tsx` (kèm animation `@keyframes tqsGoldSweep` / `tqsCtaBreath` & tôn trọng `prefers-reduced-motion` trong `apps/desktop/src/index.css`) cho `LoginScreen.tsx` và `FirstTimeNicknameCard.tsx`.
+  - Cập nhật `apps/desktop/src/App.tsx` thêm `isAuthPortalScreen` để ẩn thanh `<header>` trên cùng và nền trùng khi đang ở màn `LOGIN` hoặc `NICKNAME_SETUP`, chuyển trạng thái máy chủ & kiểm tra/cập nhật phiên bản xuống thanh đáy `44px` để toàn bộ cửa sổ tràn viền 100%.
+  - **Bằng chứng kiểm tra thực tế (`2026-11-19`):**
+    - `npm.cmd run typecheck`: **0 lỗi** toàn Monorepo (`@lkdf/shared`, `@lkdf/desktop`, `@lkdf/server`).
+    - `npm.cmd run test:unit`: **11 files · 85/85 passed** (`458ms`).
+    - `npm.cmd run build` (`vite build 2347 modules` `654ms` + `tsc`): `exit code 0`.
+    - `npm.cmd run assets:check`: `25/25` Tướng, `32/32` Lá, `7` SFX (`1.69 MB`), `exit code 0`.
+    - Kiểm tra trình duyệt trực tiếp trên app thật `http://localhost:5173/` (`LOGIN` & `?devPreview=nickname`, chuyển `Đăng nhập`/`Đăng ký mới`, mở/đóng mã dự phòng, kiểm tra báo lỗi validation `12` & `A`, mở `Bảng Thống Kê`, mở `Xem thử Bàn 8 người`, ở cả `1280×720` và `960×600`): **`0` console errors, `0` HTTP 4xx/5xx errors, `0` tràn khung**.
+
 ---
 
 ## 4. Vấn Đề Đang Tồn Tại & Câu Hỏi Chưa Giải Quyết
 
 - **Câu hỏi nghiệp vụ chưa có đáp án:** **0** (Toàn bộ yêu cầu v1 đã được khách hàng chốt dứt điểm).
 - **Lưu ý môi trường kỹ thuật:**
-  - Máy hiện tại chạy `Node.js v26.13.1`, `npm 11.20.0`, `Git 2.56.0` (chưa cài Rust/MSVC), nên `apps/desktop` sử dụng **Electron + `electron-updater`** theo đúng phương án trong [ARCHITECTURE.md](./ARCHITECTURE.md).
-  - Electron 45 tải file chạy `electron.exe` ở lần khởi chạy đầu tiên qua `electron` CLI hoặc `npx install-electron`.
+  - Máy mới hiện chạy `Node.js v26.13.1`, `npm 11.20.0`, `Git 2.56.1` (ExecutionPolicy của PowerShell mặc định chặn `npm.ps1`, nên chạy `npm.cmd` hoặc qua `cmd`); `apps/desktop` dùng **Electron 45 + `electron-updater`**.
+  - Cổng `127.0.0.1:3001` trên máy này trống hoàn toàn và sẵn sàng chạy server cục bộ.
 
 ---
 
@@ -246,4 +274,4 @@ Xem đầy đủ 10 quyết định (`ADR-001` đến `ADR-010`) tại [DECISION
   2. Báo cáo cho khách hàng theo đúng **phong cách "Báo cáo Sếp"**: ngắn gọn, đi thẳng vào trọng tâm gồm 4 mục (*✅ Đã hoàn thành · 📊 Bằng chứng kiểm tra · ⚠️ Tồn đọng/Lưu ý · 👉 Bước tiếp theo kèm câu lệnh copy*).
   3. Luôn kèm mục **Phản biện thẳng (`/honest-advisor` & `/ultrathinking`)** và **Gợi ý chia quân (`/swarm`)**.
   4. **Bàn giao ca trực khép kín giữa các phiên:** Đầu phiên mới luôn đọc sổ nhớ + chạy `git status --short`; cuối mỗi bước luôn ghi *Ghi chú bàn giao kỹ thuật (Handoff Notes)* vào [`.agents/PROJECT_MEMORY.md`](./.agents/PROJECT_MEMORY.md).
-- **Bước tiếp theo ngay sau đây:** Sau khi Sếp kiểm tra trực tiếp bàn đấu Doanh Trại A vừa nâng cấp, chạy `npm run package:win` (nếu muốn xuất bản `.exe` mới chứa toàn bộ nâng cấp UI trên máy), rồi nhắn `Commit và push lên cho tôi`, làm theo **Mục 5** trong [HUONG_DAN_CHO_TOI.md](./HUONG_DAN_CHO_TOI.md) (bật Turso + GitHub Token + Google OAuth + Render Cloud 0đ + build tag `v1.0.0`), gửi bộ cài cho nhóm bạn 4–8 người theo **Mục 6** và xác nhận nghiệm thu cuối cùng để đóng dấu `[x]` Bước 5.2.
+- **Bước tiếp theo ngay sau đây:** Sau khi Sếp xem app Electron vừa mở trên máy, nhắn **`Commit và push bản vá lên GitHub cho tôi`**, rồi làm theo **Mục 5** trong [HUONG_DAN_CHO_TOI.md](./HUONG_DAN_CHO_TOI.md) (bật Turso + GitHub Token + Google OAuth + Render Cloud 0đ + build tag `v1.0.0`), gửi bộ cài cho nhóm bạn 4–8 người theo **Mục 6** và xác nhận nghiệm thu cuối cùng để đóng dấu `[x]` Bước 5.2.
