@@ -1,3 +1,4 @@
+import { showDiscardAs } from '../../engine/deck.js';
 import { isBlackSuit, isRedSuit } from '../../cards/catalog.js';
 import type { HeroId, MasterGameState, TurnFlags } from '../../types/game.js';
 import type { HeroSkillHandler, SkillRuntime } from '../skillContracts.js';
@@ -311,12 +312,13 @@ export const WU_QUN_HERO_SKILLS: Partial<Record<HeroId, HeroSkillHandler>> = {
         throw new Error('Mục tiêu Thanh Nang đang đầy máu.');
       }
 
-      let next = rt.discardHandCards(
+      const discarded = rt.discardHandCards(
         state,
         action.seatIndex,
         [cardIds[0]!],
         rng,
-      ).state;
+      );
+      let next = showDiscardAs(discarded.state, discarded.removed[0]!, 'dao');
       next = rt.updatePlayer(next, targetSeat, (p) => ({
         ...p,
         hp: Math.min(p.maxHp, p.hp + 1),

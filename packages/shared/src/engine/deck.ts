@@ -72,7 +72,7 @@ export function drawFromPile(
       if (discardPile.length === 0) {
         break;
       }
-      drawPile = shuffleArray(discardPile, rng);
+      drawPile = shuffleArray(discardPile.map(clearDiscardFace), rng);
       discardPile = [];
       logMessages = [
         ...logMessages,
@@ -113,6 +113,12 @@ export function dealCardsToSeat(
   return { state: nextState, dealt: drawn };
 }
 
+function clearDiscardFace(card: CardInstance): CardInstance {
+  if (!card.discardDisplayAs) return card;
+  const { discardDisplayAs: _, ...physicalCard } = card;
+  return physicalCard;
+}
+
 export function appendToDiscardPile(
   state: MasterGameState,
   cards: readonly CardInstance[],
@@ -122,7 +128,19 @@ export function appendToDiscardPile(
   }
   return {
     ...state,
-    discardPile: [...state.discardPile, ...cards],
+    discardPile: [...state.discardPile, ...cards.map(clearDiscardFace)],
+  };
+}
+
+/** Mark only the public discard face. Rules still use the physical card. */
+export function showDiscardAs(
+  state: MasterGameState, card: CardInstance, key: string,
+): MasterGameState {
+  if (card.cardKey === key || !state.discardPile.some(item => item.id === card.id)) return state;
+  return {
+    ...state,
+    discardPile: state.discardPile.map(item =>
+      item.id === card.id ? { ...item, discardDisplayAs: key } : item),
   };
 }
 

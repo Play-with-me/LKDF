@@ -365,6 +365,10 @@ describe('Bước 1.3 — 7 Tướng phe Thục (Lưu Bị, Quan Vũ, Trương P
       seatIndex: 1,
       cardId: null,
     });
+    expect(projectStateForPlayer(state, 'u-1').discardPileTop).toMatchObject({
+      id: dodgeAsSat.id, cardKey: 'sat', suit: 'DIAMOND', rank: 2,
+    });
+    expect(state.discardPile.at(-1)?.cardKey).toBe('thiem');
     expect(state.players[1]!.hp).toBe(3);
 
     // Kết thúc lượt 0, chuyển sang ghế 1 đánh Sát vào Triệu Vân
@@ -389,6 +393,10 @@ describe('Bước 1.3 — 7 Tướng phe Thục (Lưu Bị, Quan Vũ, Trương P
       seatIndex: 0,
       cardId: satAsDodge.id,
     });
+    expect(projectStateForPlayer(state, 'u-1').discardPileTop).toMatchObject({
+      id: satAsDodge.id, cardKey: 'thiem', suit: 'SPADE', rank: 8,
+    });
+    expect(state.discardPile.at(-1)?.cardKey).toBe('sat');
     expect(state.players[0]!.hp).toBe(4);
     expect(state.players[0]!.handCards).toHaveLength(0);
   });

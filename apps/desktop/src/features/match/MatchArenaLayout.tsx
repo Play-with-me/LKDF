@@ -624,7 +624,8 @@ export function MatchArenaLayout({
   };
 
   const interrupt = playerView.activeInterrupt;
-  const showCenterReaction = interrupt !== null && interrupt.kind !== 'WAIT_HARVEST_PICK';
+  const hasReaction = interrupt !== null && interrupt.kind !== 'WAIT_HARVEST_PICK';
+  const showCenterReaction = hasReaction && prompt.actorSeat === playerView.viewerSeatIndex;
   const showTableDropBanner =
     dragState !== null &&
     (dragState.intent.kind === 'table' || dragState.intent.kind === 'toggle_select');
@@ -1066,7 +1067,7 @@ export function MatchArenaLayout({
           </div>
 
           {/* Thanh Lệnh Ngữ Cảnh: TỰ ĐỘNG ẨN (null) khi ngoài lượt, hiện gọn khi tới lượt hoặc cần phản ứng */}
-          <div className="lkdf-hand-turn-bar shrink-0">{!showCenterReaction ? renderActionSidebar() : null}</div>
+          <div className="lkdf-hand-turn-bar shrink-0">{!hasReaction ? renderActionSidebar() : null}</div>
 
           {/* Dải bài neo đáy cố định (0px giật bài khi thanh lệnh bật/tắt) */}
           <div className="lkdf-battle-hand lkdf-scroll flex min-h-0 flex-1 items-end overflow-x-auto overflow-y-hidden px-1">

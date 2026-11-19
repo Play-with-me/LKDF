@@ -164,13 +164,13 @@ export function SeatCard({
         compact ? 'px-2 py-1.5' : 'px-2.5 py-2',
         !player.alive ? 'opacity-50 grayscale' : '',
         isDragHovered
-          ? 'scale-[1.04] border-2 border-[#FBBF24] bg-[#3B1812]/95 shadow-[0_0_24px_rgba(251,191,36,0.55)]'
+          ? 'border-[#FBBF24] bg-[#3B1812]/95 shadow-[0_0_24px_rgba(251,191,36,0.55)]'
           : isDragTargetEligible
-            ? 'lkdf-drop-pulse border-2 border-[#E6BE6C] bg-[#1A212E]'
+            ? 'lkdf-drop-pulse border-[#E6BE6C] bg-[#1A212E]'
             : isSelectedTarget
-              ? 'border-2 border-[#E6BE6C] bg-[#1A212E] ring-2 ring-[#E6BE6C]/65 shadow-[0_0_18px_rgba(230,190,108,0.35)]'
+              ? 'border-[#E6BE6C] bg-[#1A212E] ring-2 ring-[#E6BE6C]/65 shadow-[0_0_18px_rgba(230,190,108,0.35)]'
               : isTargetEligible
-                ? 'cursor-pointer border-2 border-[#E6BE6C] hover:bg-[#1A212E] shadow-[0_0_14px_rgba(230,190,108,0.28)]'
+                ? 'cursor-pointer border-[#E6BE6C] hover:bg-[#1A212E] shadow-[0_0_14px_rgba(230,190,108,0.28)]'
                 : isActiveActor
                   ? 'border-[#C83E37] ring-1 ring-[#C83E37]/75 shadow-[0_0_18px_rgba(200,62,55,0.28)]'
                   : isInspectedHero

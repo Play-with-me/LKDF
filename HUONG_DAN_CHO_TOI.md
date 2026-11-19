@@ -34,6 +34,7 @@ Vì bạn là người mới và không lập trình, bạn **không cần đọ
 ## 2. Lộ Trình Từ Đầu Đến Cuối & Các Câu Lệnh "Copy – Dán" Cho Bạn
 
 > **📌 Trạng thái hiện tại của bạn (AI tự động cập nhật sau mỗi bước):**
+> - ✅ **Đã kiểm chứng chọn bài sáng mục tiêu (2026-11-19):** Sát mặc định 2 ghế, thêm ngựa -1 có 4 ghế, thêm cung tầm 5 có 7 ghế; 85/85 unit đạt. Tính năng đã có, chưa nhập demo.
 > - ✅ **ĐÃ XONG Bước 4.3** — Giao diện bàn đấu đã duyệt đã vào mã nguồn game. Xem [bố trí bàn đấu](./DESIGN.md#32-bố-cục-responsive-trên-máy-tính-windows-960600-tối-thiểu--mở-mặc-định-1280720--co-giãn-mượt-tới-2k).
 > - 👉 **BẠN ĐANG Ở ĐÂY — Bước 4.4.** `Làm bản demo animation đánh bài và hiệu ứng của Sát, Thiểm, Đào và Vô Giải để tôi duyệt.`
 > - ✅ **Giai đoạn 0 (Bước 0.1 & 0.2 — Bộ 11 tài liệu & Monorepo):** **ĐÃ XONG 100%**.
@@ -260,3 +261,5 @@ Hãy gọi kèm `/honest-advisor` và `/ultrathinking` như bạn đã dùng r�
 
 ### Bước 4.4 · Duyệt hiệu ứng trong bàn chính
 Đã nối các hiệu ứng có thể xác định từ dữ liệu trận hiện tại. Các cảnh nhiều nhánh vẫn xem ở demo trong khi bổ sung dữ liệu kết quả cho bàn chính. Xem [tiến độ và bằng chứng](PROJECT_MEMORY.md).
+
+- 👉 Bước 4.4 · Duyệt demo tướng tại http://localhost:5174/motion-demo.html. Chọn tướng/kỹ năng trong danh sách. Câu lệnh tiếp nối: Kiểm tra đủ các nhánh hiệu ứng tướng và sửa các cảnh chưa khớp trước khi đưa vào bản chính.

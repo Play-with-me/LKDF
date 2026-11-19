@@ -113,6 +113,7 @@ export type TargetCardZone =
   | 'DELAYED';
 
 export interface CardInstance {
+  readonly discardDisplayAs?: string;
   readonly id: string;
   readonly cardKey: string;
   readonly nameVi: string;

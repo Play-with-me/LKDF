@@ -131,17 +131,31 @@
 
 .lkdf-battle-reaction { width: 100%; }
 .lkdf-battle-reaction .lkdf-action-bar {
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 6px;
-  padding: 4px 6px;
+  flex-direction: column !important;
+  align-items: stretch;
+  gap: 8px;
+  padding: 10px;
   border-color: #82584b9a;
   background: #211714;
 }
-
-.lkdf-battle-reaction .lkdf-action-bar > :first-child { min-width: 0; flex: 1 1 92px; }
-.lkdf-battle-reaction .lkdf-action-bar > :last-child { display: flex; flex: 0 1 auto; flex-flow: row wrap; gap: 4px; }
-.lkdf-battle-reaction .lkdf-action-bar button { width: auto; padding: 3px 6px; white-space: nowrap; }
+.lkdf-battle-reaction .lkdf-action-bar > * {
+  min-width: 0;
+}
+.lkdf-battle-reaction .lkdf-action-bar > :last-child {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.lkdf-battle-reaction .lkdf-action-bar button {
+  min-height: 36px;
+  width: 100%;
+  justify-content: center;
+  padding: 6px 10px;
+  white-space: normal;
+}
+html[data-demo-skill] .lkdf-battle-reaction {
+  display: none;
+}
 .lkdf-battle-choice { border-color: #775a46a8; background: #211915e8; box-shadow: 0 6px 15px #0805038c; }
 .lkdf-battle-harvest { display: grid; grid-template-columns: repeat(auto-fit, minmax(46px, 1fr)); gap: 4px; }
 .lkdf-battle-harvest button { min-width: 0; width: 100%; max-width: 86px; height: 79px; padding: 0; }
@@ -522,7 +536,7 @@ dialog[open]::backdrop {
 
 .lkdf-bot-active-seat {
   z-index: 23;
-  translate: 0 -3px;
+
 }
 .lkdf-bot-active-seat > [data-drop-seat] {
   outline: 1px solid #f9c676;

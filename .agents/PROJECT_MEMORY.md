@@ -33,3 +33,38 @@ Handoff Notes — apps/desktop/motion-scenes.js cung cấp playSkill, được m
 
 ### Bước 4.4 · Handoff đồng bộ hiệu ứng vào bàn chính
 `MatchArenaLayout` dùng `useMatchMotion` với dữ liệu `PlayerViewState` công khai. Đã nối biến động máu, Sát–Thiểm khi xác nhận được phản ứng, lửa Quyết Đấu, bóng ngựa và một số chuyển lá xác định được. Khi nhận lại trạng thái sau rớt mạng hoặc hoàn tác, tạo mốc mới. Bước tiếp theo cần sự kiện công khai có định danh cho từng kết quả Tá Đao, Vô Giải, phán xét, đòn toàn bàn và trang bị tương tác, rồi nối các cảnh theo sự kiện đó. Kiểm tra riêng snapshot cũ, hoàn tác và ẩn bài đối thủ trước khi chốt Bước 4.4.
+
+### 2026-11-19 · Kiểm chứng phát sáng mục tiêu khi chọn bài
+- Yêu cầu: bấm lá bài để các tướng có thể chọn làm mục tiêu sáng viền vàng; tính ngựa, vũ khí và kỹ năng tướng.
+- Tính năng đã có trong `getRequiredTargetSpec` -> `MatchArenaLayout` -> `SeatCard`; khoảng cách dùng hàm chung trong `packages/shared/src/distance/index.ts`. Không sửa mã nguồn hoặc nhập bản demo.
+- Kiểm chứng trực tiếp bản chính DEV 8P: chọn Sát mặc định có 2 ghế sáng; trang bị Đại Uyên (-1) có 4 ghế sáng; thêm Kỳ Lân Cung tầm 5 có 7 ghế sáng. Hủy chọn tắt viền mục tiêu.
+- `npm run test:unit --workspace=@lkdf/shared -- --run tests/unit/distance.test.ts`: thực tế script chạy toàn bộ 11 file, 85/85 đạt. Bộ distance có 4 bài kiểm tra ngựa +1/-1, Mã Thuật cộng dồn, Kỳ Tài, tầm vũ khí và bỏ qua ghế chết.
+- Handoff Notes: tiếp tục Bước 4.4 còn mở. Đây là kiểm chứng hành vi hiện hữu, không đóng Bước 4.4 hoặc 5.2 và không thay đổi luật.
+
+### 2026-11-20 · Demo 40 kỹ năng tướng theo Thục → Ngụy → Ngô → Quần
+- Thay mẫu glyph cũ bằng motion-scenes.js và motion-skills.css: popup tại ghế, lửa video đổi màu phe, nhãn dưới tướng, lựa chọn và các nhánh diễn tập 40 kỹ năng. Quan Tinh kéo đổi vị trí/đầu-đáy, Lạc Thần lặp, Phản Gián đoán chất/lật một lá, Ly Gián hai chân dung ra sàn đấu.
+- Kiểm chứng: node --check đạt, npm run typecheck đạt, npm run build --workspace=@lkdf/desktop đạt, git diff --check đạt. Trình duyệt thử Quan Tinh chuyển vùng/xác nhận, Lạc Thần nhận đen/dừng, Phản Gián đoán/lật/thu bài, Ly Gián mở đấu; console 0 lỗi trong lượt thử.
+- Giới hạn: kết quả demo dựng sẵn; các ghế nền vẫn là trận DEV độc lập. Chưa kiểm hết mọi lựa chọn của 40 kỹ năng, chưa nghiệm thu mỹ thuật, chưa nối trận thật hoặc chứng minh quyền xem nhiều máy. Giữ Bước 4.4 mở.
+- Handoff Notes: playSkill nhận hero từ motion-demo.html, tự hủy theo generation. Tiếp tục kiểm đủ nhánh và chuẩn hóa kịch bản ghế đúng tướng/phe, tái dùng chính hiệu ứng bài đã duyệt thay các mô phỏng rút/đánh đơn giản; sau duyệt mới nối sự kiện thật. Thanh Nang dùng hình Đào diễn giải, không thay luật.
+
+- Handoff Bước 4.4: Viền demo bám khung ghế thực; Nhân Đức thêm khay riêng, thu hồi và xác nhận người nhận. Đã thử chọn/thu hồi/giao trên trình duyệt. Đối chiếu 40 ID và typecheck đạt; còn kiểm từng nhánh và quyền xem trong trận thật.
+
+- Handoff Bước 4.4: Nhân Đức và Quan Tinh dùng khay trực tiếp giữa bàn demo, bỏ nền mờ riêng của hai cảnh. Cú pháp và diff check đạt.
+
+- Bước 4.4: bỏ popup và khung bao kỹ năng Nhân Đức/Quan Tinh. Mặt bàn hiển thị ô lá bài riêng, kể cả ô trống.
+
+- Bước 4.4: giới hạn video lửa trong khung ghế và gộp nhãn demo phía ngoài khung.
+
+- Bước 4.4: khay kỹ năng Quan Tinh và Nhân Đức rộng hơn, bố trí hai hàng ô trên mặt bàn và bỏ giới hạn gây thanh cuộn.
+
+- Handoff: cửa sổ Electron vào fullscreen, bỏ viền và nút thu/phóng; khay demo bám vùng bàn, cập nhật bằng ResizeObserver. Typecheck đạt. Quan Tinh thử ở 935 px: tâm 467 px, xác nhận được. Chưa mở bản Electron để nghiệm thu.
+
+- Bàn chính và bàn DEV dùng chung MatchSettings nổi góc trên phải, bỏ thanh đầu trận khỏi luồng bố cục. Typecheck đạt; trình duyệt DEV mở Cài đặt rồi mở Nhật ký thành công.
+
+- Phản ứng giữa bàn chỉ hiện cho ghế cần trả lời, nút xếp dọc cao tối thiểu 36 px; demo kỹ năng ẩn phản ứng trận nền. Bỏ dịch ghế bot 3 px, scale khi kéo và thay đổi độ dày viền. Typecheck và xác nhận Quan Tinh trên demo đạt.
+
+- Demo Long Đảm dùng lại lá đã chuyển đổi cho đòn Sát, giữ chất/số lá gốc, không sinh bản sao.
+
+- Demo: thống nhất đổi mặt trên cùng lá cho Võ Thánh, Long Đảm, Khuynh Quốc, Kỳ Tập, Quốc Sắc, Thanh Nang và Cấp Cứu; Quỷ Tài dọn lá phán xét cũ.
+
+- Bước 4.4: bàn chính nhận mặt bài chuyển đổi theo cùng ID, giữ chất/số và lá vật lý trong luật. Demo hiệu ứng tướng vẫn tách riêng. Typecheck, build, unit 85/85 và integration 24/24 đạt.

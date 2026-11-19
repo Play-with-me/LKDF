@@ -148,3 +148,7 @@
 - Bước 4.4, ghi nhận thử nghiệm — 3/3 cảnh Quan Tinh, Võ Thánh và Nhân Đức đạt trạng thái cuối trên trình duyệt. Chờ duyệt mỹ thuật và đo app, giữ bước chính chưa hoàn thành.
 
 - Bước 4.4, đồng bộ vào bàn chính đang thực hiện. Kiểm tra kỹ thuật của lớp hiệu ứng đã qua. Còn các cảnh nhiều nhánh và nghiệm thu trận thật. Giữ ô Bước 4.4 mở.
+
+- Kiểm chứng bổ sung 2026-11-19: phát sáng mục tiêu đã có, thử Sát 2 ghế -> Đại Uyên 4 ghế -> Kỳ Lân Cung 7 ghế; 85/85 unit đạt. Xem PROJECT_MEMORY.md; giữ Bước 4.4 mở.
+
+- 2026-11-20 · Có bản dựng demo 40 kỹ năng. Bốn cảnh tương tác đã thử, toàn bộ nhánh và tích hợp thật còn chờ. Giữ Bước 4.4 chưa hoàn thành.

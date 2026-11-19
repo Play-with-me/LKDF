@@ -132,3 +132,5 @@ Mọi màn hình trong ứng dụng (Đăng nhập, Sảnh chính, Phòng chờ,
   - Tuyệt đối không hiển thị số liệu giả (như tỉ lệ thắng giả, lịch sử ván đấu mẫu hay tên người chơi mẫu) trong ứng dụng thực tế của người dùng.
   - Mọi thông tin trên màn hình *Hồ sơ*, *Thống kê*, *Phòng chờ* và *Bàn đấu* phải được lấy trực tiếp từ dữ liệu thật của tài khoản Google đã đăng nhập và trạng thái phòng từ Máy chủ.
   - Nếu dữ liệu đang tải hoặc chưa có ván đấu nào, bắt buộc hiển thị đúng trạng thái *Đang tải* hoặc *Chưa có dữ liệu* đã quy định tại Mục 4.
+
+- Cửa sổ game Windows mở toàn màn hình, không có nút thu nhỏ/phóng to hay kéo đổi kích thước. Nội dung bàn đấu vẫn tự co theo độ phân giải màn hình.

@@ -239,10 +239,11 @@ function createMainWindow(): BrowserWindow {
   allowForceClose = false;
 
   const win = new BrowserWindow({
-    width: 1280,
-    height: 720,
-    minWidth: 960,
-    minHeight: 600,
+    fullscreen: true,
+    frame: false,
+    resizable: false,
+    minimizable: false,
+    maximizable: false,
     backgroundColor: '#090807',
     title: 'Tam Quốc Sát',
     autoHideMenuBar: true,

@@ -35,6 +35,7 @@ import {
 import type { GameAction } from './combatTypes.js';
 import {
   appendToDiscardPile,
+  showDiscardAs,
   dealCardsToSeat,
   drawFromPile,
   getClockwiseAliveSeats,
@@ -141,7 +142,7 @@ function validateAndConsumeStrikeCards(
       throw new Error('CARD_NOT_IN_HAND');
     }
     const res = SKILL_RUNTIME.discardAnyCard(state, seatIndex, cardId, rng);
-    return { state: res.state, usedCards: [res.removed] };
+    return { state: showDiscardAs(res.state, res.removed, 'sat'), usedCards: [res.removed] };
   }
   if (cardIds.length === 2 && allowTruongBat && hasTruongBat(player)) {
     const res = SKILL_RUNTIME.discardHandCards(state, seatIndex, cardIds, rng);
@@ -301,7 +302,7 @@ function handlePlayCard(
       throw new Error('HP_ALREADY_FULL');
     }
     const res = SKILL_RUNTIME.discardAnyCard(state, action.seatIndex, cardId, rng);
-    let next = updatePlayer(res.state, action.seatIndex, (p) => ({
+    let next = updatePlayer(showDiscardAs(res.state, res.removed, 'dao'), action.seatIndex, (p) => ({
       ...p,
       hp: Math.min(p.maxHp, p.hp + 1),
     }));
@@ -349,7 +350,7 @@ function handlePlayCard(
     }
 
     const res = SKILL_RUNTIME.discardAnyCard(state, action.seatIndex, cardId, rng);
-    let next = res.state;
+    let next = showDiscardAs(res.state, res.removed, 'sat');
     next = {
       ...next,
       turnFlags: {
@@ -451,7 +452,7 @@ function handlePlayCard(
       throw new Error('TARGET_HAS_NO_CARDS');
     }
     const res = SKILL_RUNTIME.discardAnyCard(state, action.seatIndex, cardId, rng);
-    let next = triggerNormalScrollHook(res.state);
+    let next = triggerNormalScrollHook(showDiscardAs(res.state, res.removed, effectiveKey));
     const scrollCard: CardInstance =
       effectiveKey === card.cardKey
         ? res.removed
@@ -879,7 +880,7 @@ export function applyGameAction(
           [action.cardId],
           rng,
         );
-        next = res.state;
+        next = showDiscardAs(res.state, card, 'thiem');
         dodgedIncrement = 1;
       } else {
         // Không né -> Sát trúng mục tiêu!
@@ -1238,7 +1239,7 @@ export function applyGameAction(
           [action.cardId],
           rng,
         );
-        next = popInterrupt(res.state).state;
+        next = popInterrupt(showDiscardAs(res.state, card, 'thiem')).state;
         return stepEngine(next, rng);
       }
 
@@ -1331,6 +1332,8 @@ export function applyGameAction(
           action.cardId,
           rng,
         ).state;
+
+        next = showDiscardAs(next, found.card, 'dao');
 
         const targetHandler = getHeroSkillHandler(target.heroId);
         const rescueBonus =
@@ -1956,6 +1959,7 @@ export function applyGameAction(
           [action.cardId],
           rng,
         ).state;
+        next = showDiscardAs(next, card, 'thiem');
         next = {
           ...next,
           actionLog: [

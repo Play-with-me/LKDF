@@ -10,7 +10,7 @@ import { playMatchCue } from '../../lib/soundFx.js';
 import type { RoomViewerPayload, UserProfile } from '../../lib/types.js';
 import { createRoomWsClient } from '../../lib/wsClient.js';
 import type { RoomWsClient, WsConnectionStatus } from '../../lib/wsClient.js';
-import { getUiAssetUrl } from '../../lib/assetCatalog.js';
+import { MatchSettings } from './MatchSettings.js';
 import { GameIcon } from '../../components/icons/index.js';
 import { ActionLogDialog } from './ActionLogDialog.js';
 import { GameOverSummaryModal } from './GameOverSummaryModal.js';
@@ -420,23 +420,11 @@ export function MatchScreen({
   const seatCount = roomPayload.roomState.seats.length;
   const roundNumber = playerView?.roundNumber ?? 1;
   const drawPileCount = playerView?.drawPileCount ?? 0;
-  const headerBgUrl = getUiAssetUrl('tex-header-black');
 
   return (
-    <section className="flex h-screen w-screen min-h-0 min-w-0 flex-col overflow-hidden bg-[#090807] text-[#EFE6D5]">
-      {/* VÙNG 1: THANH ĐẦU TRANG CỐ ĐỊNH CAO 44px */}
-      <header
-        style={
-          headerBgUrl
-            ? {
-                backgroundImage: `linear-gradient(rgba(12,10,8,0.28), rgba(10,8,7,0.42)), url(${headerBgUrl})`,
-                backgroundSize: '100% 100%',
-              }
-            : undefined
-        }
-        className="flex h-11 shrink-0 items-center justify-between gap-2 border-b border-[#A68042]/40 bg-[#14110E] px-3 xl:px-4"
-      >
-        <div className="flex min-w-0 items-center gap-2 text-xs">
+    <section className="relative flex h-screen w-screen min-h-0 min-w-0 flex-col overflow-hidden bg-[#090807] text-[#EFE6D5]">
+      <MatchSettings error={actionError}>
+        <div className="mb-3 flex min-w-0 flex-wrap items-center gap-2 text-xs">
           <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded border border-[#CA9A48]/60 bg-[#9E2B25] font-serif-title text-[12px] font-bold text-[#F5EBDC] shadow-inner">
             殺
           </span>
@@ -451,14 +439,9 @@ export function MatchScreen({
           <span className="font-mono-num hidden sm:inline shrink-0 text-[#B5A792] tabular-nums">
             Rút: {drawPileCount}
           </span>
-          {actionError ? (
-            <span className="max-w-[260px] truncate rounded border border-[#DC2626]/50 bg-[#DC2626]/15 px-2 py-0.5 text-[11px] text-[#FCA5A5]">
-              {actionError}
-            </span>
-          ) : null}
         </div>
 
-        <div className="flex shrink-0 items-center gap-1.5">
+        <div className="flex flex-wrap items-center gap-1.5">
           <button
             type="button"
             disabled={isTogglingSound}
@@ -538,7 +521,7 @@ export function MatchScreen({
             <span>{isLeavingRoom ? 'Đang rời...' : 'Rời bàn'}</span>
           </button>
         </div>
-      </header>
+      </MatchSettings>
 
       {/* VÙNG 2, 3, 4: BÀN ĐẤU VÒNG CHỮ U + THANH LỆNH NGỮ CẢNH + TRANG BỊ NGỬA + KHOANG KỸ NĂNG */}
       {playerView ? (

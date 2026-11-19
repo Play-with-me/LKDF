@@ -22,7 +22,7 @@ import type {
 } from '@lkdf/shared';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { playMatchCue } from '../../lib/soundFx.js';
-import { getUiAssetUrl } from '../../lib/assetCatalog.js';
+import { MatchSettings } from './MatchSettings.js';
 import { GameIcon } from '../../components/icons/index.js';
 import { ActionLogDialog } from './ActionLogDialog.js';
 import { GameOverSummaryModal } from './GameOverSummaryModal.js';
@@ -439,22 +439,11 @@ export function DevMatchPreview({
       ? new Date(Date.now() + 20_000).toISOString()
       : null,
   );
-  const headerBgUrl = getUiAssetUrl('tex-header-black');
 
   return (
-    <section className="flex h-screen w-screen min-h-0 min-w-0 flex-col overflow-hidden bg-[#090807] text-[#EFE6D5]">
-      <header
-        style={
-          headerBgUrl
-            ? {
-                backgroundImage: `linear-gradient(rgba(12,10,8,0.28), rgba(10,8,7,0.42)), url(${headerBgUrl})`,
-                backgroundSize: '100% 100%',
-              }
-            : undefined
-        }
-        className="flex h-11 shrink-0 items-center justify-between gap-2 border-b border-[#A68042]/40 bg-[#14110E] px-3"
-      >
-        <div className="flex min-w-0 items-center gap-2 text-xs">
+    <section className="relative flex h-screen w-screen min-h-0 min-w-0 flex-col overflow-hidden bg-[#090807] text-[#EFE6D5]">
+      <MatchSettings error={actionError}>
+        <div className="mb-3 flex min-w-0 flex-wrap items-center gap-2 text-xs">
           <span className="shrink-0 rounded border border-[#D99B26]/60 bg-[#9E2B25]/85 px-2 py-0.5 font-semibold text-[#FDE68A]">
             DEV · {playerCount}P
           </span>
@@ -500,14 +489,9 @@ export function DevMatchPreview({
           <span className="font-mono-num hidden sm:inline shrink-0 whitespace-nowrap text-[#B5A792] tabular-nums">
             Rút: {playerView.drawPileCount}
           </span>
-          {actionError ? (
-            <span className="max-w-[240px] truncate rounded border border-[#DC2626]/50 bg-[#DC2626]/15 px-2 py-0.5 text-[11px] text-[#FCA5A5]">
-              {actionError}
-            </span>
-          ) : null}
         </div>
 
-        <div className="flex shrink-0 items-center gap-1.5">
+        <div className="flex flex-wrap items-center gap-1.5">
           <button
             type="button"
             onClick={() => {
@@ -561,7 +545,7 @@ export function DevMatchPreview({
             Thoát
           </button>
         </div>
-      </header>
+      </MatchSettings>
 
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         <MatchArenaLayout

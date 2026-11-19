@@ -151,6 +151,7 @@ const scenarios={};
 const outcomes={
  sat:'−1 máu',thiem:'Né được Sát',dao:'Hồi 1 máu',vo_trung_sinh_huu:'Rút 2 lá',thuan_thu_khien_duong:'Lấy 1 lá',qua_ha_sai_cau:'Hủy 1 lá',ta_dao_sat_nhan:'Giao vũ khí',nam_man_nhap_xam:'Cần đáp Sát',van_tien_te_phat:'Cần đáp Thiểm',dao_vien_ket_nghia:'Hồi 1 máu',vo_giai_kha_kich:'Chặn hiệu lực',lac_bat_tu_thuc:'Bỏ qua pha đánh',thiem_dien:'Chuyển tới ghế kế',gia_cat_lien_no:'Đánh tiếp Sát',tu_hung_song_co_kiem:'Đối thủ bỏ 1 lá',thanh_cong_kiem:'Bỏ qua giáp',thanh_long_yen_nguyet_dao:'Truy kích bằng Sát',truong_bat_xa_mau:'Hai lá hợp thành Sát',quan_thach_phu:'Bỏ 2 lá · Sát trúng',phuong_thien_hoa_kich:'Đánh 3 mục tiêu',ky_lan_cung:'Hủy ngựa',bat_quai_tran:'Phán xét đỏ · tính là Thiểm',nhan_vuong_thuan:'Chặn Sát đen'};
 async function show(){
+ board.contentDocument?.documentElement.toggleAttribute('data-demo-skill',picker.value.includes('/'));
  if(picker.value.includes('/')){showHero();return}
  const d=deck.find(e=>e.key===picker.value);
  if(d.key in scenarios){play(scenarios[d.key]);return}
@@ -815,31 +816,20 @@ async function showHero(){
  const current=++generation;stage.replaceChildren();
  const [heroId,skillId]=picker.value.split('/');
  const hero=HERO_CATALOG.find(h=>h.id===heroId), skill=hero.skills.find(s=>s.id===skillId);
- const center=board.contentDocument?.querySelector('.lkdf-battle-center-stack');
+ const doc=board.contentDocument;
+ const surface=doc?.querySelector('[data-arena-surface]');
+ const center=doc?.querySelector('.lkdf-battle-center-stack');
  if(center)center.style.visibility='hidden';
- const c=center?point(center):[stage.clientWidth*.45,stage.clientHeight*.55];
- const seatPoints=[...(board.contentDocument?.querySelectorAll('[data-drop-seat]')||[])].filter(el=>el.offsetWidth).map(point);
+ const bounds=surface?.getBoundingClientRect();
+ const c=bounds?[bounds.left+bounds.width*.5,bounds.top+bounds.height*.60]:[stage.clientWidth*.5,stage.clientHeight*.5];
+ c.surface=surface;
+ const frames=[...(doc?.querySelectorAll('[data-drop-seat]')||[])].filter(el=>el.offsetWidth);
+ const caster=frames.find(el=>el.querySelector('button[aria-label]')?.getAttribute('aria-label')==='Xem kỹ năng tướng '+hero.nameVi);
+ const ordered=caster?[caster,...frames.filter(el=>el!==caster)]:frames;
+ const seatPoints=ordered.map(el=>Object.assign(point(el),{frame:el}));
+ if(!caster && seatPoints.length)seatPoints.unshift([c[0], bounds ? bounds.top + 28 : 28]);
  if(seatPoints.length<2){status.textContent='Đang tải bàn';await wait(300);if(generation===current)showHero();return}
- if(await playSkill({skillId,stage,center:c,seats:seatPoints,status,active:()=>generation===current}))return;
- const panel=element('article','hero-motion');place(panel,[c[0],c[1]]);
- const img=new Image();img.src='/src/assets/art/heroes/'+hero.id+'.webp';img.alt=hero.nameVi;
- const title=document.createElement('strong');title.textContent=skill.nameVi;
- const note=document.createElement('small');note.textContent=hero.nameVi+' · '+hero.factionLabelVi;
- panel.append(img,note,title);status.textContent=skill.descriptionVi;
- const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
- if(reduced)return;
- img.animate([{transform:'scale(1.28)',opacity:0},{transform:'scale(1)',opacity:1}],{duration:500,fill:'both'});
- const motifs=[
- ['guan_xing luo_shen gui_cai tian_du tie_qi fan_jian','✦'],
- ['qing_nang ji_jiu jie_yin jiu_yuan ren_de','❀'],
- ['wu_sheng long_dan luo_yi pao_xiao wu_shuang gang_lie li_jian','⚔'],
- ['hu_jia kong_cheng qian_xun ke_ji qing_guo','⬡'],
- ['ma_shu qi_cai liu_li ji_jiang','➤']
- ];
- const glyph=motifs.find(([ids])=>ids.split(' ').includes(skillId))?.[1]||'🂠';
- for(let i=0;i<6;i++){const p=document.createElement('span');p.textContent=glyph;panel.append(p);
- const angle=i*Math.PI/3,dx=Math.cos(angle)*94,dy=Math.sin(angle)*66;
- p.animate([{opacity:0,transform:'translate(0,0) scale(.3)'},{opacity:1,offset:.28},{opacity:0,transform:'translate('+dx+'px,'+dy+'px) rotate('+i*13+'deg)'}],{delay:i*45,duration:730}).finished.then(()=>p.remove())}
+ await playSkill({skillId,hero,stage,center:c,seats:seatPoints,status,active:()=>generation===current});
 }
 picker.value='sat';
 document.querySelector('#hand-preview').onclick=()=>{

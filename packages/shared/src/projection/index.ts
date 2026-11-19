@@ -1,3 +1,4 @@
+import { STANDARD_DECK_TEMPLATES } from '../cards/catalog.js';
 import type {
   HeroDraftState,
   InterruptFrame,
@@ -234,7 +235,12 @@ export function projectStateForPlayer(
   });
 
   const topDiscard =
-    masterState.discardPile[masterState.discardPile.length - 1] ?? null;
+    masterState.discardPile[masterState.discardPile.length - 1];
+
+  const { discardDisplayAs, ...physicalFace } = topDiscard ?? {};
+  const discardFace = discardDisplayAs
+    ? STANDARD_DECK_TEMPLATES.find(card => card.cardKey === discardDisplayAs)
+    : undefined;
 
   return {
     matchId: masterState.matchId,
@@ -245,7 +251,16 @@ export function projectStateForPlayer(
     heroDraft: projectHeroDraftForViewer(masterState.heroDraft, viewerSeatIndex),
     drawPileCount: masterState.drawPile.length,
     discardPileCount: masterState.discardPile.length,
-    discardPileTop: topDiscard ? { ...topDiscard } : null,
+    discardPileTop: topDiscard && discardFace
+      ? {
+          id: topDiscard.id,
+          suit: topDiscard.suit,
+          rank: topDiscard.rank,
+          cardKey: discardFace.cardKey,
+          nameVi: discardFace.nameVi,
+          category: discardFace.category,
+        }
+      : topDiscard ? (physicalFace as typeof topDiscard) : null,
     harvestPool: (masterState.harvestPool ?? []).map((card) => ({ ...card })),
     players: publicPlayers,
     activeInterrupt: projectTopInterrupt(masterState.interruptStack, viewerSeatIndex),
