@@ -11,7 +11,7 @@ export async function playSkill({ skillId, stage, center, seats, status, active,
   const target = seats[1];
   const pile = [x + 160, y - 70];
   stage.style.setProperty('--skill-color', colors[hero.faction]);
-  const pause = async ms => { await new Promise(resolve => setTimeout(resolve, ms)); return active(); };
+  const pause = async ms => { await new Promise(resolve => setTimeout(resolve, Math.round(ms * 1.15))); return active(); };
   const add = (tag, cls, text, point) => {
     const el = document.createElement(tag);
     el.className = cls;
@@ -44,7 +44,7 @@ export async function playSkill({ skillId, stage, center, seats, status, active,
     return el;
   };
   const animate = (el, frames, duration = 240) => {
-    if (!reduced) el.animate(frames, { duration, fill: 'forwards', easing: 'cubic-bezier(.22,1,.36,1)' });
+    if (!reduced) el.animate(frames, { duration: Math.round(duration * 1.15), fill: 'forwards', easing: 'cubic-bezier(.22,1,.36,1)' });
   };
   const label = (text, point) => add('div', 'skill-label', text, point);
   const fitSeat = (el, point) => {
@@ -72,7 +72,7 @@ export async function playSkill({ skillId, stage, center, seats, status, active,
     video.src = new URL('./motion-duel-fire.mp4', import.meta.url).href;
     video.muted = true; video.loop = true; video.playsInline = true;
     video.style.filter = { SHU: 'none', WEI: 'hue-rotate(190deg)', WU: 'hue-rotate(85deg)', QUN: 'saturate(0)' }[hero.faction];
-    video.playbackRate = strong ? 1.7 : 1;
+    video.playbackRate = (strong ? 1.7 : 1) / 1.15;
     if (point.frame) {
       el.classList.add('skill-fire-seat');
       fitSeat(el, point);

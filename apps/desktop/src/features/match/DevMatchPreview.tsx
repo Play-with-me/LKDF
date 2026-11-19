@@ -192,10 +192,8 @@ export function DevMatchPreview({
     };
   }, [isPaused, masterState]);
 
-  const isFuseDemo = new URLSearchParams(window.location.search).has('demoFuse');
   const playerView = useMemo(() => {
     const view = projectStateForPlayer(masterState, 'dev_user_0');
-    if (!isFuseDemo) return view;
     return {
       ...view,
       players: view.players.map((player) => ({
@@ -203,7 +201,7 @@ export function DevMatchPreview({
         isBotTakeover: player.seatIndex !== view.viewerSeatIndex,
       })),
     };
-  }, [isFuseDemo, masterState]);
+  }, [masterState]);
 
   const roomState: RoomState = useMemo(
     () => ({
@@ -433,11 +431,17 @@ export function DevMatchPreview({
   ]);
 
   const prompt = describePendingActorPrompt(playerView);
-  // Ở chế độ xem thử cục bộ không ép hết giờ đỏ 0s gây hiểu nhầm khi đang quan sát
-  const [phaseDeadlineAt] = useState(() =>
-    new URLSearchParams(window.location.search).has('demoFuse')
-      ? new Date(Date.now() + 20_000).toISOString()
-      : null,
+  const decisionKey = prompt.actorSeat === null ? null : [
+    playerView.matchId,
+    playerView.roundNumber,
+    playerView.currentTurnSeat,
+    playerView.turnPhase,
+    playerView.activeInterrupt?.id,
+    prompt.actorSeat,
+  ].join(':');
+  const phaseDeadlineAt = useMemo(
+    () => decisionKey === null ? null : new Date(Date.now() + 20_000).toISOString(),
+    [decisionKey, isPaused],
   );
 
   return (

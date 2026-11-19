@@ -612,7 +612,7 @@ export function MatchArenaLayout({
           onInspectHero={handleInspectHero}
           onInspectCard={handleInspectCard}
         />
-        {isActiveBot ? (
+        {prompt.actorSeat === opp.seatIndex ? (
           <div className="lkdf-bot-seat-clock">
             <FuseTimer key={phaseDeadlineAt ?? 'paused'} deadline={phaseDeadlineAt}
               paused={isTimerPaused} pausedRemainingMs={pausedRemainingMs}
@@ -625,7 +625,7 @@ export function MatchArenaLayout({
 
   const interrupt = playerView.activeInterrupt;
   const hasReaction = interrupt !== null && interrupt.kind !== 'WAIT_HARVEST_PICK';
-  const showCenterReaction = hasReaction && prompt.actorSeat === playerView.viewerSeatIndex;
+  const showLocalReaction = hasReaction && prompt.actorSeat === playerView.viewerSeatIndex;
   const showTableDropBanner =
     dragState !== null &&
     (dragState.intent.kind === 'table' || dragState.intent.kind === 'toggle_select');
@@ -714,7 +714,6 @@ export function MatchArenaLayout({
                   handleInspectCard(card, `played:${card.id}`, sourceLabel)
                 }
               />
-              {showCenterReaction ? <div className="lkdf-battle-reaction">{renderActionSidebar()}</div> : null}
             </div>
           ) : (
             <div className="absolute inset-0 z-30 flex items-center justify-center bg-[#0B0E11]/60 p-3">
@@ -1041,10 +1040,17 @@ export function MatchArenaLayout({
         </div>
 
         {/* Cột Giữa: Meta + Thanh Lệnh Ngữ Cảnh (Ẩn khi ngoài lượt) + Dải Bài Quăng Thả */}
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+        <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
+          {showLocalReaction ? (
+            <div className="lkdf-battle-reaction absolute bottom-full left-1/2 z-30 mb-1.5 max-h-[40dvh] w-max max-w-full -translate-x-1/2 overflow-y-auto">
+              {renderActionSidebar()}
+            </div>
+          ) : null}
+          {prompt.isMyTurn ? (
           <FuseTimer key={phaseDeadlineAt ?? 'paused'} deadline={phaseDeadlineAt}
             paused={isTimerPaused} pausedRemainingMs={pausedRemainingMs}
             totalSeconds={playerView.activeInterrupt ? timerConfig.reactionSeconds : timerConfig.mainTurnSeconds} />
+          ) : null}
           <div className="flex shrink-0 items-center justify-between gap-2 pb-0.5 text-[clamp(9.5px,0.85cqw,11.5px)]">
             <div className="flex min-w-0 items-center gap-3">
               <label className="inline-flex cursor-pointer items-center gap-1.5 font-semibold text-[#D1D5DB] select-none">

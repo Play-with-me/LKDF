@@ -68,3 +68,15 @@ Handoff Notes — apps/desktop/motion-scenes.js cung cấp playSkill, được m
 - Demo: thống nhất đổi mặt trên cùng lá cho Võ Thánh, Long Đảm, Khuynh Quốc, Kỳ Tập, Quốc Sắc, Thanh Nang và Cấp Cứu; Quỷ Tài dọn lá phán xét cũ.
 
 - Bước 4.4: bàn chính nhận mặt bài chuyển đổi theo cùng ID, giữ chất/số và lá vật lý trong luật. Demo hiệu ứng tướng vẫn tách riêng. Typecheck, build, unit 85/85 và integration 24/24 đạt.
+
+- Bước 4.4: bàn thử cấp thời hạn 20 giây theo lượt/phản ứng mặc định. Bàn chung vẽ FuseTimer cho đúng người đang hành động; online tiếp tục dùng hạn phía máy chủ.
+
+- Demo đánh bài: thêm lấy đà và chạm bàn 520 ms cho nút thử lá trên tay và các cảnh mở bằng lá đánh xuống; hiệu ứng kế tiếp chờ thêm 90 ms. Tôn trọng giảm chuyển động.
+
+- Demo nút thử bài trên tay giữ tối đa năm lá chồng nhẹ, làm mờ lá cũ theo độ sâu. Đổi cảnh làm sạch chồng.
+
+- Ô phản ứng neo phía trên thanh thời gian 6 px, tách khỏi vùng chồng bài. Typecheck đạt.
+
+- Hiệu ứng bài và tướng trong demo tăng thời lượng khoảng 15%, gồm nhịp chờ, lửa và mũi tên. Không đổi thời gian lượt online.
+
+- Ô phản ứng bàn chính và DEV tự ôm nội dung, xuống hàng khi cần, nút tối thiểu 36 px và neo trên thanh thời gian. Typecheck, build desktop đạt.
