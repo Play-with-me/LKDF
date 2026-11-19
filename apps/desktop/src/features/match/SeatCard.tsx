@@ -143,6 +143,7 @@ export function SeatCard({
   return (
     <div
       data-drop-seat={player.seatIndex}
+      data-lkdf-battle-rest={!isDragHovered && !isDragTargetEligible && !isSelectedTarget && !isTargetEligible && !isActiveActor && !isInspectedHero}
       role={canClick ? 'button' : undefined}
       tabIndex={canClick ? 0 : undefined}
       onClick={canClick ? () => onSelectTarget?.(player.seatIndex) : undefined}
@@ -157,7 +158,7 @@ export function SeatCard({
           : undefined
       }
       className={[
-        'relative flex w-[var(--seat-w,210px)] min-h-[var(--seat-h,86px)] shrink-0 flex-col justify-between gap-1 rounded-[6px] border bg-[#12161E]/96 text-[#F3F4F6] shadow-[inset_0_1px_0_rgba(255,255,255,0.12),0_10px_24px_rgba(0,0,0,0.68)] transition-[transform,border-color,box-shadow,background-color] duration-150',
+        'lkdf-battle-seat relative flex w-[var(--seat-w,210px)] min-h-[var(--seat-h,86px)] shrink-0 flex-col justify-between gap-1 rounded-[6px] border bg-[#12161E]/96 text-[#F3F4F6] shadow-[inset_0_1px_0_rgba(255,255,255,0.12),0_10px_24px_rgba(0,0,0,0.68)] transition-[transform,border-color,box-shadow,background-color] duration-150',
         compact ? 'px-2 py-1.5' : 'px-2.5 py-2',
         !player.alive ? 'opacity-50 grayscale' : '',
         isDragHovered
@@ -312,7 +313,7 @@ export function SeatCard({
       </div>
 
       {/* Hàng 3: Ngọc sinh lực + Bài úp + Thân Phận gọn góc dưới-phải */}
-      <div className="relative z-10 mt-1 flex items-center justify-between gap-1.5">
+      <div className="lkdf-battle-seat-summary relative z-10 mt-1 flex items-center justify-between gap-1.5">
         <HpJadeMeter hp={player.hp} maxHp={player.maxHp} size="sm" />
 
         <div className="flex items-center gap-1 shrink-0">
@@ -361,7 +362,7 @@ export function SeatCard({
       {openCards.length > 0 ? (
         <div
           className={[
-            'relative z-10 mt-1 border-t border-[#94A3B8]/25 pt-1',
+            'lkdf-battle-seat-equipment relative z-10 mt-1 border-t border-[#94A3B8]/25 pt-1',
             openCards.length >= 2
               ? 'grid grid-cols-2 gap-1'
               : 'flex flex-col gap-1',

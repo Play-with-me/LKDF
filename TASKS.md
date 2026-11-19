@@ -128,6 +128,9 @@
 
 ---
 
+- [x] **Bước 4.3 — Tích hợp bố trí bàn đấu đã duyệt.** Xem đặc tả tại [DESIGN.md §3.2](./DESIGN.md#32-bố-cục-responsive-trên-máy-tính-windows-960600-tối-thiểu--mở-mặc-định-1280720--co-giãn-mượt-tới-2k). Đã chạy `typecheck`, `build`, **85/85** unit test, xem bàn 8 ghế ở `960×600` trong pha Vô Giải và thử lấy lá Ngũ Cốc vào tay.
+- [ ] **Bước 4.4 — Animation đánh bài và hiệu ứng lá bài.** Đầu tiên kiểm tra hành động đánh bài được xác nhận, hướng lá bay và thời điểm hiện kết quả. Sau đó duyệt hiệu ứng theo nhóm lá. Kiểm tra giảm chuyển động, kết nối lại và hoàn tác để tránh phát lại hiệu ứng cũ.
+
 ### Giai Đoạn 5 — Cập Nhật 1-Click Từ GitHub Private, Đóng Gói & Nghiệm Thu
 
 - [x] **Bước 5.1 — Triển khai Cổng trung gian Cập nhật (`Update Proxy`) & Hộp thoại Cập nhật 1-Click trong App**

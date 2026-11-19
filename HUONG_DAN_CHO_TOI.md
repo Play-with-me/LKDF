@@ -34,6 +34,8 @@ Vì bạn là người mới và không lập trình, bạn **không cần đọ
 ## 2. Lộ Trình Từ Đầu Đến Cuối & Các Câu Lệnh "Copy – Dán" Cho Bạn
 
 > **📌 Trạng thái hiện tại của bạn (AI tự động cập nhật sau mỗi bước):**
+> - ✅ **ĐÃ XONG Bước 4.3** — Giao diện bàn đấu đã duyệt đã vào mã nguồn game. Xem [bố trí bàn đấu](./DESIGN.md#32-bố-cục-responsive-trên-máy-tính-windows-960600-tối-thiểu--mở-mặc-định-1280720--co-giãn-mượt-tới-2k).
+> - 👉 **BẠN ĐANG Ở ĐÂY — Bước 4.4.** `Làm bản demo animation đánh bài và hiệu ứng của Sát, Thiểm, Đào và Vô Giải để tôi duyệt.`
 > - ✅ **Giai đoạn 0 (Bước 0.1 & 0.2 — Bộ 11 tài liệu & Monorepo):** **ĐÃ XONG 100%**.
 > - ✅ **Giai đoạn 1 (Bước 1.1 – 1.4 — Chia Thân Phận, 108 lá, 25 Tướng, Bot AI & 500 ván Fuzz Test):** **ĐÃ XONG 100%**.
 > - ✅ **Giai đoạn 2 (Bước 2.1 & 2.2 — Máy chủ Cloud 0đ, Google OAuth, Bộ lọc Thống kê, Phòng 4–8 người & Tự lưu Ván đấu):** **ĐÃ XONG 100%**.

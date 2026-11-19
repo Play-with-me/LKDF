@@ -247,8 +247,6 @@ export function MatchArenaLayout({
   // Tài nguyên Doanh Trại A (100% ảnh thật)
   const campBackdropUrl = getUiAssetUrl('camp-zhanhuo') ?? getUiAssetUrl('table-bg');
   const tableDragonArtUrl = getUiAssetUrl('table-ol-dragon');
-  const inkBaseUrl = getUiAssetUrl('tex-ink-base');
-  const dragonDockUrl = getUiAssetUrl('tex-dragon-hand');
 
   // Khoang Xem Kỹ Năng Thống Nhất (bên phải)
   const [inspector, setInspector] = useState<MatchInspectorTarget | null>(null);
@@ -498,30 +496,35 @@ export function MatchArenaLayout({
     readonly slotKey: EquipmentSlotKey;
     readonly iconName: Parameters<typeof GameIcon>[0]['name'];
     readonly emptyLabel: string;
+    readonly shortLabel: string;
     readonly card: CardInstance | null;
   }> = [
     {
       slotKey: 'weapon',
       iconName: 'broadsword',
       emptyLabel: 'Vũ khí (Tầm 1)',
+      shortLabel: 'Vũ khí',
       card: selfPlayer?.equipments.weapon ?? null,
     },
     {
       slotKey: 'armor',
       iconName: 'bordered-shield',
       emptyLabel: 'Giáp · Trống',
+      shortLabel: 'Giáp',
       card: selfPlayer?.equipments.armor ?? null,
     },
     {
       slotKey: 'plusOne',
       iconName: 'horse-head',
       emptyLabel: 'Ngựa +1 · Trống',
+      shortLabel: 'Ngựa +1',
       card: selfPlayer?.equipments.plusOneHorse ?? null,
     },
     {
       slotKey: 'minusOne',
       iconName: 'cavalry',
       emptyLabel: 'Ngựa -1 · Trống',
+      shortLabel: 'Ngựa -1',
       card: selfPlayer?.equipments.minusOneHorse ?? null,
     },
   ];
@@ -587,15 +590,8 @@ export function MatchArenaLayout({
     );
   };
 
-  const dockBgStyle = dragonDockUrl
-    ? {
-        backgroundImage: `linear-gradient(180deg, rgba(16,14,11,0.48) 0%, rgba(12,10,8,0.72) 100%), url(${dragonDockUrl})`,
-        backgroundSize: 'auto 100%',
-        backgroundRepeat: 'repeat-x',
-        backgroundPosition: 'center',
-      }
-    : undefined;
-
+  const interrupt = playerView.activeInterrupt;
+  const showCenterReaction = interrupt !== null && interrupt.kind !== 'WAIT_HARVEST_PICK';
   const showTableDropBanner =
     dragState !== null &&
     (dragState.intent.kind === 'table' || dragState.intent.kind === 'toggle_select');
@@ -647,14 +643,6 @@ export function MatchArenaLayout({
           {/* Vành Bàn Tròn / Bầu Dục Trung Tâm với Đĩa Rồng Chạm Khắc OL */}
           <div
             aria-hidden="true"
-            style={
-              inkBaseUrl
-                ? {
-                    backgroundImage: `linear-gradient(rgba(16,13,11,0.72), rgba(12,10,8,0.88)), url(${inkBaseUrl})`,
-                    backgroundSize: '340px auto',
-                  }
-                : undefined
-            }
             className="lkdf-round-table-rim pointer-events-none absolute top-[10%] right-[9%] bottom-[6%] left-[9%] overflow-hidden rounded-[999px] border border-[#B08A4C]/38"
           >
             {tableDragonArtUrl ? (
@@ -674,7 +662,7 @@ export function MatchArenaLayout({
 
           {/* Bảng trung tâm ở lòng Bàn Tròn */}
           {!isHeroSelectPhase ? (
-            <div className="absolute top-[61%] left-1/2 z-10 flex max-h-[calc(100%-108px)] w-[clamp(240px,30cqw,416px)] -translate-x-1/2 -translate-y-1/2 flex-col items-center">
+            <div className="lkdf-battle-center absolute top-[61%] left-1/2 z-10 flex max-h-[calc(100%-108px)] w-[clamp(240px,30cqw,416px)] -translate-x-1/2 -translate-y-1/2 flex-col items-center">
               <MatchCenterBoard
                 playerView={playerView}
                 timerConfig={timerConfig}
@@ -691,6 +679,7 @@ export function MatchArenaLayout({
                   handleInspectCard(card, `played:${card.id}`, sourceLabel)
                 }
               />
+              {showCenterReaction ? <div className="lkdf-battle-reaction">{renderActionSidebar()}</div> : null}
             </div>
           ) : (
             <div className="absolute inset-0 z-30 flex items-center justify-center bg-[#0B0E11]/60 p-3">
@@ -756,16 +745,15 @@ export function MatchArenaLayout({
 
       {/* VÙNG 4: THANH ĐÁY RESPONSIVE (TRÁI: TƯỚNG + 4 Ô TRANG BỊ NGỬA | GIỮA: THANH LỆNH ẨN/HIỆN + QUĂNG BÀI | PHẢI: XEM KỸ NĂNG THỐNG NHẤT) */}
       <div
-        style={dockBgStyle}
-        className="flex h-[var(--dock-h,196px)] shrink-0 min-w-0 items-stretch gap-2.5 border-t border-[#94A3B8]/32 bg-[#0D1016] px-2.5 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]"
+        className="lkdf-battle-dock flex h-[var(--dock-h,196px)] shrink-0 min-w-0 items-stretch gap-2.5 border-t border-[#94A3B8]/32 bg-[#0D1016] px-2.5 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]"
       >
         {/* Cột Trái: Khung Đôi Mẫu B (Hồ sơ Tướng tràn viền + 4 Ô Trang Bị Ngửa & Phán xét) */}
-        <div className="flex w-[var(--left-w,312px)] shrink-0 overflow-hidden rounded-[6px] border border-[#94A3B8]/38 bg-[#12161E] shadow-lg">
+        <div className="lkdf-battle-player flex w-[var(--left-w,312px)] shrink-0 overflow-hidden rounded-[6px] border border-[#94A3B8]/38 bg-[#12161E] shadow-lg">
           {/* Nửa Trái: Hồ sơ Tướng bản thân (Bấm quay về kỹ năng tướng mình) */}
           <div
             onClick={() => setInspector(null)}
             title="Bấm xem lại kỹ năng tướng của bạn"
-            className="relative flex w-[var(--prof-w,152px)] shrink-0 cursor-pointer flex-col justify-between overflow-hidden p-2"
+            className="lkdf-battle-profile relative flex w-[var(--prof-w,152px)] shrink-0 cursor-pointer flex-col justify-between overflow-hidden p-2"
           >
             <HeroCardWatermark
               portraitUrl={!selfPhotoFailed ? selfPortraitUrl : null}
@@ -892,42 +880,6 @@ export function MatchArenaLayout({
                     ) : null}
                   </div>
 
-                  {/* Chỉ báo trang xem kỹ năng + Cẩm nang phán xét nếu có */}
-                  <div className="mt-auto flex shrink-0 flex-wrap items-center gap-1 border-t border-white/8 pt-0.5">
-                    {selfPlayer.delayedScrolls.length > 0 ? (
-                      selfPlayer.delayedScrolls.map((s) => {
-                        const sid = `self:delayed:${s.id}`;
-                        const active = inspector?.kind === 'card' && inspector.sourceId === sid;
-                        return (
-                          <button
-                            key={s.id}
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleInspectCard(s, sid, 'Khu phán xét của bạn');
-                            }}
-                            className={[
-                              'inline-flex cursor-pointer items-center gap-0.5 rounded border px-1 py-0 text-[9.5px] font-bold',
-                              active
-                                ? 'border-[#FDE68A] bg-[#D97706]/35 text-[#FFF3D1]'
-                                : 'border-[#D97706]/50 bg-[#D97706]/20 text-[#FCD34D] hover:border-[#FBBF24]',
-                            ].join(' ')}
-                          >
-                            <GameIcon name="ui:clock" size={10} />
-                            {s.cardKey === 'lac_bat_tu_thuc' ? 'Lạc Bất Tư' : s.nameVi}
-                          </button>
-                        );
-                      })
-                    ) : (
-                      <span
-                        className={`truncate text-[9px] ${
-                          inspector === null ? 'font-semibold text-[#FDE68A]' : 'text-[#9CA3AF]'
-                        }`}
-                      >
-                        {inspector === null ? '● Đang xem chiêu tướng' : 'Bấm để xem chiêu tướng'}
-                      </span>
-                    )}
-                  </div>
                 </>
               ) : (
                 <div className="text-[11px] text-[#9CA3AF]">Đang tải thông tin ghế...</div>
@@ -936,20 +888,21 @@ export function MatchArenaLayout({
           </div>
 
           {/* Nửa Phải Cột Trái: 4 Ô Trang Bị Ngửa tinh gọn (Bấm xem được kỹ năng!) */}
-          <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-1 border-l border-[#94A3B8]/25 bg-[#0B0E14]/90 p-1.5">
+          <div className="lkdf-battle-equip flex min-h-0 min-w-0 flex-1 flex-col gap-1 border-l border-[#94A3B8]/25 bg-[#0B0E14]/90 p-1.5">
             <div className="flex shrink-0 items-center justify-between text-[9.5px] font-bold tracking-wide text-[#B89352] uppercase">
               <span className="truncate">Trang bị</span>
               <span className="shrink-0 text-[9px] font-normal normal-case text-[#94A3B8]">4 ô</span>
             </div>
 
-            <div className="flex min-h-0 flex-1 flex-col justify-between gap-1">
-              {selfSlots.map(({ slotKey, iconName, emptyLabel, card }) => {
+            <div className="lkdf-battle-grid min-w-0">
+              {selfSlots.map(({ slotKey, iconName, emptyLabel, shortLabel, card }) => {
                 if (!card) {
                   const isDropTargetSlot =
                     dragState?.intent.kind === 'table' && dragState.intent.highlightSlot === slotKey;
                   return (
                     <div
                       key={slotKey}
+                      data-drop-highlight={isDropTargetSlot}
                       className={[
                         'flex min-h-0 flex-1 items-center gap-1.5 rounded border px-1.5 text-[clamp(10px,0.88cqw,11px)] font-medium transition-colors',
                         isDropTargetSlot
@@ -958,7 +911,7 @@ export function MatchArenaLayout({
                       ].join(' ')}
                     >
                       <GameIcon name={iconName} size={12} className="shrink-0 opacity-75" />
-                      <span className="truncate">{emptyLabel}</span>
+                      <span className="truncate" title={emptyLabel}>{shortLabel}</span>
                     </div>
                   );
                 }
@@ -1006,6 +959,40 @@ export function MatchArenaLayout({
                 );
               })}
             </div>
+            {selfPlayer ? (
+              <div className="lkdf-battle-judgment text-[10px]">
+                <strong>Phán xét</strong>
+                <div className="lkdf-scroll flex max-h-10 flex-wrap items-center gap-1 overflow-y-auto">
+                    {selfPlayer.delayedScrolls.length > 0 ? (
+                      selfPlayer.delayedScrolls.map((s) => {
+                        const sid = `self:delayed:${s.id}`;
+                        const active = inspector?.kind === 'card' && inspector.sourceId === sid;
+                        return (
+                          <button
+                            key={s.id}
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleInspectCard(s, sid, 'Khu phán xét của bạn');
+                            }}
+                            className={[
+                              'inline-flex cursor-pointer items-center gap-0.5 rounded border px-1 py-0 text-[9.5px] font-bold',
+                              active
+                                ? 'border-[#FDE68A] bg-[#D97706]/35 text-[#FFF3D1]'
+                                : 'border-[#D97706]/50 bg-[#D97706]/20 text-[#FCD34D] hover:border-[#FBBF24]',
+                            ].join(' ')}
+                          >
+                            <GameIcon name="ui:clock" size={10} />
+                            {s.cardKey === 'lac_bat_tu_thuc' ? 'Lạc Bất Tư' : s.nameVi}
+                          </button>
+                        );
+                      })
+                    ) : (
+                      <span>Trống</span>
+                    )}
+                </div>
+              </div>
+            ) : null}
           </div>
         </div>
 
@@ -1033,10 +1020,10 @@ export function MatchArenaLayout({
           </div>
 
           {/* Thanh Lệnh Ngữ Cảnh: TỰ ĐỘNG ẨN (null) khi ngoài lượt, hiện gọn khi tới lượt hoặc cần phản ứng */}
-          <div className="shrink-0">{renderActionSidebar()}</div>
+          <div className="shrink-0">{!showCenterReaction ? renderActionSidebar() : null}</div>
 
           {/* Dải bài neo đáy cố định (0px giật bài khi thanh lệnh bật/tắt) */}
-          <div className="lkdf-scroll flex min-h-0 flex-1 items-end overflow-x-auto px-1 pt-1 pb-0.5">
+          <div className="lkdf-battle-hand lkdf-scroll flex min-h-0 flex-1 items-end overflow-x-auto px-1 pt-1 pb-0.5">
             {handCards.length === 0 ? (
               <div className="flex h-full w-full items-center justify-center rounded-xl border border-dashed border-[#A68042]/30 text-[12px] text-[#9CA3AF]">
                 Không còn lá bài nào trên tay

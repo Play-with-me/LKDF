@@ -269,6 +269,8 @@ Xem đầy đủ 10 quyết định (`ADR-001` đến `ADR-010`) tại [DECISION
 
 ## 5. Bước Tiếp Theo & Quy Tắc Bàn Giao Bắt Buộc
 
+- **2026-11-19 · Bước 4.3:** Bố trí bàn đấu đã duyệt đã được tích hợp theo [DESIGN.md](./DESIGN.md). `typecheck` và `build` đạt, unit **85/85**, kiểm tra bàn 8 ghế `960×600` với phản ứng Vô Giải và thao tác chọn Ngũ Cốc vào tay. Integration **14/24** trong môi trường kiểm tra, các lỗi gặp ở kết nối loopback `EACCES`, đường dẫn SQLite có dấu `#` và phản hồi proxy thử `502`. Bước tiếp theo là animation và hiệu ứng bài theo [TASKS.md](./TASKS.md).
+
 - **4 LUẬT BẮT BUỘC SAU MỖI BƯỚC HOÀN THÀNH (`AGENTS.md` Mục 5):**
   1. Tự động cập nhật tiến độ vào [HUONG_DAN_CHO_TOI.md](./HUONG_DAN_CHO_TOI.md) (đánh dấu `✅ ĐÃ XONG` bước vừa làm và chuyển nhãn `👉 BẠN ĐANG Ở ĐÂY` xuống bước kế tiếp), đồng thời cập nhật [TASKS.md](./TASKS.md), [PROJECT_MEMORY.md](./PROJECT_MEMORY.md) và [`.agents/PROJECT_MEMORY.md`](./.agents/PROJECT_MEMORY.md).
   2. Báo cáo cho khách hàng theo đúng **phong cách "Báo cáo Sếp"**: ngắn gọn, đi thẳng vào trọng tâm gồm 4 mục (*✅ Đã hoàn thành · 📊 Bằng chứng kiểm tra · ⚠️ Tồn đọng/Lưu ý · 👉 Bước tiếp theo kèm câu lệnh copy*).

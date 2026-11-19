@@ -42,28 +42,116 @@
   container-type: size;
   --seat-w: clamp(186px, 17.6cqw, 238px);
   --seat-h: clamp(72px, 11.4cqh, 96px);
-  --dock-h: clamp(194px, 31.5cqh, 232px);
-  --left-w: clamp(286px, 27cqw, 368px);
-  --prof-w: clamp(138px, 12.6cqw, 168px);
-  --right-w: clamp(210px, 20.8cqw, 282px);
-  --card-w: clamp(64px, 6.6cqw, 90px);
-  --card-h: clamp(92px, 15.6cqh, 126px);
+  --dock-h: clamp(154px, 26cqh, 193px);
+  --left-w: clamp(250px, 24cqw, 348px);
+  --prof-w: clamp(98px, 9.6cqw, 143px);
+  --right-w: clamp(169px, 17cqw, 235px);
+  --card-w: clamp(68px, 7.4cqw, 101px);
+  --card-h: clamp(94px, 18cqh, 147px);
 }
 
-/* Doanh Trại Đêm Xích Bích & Bàn Đá Rồng OL (Mẫu B Khung Thép Cổ Phong) */
+/* Bàn gỗ mun và ánh lửa ở rìa doanh trại. */
 .lkdf-arena-surface {
+  background: #100b09;
+}
+
+.lkdf-arena-surface::after {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  content: '';
   background:
-    radial-gradient(ellipse 72% 76% at 50% 50%, rgba(16, 18, 24, 0.52) 0%, rgba(10, 12, 16, 0.88) 74%, #08090C 100%);
+    radial-gradient(ellipse 39% 66% at -5% 104%, #c34d2c79, transparent 86%),
+    radial-gradient(ellipse 34% 70% at 106% 95%, #dc61266a, transparent 93%);
+}
+
+.lkdf-arena-surface > img {
+  opacity: .63;
 }
 
 .lkdf-round-table-rim {
-  border-color: rgba(164, 178, 198, 0.28);
+  border-color: #4a392d;
   background:
-    radial-gradient(ellipse 72% 76% at 50% 50%, rgba(20, 24, 32, 0.90) 0%, rgba(13, 16, 22, 0.94) 74%, rgba(9, 11, 16, 0.98) 100%);
+    linear-gradient(166deg, #30231d57, #100b09c7),
+    repeating-linear-gradient(171deg, #3d2b21 0px, #34261f 2px, #30231c 3px, #211913 5px, #36271f 9px);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.08),
-    inset 0 18px 46px rgba(0, 0, 0, 0.74),
-    0 20px 44px rgba(0, 0, 0, 0.72);
+    inset 0 2px 3px #74604767,
+    inset 0 -13px 30px #080604de,
+    0 18px 26px #070503bd;
+}
+
+.lkdf-round-table-rim > img {
+  opacity: .21;
+  filter: sepia(.65) brightness(.86);
+  mix-blend-mode: screen;
+}
+
+.lkdf-round-table-rim > div:last-child { border-color: #9a745238; }
+.lkdf-battle-seat[data-lkdf-battle-rest='true'] {
+  border-color: #69534691;
+  background: #211914f5;
+  box-shadow: inset 0 1px 0 #8e706149, inset 0 -3px 7px #08060484, 0 4px 12px #080604ab;
+}
+
+.lkdf-battle-seat-summary { margin-top: 2px; }
+.lkdf-battle-seat-equipment { margin-top: 1px; padding-top: 2px; }
+.lkdf-battle-dock { background: #16110f; border-color: #80645264; padding: 6px 8px; gap: 8px; }
+.lkdf-battle-dock > :last-child { background: #201814; border-color: #765c4a8f; }
+.lkdf-battle-player { background: #261c18; border-color: #7b615263; }
+.lkdf-battle-profile { padding: 6px; }
+.lkdf-battle-equip { background: #1b1512; border-color: #6b51465b; }
+.lkdf-battle-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: repeat(2, minmax(25px, 35px));
+  gap: 4px;
+}
+
+.lkdf-battle-grid > * { padding-inline: 4px; gap: 3px; }
+.lkdf-battle-grid > div[data-drop-highlight='false'] {
+  color: #c6b9a8;
+  border-color: #765e4f66;
+  background: #2a211d;
+}
+.lkdf-battle-judgment { margin-top: 2px; border-top: 1px solid #6e564465; padding-top: 3px; color: #c9b5a4; }
+.lkdf-battle-judgment > div { margin: 0; border: 0; padding: 0; }
+.lkdf-battle-hand { padding-top: 5px; padding-bottom: 4px; }
+.lkdf-battle-center { width: clamp(272px, 34cqw, 462px); }
+.lkdf-battle-center-stack { gap: 5px; }
+.lkdf-battle-center-stack > div:first-child > p { color: #c5b6a5; }
+.lkdf-battle-card-line { position: relative; width: min(340px, 100%); }
+.lkdf-battle-pile {
+  position: absolute;
+  bottom: 3px;
+  left: 0;
+  transform: scale(.64);
+  transform-origin: bottom left;
+}
+
+.lkdf-battle-reaction { width: 100%; }
+.lkdf-battle-reaction .lkdf-action-bar {
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+  padding: 4px 6px;
+  border-color: #82584b9a;
+  background: #211714;
+}
+
+.lkdf-battle-reaction .lkdf-action-bar > :first-child { min-width: 0; flex: 1 1 92px; }
+.lkdf-battle-reaction .lkdf-action-bar > :last-child { display: flex; flex: 0 1 auto; flex-flow: row wrap; gap: 4px; }
+.lkdf-battle-reaction .lkdf-action-bar button { width: auto; padding: 3px 6px; white-space: nowrap; }
+.lkdf-battle-choice { border-color: #775a46a8; background: #211915e8; box-shadow: 0 6px 15px #0805038c; }
+.lkdf-battle-harvest { display: grid; grid-template-columns: repeat(auto-fit, minmax(46px, 1fr)); gap: 4px; }
+.lkdf-battle-harvest button { min-width: 0; width: 100%; max-width: 86px; height: 79px; padding: 0; }
+.lkdf-battle-harvest button .font-serif-title { font-size: 9px; }
+
+@media (max-height: 650px) {
+  .lkdf-battle-center { top: 60%; }
+  .lkdf-battle-card-line .lkdf-card-gwent { height: 80px; width: 57px; }
+  .lkdf-battle-card-line > :last-child > :first-child { min-height: 80px; }
+  .lkdf-battle-harvest button { height: 67px; }
+  .lkdf-battle-reaction .lkdf-action-bar p { font-size: 10px; }
 }
 
 .lkdf-card-gwent {

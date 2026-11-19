@@ -418,7 +418,7 @@ export function MatchCenterBoard({
     : undefined;
 
   return (
-    <div className="flex max-h-full min-h-0 min-w-0 w-full flex-col items-center gap-2">
+    <div className="lkdf-battle-center-stack flex max-h-full min-h-0 min-w-0 w-full flex-col items-center gap-2">
       {/* Thanh trạng thái lượt nhỏ gọn khảm viền mây cổ Doanh Trại A */}
       <div className="flex max-w-[min(460px,54cqw)] flex-col items-center gap-0.5">
         <div
@@ -483,9 +483,9 @@ export function MatchCenterBoard({
 
       {/* Bàn bài trung tâm: Chồng bài rút + Tụ bài đánh ra kiểu Tiến Lên Miền Nam */}
       {!hasSpecialChoice ? (
-        <div className="flex items-end justify-center gap-7 py-1">
+        <div className="lkdf-battle-card-line flex items-end justify-center gap-7 py-1">
           {/* Chồng bài rút dạng xấp bài úp */}
-          <div className="flex flex-col items-center gap-1.5">
+          <div className="lkdf-battle-pile flex flex-col items-center gap-1.5">
             <div className="relative">
               <span
                 aria-hidden="true"
@@ -544,16 +544,12 @@ export function MatchCenterBoard({
         </div>
       ) : (
         /* Khu tương tác đặc biệt (chỉ bật nổi giữa bàn khi tới lượt chọn bài chung/mục tiêu/Quan Tinh/Di Kế) */
-        <div className="lkdf-scroll max-h-[185px] w-full space-y-1.5 overflow-y-auto rounded-xl border border-[#D99B26]/65 bg-[#14171A]/95 p-2.5 shadow-2xl">
+        <div className="lkdf-battle-choice lkdf-scroll max-h-[185px] w-full space-y-1.5 overflow-y-auto rounded-xl border border-[#D99B26]/65 bg-[#14171A]/95 p-2.5 shadow-2xl">
           {/* Ngũ Cốc Phong Đăng */}
           {interrupt.kind === 'WAIT_HARVEST_PICK' &&
           playerView.harvestPool.length > 0 ? (
             <div>
-              <div className="mb-1.5 inline-flex items-center gap-1.5 text-[12px] font-bold text-[#FBBF24]">
-                <GameIcon name="wheat" size={13} />
-                Ngũ Cốc Phong Đăng — Chọn 1 lá bài:
-              </div>
-              <div className="flex flex-wrap gap-1.5">
+              <div className="lkdf-battle-harvest" aria-label="Các lá Ngũ Cốc để chọn">
                 {playerView.harvestPool.map((card) => (
                   <button
                     key={card.id}
@@ -566,12 +562,11 @@ export function MatchCenterBoard({
                       })
                     }
                     className={[
-                      'inline-flex cursor-pointer items-center gap-1 rounded border border-[#B89352]/60 bg-[#1B212C] px-2 py-1 text-[11px] font-bold transition-transform hover:-translate-y-0.5 hover:border-[#E6BE6C]',
+                      'lkdf-card-gwent relative flex flex-col overflow-hidden border border-[#B89352]/60 rounded cursor-pointer hover:border-[#E6BE6C]',
                       isRedSuit(card.suit) ? 'text-[#FCA5A5]' : 'text-[#F4EBD8]',
                     ].join(' ')}
                   >
-                    <SuitGlyph suit={card.suit} size={11} tone="darkSurface" />
-                    <span>{formatRankLabel(card.rank)} {card.nameVi}</span>
+                    <PlayingCardFace card={card} />
                   </button>
                 ))}
               </div>

@@ -61,24 +61,26 @@ Toàn bộ cửa sổ ứng dụng lúc đánh bài được chia thành **4 vù
 │ [VÙNG 1: THANH ĐẦU TRANG CỐ ĐỊNH - Cao 44px]                                     │
 │ [殺] Phòng #K9M2P4 (8p) · Vòng 3 · Rút: 54  [Âm thanh][Nhật ký][Luật][Trọng tài] │
 ├──────────────────────────────────────────────────────────────────────────────────┤
-│ [VÙNG 2 & 3: BÀN TRÒN DOANH TRẠI + ĐĨA RỒNG OL (3–7 ĐỐI THỦ) + MẶT BÀN]         │
+│ [VÙNG 2 & 3: BÀN GỖ MUN VIỀN CHÌM (3–7 ĐỐI THỦ) + ÁNH LỬA Ở RÌA]               │
 │                                                                                  │
 │                 [Ghế 4 (10:45)]   [Ghế 5 (12:00)]   [Ghế 6 (1:15)]               │
 │                 (+ Trang bị ngửa) (+ Trang bị ngửa) (+ Trang bị ngửa)            │
 │   [Ghế 3]       [ ● Lượt của bạn — Pha Đánh Bài (25s) ]               [Ghế 7]    │
-│                    [Xấp bài úp]     [♠7] [♥K] [♣Q] (xòe Tiến Lên)                │
-│   [Ghế 2]            Rút: 54         Vừa đánh (bấm soi chiêu)         [Ghế 8]    │
+│                    [Xấp bài úp]     [Lá vừa đánh / lá Ngũ Cốc]                    │
+│   [Ghế 2]            Rút: 54         [Phản ứng khi cần]              [Ghế 8]    │
 ├───────────────────────────┬──────────────────────────────────┬───────────────────┤
-│ [VÙNG 4: THANH ĐÁY RESPONSIVE — Chiều cao co giãn `--dock-h` (188–224px)]         │
+│ [VÙNG 4: THANH ĐÁY RESPONSIVE — Chiều cao co giãn `--dock-h` (154–193px)]         │
 │ Trái (`--left-w`: 2 phần) │ Giữa (`flex-1`: Lệnh + Quăng)    │ Phải (`--right-w`)│
 │ • Tướng Cách 2 + Máu/Chiêu│ [Thanh Lệnh Ngữ Cảnh Ẩn/Hiện]    │ Khoang Xem Kỹ Năng│
-│ • Chừa sẵn 4 Ô Trang Bị   │ (Chỉ hiện khi tới lượt/phản ứng) │ • Mặc định: Chiêu │
+│ • 4 Ô Trang Bị xếp 2×2   │ (Hiện lệnh lượt ngay trên bài)   │ • Mặc định: Chiêu │
 │   Ngửa (Vũ khí/Giáp/+1/-1)│ [♠7 Sát][♥K Thiểm][♦Q Đào][♣J Vô]│   tướng bạn       │
 │   + Cẩm nang Phán xét     │ (Neo đáy 0px giật + Nhấn thả)    │ • Bấm bài/ⓘ -> soi│
 └───────────────────────────┴──────────────────────────────────┴───────────────────┘
 ```
 
 - **Quy tắc Bàn Tròn & Trang bị Ngửa:**
+  - Vành bàn gỗ mun viền chìm giữ rồng khắc mờ và ánh lửa ở rìa. Giữ tọa độ các ghế và tín hiệu màu cho lượt hiện tại, ghế hợp lệ và mục tiêu đã chọn.
+  - Chính giữa hiển thị lá vừa đánh và lệnh phản ứng. Ngũ Cốc Phong Đăng dùng chính mặt bài để chọn. Khu phán xét nằm dưới bốn ô trang bị, ô mô tả cố định ở đáy phải cập nhật khi bấm bài, tướng hoặc trang bị.
   - Ghế hàng trên neo giãn hướng xuống (`translate-y-0`), không bao giờ đụng thanh tiêu đề khi gắn thêm nhiều trang bị/cẩm nang ngửa; khi có `> 2` lá ngửa trên ghế đối thủ, khu trang bị tự xếp lưới gọn `2×2`. Khi sang pha **Chọn Tướng**, bảng chọn mở nổi chính giữa bàn tròn để hiển thị rõ `3–5` ứng viên tướng.
 
 ---
