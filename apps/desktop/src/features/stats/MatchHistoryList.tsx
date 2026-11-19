@@ -84,7 +84,7 @@ export function MatchHistoryList({
 }: MatchHistoryListProps): ReactElement {
   if (matches.length === 0) {
     return (
-      <div className="rounded-lg border border-[#2D333B] bg-[#1E2328] p-6 text-center text-sm text-[#9CA3AF]">
+      <div className="rounded-[8px] border border-[#94A3B8]/28 bg-[#11151D]/92 p-6 text-center text-sm text-[#94A3B8]">
         Không có lịch sử ván đấu nào khớp bộ lọc hiện tại.
       </div>
     );
@@ -97,7 +97,7 @@ export function MatchHistoryList({
         return (
           <article
             key={match.matchId}
-            className="rounded-lg border border-[#2D333B] bg-[#1E2328] p-4 min-w-0"
+            className="rounded-[8px] border border-[#94A3B8]/28 bg-[#11151D]/92 p-4 min-w-0 backdrop-blur-md"
           >
             {/* Đầu thẻ ván đấu */}
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2 border-b border-[#2D333B] pb-2.5 min-w-0">

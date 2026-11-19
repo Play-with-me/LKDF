@@ -18,7 +18,7 @@ import {
   SuitGlyph,
   getCardGameIcon,
 } from '../../components/icons/index.js';
-import { HandCardItem } from './HandCardItem.js';
+import { HandCardItem, PlayingCardFace } from './HandCardItem.js';
 import { HeroCardWatermark } from './HeroCardWatermark.js';
 import { HeroSelectPanel } from './HeroSelectPanel.js';
 import { MatchCenterBoard } from './MatchCenterBoard.js';
@@ -159,10 +159,6 @@ function DragGhostCard({
   readonly card: CardInstance;
   readonly ghostRef: React.RefObject<HTMLDivElement | null>;
 }) {
-  const artUrl = getCardArtUrl(card.cardKey);
-  const rankLabel = formatRankLabel(card.rank);
-  const red = isCardRed(card);
-
   return createPortal(
     <div
       ref={ghostRef}
@@ -174,24 +170,9 @@ function DragGhostCard({
         pointerEvents: 'none',
         willChange: 'transform',
       }}
-      className="lkdf-card-parchment flex h-[112px] w-[78px] flex-col justify-between rounded-lg border-2 border-[#FBBF24] p-1.5 text-left text-[#1D150D] shadow-[0_20px_42px_rgba(0,0,0,0.82)]"
+      className="lkdf-card-gwent flex h-[118px] w-[84px] flex-col overflow-hidden rounded-[6px] border-2 border-[#E6BE6C] text-left text-[#F4EBD8] shadow-[0_20px_42px_rgba(0,0,0,0.85)]"
     >
-      <div className={`flex items-center gap-0.5 text-[11px] font-extrabold leading-none ${red ? 'text-[#A61B1B]' : 'text-[#1D150D]'}`}>
-        <span className="font-mono-num">{rankLabel}</span>
-        <SuitGlyph suit={card.suit} size={10} />
-      </div>
-      <div className="my-1 min-h-0 flex-1 overflow-hidden rounded border border-[#7C5828]/55 bg-[#5C3E1A]/15">
-        {artUrl ? (
-          <img src={artUrl} alt="" draggable={false} className="h-full w-full object-cover" />
-        ) : (
-          <div className="flex h-full items-center justify-center">
-            <GameIcon name={getCardGameIcon(card.cardKey)} size={24} className="text-[#5C3E1A]" />
-          </div>
-        )}
-      </div>
-      <div className="font-serif-title truncate text-center text-[9.5px] font-bold text-[#1D150D]">
-        {card.nameVi}
-      </div>
+      <PlayingCardFace card={card} showCategoryTag />
     </div>,
     document.body,
   );
@@ -576,8 +557,8 @@ export function MatchArenaLayout({
           left: `${coord.leftPct}%`,
           top: isTopBand
             ? coord.topPct <= 14
-              ? 'clamp(8px, 1.8cqh, 14px)'
-              : 'clamp(12px, 2.5cqh, 20px)'
+              ? 'clamp(4px, 1.1cqh, 10px)'
+              : 'clamp(10px, 2.2cqh, 18px)'
             : `${coord.topPct}%`,
         }}
         className={[
@@ -693,7 +674,7 @@ export function MatchArenaLayout({
 
           {/* Bảng trung tâm ở lòng Bàn Tròn */}
           {!isHeroSelectPhase ? (
-            <div className="absolute top-[58%] left-1/2 z-10 flex max-h-[calc(100%-108px)] w-[clamp(240px,30cqw,416px)] -translate-x-1/2 -translate-y-1/2 flex-col items-center">
+            <div className="absolute top-[61%] left-1/2 z-10 flex max-h-[calc(100%-108px)] w-[clamp(240px,30cqw,416px)] -translate-x-1/2 -translate-y-1/2 flex-col items-center">
               <MatchCenterBoard
                 playerView={playerView}
                 timerConfig={timerConfig}
@@ -776,72 +757,77 @@ export function MatchArenaLayout({
       {/* VÙNG 4: THANH ĐÁY RESPONSIVE (TRÁI: TƯỚNG + 4 Ô TRANG BỊ NGỬA | GIỮA: THANH LỆNH ẨN/HIỆN + QUĂNG BÀI | PHẢI: XEM KỸ NĂNG THỐNG NHẤT) */}
       <div
         style={dockBgStyle}
-        className="flex h-[var(--dock-h,196px)] shrink-0 min-w-0 items-stretch gap-2.5 border-t border-[#B08A4C]/45 bg-[#14110E] px-2.5 py-2 shadow-[inset_0_1px_0_rgba(255,232,185,0.08)]"
+        className="flex h-[var(--dock-h,196px)] shrink-0 min-w-0 items-stretch gap-2.5 border-t border-[#94A3B8]/32 bg-[#0D1016] px-2.5 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]"
       >
-        {/* Cột Trái: Khung Đôi (Hồ sơ Tướng Cách 2 + 4 Ô Trang Bị Ngửa & Phán xét) */}
-        <div className="flex w-[var(--left-w,312px)] shrink-0 overflow-hidden rounded-xl border border-[#A68042]/40 bg-[#181B20] shadow-lg">
+        {/* Cột Trái: Khung Đôi Mẫu B (Hồ sơ Tướng tràn viền + 4 Ô Trang Bị Ngửa & Phán xét) */}
+        <div className="flex w-[var(--left-w,312px)] shrink-0 overflow-hidden rounded-[6px] border border-[#94A3B8]/38 bg-[#12161E] shadow-lg">
           {/* Nửa Trái: Hồ sơ Tướng bản thân (Bấm quay về kỹ năng tướng mình) */}
           <div
             onClick={() => setInspector(null)}
             title="Bấm xem lại kỹ năng tướng của bạn"
-            className="relative flex w-[var(--prof-w,152px)] shrink-0 cursor-pointer flex-col justify-between overflow-hidden p-1.5"
+            className="relative flex w-[var(--prof-w,152px)] shrink-0 cursor-pointer flex-col justify-between overflow-hidden p-2"
           >
-            <HeroCardWatermark portraitUrl={!selfPhotoFailed ? selfPortraitUrl : null} />
+            <HeroCardWatermark
+              portraitUrl={!selfPhotoFailed ? selfPortraitUrl : null}
+              widthClass="w-[74%]"
+              opacityClass="opacity-72"
+            />
             <div className="relative z-10 flex min-h-0 flex-1 flex-col gap-1">
               {selfPlayer ? (
                 <>
-                  <div className="flex shrink-0 items-center gap-1.5 min-w-0">
-                    <div
-                      className={[
-                        'relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg border-[1.5px] bg-[#14171A] text-xs font-bold text-[#F3F4F6]',
-                        selfFaction ? selfFaction.borderClass : 'border-[#D99B26]/55',
-                      ].join(' ')}
-                    >
-                      {selfDisplayPhoto && !selfPhotoFailed ? (
-                        <img
-                          src={selfDisplayPhoto}
-                          alt={selfHero ? selfHero.nameVi : selfPlayer.displayName}
-                          draggable={false}
-                          onError={() => setSelfPhotoFailed(true)}
-                          className="h-full w-full object-cover object-[50%_18%]"
-                        />
-                      ) : selfHero ? (
-                        <FactionSeal faction={selfHero.faction} size="sm" />
-                      ) : (
-                        <GameIcon name="ui:user" size={14} className="text-[#9CA3AF]" />
-                      )}
-                      {selfHero && selfDisplayPhoto && !selfPhotoFailed ? (
-                        <span className="absolute -right-0.5 -bottom-0.5">
-                          <FactionSeal faction={selfHero.faction} size="xs" />
-                        </span>
-                      ) : null}
-                    </div>
+                  <div className="flex shrink-0 items-start gap-1.5 min-w-0">
+                    {!selfPortraitUrl ? (
+                      <div
+                        className={[
+                          'relative flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded border bg-[#0B0E14] text-xs font-bold text-[#F3F4F6]',
+                          selfFaction ? selfFaction.borderClass : 'border-[#B89352]/55',
+                        ].join(' ')}
+                      >
+                        {selfDisplayPhoto && !selfPhotoFailed ? (
+                          <img
+                            src={selfDisplayPhoto}
+                            alt={selfPlayer.displayName}
+                            draggable={false}
+                            onError={() => setSelfPhotoFailed(true)}
+                            className="h-full w-full object-cover object-[50%_18%]"
+                          />
+                        ) : selfHero ? (
+                          <FactionSeal faction={selfHero.faction} size="sm" />
+                        ) : (
+                          <GameIcon name="ui:user" size={14} className="text-[#9CA3AF]" />
+                        )}
+                      </div>
+                    ) : null}
 
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1 min-w-0">
-                        <span className="truncate text-[clamp(10px,0.9cqw,12px)] font-bold text-[#EFE6D5]">
+                        <span
+                          title={selfPlayer.displayName}
+                          className="truncate text-[clamp(10px,0.9cqw,12px)] font-bold text-[#E2E8F0] drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)]"
+                        >
                           {selfPlayer.displayName}
                         </span>
-                        <span
-                          className={[
-                            'shrink-0 rounded border px-1 py-0 text-[9px] font-bold',
-                            getIdentityBadgeClass(selfPlayer.identity),
-                          ].join(' ')}
-                        >
-                          {getIdentityLabelVi(selfPlayer.identity)}
-                        </span>
                       </div>
-                      <div className="mt-0.5 truncate">
-                        {selfHero && selfFaction ? (
-                          <span
-                            className={`font-serif-title text-[clamp(10px,0.92cqw,12px)] font-bold ${selfFaction.nameTextClass}`}
-                          >
-                            {selfHero.nameVi} · {selfFaction.labelVi}
-                          </span>
+                      <div className="mt-0.5 flex items-center gap-1 min-w-0">
+                        {selfHero ? (
+                          <>
+                            <FactionSeal faction={selfHero.faction} size="xs" />
+                            <span className="min-w-0 truncate font-serif-title text-[clamp(11px,0.96cqw,13px)] font-bold text-[#F5EBD6] drop-shadow-[0_1px_2px_rgba(0,0,0,0.98)]">
+                              {selfHero.nameVi}
+                            </span>
+                          </>
                         ) : (
-                          <span className="text-[10px] text-[#9CA3AF]">Chưa chọn tướng</span>
+                          <span className="truncate text-[10px] text-[#9CA3AF]">Chưa chọn</span>
                         )}
                       </div>
+                      <span
+                        className={[
+                          'mt-1 inline-block rounded border px-1.5 py-0 text-[9px] font-bold bg-[#0B0E14]/90',
+                          getIdentityBadgeClass(selfPlayer.identity),
+                        ].join(' ')}
+                      >
+                        {getIdentityLabelVi(selfPlayer.identity)}
+                      </span>
                     </div>
                   </div>
 
@@ -949,11 +935,11 @@ export function MatchArenaLayout({
             </div>
           </div>
 
-          {/* Nửa Phải Cột Trái: Chừa sẵn 4 Ô Trang Bị Ngửa rõ ràng (Bấm xem được kỹ năng!) */}
-          <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-1 border-l border-[#A68042]/25 bg-[#0C0B0A]/85 p-1.5">
-            <div className="flex shrink-0 items-center justify-between text-[9.5px] font-bold tracking-wide text-[#C89B4B] uppercase">
-              <span className="truncate">Trang bị ngửa</span>
-              <span className="shrink-0 text-[9px] font-normal normal-case text-[#B5A792]">4 ô</span>
+          {/* Nửa Phải Cột Trái: 4 Ô Trang Bị Ngửa tinh gọn (Bấm xem được kỹ năng!) */}
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-1 border-l border-[#94A3B8]/25 bg-[#0B0E14]/90 p-1.5">
+            <div className="flex shrink-0 items-center justify-between text-[9.5px] font-bold tracking-wide text-[#B89352] uppercase">
+              <span className="truncate">Trang bị</span>
+              <span className="shrink-0 text-[9px] font-normal normal-case text-[#94A3B8]">4 ô</span>
             </div>
 
             <div className="flex min-h-0 flex-1 flex-col justify-between gap-1">
@@ -965,13 +951,13 @@ export function MatchArenaLayout({
                     <div
                       key={slotKey}
                       className={[
-                        'flex min-h-0 flex-1 items-center gap-1.5 rounded-md border border-dashed px-1.5 text-[clamp(10px,0.88cqw,11px)] font-medium transition-colors',
+                        'flex min-h-0 flex-1 items-center gap-1.5 rounded border px-1.5 text-[clamp(10px,0.88cqw,11px)] font-medium transition-colors',
                         isDropTargetSlot
-                          ? 'border-[#FBBF24] bg-[#D99B26]/16 text-[#FDE68A]'
-                          : 'border-white/15 bg-white/[0.03] text-[#9CA3AF]',
+                          ? 'border-[#E6BE6C] bg-[#E6BE6C]/16 text-[#FDE68A]'
+                          : 'border-[#94A3B8]/18 bg-[#12161E]/70 text-[#8B949E]',
                       ].join(' ')}
                     >
-                      <GameIcon name={iconName} size={12} className="shrink-0 opacity-85" />
+                      <GameIcon name={iconName} size={12} className="shrink-0 opacity-75" />
                       <span className="truncate">{emptyLabel}</span>
                     </div>
                   );
@@ -989,10 +975,10 @@ export function MatchArenaLayout({
                     onClick={() => handleInspectCard(card, sid, 'Trang bị của bạn')}
                     title={`Bấm xem công dụng ${card.nameVi}`}
                     className={[
-                      'flex min-h-0 w-full flex-1 cursor-pointer items-center gap-1.5 rounded-md border px-1.5 text-left transition-colors',
+                      'flex min-h-0 w-full flex-1 cursor-pointer items-center gap-1.5 rounded border px-1.5 text-left transition-colors',
                       active
-                        ? 'border-[#FDE68A] bg-[#D99B26]/25 ring-1 ring-[#FDE68A]/55'
-                        : 'border-[#CA9A48]/65 bg-[#221A11]/95 hover:border-[#FBBF24]',
+                        ? 'border-[#FDE68A] bg-[#E6BE6C]/22 ring-1 ring-[#FDE68A]/55'
+                        : 'border-[#B89352]/55 bg-[#161B23] hover:border-[#E6BE6C]',
                     ].join(' ')}
                   >
                     {artUrl ? (
@@ -1036,8 +1022,8 @@ export function MatchArenaLayout({
                 />
                 <span className="truncate">Tự bỏ qua Vô Giải</span>
               </label>
-              <span className="hidden truncate text-[#B5A792] md:inline">
-                Giữ kéo lên bàn/ghế để đánh · Bấm nhẹ để xem chiêu
+              <span className="hidden truncate text-[#94A3B8] lg:inline">
+                Kéo lên bàn/ghế · Bấm nhẹ xem chiêu
               </span>
             </div>
 

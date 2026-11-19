@@ -167,7 +167,7 @@ export function getCardCategoryLabelVi(
     case 'DELAYED_SCROLL':
       return 'Thời gian';
     case 'WEAPON':
-      return attackRange !== undefined ? `Vũ khí (Tầm ${attackRange})` : 'Vũ khí';
+      return attackRange !== undefined ? `Vũ khí · Tầm ${attackRange}` : 'Vũ khí';
     case 'ARMOR':
       return 'Giáp';
     case 'PLUS_ONE_HORSE':

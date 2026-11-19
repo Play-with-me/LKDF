@@ -8,14 +8,14 @@ import type {
   TimerPresetConfig,
 } from '@lkdf/shared';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { getCardArtUrl, getUiAssetUrl } from '../../lib/assetCatalog.js';
+import { getUiAssetUrl } from '../../lib/assetCatalog.js';
 import {
   CardBack,
   GameIcon,
   SuitGlyph,
   getCardGameIcon,
 } from '../../components/icons/index.js';
-import { getCardFrameStyle } from './HandCardItem.js';
+import { PlayingCardFace } from './HandCardItem.js';
 import {
   describePendingActorPrompt,
   formatCardShort,
@@ -133,7 +133,10 @@ function GuanXingPlanner({
                   type="button"
                   onClick={() => moveCard(id, 'BOTTOM')}
                   title="Bấm để chuyển xuống đáy"
-                  className="lkdf-card-parchment cursor-pointer rounded border border-[#7C5828] px-2 py-0.5 text-[11px] font-bold text-[#1D150D] hover:border-[#D99B26]"
+                  className={[
+                    'cursor-pointer rounded border border-[#B89352]/60 bg-[#1B212C] px-2 py-0.5 text-[11px] font-bold hover:border-[#E6BE6C]',
+                    isRedSuit(card.suit) ? 'text-[#FCA5A5]' : 'text-[#F4EBD8]',
+                  ].join(' ')}
                 >
                   {idx + 1}. {formatCardShort(card)} ↓
                 </button>
@@ -155,7 +158,10 @@ function GuanXingPlanner({
                   type="button"
                   onClick={() => moveCard(id, 'TOP')}
                   title="Bấm để chuyển lên đầu"
-                  className="lkdf-card-parchment cursor-pointer rounded border border-[#7C5828] px-2 py-0.5 text-[11px] font-bold text-[#1D150D] hover:border-[#D99B26]"
+                  className={[
+                    'cursor-pointer rounded border border-[#B89352]/60 bg-[#1B212C] px-2 py-0.5 text-[11px] font-bold hover:border-[#E6BE6C]',
+                    isRedSuit(card.suit) ? 'text-[#FCA5A5]' : 'text-[#F4EBD8]',
+                  ].join(' ')}
                 >
                   {formatCardShort(card)} ↑
                 </button>
@@ -237,7 +243,12 @@ function YiJiDistributor({
             key={card.id}
             className="flex items-center gap-2 rounded border border-[#3A424C] bg-[#1E2328] p-1.5"
           >
-            <span className="lkdf-card-parchment rounded border border-[#7C5828] px-2 py-0.5 text-[11px] font-bold text-[#1D150D]">
+            <span
+              className={[
+                'rounded border border-[#B89352]/60 bg-[#1B212C] px-2 py-0.5 text-[11px] font-bold',
+                isRedSuit(card.suit) ? 'text-[#FCA5A5]' : 'text-[#F4EBD8]',
+              ].join(' ')}
+            >
               {formatCardShort(card)}
             </span>
             <select
@@ -294,15 +305,7 @@ function TablePlayedCard({
   readonly overlapLeft: boolean;
   readonly onInspect?: (card: CardInstance, sourceLabel: string) => void;
 }) {
-  const [artFailed, setArtFailed] = useState(false);
-  const artUrl = getCardArtUrl(card.cardKey);
-  const frameStyle = getCardFrameStyle(card.cardKey, card.category);
-  const isRed = isRedSuit(card.suit);
   const rankLabel = formatRankLabel(card.rank);
-
-  useEffect(() => {
-    setArtFailed(false);
-  }, [artUrl]);
 
   return (
     <button
@@ -311,54 +314,17 @@ function TablePlayedCard({
       title={`Bấm xem kỹ năng ${rankLabel} ${card.nameVi}`}
       style={{ transform: `rotate(${rotationDeg}deg)` }}
       className={[
-        'lkdf-card-parchment relative flex h-[92px] w-[66px] shrink-0 flex-col justify-between rounded-lg p-1.5 text-left text-[#1D150D] transition-transform duration-150 select-none',
+        'lkdf-card-gwent group relative flex h-[104px] w-[74px] shrink-0 flex-col overflow-hidden rounded-[6px] text-left text-[#F4EBD8] transition-transform duration-150 select-none',
         onInspect ? 'cursor-pointer hover:-translate-y-1.5 hover:z-30' : '',
         overlapLeft ? '-ml-6' : '',
         isInspected
-          ? 'z-30 border-2 border-[#FDE68A] shadow-[0_12px_24px_rgba(217,155,38,0.45)] ring-2 ring-[#D99B26]/70'
+          ? 'z-30 border-2 border-[#FDE68A] shadow-[0_12px_24px_rgba(230,190,108,0.45)] ring-2 ring-[#E6BE6C]/70'
           : isLatest
-            ? 'z-20 border-[1.5px] border-[#D99B26] shadow-[0_10px_22px_rgba(0,0,0,0.65)] ring-1 ring-[#D99B26]/55'
-            : 'z-10 border-[1.5px] border-[#7C5828] brightness-[0.9] shadow-md',
+            ? 'z-20 border-[1.5px] border-[#E6BE6C] shadow-[0_12px_24px_rgba(0,0,0,0.72)] ring-1 ring-[#E6BE6C]/55'
+            : 'z-10 border-[1.5px] border-[#6E7889]/75 brightness-[0.88] shadow-md',
       ].join(' ')}
     >
-      <span className="pointer-events-none absolute inset-[2px] rounded-[5px] border border-[#5C3E1A]/25" />
-
-      <div
-        className={[
-          'relative z-10 flex items-center gap-0.5 leading-none font-bold',
-          isRed ? 'text-[#A61B1B]' : 'text-[#1D150D]',
-        ].join(' ')}
-      >
-        <span className="font-mono-num text-[11px]">{rankLabel}</span>
-        <SuitGlyph suit={card.suit} size={10} />
-      </div>
-
-      <div
-        className={[
-          'relative z-10 my-0.5 flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded border-[1.5px]',
-          frameStyle.tintBg,
-        ].join(' ')}
-      >
-        {artUrl && !artFailed ? (
-          <img
-            src={artUrl}
-            alt={card.nameVi}
-            draggable={false}
-            onError={() => setArtFailed(true)}
-            className="h-full w-full object-cover"
-          />
-        ) : (
-          <GameIcon
-            name={getCardGameIcon(card.cardKey)}
-            size={22}
-            className={frameStyle.emblemColor}
-          />
-        )}
-      </div>
-
-      <div className="font-serif-title relative z-10 line-clamp-2 w-full text-center text-[9.5px] leading-[1.1] font-bold text-[#1D150D]">
-        {card.nameVi}
-      </div>
+      <PlayingCardFace card={card} showCategoryTag />
     </button>
   );
 }
@@ -454,13 +420,13 @@ export function MatchCenterBoard({
   return (
     <div className="flex max-h-full min-h-0 min-w-0 w-full flex-col items-center gap-2">
       {/* Thanh trạng thái lượt nhỏ gọn khảm viền mây cổ Doanh Trại A */}
-      <div className="flex max-w-full flex-col items-center gap-0.5">
+      <div className="flex max-w-[min(460px,54cqw)] flex-col items-center gap-0.5">
         <div
           style={plaqueStyle}
           className={
             cloudBorderUrl
-              ? 'inline-flex max-w-full items-center gap-2 px-2.5 py-0.5 shadow-lg'
-              : 'inline-flex max-w-full items-center gap-2 rounded-full border border-[#D99B26]/35 bg-[#14171A]/85 px-3.5 py-1 shadow-md backdrop-blur-sm'
+              ? 'inline-flex max-w-full items-center gap-2 px-3 py-1 shadow-lg'
+              : 'inline-flex max-w-full items-center gap-2 rounded-2xl border border-[#D99B26]/35 bg-[#14171A]/85 px-3.5 py-1 shadow-md backdrop-blur-sm'
           }
         >
           <span
@@ -470,7 +436,7 @@ export function MatchCenterBoard({
           />
           <span
             className={[
-              'truncate text-[12px] font-bold',
+              'line-clamp-2 text-center text-[11.5px] font-bold leading-snug',
               prompt.isMyTurn ? 'text-[#FBBF24]' : 'text-[#F3F4F6]',
             ].join(' ')}
           >
@@ -600,11 +566,11 @@ export function MatchCenterBoard({
                       })
                     }
                     className={[
-                      'lkdf-card-parchment inline-flex cursor-pointer items-center gap-1 rounded border border-[#7C5828] px-2 py-1 text-[11px] font-bold transition-transform hover:-translate-y-0.5 hover:border-[#D99B26]',
-                      isRedSuit(card.suit) ? 'text-[#A61B1B]' : 'text-[#1D150D]',
+                      'inline-flex cursor-pointer items-center gap-1 rounded border border-[#B89352]/60 bg-[#1B212C] px-2 py-1 text-[11px] font-bold transition-transform hover:-translate-y-0.5 hover:border-[#E6BE6C]',
+                      isRedSuit(card.suit) ? 'text-[#FCA5A5]' : 'text-[#F4EBD8]',
                     ].join(' ')}
                   >
-                    <SuitGlyph suit={card.suit} size={11} />
+                    <SuitGlyph suit={card.suit} size={11} tone="darkSurface" />
                     <span>{formatRankLabel(card.rank)} {card.nameVi}</span>
                   </button>
                 ))}
@@ -681,7 +647,7 @@ export function MatchCenterBoard({
                           zone,
                         })
                       }
-                      className="lkdf-card-parchment inline-flex cursor-pointer items-center gap-1 rounded border border-[#7C5828] px-2 py-1 text-[11px] font-bold text-[#1D150D] hover:border-[#D99B26]"
+                      className="inline-flex cursor-pointer items-center gap-1 rounded border border-[#B89352]/60 bg-[#1B212C] px-2 py-1 text-[11px] font-bold text-[#F4EBD8] hover:border-[#E6BE6C]"
                     >
                       <GameIcon name={getCardGameIcon(equipCard.cardKey)} size={12} />
                       {formatCardShort(equipCard)}

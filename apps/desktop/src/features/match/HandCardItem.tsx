@@ -22,30 +22,137 @@ export function getCardFrameStyle(
 } {
   if (cardKey === 'dao') {
     return {
-      tintBg: 'bg-[#5C3E1A]/10 border-[#7C5828]/85',
-      emblemColor: 'text-[#14532D]',
-      badgeBg: 'text-[#14532D]',
+      tintBg: 'bg-[#12161E]',
+      emblemColor: 'text-[#86EFAC]',
+      badgeBg: 'text-[#86EFAC]',
     };
   }
   if (category === 'BASIC') {
     return {
-      tintBg: 'bg-[#5C3E1A]/10 border-[#7C5828]/85',
-      emblemColor: cardKey === 'thiem' ? 'text-[#1E3A8A]' : 'text-[#991B1B]',
-      badgeBg: cardKey === 'thiem' ? 'text-[#1E3A8A]' : 'text-[#881313]',
+      tintBg: 'bg-[#12161E]',
+      emblemColor: cardKey === 'thiem' ? 'text-[#93C5FD]' : 'text-[#FCA5A5]',
+      badgeBg: 'text-[#CFA661]',
     };
   }
   if (category === 'NORMAL_SCROLL' || category === 'DELAYED_SCROLL') {
     return {
-      tintBg: 'bg-[#5C3E1A]/10 border-[#7C5828]/85',
-      emblemColor: 'text-[#172554]',
-      badgeBg: 'text-[#1E3A5F]',
+      tintBg: 'bg-[#12161E]',
+      emblemColor: 'text-[#FDE68A]',
+      badgeBg: 'text-[#CFA661]',
     };
   }
   return {
-    tintBg: 'bg-[#5C3E1A]/10 border-[#7C5828]/85',
-    emblemColor: 'text-[#6B3410]',
-    badgeBg: 'text-[#5C2D0C]',
+    tintBg: 'bg-[#12161E]',
+    emblemColor: 'text-[#E6BE6C]',
+    badgeBg: 'text-[#CFA661]',
   };
+}
+
+export interface PlayingCardFaceProps {
+  readonly card: CardInstance;
+  readonly hotkeyNumber?: number;
+  readonly compact?: boolean;
+  readonly showCategoryTag?: boolean;
+}
+
+/**
+ * Mặt lá bài Mẫu B (Chiến Tranh Hiện Đại — kiểu Gwent):
+ * Cột Số + Chất dọc góc trên-trái, tranh tràn nửa trên chuyển mờ mượt xuống bảng tên đá tối.
+ */
+export function PlayingCardFace({
+  card,
+  hotkeyNumber,
+  compact = false,
+  showCategoryTag = true,
+}: PlayingCardFaceProps) {
+  const rankLabel = formatRankLabel(card.rank);
+  const categoryLabel = getCardCategoryLabelVi(card.category, card.attackRange);
+  const artUrl = getCardArtUrl(card.cardKey);
+  const frameStyle = getCardFrameStyle(card.cardKey, card.category);
+  const [artFailed, setArtFailed] = useState<boolean>(false);
+
+  useEffect(() => {
+    setArtFailed(false);
+  }, [artUrl]);
+
+  const isRed = card.suit === 'HEART' || card.suit === 'DIAMOND';
+  const isLongName = card.nameVi.length > 13;
+
+  return (
+    <>
+      {/* Góc trên-trái: Cột Số + Chất bài dọc (đọc rõ ngay cả khi xòe nhiều lá) */}
+      <div
+        className={[
+          'pointer-events-none absolute top-1 left-1 z-20 flex w-[18px] flex-col items-center rounded-[4px] border border-[#C8A864]/65 bg-[#0E1218]/92 px-[2px] py-[2px] leading-none shadow-md',
+          isRed ? 'text-[#FCA5A5]' : 'text-[#F1F5F9]',
+        ].join(' ')}
+      >
+        <span className="font-mono-num text-[clamp(9.5px,0.88cqw,11.5px)] font-extrabold tracking-tight">
+          {rankLabel}
+        </span>
+        <SuitGlyph suit={card.suit} size={10} tone="darkSurface" className="mt-0.5" />
+      </div>
+
+      {/* Góc trên-phải: Phím tắt chọn nhanh 1..9 */}
+      {hotkeyNumber !== undefined && hotkeyNumber >= 1 && hotkeyNumber <= 9 ? (
+        <span className="font-mono-num pointer-events-none absolute top-1 right-1 z-20 rounded-[3px] border border-[#D4A451]/45 bg-[#10141B]/85 px-1 py-0 text-[8.5px] font-bold text-[#F5EAD6] shadow-sm">
+          {hotkeyNumber}
+        </span>
+      ) : null}
+
+      {/* Nửa trên: Tranh minh họa tràn rộng hòa mượt vào nền đá tối */}
+      <div
+        className={[
+          'pointer-events-none relative flex min-h-0 w-full flex-1 items-center justify-center overflow-hidden',
+          frameStyle.tintBg,
+        ].join(' ')}
+      >
+        {artUrl && !artFailed ? (
+          <img
+            src={artUrl}
+            alt={card.nameVi}
+            draggable={false}
+            onError={() => setArtFailed(true)}
+            className="h-full w-full object-cover object-center transition-transform duration-200 group-hover:scale-[1.04]"
+          />
+        ) : (
+          <GameIcon
+            name={getCardGameIcon(card.cardKey)}
+            size={compact ? 24 : 28}
+            className={frameStyle.emblemColor}
+          />
+        )}
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 bg-gradient-to-b from-[#0F131A]/15 via-transparent to-[#161B23]"
+        />
+      </div>
+
+      {/* Nửa dưới: Bảng tên Serif khắc nét — Hiện trọn tên bài không cắt "..." */}
+      <div className="pointer-events-none relative z-10 flex shrink-0 flex-col items-center justify-center border-t border-[#B89352]/40 bg-gradient-to-b from-[#1B212C] to-[#11161D] px-1 py-1 text-center">
+        <div
+          className={[
+            'font-serif-title w-full font-bold leading-[1.08] break-words text-[#F4EBD8]',
+            isLongName
+              ? 'text-[clamp(7.8px,0.72cqw,9.5px)] tracking-[-0.01em]'
+              : 'text-[clamp(9px,0.82cqw,11px)]',
+          ].join(' ')}
+        >
+          {card.nameVi}
+        </div>
+        {showCategoryTag ? (
+          <div
+            className={[
+              'mt-0.5 w-full truncate text-[clamp(7px,0.62cqw,8.5px)] font-semibold leading-none tracking-wide',
+              frameStyle.badgeBg,
+            ].join(' ')}
+          >
+            {categoryLabel}
+          </div>
+        ) : null}
+      </div>
+    </>
+  );
 }
 
 export interface HandCardItemProps {
@@ -74,17 +181,7 @@ export function HandCardItem({
 }: HandCardItemProps) {
   const suitSymbol = formatSuitSymbol(card.suit);
   const rankLabel = formatRankLabel(card.rank);
-  const categoryLabel = getCardCategoryLabelVi(card.category, card.attackRange);
   const description = getCardDescriptionVi(card.cardKey, card.nameVi);
-  const artUrl = getCardArtUrl(card.cardKey);
-  const frameStyle = getCardFrameStyle(card.cardKey, card.category);
-  const [artFailed, setArtFailed] = useState<boolean>(false);
-
-  useEffect(() => {
-    setArtFailed(false);
-  }, [artUrl]);
-
-  const isRed = card.suit === 'HEART' || card.suit === 'DIAMOND';
 
   return (
     <button
@@ -100,81 +197,26 @@ export function HandCardItem({
       aria-pressed={selected}
       style={{ touchAction: 'none' }}
       className={[
-        'lkdf-card-parchment group relative flex shrink-0 flex-col justify-between rounded-lg text-left text-[#1D150D] shadow-[0_8px_18px_rgba(0,0,0,0.52)] transition-[transform,opacity,box-shadow,border-color] duration-150 ease-out select-none',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#D99B26]',
+        'lkdf-card-gwent group relative flex shrink-0 flex-col overflow-hidden rounded-[6px] text-left text-[#F4EBD8] transition-[transform,opacity,box-shadow,border-color] duration-150 ease-out select-none',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E6BE6C]',
         compact
-          ? 'h-[calc(var(--card-h,108px)*0.94)] w-[calc(var(--card-w,74px)*0.92)] p-1'
-          : 'h-[var(--card-h,108px)] w-[var(--card-w,74px)] p-1.5',
+          ? 'h-[calc(var(--card-h,114px)*0.94)] w-[calc(var(--card-w,80px)*0.92)]'
+          : 'h-[var(--card-h,114px)] w-[var(--card-w,80px)]',
         dragging
           ? 'scale-95 opacity-25'
           : selected
-            ? 'z-20 -translate-y-2.5 border-2 border-[#D99B26] shadow-xl ring-2 ring-[#D99B26]/65'
-            : 'border-[1.5px] border-[#7C5828] hover:z-15 hover:-translate-y-1.5 hover:border-[#D99B26]',
+            ? 'z-20 -translate-y-2.5 border-2 border-[#E6BE6C] shadow-[0_14px_28px_rgba(0,0,0,0.82)] ring-2 ring-[#E6BE6C]/55'
+            : 'border-[1.5px] border-[#6E7889]/75 hover:z-15 hover:-translate-y-1.5 hover:border-[#E6BE6C]',
         disabled
           ? 'cursor-not-allowed opacity-55 hover:translate-y-0'
           : 'cursor-grab active:cursor-grabbing',
       ].join(' ')}
     >
-      {/* Viền chỉ kép cổ thư bên trong thẻ */}
-      <span className="pointer-events-none absolute inset-[3px] rounded-[5px] border border-[#5C3E1A]/25" />
-
-      {/* Góc trên: Số + Chất SVG & Phím tắt 1..9 */}
-      <div className="pointer-events-none relative z-10 flex items-start justify-between gap-1">
-        <div
-          className={[
-            'flex items-center gap-0.5 leading-none font-bold',
-            isRed ? 'text-[#A61B1B]' : 'text-[#1D150D]',
-          ].join(' ')}
-        >
-          <span className="font-mono-num text-[clamp(10px,0.95cqw,12.5px)]">{rankLabel}</span>
-          <SuitGlyph suit={card.suit} size={10} />
-        </div>
-
-        {hotkeyNumber !== undefined && hotkeyNumber >= 1 && hotkeyNumber <= 9 ? (
-          <span className="font-mono-num rounded bg-[#5C3E1A]/15 px-1 py-0 text-[9px] font-bold text-[#1D150D]/80">
-            {hotkeyNumber}
-          </span>
-        ) : null}
-      </div>
-
-      {/* Khung chính giữa: Tranh lá bài (.webp nếu có) hoặc Biểu tượng Game-icon sắc nét */}
-      <div
-        className={[
-          'pointer-events-none relative z-10 my-1 flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded border-[1.5px]',
-          frameStyle.tintBg,
-        ].join(' ')}
-      >
-        {artUrl && !artFailed ? (
-          <img
-            src={artUrl}
-            alt={card.nameVi}
-            draggable={false}
-            onError={() => setArtFailed(true)}
-            className="h-full w-full object-cover"
-          />
-        ) : (
-          <GameIcon
-            name={getCardGameIcon(card.cardKey)}
-            size={compact ? 22 : 26}
-            className={frameStyle.emblemColor}
-          />
-        )}
-      </div>
-
-      {/* Chân lá bài: Tên lá bài tiếng Việt & Nhãn loại */}
-      <div className="pointer-events-none relative z-10 text-center">
-        <div className="font-serif-title line-clamp-2 text-[clamp(8.5px,0.78cqw,10.5px)] leading-[1.12] font-bold text-[#1D150D]">
-          {card.nameVi}
-        </div>
-        <div
-          className={[
-            'mt-0.5 truncate text-[clamp(7.5px,0.68cqw,9px)] font-semibold leading-tight opacity-90',
-            frameStyle.badgeBg,
-          ].join(' ')}
-        >
-          {categoryLabel}
-        </div>
-      </div>
+      <PlayingCardFace
+        card={card}
+        hotkeyNumber={hotkeyNumber}
+        compact={compact}
+      />
     </button>
   );
 }

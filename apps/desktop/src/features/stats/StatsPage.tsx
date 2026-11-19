@@ -228,7 +228,7 @@ export function StatsPage({
   return (
     <section
       aria-label="Trang thống kê và lịch sử ván đấu"
-      className="flex h-full w-full min-h-0 min-w-0 flex-col bg-[#14171A] text-[#F3F4F6]"
+      className="flex h-full w-full min-h-0 min-w-0 flex-col bg-transparent text-[#F3F4F6]"
     >
       <StatsMetaFilters
         meta={meta}
@@ -248,7 +248,7 @@ export function StatsPage({
             <div
               role="status"
               aria-live="polite"
-              className="flex flex-col gap-4 rounded-lg border border-[#2D333B] bg-[#1E2328] p-6"
+              className="flex flex-col gap-4 rounded-[8px] border border-[#94A3B8]/28 bg-[#11151D]/92 p-6 backdrop-blur-md"
             >
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
@@ -289,7 +289,7 @@ export function StatsPage({
               </div>
             </div>
           ) : isCancelled && !stats ? (
-            <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-[#D97706]/50 bg-[#1E2328] p-8 text-center">
+            <div className="flex flex-col items-center justify-center gap-3 rounded-[8px] border border-[#D97706]/50 bg-[#11151D]/92 p-8 text-center backdrop-blur-md">
               <p className="text-sm font-medium text-[#F4EFE6]">
                 Đã hủy tải dữ liệu thống kê.
               </p>
@@ -334,7 +334,7 @@ export function StatsPage({
             </div>
           ) : stats && stats.summary.totalDistinctMatches === 0 ? (
             /* Trạng thái 2: Chưa có dữ liệu (phân biệt chưa có ván nào vs lọc ra 0) */
-            <div className="flex flex-col items-center justify-center gap-4 rounded-lg border border-[#2D333B] bg-[#1E2328] p-10 text-center">
+            <div className="flex flex-col items-center justify-center gap-4 rounded-[8px] border border-[#94A3B8]/28 bg-[#11151D]/92 p-10 text-center backdrop-blur-md">
               <div className="rounded-full border border-[#30363D] bg-[#14171A] p-3 text-[#D99B26]" aria-hidden="true">
                 <GameIcon name={hasActiveFilter ? 'ui:layers' : 'scroll-unfurled'} size={28} />
               </div>
@@ -367,42 +367,42 @@ export function StatsPage({
             <>
               {/* 4 Thẻ chỉ số tổng quan (KPI) */}
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 min-w-0">
-                <div className="rounded-lg border border-[#2D333B] bg-[#1E2328] p-4 min-w-0">
-                  <p className="text-xs font-medium text-[#9CA3AF]">Tổng trận</p>
+                <div className="rounded-[8px] border border-[#94A3B8]/28 bg-[#11151D]/92 p-4 min-w-0 backdrop-blur-md">
+                  <p className="text-xs font-medium text-[#94A3B8]">Tổng trận</p>
                   <p className="mt-1 text-2xl font-bold tabular-nums text-[#F4EFE6]">
                     {stats.summary.totalDistinctMatches}
                   </p>
-                  <p className="mt-0.5 text-[11px] tabular-nums text-[#9CA3AF]">
+                  <p className="mt-0.5 text-[11px] tabular-nums text-[#94A3B8]">
                     {stats.summary.totalAppearances} lượt tham gia
                   </p>
                 </div>
 
-                <div className="rounded-lg border border-[#2D333B] bg-[#1E2328] p-4 min-w-0">
-                  <p className="text-xs font-medium text-[#9CA3AF]">Số thắng</p>
+                <div className="rounded-[8px] border border-[#94A3B8]/28 bg-[#11151D]/92 p-4 min-w-0 backdrop-blur-md">
+                  <p className="text-xs font-medium text-[#94A3B8]">Số thắng</p>
                   <p className="mt-1 text-2xl font-bold tabular-nums text-[#86EFAC]">
                     {stats.summary.totalWins}
                   </p>
-                  <p className="mt-0.5 text-[11px] text-[#9CA3AF]">
+                  <p className="mt-0.5 text-[11px] text-[#94A3B8]">
                     Theo bộ lọc hiện tại
                   </p>
                 </div>
 
-                <div className="rounded-lg border border-[#2D333B] bg-[#1E2328] p-4 min-w-0">
-                  <p className="text-xs font-medium text-[#9CA3AF]">Số thua</p>
+                <div className="rounded-[8px] border border-[#94A3B8]/28 bg-[#11151D]/92 p-4 min-w-0 backdrop-blur-md">
+                  <p className="text-xs font-medium text-[#94A3B8]">Số thua</p>
                   <p className="mt-1 text-2xl font-bold tabular-nums text-[#FCA5A5]">
                     {stats.summary.totalLosses}
                   </p>
-                  <p className="mt-0.5 text-[11px] text-[#9CA3AF]">
+                  <p className="mt-0.5 text-[11px] text-[#94A3B8]">
                     Theo bộ lọc hiện tại
                   </p>
                 </div>
 
-                <div className="rounded-lg border border-[#2D333B] bg-[#1E2328] p-4 min-w-0">
-                  <p className="text-xs font-medium text-[#9CA3AF]">Tỷ lệ thắng</p>
-                  <p className="mt-1 text-2xl font-bold tabular-nums text-[#D99B26]">
+                <div className="rounded-[8px] border border-[#94A3B8]/28 bg-[#11151D]/92 p-4 min-w-0 backdrop-blur-md">
+                  <p className="text-xs font-medium text-[#94A3B8]">Tỷ lệ thắng</p>
+                  <p className="mt-1 text-2xl font-bold tabular-nums text-[#E6BE6C]">
                     {stats.summary.winRatePercent.toFixed(1)}%
                   </p>
-                  <p className="mt-0.5 text-[11px] text-[#9CA3AF]">
+                  <p className="mt-0.5 text-[11px] text-[#94A3B8]">
                     Trên tổng lượt tham gia
                   </p>
                 </div>
@@ -411,7 +411,7 @@ export function StatsPage({
               {/* Phân tích theo 4 Thân Phận */}
               <section
                 aria-label="Thống kê theo Thân Phận"
-                className="rounded-lg border border-[#2D333B] bg-[#1E2328] p-4 min-w-0"
+                className="rounded-[8px] border border-[#94A3B8]/28 bg-[#11151D]/92 p-4 min-w-0 backdrop-blur-md"
               >
                 <div className="mb-3 flex items-center justify-between gap-2">
                   <h2 className="text-sm font-bold text-[#F4EFE6]">
@@ -520,7 +520,7 @@ export function StatsPage({
                   {/* Bảng xếp hạng người chơi */}
                   <section
                     aria-label="Bảng xếp hạng người chơi"
-                    className="rounded-lg border border-[#2D333B] bg-[#1E2328] p-4 lg:col-span-6 min-w-0"
+                    className="rounded-[8px] border border-[#94A3B8]/28 bg-[#11151D]/92 p-4 lg:col-span-6 min-w-0 backdrop-blur-md"
                   >
                     <h2 className="mb-3 text-sm font-bold text-[#F4EFE6]">
                       Bảng xếp hạng người chơi
@@ -617,7 +617,7 @@ export function StatsPage({
                   {/* Lưới thống kê 25 Tướng theo Thế lực */}
                   <section
                     aria-label="Thống kê theo 25 Tướng"
-                    className="rounded-lg border border-[#2D333B] bg-[#1E2328] p-4 lg:col-span-6 min-w-0"
+                    className="rounded-[8px] border border-[#94A3B8]/28 bg-[#11151D]/92 p-4 lg:col-span-6 min-w-0 backdrop-blur-md"
                   >
                     <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                       <h2 className="text-sm font-bold text-[#F4EFE6]">

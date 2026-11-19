@@ -212,8 +212,8 @@ export function MatchActionSidebar({
     selection.activeConvertMode !== null;
 
   const sidebarShellClass = isBar
-    ? 'lkdf-action-bar flex w-full min-w-0 flex-wrap items-center justify-between gap-2 rounded-lg border bg-[#120F0C]/94 px-2.5 py-1 shadow-md'
-    : 'flex h-full min-h-0 w-full flex-col justify-between gap-2 rounded-xl border bg-[#14171A] p-3';
+    ? 'lkdf-action-bar flex w-full min-w-0 flex-wrap items-center justify-between gap-2 rounded-[6px] border border-[#94A3B8]/32 bg-[#12161E]/96 px-2.5 py-1 shadow-md'
+    : 'flex h-full min-h-0 w-full flex-col justify-between gap-2 rounded-lg border border-[#94A3B8]/32 bg-[#12161E] p-3';
 
   // 1. PHẢN ỨNG KHẨN CẤP (ACTIVE INTERRUPT)
   if (interrupt && selfPlayer) {

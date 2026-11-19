@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { GameIcon } from '../../components/icons/index.js';
+import { getUiAssetUrl } from '../../lib/assetCatalog.js';
 import { ApiError, createApiClient, normalizeServerUrl } from '../../lib/api.js';
 import type { HealthCheckResponse } from '../../lib/types.js';
 
@@ -161,20 +162,32 @@ export function ServerWakeScreen({
     status === 'WAKING'
       ? Math.min(95, Math.max(8, Math.round((elapsedSeconds / 45) * 100)))
       : 0;
+  const inkBaseUrl = getUiAssetUrl('tex-ink-base');
 
   return (
     <section className="lkdf-scroll flex flex-1 min-h-0 min-w-0 justify-center overflow-y-auto p-6 animate-lkdf-fade">
-      <div className="my-auto w-full max-w-lg rounded-xl border border-[#2D343C] bg-[#1E2328] p-7 shadow-2xl">
+      <div
+        style={
+          inkBaseUrl
+            ? {
+                backgroundImage: `linear-gradient(rgba(17,21,29,0.94), rgba(11,14,20,0.97)), url(${inkBaseUrl})`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+              }
+            : undefined
+        }
+        className="my-auto w-full max-w-lg rounded-[8px] border border-[#B89352]/45 bg-[#11151D]/96 p-7 shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_28px_72px_rgba(0,0,0,0.82)] backdrop-blur-md"
+      >
         <div className="mb-5 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
-            <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-[#D99B26]/65 bg-[#C83E37] font-serif-title text-lg font-bold text-[#F4EFE6] shadow-inner">
+            <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-[5px] border border-[#D4A451]/75 bg-gradient-to-b from-[#B8332C] to-[#7D1A16] font-serif-title text-lg font-bold text-[#F8EFDF] shadow-lg">
               殺
             </span>
             <div className="min-w-0">
-              <h2 className="font-serif-title text-lg font-bold text-[#F3F4F6] truncate">
+              <h2 className="font-serif-title text-lg font-bold text-[#F5EBD6] truncate">
                 Kết nối Máy chủ Phòng chơi
               </h2>
-              <p className="font-mono-num text-xs text-[#9CA3AF] truncate">
+              <p className="font-mono-num text-xs text-[#94A3B8] truncate">
                 {serverUrl}
               </p>
             </div>
@@ -186,7 +199,7 @@ export function ServerWakeScreen({
               setIsEditingUrl((prev) => !prev);
               setUrlError(null);
             }}
-            className="shrink-0 rounded-lg border border-[#3A424C] bg-[#14171A] px-3 py-1.5 text-xs font-medium text-[#D1D5DB] transition-colors hover:border-[#D99B26] hover:text-[#F3F4F6] focus:outline-none focus:ring-2 focus:ring-[#D99B26]"
+            className="shrink-0 cursor-pointer rounded-[5px] border border-[#94A3B8]/30 bg-[#0D1016] px-3 py-1.5 text-xs font-medium text-[#E2E8F0] transition-colors hover:border-[#E6BE6C] focus:outline-none focus:ring-2 focus:ring-[#E6BE6C]"
           >
             {isEditingUrl ? 'Đóng' : 'Đổi địa chỉ máy chủ'}
           </button>
@@ -197,7 +210,7 @@ export function ServerWakeScreen({
             onSubmit={(e) => {
               void handleSaveServerUrl(e);
             }}
-            className="mb-5 rounded-lg border border-[#30363D] bg-[#14171A] p-4 animate-lkdf-slide"
+            className="mb-5 rounded-xl border border-[#A68042]/30 bg-[#111317] p-4 animate-lkdf-slide"
           >
             <label
               htmlFor="lkdf-server-url-input"

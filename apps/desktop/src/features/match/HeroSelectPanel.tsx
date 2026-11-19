@@ -202,9 +202,9 @@ export function HeroSelectPanel({
               return (
                 <div
                   key={hero.id}
-                  className="relative flex flex-col justify-between gap-2.5 overflow-hidden rounded-lg border border-[#3A424C] bg-[#181B20] p-3 transition-colors hover:border-[#D99B26]/80"
+                  className="relative flex flex-col justify-between gap-2.5 overflow-hidden rounded-[6px] border border-[#94A3B8]/38 bg-[#12161E] p-3 shadow-lg transition-colors hover:border-[#E6BE6C]"
                 >
-                  <HeroCardWatermark portraitUrl={portraitUrl} opacityClass="opacity-16" />
+                  <HeroCardWatermark portraitUrl={portraitUrl} widthClass="w-[62%]" opacityClass="opacity-60" />
                   <div className="relative z-10">
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex items-center gap-2 min-w-0">
@@ -249,7 +249,7 @@ export function HeroSelectPanel({
                       {hero.skills.map((skill) => (
                         <div
                           key={skill.id}
-                          className="rounded border border-[#2D333B] bg-[#14171A]/85 p-2 text-[11px] leading-snug"
+                          className="rounded border border-[#94A3B8]/20 bg-[#0B0E14]/86 p-2 text-[11px] leading-snug"
                         >
                           <div className="flex items-center gap-1.5 font-bold text-[#FDE68A]">
                             <span>{skill.nameVi}</span>

@@ -8,6 +8,7 @@ import {
   useRef,
   useState,
 } from 'react';
+import { FirstTimeNicknameCard } from './features/auth/FirstTimeNicknameCard.js';
 import { LoginScreen } from './features/auth/LoginScreen.js';
 import { GameIcon } from './components/icons/index.js';
 import { ServerWakeScreen } from './features/auth/ServerWakeScreen.js';
@@ -16,6 +17,7 @@ import { WaitingRoomScreen } from './features/lobby/WaitingRoomScreen.js';
 import { MatchScreen } from './features/match/MatchScreen.js';
 import { StatsPage } from './features/stats/StatsPage.js';
 import { UpdateModal } from './features/update/UpdateModal.js';
+import { getUiAssetUrl } from './lib/assetCatalog.js';
 import {
   DEFAULT_SERVER_URL,
   createApiClient,
@@ -68,10 +70,34 @@ function readDevPreviewSeatsFromUrl(): PlayerCount | null {
   return null;
 }
 
+function readDevPreviewModeFromUrl(): 'nickname' | 'wake' | null {
+  if (!import.meta.env.DEV) {
+    return null;
+  }
+  const raw = new URLSearchParams(window.location.search).get('devPreview');
+  if (raw === 'nickname' || raw === 'wake') {
+    return raw;
+  }
+  return null;
+}
+
+const DEV_PREVIEW_NICKNAME_PROFILE: UserProfile = {
+  userId: 'dev_preview_user',
+  googleSub: 'dev_preview_sub',
+  email: 'tuongquan.preview@gmail.com',
+  displayName: 'Nguyễn Minh Quân',
+  avatarUrl: '',
+  preferences: { soundEnabled: true, volume: 0.8 },
+  activeRoomCode: null,
+  createdAt: '2026-11-18T00:00:00.000Z',
+  lastLoginAt: '2026-11-18T00:00:00.000Z',
+};
+
 type AppScreen =
   | 'BOOT'
   | 'WAKE'
   | 'LOGIN'
+  | 'NICKNAME_SETUP'
   | 'HOME'
   | 'WAITING_ROOM'
   | 'MATCH'
@@ -80,9 +106,16 @@ type AppScreen =
 
 export function App() {
   const initialDevSeats = readDevPreviewSeatsFromUrl();
+  const initialDevPreviewMode = readDevPreviewModeFromUrl();
   const [appVersion, setAppVersion] = useState<string>('0.1.0');
   const [screen, setScreen] = useState<AppScreen>(
-    initialDevSeats !== null ? 'DEV_PREVIEW' : 'BOOT',
+    initialDevSeats !== null
+      ? 'DEV_PREVIEW'
+      : initialDevPreviewMode === 'nickname'
+        ? 'NICKNAME_SETUP'
+        : initialDevPreviewMode === 'wake'
+          ? 'WAKE'
+          : 'BOOT',
   );
   const [devPreviewSeats, setDevPreviewSeats] = useState<PlayerCount>(
     initialDevSeats ?? 8,
@@ -92,7 +125,9 @@ export function App() {
   const [serverUrl, setServerUrl] = useState<string>(DEFAULT_SERVER_URL);
   const [sessionToken, setSessionToken] = useState<string | null>(null);
   const [health, setHealth] = useState<HealthCheckResponse | null>(null);
-  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(
+    initialDevPreviewMode === 'nickname' ? DEV_PREVIEW_NICKNAME_PROFILE : null,
+  );
   const [activeRoom, setActiveRoom] = useState<RoomViewerPayload | null>(null);
   const [justLoggedIn, setJustLoggedIn] = useState<boolean>(false);
   const [loginNotice, setLoginNotice] = useState<string | null>(null);
@@ -129,12 +164,12 @@ export function App() {
         }
         setServerUrl(initialState.serverUrl);
         setSessionToken(initialState.sessionToken);
-        if (initialDevSeats === null) {
+        if (initialDevSeats === null && initialDevPreviewMode === null) {
           setScreen('WAKE');
         }
       })
       .catch(() => {
-        if (active && initialDevSeats === null) {
+        if (active && initialDevSeats === null && initialDevPreviewMode === null) {
           setScreen('WAKE');
         }
       });
@@ -334,14 +369,28 @@ export function App() {
   );
 
   const handleLoggedIn = useCallback(
-    (token: string, userProfile: UserProfile) => {
+    (token: string, userProfile: UserProfile, isNewUser?: boolean) => {
       setSessionToken(token);
       setProfile(userProfile);
       setJustLoggedIn(true);
       setLoginNotice(null);
-      setScreen('HOME');
+      setScreen(isNewUser ? 'NICKNAME_SETUP' : 'HOME');
     },
     [],
+  );
+
+  const handleCompleteNicknameSetup = useCallback(
+    (updatedProfile: UserProfile) => {
+      setProfile(updatedProfile);
+      setJustLoggedIn(true);
+      if (import.meta.env.DEV && initialDevPreviewMode === 'nickname' && !sessionToken) {
+        setProfile(null);
+        setScreen('WAKE');
+        return;
+      }
+      setScreen('HOME');
+    },
+    [initialDevPreviewMode, sessionToken],
   );
 
   const handleSessionInvalid = useCallback((messageVi: string) => {
@@ -396,19 +445,65 @@ export function App() {
     setScreen('HOME');
   }, []);
 
+  const lobbyBannerUrl = getUiAssetUrl('lobby-banner');
+  const campBackdropUrl = getUiAssetUrl('camp-zhanhuo');
+  const headerBgUrl = getUiAssetUrl('tex-header-black');
+  const isLobbySurface = screen !== 'MATCH' && screen !== 'DEV_PREVIEW';
+  const isAuthPortalScreen =
+    !isRestoringSession &&
+    ((screen === 'LOGIN' && Boolean(health)) ||
+      (screen === 'NICKNAME_SETUP' && Boolean(profile)));
+
   return (
-    <main className="flex h-screen w-screen min-h-0 min-w-0 flex-col overflow-hidden bg-[#14171A] text-[#F3F4F6]">
-      {screen !== 'MATCH' && screen !== 'DEV_PREVIEW' ? (
-        <header className="flex h-11 shrink-0 items-center justify-between border-b border-[#2D343C] bg-[#1E2328] px-5">
+    <main className="relative flex h-screen w-screen min-h-0 min-w-0 flex-col overflow-hidden bg-[#090807] text-[#EFE6D5]">
+      {isLobbySurface && !isAuthPortalScreen ? (
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 overflow-hidden"
+        >
+          {lobbyBannerUrl ? (
+            <div
+              className="absolute inset-0 bg-cover bg-center opacity-35"
+              style={{ backgroundImage: `url(${lobbyBannerUrl})` }}
+            />
+          ) : null}
+          {campBackdropUrl ? (
+            <div
+              className="absolute inset-0 bg-cover bg-center opacity-22 mix-blend-screen"
+              style={{ backgroundImage: `url(${campBackdropUrl})` }}
+            />
+          ) : null}
+          <div
+            className="absolute inset-0"
+            style={{
+              background:
+                'radial-gradient(ellipse 75% 75% at 50% 45%, rgba(16,13,10,0.45) 0%, rgba(9,8,7,0.88) 76%, #070605 100%)',
+            }}
+          />
+        </div>
+      ) : null}
+
+      {isLobbySurface && !isAuthPortalScreen ? (
+        <header
+          style={
+            headerBgUrl
+              ? {
+                  backgroundImage: `linear-gradient(rgba(14,17,24,0.68), rgba(10,13,19,0.85)), url(${headerBgUrl})`,
+                  backgroundSize: '100% 100%',
+                }
+              : undefined
+          }
+          className="relative z-10 flex h-11 shrink-0 items-center justify-between border-b border-[#94A3B8]/28 bg-[#10141B] px-5"
+        >
         <div className="flex items-center gap-3 min-w-0">
-          <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded border border-[#D99B26]/65 bg-[#C83E37] font-serif-title text-[13px] font-bold text-[#F4EFE6] shadow-inner">
+          <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-[5px] border border-[#D4A451]/75 bg-gradient-to-b from-[#B8332C] to-[#7D1A16] font-serif-title text-[13px] font-bold text-[#F8EFDF] shadow-inner">
             殺
           </span>
-          <h1 className="truncate font-serif-title text-base font-semibold tracking-wide text-[#F3F4F6]">
-            Tam Quốc Sát LKDF
+          <h1 className="truncate font-serif-title text-base font-semibold tracking-wide text-[#F4EBD8]">
+            Tam Quốc Sát
           </h1>
           {activeRoom && screen === 'WAITING_ROOM' ? (
-            <span className="hidden rounded border border-[#30363D] bg-[#14171A] px-2 py-0.5 font-mono-num text-xs text-[#D99B26] sm:inline-block">
+            <span className="hidden rounded border border-[#B89352]/45 bg-[#12161E] px-2 py-0.5 font-mono-num text-xs text-[#E6BE6C] sm:inline-block">
               Phòng #{activeRoom.roomState.roomCode}
             </span>
           ) : null}
@@ -416,22 +511,20 @@ export function App() {
 
         <div className="flex items-center gap-3 shrink-0">
           {profile ? (
-            <span className="hidden items-center gap-1.5 rounded-full border border-[#30363D] bg-[#14171A] px-2.5 py-1 text-xs text-[#E5E7EB] md:inline-flex">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#16A34A]" />
+            <span className="hidden items-center gap-1.5 text-xs font-medium text-[#E2E8F0] md:inline-flex">
+              <span className="h-1.5 w-1.5 rounded-full bg-[#22C55E]" />
               {profile.displayName}
             </span>
           ) : null}
 
           <span
-            className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-medium ${
-              health
-                ? 'border-[#16A34A]/40 bg-[#16A34A]/15 text-[#86EFAC]'
-                : 'border-[#D97706]/40 bg-[#D97706]/15 text-[#FDE68A]'
+            className={`inline-flex items-center gap-1.5 text-[11px] font-medium ${
+              health ? 'text-[#A7E3B9]' : 'text-[#FDE68A]'
             }`}
           >
             <span
               className={`h-1.5 w-1.5 rounded-full ${
-                health ? 'bg-[#16A34A]' : 'bg-[#D97706]'
+                health ? 'bg-[#22C55E]' : 'bg-[#D97706]'
               }`}
             />
             {health ? 'Máy chủ sẵn sàng' : 'Đang kết nối'}
@@ -441,7 +534,7 @@ export function App() {
             <button
               type="button"
               onClick={() => setIsUpdateModalOpen(true)}
-              className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-[#D99B26] bg-[#C83E37] px-3 py-1 font-mono-num text-[11px] font-semibold tabular-nums text-[#F4EFE6] shadow transition-colors hover:bg-[#D94A42]"
+              className="inline-flex cursor-pointer items-center gap-1.5 rounded-[5px] border border-[#E6BE6C] bg-[#B8332C] px-3 py-1 font-mono-num text-[11px] font-semibold tabular-nums text-[#F4EFE6] shadow transition-colors hover:bg-[#C83E37]"
             >
               <GameIcon name="ui:download" size={12} />
               Có bản v{updateState.latestVersion}
@@ -461,7 +554,7 @@ export function App() {
                   forceRefresh: true,
                 });
               }}
-              className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-[#30363D] bg-[#14171A] px-2.5 py-0.5 font-mono-num text-xs tabular-nums text-[#D1D5DB] transition-colors hover:border-[#D99B26] disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex cursor-pointer items-center gap-1.5 rounded-[5px] border border-[#94A3B8]/32 bg-[#12161E]/90 px-2.5 py-0.5 font-mono-num text-xs tabular-nums text-[#D8DEE9] transition-colors hover:border-[#E6BE6C] disabled:cursor-not-allowed disabled:opacity-60"
             >
               <GameIcon name="ui:refresh" size={11} />
               v{appVersion}
@@ -471,14 +564,15 @@ export function App() {
       </header>
       ) : null}
 
+      <div className="relative z-10 flex flex-1 min-h-0 min-w-0 flex-col">
       {screen === 'BOOT' || isRestoringSession ? (
         <section className="flex flex-1 min-h-0 min-w-0 items-center justify-center p-6">
-          <div className="inline-flex items-center gap-2 rounded-xl border border-[#2D343C] bg-[#1E2328] px-6 py-4 text-sm text-[#D1D5DB]">
-            <GameIcon name="ui:loader" size={16} className="animate-spin text-[#D99B26]" />
+          <div className="inline-flex items-center gap-2 rounded-lg border border-[#B89352]/45 bg-[#11151D]/95 px-6 py-4 text-sm text-[#F4EBD8] shadow-2xl">
+            <GameIcon name="ui:loader" size={16} className="animate-spin text-[#E6BE6C]" />
             <span>
               {isRestoringSession
                 ? 'Đang khôi phục phiên đăng nhập Google...'
-                : 'Đang khởi động ứng dụng LKDF...'}
+                : 'Đang khởi động ứng dụng Tam Quốc Sát...'}
             </span>
           </div>
         </section>
@@ -496,10 +590,19 @@ export function App() {
         <LoginScreen
           api={api}
           health={health}
+          appVersion={appVersion}
+          updateState={updateState}
           initialNotice={loginNotice}
           onLoggedIn={handleLoggedIn}
           onOpenStats={() => handleOpenStatsFrom('LOGIN')}
           onRecheckServer={handleRecheckServer}
+          onOpenUpdateModal={() => setIsUpdateModalOpen(true)}
+          onCheckUpdate={() => {
+            void runUpdateCheck({
+              silentIfUpToDate: false,
+              forceRefresh: true,
+            });
+          }}
           onOpenDevPreview={
             import.meta.env.DEV
               ? () => {
@@ -508,6 +611,26 @@ export function App() {
                 }
               : undefined
           }
+        />
+      ) : null}
+
+      {screen === 'NICKNAME_SETUP' && profile ? (
+        <FirstTimeNicknameCard
+          api={api}
+          sessionToken={sessionToken}
+          profile={profile}
+          serverConnected={Boolean(health)}
+          appVersion={appVersion}
+          updateState={updateState}
+          onOpenUpdateModal={() => setIsUpdateModalOpen(true)}
+          onCheckUpdate={() => {
+            void runUpdateCheck({
+              silentIfUpToDate: false,
+              forceRefresh: true,
+            });
+          }}
+          isPreviewMode={import.meta.env.DEV && !sessionToken}
+          onComplete={handleCompleteNicknameSetup}
         />
       ) : null}
 
@@ -592,6 +715,7 @@ export function App() {
         onInstallNow={handleInstallUpdateNow}
         onClose={() => setIsUpdateModalOpen(false)}
       />
+      </div>
     </main>
   );
 }

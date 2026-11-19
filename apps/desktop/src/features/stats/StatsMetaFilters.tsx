@@ -82,7 +82,7 @@ export function StatsMetaFilters({
   };
 
   return (
-    <header className="shrink-0 border-b border-[#2D333B] bg-[#1E2328] px-4 py-3">
+    <header className="shrink-0 border-b border-[#94A3B8]/25 bg-[#10141B]/92 px-4 py-3 backdrop-blur-md">
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-3 min-w-0">
         {/* Hàng 1: Tiêu đề và nút điều hướng */}
         <div className="flex flex-wrap items-center justify-between gap-2 min-w-0">

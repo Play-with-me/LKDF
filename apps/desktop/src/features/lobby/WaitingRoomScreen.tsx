@@ -302,7 +302,7 @@ export function WaitingRoomScreen({
   return (
     <section className="flex flex-1 min-h-0 min-w-0 flex-col gap-4 p-5 animate-lkdf-fade">
       {/* Đầu phòng chờ: Mã phòng + Trạng thái kết nối WS */}
-      <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-[#2D343C] bg-[#1E2328] px-5 py-3.5 shadow">
+      <div className="flex flex-wrap items-center justify-between gap-4 rounded-[8px] border border-[#94A3B8]/32 bg-[#11151D]/94 px-5 py-3.5 shadow-xl backdrop-blur-md">
         <div className="flex flex-wrap items-center gap-4">
           <div>
             <span className="text-xs text-[#9CA3AF]">Mã phòng chơi (4–8 người thật)</span>
@@ -367,7 +367,7 @@ export function WaitingRoomScreen({
       {/* Thân phòng chờ: Danh sách ghế 4–8 người + Tùy chọn đồng hồ */}
       <div className="grid flex-1 min-h-0 min-w-0 grid-cols-1 gap-4 lg:grid-cols-3">
         {/* Cột trái (2/3): Danh sách ghế thật */}
-        <div className="flex flex-col min-h-0 min-w-0 rounded-xl border border-[#2D343C] bg-[#1E2328] p-5 shadow lg:col-span-2">
+        <div className="flex flex-col min-h-0 min-w-0 rounded-[8px] border border-[#94A3B8]/32 bg-[#11151D]/94 p-5 shadow-xl backdrop-blur-md lg:col-span-2">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="font-serif-title text-base font-bold text-[#F3F4F6]">
               Người chơi trong phòng ({seatCount}/8)
@@ -465,7 +465,7 @@ export function WaitingRoomScreen({
         </div>
 
         {/* Cột phải (1/3): Tốc độ đồng hồ & Nút Bắt đầu / Rời phòng */}
-        <div className="flex flex-col justify-between rounded-xl border border-[#2D343C] bg-[#1E2328] p-5 shadow">
+        <div className="flex flex-col justify-between rounded-[8px] border border-[#94A3B8]/32 bg-[#11151D]/94 p-5 shadow-xl backdrop-blur-md">
           <div>
             <h3 className="font-serif-title text-base font-bold text-[#F3F4F6]">
               Tốc độ đồng hồ đếm ngược

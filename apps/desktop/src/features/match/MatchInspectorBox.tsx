@@ -52,24 +52,24 @@ export function MatchInspectorBox({
     return (
       <aside
         style={boxBgStyle}
-        className="flex h-full min-h-0 w-[var(--right-w,250px)] shrink-0 flex-col justify-between rounded-xl border border-[#D99B26]/60 bg-[#14171A] p-2 shadow-[inset_0_1px_0_rgba(255,232,185,0.06)]"
+        className="flex h-full min-h-0 w-[var(--right-w,250px)] shrink-0 flex-col justify-between rounded-[6px] border border-[#E6BE6C]/55 bg-[#12161E] p-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]"
       >
         <div className="flex min-h-0 flex-1 flex-col">
           <div className="flex shrink-0 items-center justify-between gap-1.5 border-b border-white/10 pb-1">
-            <span className="truncate text-[10px] font-bold tracking-wide text-[#FDE68A] uppercase">
-              🃏 {sourceLabel}
+            <span className="truncate text-[10px] font-bold tracking-wide text-[#F3D38C] uppercase">
+              {sourceLabel}
             </span>
             <button
               type="button"
               onClick={onResetToSelf}
-              className="shrink-0 cursor-pointer rounded border border-[#D99B26]/55 bg-[#D99B26]/18 px-1.5 py-0.5 text-[9.5px] font-bold text-[#FFF3D1] hover:bg-[#D99B26]/30"
+              className="shrink-0 cursor-pointer rounded border border-[#B89352]/55 bg-[#1B212C] px-1.5 py-0.5 text-[9.5px] font-bold text-[#F4EBD8] hover:border-[#E6BE6C]"
             >
-              ✕ Về tướng bạn
+              Về tướng bạn
             </button>
           </div>
 
           <div className="mt-1.5 flex shrink-0 items-center gap-2">
-            <div className="lkdf-card-parchment flex h-[46px] w-[34px] shrink-0 items-center justify-center overflow-hidden rounded border border-[#C89B4B]/65">
+            <div className="flex h-[46px] w-[34px] shrink-0 items-center justify-center overflow-hidden rounded-[4px] border border-[#B89352]/65 bg-[#161B23]">
               {artUrl ? (
                 <img
                   src={artUrl}
@@ -127,23 +127,23 @@ export function MatchInspectorBox({
     <aside
       style={boxBgStyle}
       className={[
-        'flex h-full min-h-0 w-[var(--right-w,250px)] shrink-0 flex-col justify-between rounded-xl border bg-[#14171A] p-2 shadow-[inset_0_1px_0_rgba(255,232,185,0.06)]',
-        isOpponent ? 'border-[#D99B26]/60' : 'border-[#A68042]/35',
+        'flex h-full min-h-0 w-[var(--right-w,250px)] shrink-0 flex-col justify-between rounded-[6px] border bg-[#12161E] p-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]',
+        isOpponent ? 'border-[#E6BE6C]/55' : 'border-[#94A3B8]/35',
       ].join(' ')}
     >
       <div className="flex min-h-0 flex-1 flex-col">
         <div className="flex shrink-0 items-center justify-between gap-1.5 border-b border-white/10 pb-1">
           {isOpponent && targetSeatPlayer ? (
             <>
-              <span className="truncate text-[10px] font-bold tracking-wide text-[#FDE68A] uppercase">
-                🔍 Tướng: {targetSeatPlayer.displayName}
+              <span className="truncate text-[10px] font-bold tracking-wide text-[#F3D38C] uppercase">
+                Tướng: {targetSeatPlayer.displayName}
               </span>
               <button
                 type="button"
                 onClick={onResetToSelf}
-                className="shrink-0 cursor-pointer rounded border border-[#D99B26]/55 bg-[#D99B26]/18 px-1.5 py-0.5 text-[9.5px] font-bold text-[#FFF3D1] hover:bg-[#D99B26]/30"
+                className="shrink-0 cursor-pointer rounded border border-[#B89352]/55 bg-[#1B212C] px-1.5 py-0.5 text-[9.5px] font-bold text-[#F4EBD8] hover:border-[#E6BE6C]"
               >
-                ✕ Về tướng bạn
+                Về tướng bạn
               </button>
             </>
           ) : (
@@ -156,7 +156,7 @@ export function MatchInspectorBox({
                   </span>
                 ) : null}
               </span>
-              <span className="shrink-0 text-[9px] text-[#B5A792]">Bấm bài/ghế để soi</span>
+              <span className="hidden shrink-0 text-[9px] text-[#94A3B8] xl:inline">Bấm bài/ghế để soi</span>
             </>
           )}
         </div>
@@ -218,8 +218,8 @@ export function MatchInspectorBox({
       </div>
 
       {!isOpponent ? (
-        <div className="mt-1 shrink-0 truncate border-t border-white/8 pt-0.5 text-[9px] text-[#B5A792]">
-          Bấm bài trên tay, ô trang bị ngửa hoặc ⓘ trên ghế để soi
+        <div className="mt-1 shrink-0 truncate border-t border-white/8 pt-0.5 text-[9px] text-[#94A3B8]">
+          Bấm bài, ô trang bị hoặc ⓘ để soi
         </div>
       ) : null}
     </aside>

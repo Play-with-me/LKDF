@@ -40,36 +40,41 @@
 /* Hệ token co giãn tự động (Container Queries) chống bể khung 960x600 -> 1280x720 -> 2K */
 .lkdf-arena-stage {
   container-type: size;
-  --seat-w: clamp(166px, 17cqw, 238px);
-  --seat-h: clamp(78px, 13.5cqh, 110px);
-  --dock-h: clamp(190px, 31.5cqh, 232px);
-  --left-w: clamp(288px, 27cqw, 368px);
+  --seat-w: clamp(186px, 17.6cqw, 238px);
+  --seat-h: clamp(72px, 11.4cqh, 96px);
+  --dock-h: clamp(194px, 31.5cqh, 232px);
+  --left-w: clamp(286px, 27cqw, 368px);
   --prof-w: clamp(138px, 12.6cqw, 168px);
-  --right-w: clamp(214px, 20.8cqw, 282px);
-  --card-w: clamp(60px, 6.2cqw, 86px);
-  --card-h: clamp(84px, 14.8cqh, 118px);
+  --right-w: clamp(210px, 20.8cqw, 282px);
+  --card-w: clamp(64px, 6.6cqw, 90px);
+  --card-h: clamp(92px, 15.6cqh, 126px);
 }
 
-/* Doanh Trại A: Trướng Soái Đêm Xích Bích & Đĩa Rồng Chạm Khắc OL */
+/* Doanh Trại Đêm Xích Bích & Bàn Đá Rồng OL (Mẫu B Khung Thép Cổ Phong) */
 .lkdf-arena-surface {
   background:
-    radial-gradient(ellipse 72% 76% at 50% 50%, rgba(16, 12, 10, 0.56) 0%, rgba(10, 8, 7, 0.88) 74%, #080605 100%);
+    radial-gradient(ellipse 72% 76% at 50% 50%, rgba(16, 18, 24, 0.52) 0%, rgba(10, 12, 16, 0.88) 74%, #08090C 100%);
 }
 
 .lkdf-round-table-rim {
-  border-color: rgba(176, 138, 76, 0.38);
+  border-color: rgba(164, 178, 198, 0.28);
   background:
-    radial-gradient(ellipse 72% 76% at 50% 50%, rgba(22, 18, 14, 0.90) 0%, rgba(16, 13, 10, 0.94) 74%, rgba(10, 8, 6, 0.98) 100%);
+    radial-gradient(ellipse 72% 76% at 50% 50%, rgba(20, 24, 32, 0.90) 0%, rgba(13, 16, 22, 0.94) 74%, rgba(9, 11, 16, 0.98) 100%);
   box-shadow:
-    inset 0 1px 0 rgba(255, 232, 185, 0.06),
-    inset 0 18px 46px rgba(0, 0, 0, 0.72),
-    0 20px 44px rgba(0, 0, 0, 0.68);
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 18px 46px rgba(0, 0, 0, 0.74),
+    0 20px 44px rgba(0, 0, 0, 0.72);
+}
+
+.lkdf-card-gwent {
+  background: #161b23;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    0 8px 18px rgba(0, 0, 0, 0.65);
 }
 
 .lkdf-card-parchment {
-  background:
-    radial-gradient(circle at 50% 35%, rgba(255, 244, 214, 0.24) 0%, transparent 68%),
-    linear-gradient(175deg, #dec79c 0%, #c6a673 100%);
+  background: linear-gradient(180deg, #1d2330 0%, #141821 100%);
 }
 
 /* Thanh cuộn tối viền đồng cổ tinh gọn */
@@ -124,8 +129,8 @@
   overflow-x: auto;
   overflow-y: hidden;
   padding: 3px 8px !important;
-  border-radius: 8px !important;
-  background: rgba(15, 13, 11, 0.94) !important;
+  border-radius: 6px !important;
+  background: rgba(16, 20, 27, 0.95) !important;
 }
 
 .lkdf-action-bar > div:first-child {
@@ -235,7 +240,106 @@ dialog[open]::backdrop {
   .animate-lkdf-fade,
   .animate-lkdf-slide,
   dialog[open],
-  dialog[open]::backdrop {
-    animation: none;
+  dialog[open]::backdrop,
+  .tqs-talisman-btn,
+  .tqs-talisman-btn::after {
+    animation: none !important;
   }
+
+  .tqs-parallax-layer {
+    transition: none !important;
+    transform: none !important;
+  }
+}
+
+/* Cổng Vào Tam Quốc Sát — Mẫu Vô Khung Quốc Phong (Naraka / TQS) */
+@keyframes tqsGoldSweep {
+  0% {
+    left: -65%;
+  }
+  38%,
+  100% {
+    left: 135%;
+  }
+}
+
+@keyframes tqsCtaBreath {
+  0%,
+  100% {
+    box-shadow:
+      inset 0 1px 0 rgba(255, 228, 179, 0.35),
+      inset 0 -2px 0 rgba(48, 7, 5, 0.55),
+      0 0 16px rgba(184, 51, 44, 0.28),
+      0 12px 26px rgba(0, 0, 0, 0.72);
+  }
+  50% {
+    box-shadow:
+      inset 0 1px 0 rgba(255, 228, 179, 0.45),
+      inset 0 -2px 0 rgba(48, 7, 5, 0.55),
+      0 0 26px rgba(212, 164, 81, 0.34),
+      0 12px 28px rgba(0, 0, 0, 0.78);
+  }
+}
+
+.tqs-parallax-layer {
+  transition: transform 420ms cubic-bezier(0.25, 1, 0.5, 1);
+  will-change: transform;
+}
+
+.tqs-stone-chop {
+  background: linear-gradient(170deg, #b82f27 0%, #831a15 60%, #5c100d 100%);
+  box-shadow:
+    inset 0 0 0 1px rgba(60, 8, 6, 0.55),
+    0 6px 20px rgba(0, 0, 0, 0.75);
+  transform: rotate(-2deg);
+}
+
+.tqs-talisman-btn {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(
+    180deg,
+    rgba(186, 48, 40, 0.94) 0%,
+    rgba(126, 24, 19, 0.97) 56%,
+    rgba(88, 16, 13, 0.99) 100%
+  );
+  animation: tqsCtaBreath 3.4s ease-in-out infinite;
+  transition:
+    transform 140ms cubic-bezier(0.25, 1, 0.5, 1),
+    filter 160ms ease,
+    border-color 160ms ease;
+}
+
+.tqs-talisman-btn:hover:not(:disabled) {
+  filter: brightness(1.09);
+  border-color: #ffe3a3;
+}
+
+.tqs-talisman-btn:active:not(:disabled) {
+  transform: translateY(1.5px);
+}
+
+.tqs-talisman-btn::after {
+  content: '';
+  position: absolute;
+  top: -20%;
+  bottom: -20%;
+  left: -65%;
+  width: 48%;
+  background: linear-gradient(
+    105deg,
+    transparent 0%,
+    rgba(255, 232, 178, 0.06) 35%,
+    rgba(255, 232, 178, 0.34) 50%,
+    rgba(255, 232, 178, 0.06) 65%,
+    transparent 100%
+  );
+  transform: skewX(-18deg);
+  animation: tqsGoldSweep 4.2s cubic-bezier(0.25, 1, 0.5, 1) infinite;
+  pointer-events: none;
+}
+
+.tqs-talisman-btn:disabled,
+.tqs-talisman-btn:disabled::after {
+  animation: none;
 }
