@@ -19,7 +19,7 @@ async function startMockGitHubPrivateReleaseServer(options: {
   const installerSha512 = createHash('sha512')
     .update(options.installerBytes)
     .digest('base64');
-  const assetName = `TamQuocSat-LKDF-Setup-${options.version}.exe`;
+  const assetName = `TamQuocSat-Setup-${options.version}.exe`;
   const latestYmlRaw = [
     `version: ${options.version}`,
     'files:',
@@ -204,7 +204,7 @@ describe('Bước 5.1 — Update Proxy GitHub Private (/api/update/latest, lates
   it('đọc bản phát hành từ kho GitHub Private, viết lại latest.yml & truyền stream .exe an toàn không lộ token', async () => {
     const secretToken = 'ghp_SECRET_TEST_TOKEN_DO_NOT_LEAK';
     const fakeInstallerBytes = Buffer.from(
-      'MZ-FAKE-LKDF-INSTALLER-PAYLOAD-FOR-PROXY-STREAMING-TEST-0123456789',
+      'MZ-FAKE-TQS-INSTALLER-PAYLOAD-FOR-PROXY-STREAMING-TEST-0123456789',
       'utf8',
     );
     const mockGitHub = await startMockGitHubPrivateReleaseServer({
@@ -254,10 +254,10 @@ describe('Bước 5.1 — Update Proxy GitHub Private (/api/update/latest, lates
     expect(olderJson.updateAvailable).toBe(true);
     expect(olderJson.ymlAvailable).toBe(true);
     expect(olderJson.primaryInstaller.name).toBe(
-      'TamQuocSat-LKDF-Setup-1.0.1.exe',
+      'TamQuocSat-Setup-1.0.1.exe',
     );
     expect(olderJson.primaryInstaller.downloadPath).toBe(
-      '/api/update/download/TamQuocSat-LKDF-Setup-1.0.1.exe',
+      '/api/update/download/TamQuocSat-Setup-1.0.1.exe',
     );
 
     const sameVersionRes = await server.app.inject({
@@ -286,16 +286,16 @@ describe('Bước 5.1 — Update Proxy GitHub Private (/api/update/latest, lates
       files: Array<{ url: string; sha512: string; size: number }>;
     };
     expect(parsedYaml.version).toBe('1.0.1');
-    expect(parsedYaml.path).toBe('download/TamQuocSat-LKDF-Setup-1.0.1.exe');
+    expect(parsedYaml.path).toBe('download/TamQuocSat-Setup-1.0.1.exe');
     expect(parsedYaml.files[0]?.url).toBe(
-      'download/TamQuocSat-LKDF-Setup-1.0.1.exe',
+      'download/TamQuocSat-Setup-1.0.1.exe',
     );
     expect(parsedYaml.files[0]?.sha512).toBe(olderJson.primaryInstaller.sha512);
 
     // Mặc định dùng 302 Redirect sang CDN tạm (tiết kiệm băng thông Render 0đ & tuyệt đối không lộ token)
     const redirectRes = await server.app.inject({
       method: 'GET',
-      url: '/api/update/download/TamQuocSat-LKDF-Setup-1.0.1.exe',
+      url: '/api/update/download/TamQuocSat-Setup-1.0.1.exe',
     });
     expect(redirectRes.statusCode).toBe(302);
     expect(redirectRes.headers.location).toBe(
@@ -306,7 +306,7 @@ describe('Bước 5.1 — Update Proxy GitHub Private (/api/update/latest, lates
     // Chế độ stream dự phòng (?mode=stream) vẫn hỗ trợ tải xuyên proxy + Range 206 không lộ Authorization sang CDN
     const downloadRes = await server.app.inject({
       method: 'GET',
-      url: '/api/update/download/TamQuocSat-LKDF-Setup-1.0.1.exe?mode=stream',
+      url: '/api/update/download/TamQuocSat-Setup-1.0.1.exe?mode=stream',
     });
     expect(downloadRes.statusCode).toBe(200);
     expect(downloadRes.rawPayload.equals(fakeInstallerBytes)).toBe(true);
@@ -319,7 +319,7 @@ describe('Bước 5.1 — Update Proxy GitHub Private (/api/update/latest, lates
       headers: { range: 'bytes=0-13' },
     });
     expect(rangeRes.statusCode).toBe(206);
-    expect(rangeRes.rawPayload.toString('utf8')).toBe('MZ-FAKE-LKDF-I');
+    expect(rangeRes.rawPayload.toString('utf8')).toBe('MZ-FAKE-TQS-IN');
 
     // Chặn path traversal & asset lạ
     const traversalRes = await server.app.inject({

@@ -77,9 +77,9 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.meta.outputs.tag }}
-          name: Tam Quốc Sát LKDF ${{ steps.meta.outputs.tag }}
+          name: Tam Quốc Sát ${{ steps.meta.outputs.tag }}
           generate_release_notes: true
           files: |
-            apps/desktop/release/TamQuocSat-LKDF-Setup-${{ steps.meta.outputs.version }}.exe
-            apps/desktop/release/TamQuocSat-LKDF-Setup-${{ steps.meta.outputs.version }}.exe.blockmap
+            apps/desktop/release/TamQuocSat-Setup-${{ steps.meta.outputs.version }}.exe
+            apps/desktop/release/TamQuocSat-Setup-${{ steps.meta.outputs.version }}.exe.blockmap
             apps/desktop/release/latest.yml

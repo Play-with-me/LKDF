@@ -20,6 +20,7 @@ interface PendingAuthSession {
   cancelledReason?: string;
   completed?: {
     readonly profile: UserProfile;
+    readonly isNewUser: boolean;
     readonly sessionToken: string;
     readonly manualLoginCode: string;
   };
@@ -27,6 +28,7 @@ interface PendingAuthSession {
 
 interface ManualCodeRecord {
   readonly userId: string;
+  readonly isNewUser: boolean;
   readonly sessionId: string;
   readonly sessionToken: string;
   readonly expiresAtMs: number;
@@ -69,6 +71,7 @@ export type PollAuthResult =
       readonly status: 'COMPLETED';
       readonly sessionToken: string;
       readonly profile: UserProfile;
+      readonly isNewUser: boolean;
     }
   | {
       readonly ok: true;
@@ -87,6 +90,7 @@ export type ExchangeManualCodeResult =
       readonly ok: true;
       readonly sessionToken: string;
       readonly profile: UserProfile;
+      readonly isNewUser: boolean;
     }
   | {
       readonly ok: false;
@@ -144,7 +148,7 @@ function generateManualLoginCode(): string {
     part1 += MANUAL_CODE_ALPHABET[(bytes[i] ?? 0) % MANUAL_CODE_ALPHABET.length];
     part2 += MANUAL_CODE_ALPHABET[(bytes[i + 4] ?? 0) % MANUAL_CODE_ALPHABET.length];
   }
-  return `LKDF-${part1}-${part2}`;
+  return `TQS-${part1}-${part2}`;
 }
 
 export interface AuthService {
@@ -365,6 +369,7 @@ export function createAuthService(options: {
 
       manualCodes.set(manualLoginCode, {
         userId: profile.userId,
+        isNewUser,
         sessionId: newSessionId,
         sessionToken,
         expiresAtMs: nowMs + MANUAL_CODE_TTL_MS,
@@ -372,6 +377,7 @@ export function createAuthService(options: {
 
       pending.completed = {
         profile,
+        isNewUser,
         sessionToken,
         manualLoginCode,
       };
@@ -457,6 +463,7 @@ export function createAuthService(options: {
         status: 'COMPLETED',
         sessionToken: completed.sessionToken,
         profile: latestProfile,
+        isNewUser: completed.isNewUser,
       };
     },
 
@@ -504,6 +511,7 @@ export function createAuthService(options: {
         ok: true,
         sessionToken: record.sessionToken,
         profile,
+        isNewUser: record.isNewUser,
       };
     },
 

@@ -22,6 +22,14 @@ const UpdatePreferencesBodySchema = z.object({
   volume: z.number().min(0).max(1).optional(),
 });
 
+const UpdateDisplayNameBodySchema = z.object({
+  displayName: z
+    .string()
+    .trim()
+    .min(2, 'Biệt danh phải có từ 2 đến 20 ký tự.')
+    .max(20, 'Biệt danh tối đa 20 ký tự để hiển thị đẹp trên bàn tròn.'),
+});
+
 const SeatCheckBodySchema = z.object({
   occupiedUserIds: z.array(z.string().min(1)).max(8),
   roomCode: z.string().min(1).max(16).optional(),
@@ -48,16 +56,16 @@ function renderCallbackSuccessHtml(params: {
     : null;
 
   const autoRedirectBlock = safeCallbackJson
-    ? `<p class="hint">Đang tự động đưa phiên đăng nhập về ứng dụng LKDF trên Windows...</p>
+    ? `<p class="hint">Đang tự động đưa phiên đăng nhập về ứng dụng Tam Quốc Sát trên Windows...</p>
        <script>try{fetch(${safeCallbackJson},{mode:'no-cors'}).catch(function(){});}catch(e){}</script>`
-    : `<p class="hint">Ứng dụng LKDF sẽ tự đồng bộ phiên đăng nhập trong giây lát.</p>`;
+    : `<p class="hint">Ứng dụng Tam Quốc Sát sẽ tự đồng bộ phiên đăng nhập trong giây lát.</p>`;
 
   return `<!doctype html>
 <html lang="vi">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Đăng nhập LKDF thành công</title>
+  <title>Đăng nhập Tam Quốc Sát thành công</title>
   <style>
     body { margin:0; font-family: system-ui, -apple-system, sans-serif; background:#14171A; color:#F3F4F6; display:flex; align-items:center; justify-content:center; min-height:100vh; }
     .card { max-width:460px; background:#1E2328; border:1px solid #30363D; border-radius:12px; padding:28px; text-align:center; }
@@ -70,7 +78,7 @@ function renderCallbackSuccessHtml(params: {
 <body>
   <main class="card">
     <h1>Đăng nhập thành công</h1>
-    <p>Xin chào <strong>${safeName}</strong>. Tài khoản Google của bạn đã được liên kết với LKDF.</p>
+    <p>Xin chào <strong>${safeName}</strong>. Tài khoản Google của bạn đã được liên kết với Tam Quốc Sát.</p>
     ${autoRedirectBlock}
     <p>Nếu ứng dụng chưa tự mở lại, hãy sao chép mã đăng nhập dự phòng bên dưới và dán vào app:</p>
     <div class="code-box">${safeCode}</div>
@@ -87,7 +95,7 @@ function renderCallbackErrorHtml(messageVi: string): string {
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Đăng nhập LKDF không thành công</title>
+  <title>Đăng nhập Tam Quốc Sát không thành công</title>
   <style>
     body { margin:0; font-family: system-ui, -apple-system, sans-serif; background:#14171A; color:#F3F4F6; display:flex; align-items:center; justify-content:center; min-height:100vh; }
     .card { max-width:460px; background:#1E2328; border:1px solid #C83E37; border-radius:12px; padding:28px; text-align:center; }
@@ -163,7 +171,7 @@ export function registerAuthRoutes(
       return reply
         .status(400)
         .type('text/html; charset=utf-8')
-        .send(renderCallbackErrorHtml('Bạn đã hủy đăng nhập Google. Hãy thử lại từ ứng dụng LKDF.'));
+        .send(renderCallbackErrorHtml('Bạn đã hủy đăng nhập Google. Hãy thử lại từ ứng dụng Tam Quốc Sát.'));
     }
 
     const result = await authService.completeGoogleCallback({
@@ -273,6 +281,45 @@ export function registerAuthRoutes(
     const updated = await persistence.updateUserPreferences(
       verified.profile.userId,
       prefsUpdate,
+    );
+
+    if (!updated) {
+      return reply.status(404).send({
+        ok: false,
+        code: 'USER_NOT_FOUND',
+        messageVi: 'Không tìm thấy hồ sơ người chơi.',
+      });
+    }
+
+    return {
+      ok: true,
+      profile: updated,
+    };
+  });
+
+  app.patch('/api/profile/display-name', async (request, reply) => {
+    const verified = await authService.verifyAuthorizationHeader(
+      request.headers.authorization,
+    );
+    if (!verified.ok) {
+      return reply.status(verified.statusCode).send(verified);
+    }
+
+    const parsed = UpdateDisplayNameBodySchema.safeParse(request.body ?? {});
+    if (!parsed.success) {
+      const msg =
+        parsed.error.issues[0]?.message ??
+        'Biệt danh phải có từ 2 đến 20 ký tự hợp lệ.';
+      return reply.status(400).send({
+        ok: false,
+        code: 'INVALID_DISPLAY_NAME',
+        messageVi: msg,
+      });
+    }
+
+    const updated = await persistence.updateUserDisplayName(
+      verified.profile.userId,
+      parsed.data.displayName,
     );
 
     if (!updated) {

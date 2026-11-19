@@ -110,6 +110,10 @@ export interface PersistenceStore {
     userId: string,
     prefs: Partial<UserPreferences>,
   ): Promise<UserProfile | null>;
+  updateUserDisplayName(
+    userId: string,
+    displayName: string,
+  ): Promise<UserProfile | null>;
   setUserActiveRoom(userId: string, roomCode: string | null): Promise<void>;
   setUserActiveSession(userId: string, sessionId: string | null): Promise<void>;
   getUserActiveSessionId(userId: string): Promise<string | null>;
@@ -289,23 +293,38 @@ export class LibsqlPersistenceStore implements PersistenceStore {
   async upsertGoogleUser(input: GoogleIdentityInput): Promise<UpsertGoogleUserResult> {
     await this.init();
     const now = new Date().toISOString();
-    const existing = await this.getUserByGoogleSub(input.googleSub);
+    const existingRes = await this.client.execute({
+      sql: 'SELECT user_id, has_custom_name FROM users WHERE google_sub = ? LIMIT 1',
+      args: [input.googleSub],
+    });
+    const existingRow = existingRes.rows[0];
 
-    if (existing) {
-      await this.client.execute({
-        sql: `UPDATE users
-              SET email = ?, display_name = ?, avatar_url = ?, last_login_at = ?
-              WHERE user_id = ?`,
-        args: [
-          input.email,
-          input.displayName,
-          input.avatarUrl,
-          now,
-          existing.userId,
-        ],
-      });
+    if (existingRow) {
+      const existingUserId = rowToString(existingRow, 'user_id');
+      const hasCustomName = rowToNumber(existingRow, 'has_custom_name', 0) === 1;
+      if (hasCustomName) {
+        await this.client.execute({
+          sql: `UPDATE users
+                SET email = ?, avatar_url = ?, last_login_at = ?
+                WHERE user_id = ?`,
+          args: [input.email, input.avatarUrl, now, existingUserId],
+        });
+      } else {
+        await this.client.execute({
+          sql: `UPDATE users
+                SET email = ?, display_name = ?, avatar_url = ?, last_login_at = ?
+                WHERE user_id = ?`,
+          args: [
+            input.email,
+            input.displayName,
+            input.avatarUrl,
+            now,
+            existingUserId,
+          ],
+        });
+      }
 
-      const updated = await this.getUserById(existing.userId);
+      const updated = await this.getUserById(existingUserId);
       if (!updated) {
         throw new Error('Không thể đọc lại hồ sơ người dùng sau khi cập nhật.');
       }
@@ -319,9 +338,9 @@ export class LibsqlPersistenceStore implements PersistenceStore {
       [
         {
           sql: `INSERT INTO users (
-                  user_id, google_sub, email, display_name, avatar_url,
+                  user_id, google_sub, email, display_name, has_custom_name, avatar_url,
                   sound_enabled, volume, active_room_code, created_at, last_login_at
-                ) VALUES (?, ?, ?, ?, ?, 1, 0.8, NULL, ?, ?)`,
+                ) VALUES (?, ?, ?, ?, 0, ?, 1, 0.8, NULL, ?, ?)`,
           args: [
             userId,
             input.googleSub,
@@ -400,6 +419,25 @@ export class LibsqlPersistenceStore implements PersistenceStore {
     await this.client.execute({
       sql: 'UPDATE users SET sound_enabled = ?, volume = ? WHERE user_id = ?',
       args: [nextSoundEnabled ? 1 : 0, nextVolume, userId],
+    });
+
+    return this.getUserById(userId);
+  }
+
+  async updateUserDisplayName(
+    userId: string,
+    displayName: string,
+  ): Promise<UserProfile | null> {
+    await this.init();
+    const existing = await this.getUserById(userId);
+    if (!existing) {
+      return null;
+    }
+
+    const cleanName = displayName.trim();
+    await this.client.execute({
+      sql: 'UPDATE users SET display_name = ?, has_custom_name = 1 WHERE user_id = ?',
+      args: [cleanName, userId],
     });
 
     return this.getUserById(userId);

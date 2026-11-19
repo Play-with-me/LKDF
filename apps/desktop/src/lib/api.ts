@@ -145,6 +145,7 @@ export interface LkdfApiClient {
     token: string,
     prefs: Partial<UserPreferences>,
   ): Promise<UserProfile>;
+  updateDisplayName(token: string, displayName: string): Promise<UserProfile>;
   logout(token: string): Promise<void>;
   getTimerPresets(): Promise<readonly TimerPresetOption[]>;
   getMyRoom(token: string): Promise<RoomViewerPayload | null>;
@@ -309,6 +310,18 @@ export function createApiClient(serverUrl: string): LkdfApiClient {
           method: 'PATCH',
           token,
           body: prefs,
+        },
+      );
+      return res.profile;
+    },
+
+    async updateDisplayName(token, displayName) {
+      const res = await requestJson<{ readonly ok: true; readonly profile: UserProfile }>(
+        '/api/profile/display-name',
+        {
+          method: 'PATCH',
+          token,
+          body: { displayName: displayName.trim() },
         },
       );
       return res.profile;

@@ -64,6 +64,7 @@ export type PollAuthStatusResponse =
       readonly status: 'COMPLETED';
       readonly sessionToken: string;
       readonly profile: UserProfile;
+      readonly isNewUser?: boolean;
     }
   | {
       readonly ok: true;
@@ -75,6 +76,7 @@ export interface ExchangeManualCodeResponse {
   readonly ok: true;
   readonly sessionToken: string;
   readonly profile: UserProfile;
+  readonly isNewUser?: boolean;
 }
 
 export interface TimerPresetOption {

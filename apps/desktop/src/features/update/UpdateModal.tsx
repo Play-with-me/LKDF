@@ -202,7 +202,7 @@ export function UpdateModal({
           {updateState.phase === 'INSTALLING' ? (
             <div className="flex items-center gap-2 rounded-xl border border-[#16A34A]/50 bg-[#16A34A]/15 p-4 text-sm text-[#86EFAC]">
               <GameIcon name="ui:loader" size={16} className="animate-spin shrink-0" />
-              <span>{updateState.messageVi ?? 'Đã tải xong 100%! Đang cài đặt và mở lại ứng dụng Tam Quốc Sát LKDF...'}</span>
+              <span>{updateState.messageVi ?? 'Đã tải xong 100%! Đang cài đặt và mở lại ứng dụng Tam Quốc Sát...'}</span>
             </div>
           ) : null}
 

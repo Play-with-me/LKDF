@@ -187,7 +187,7 @@ async function startLocalAuthCallbackServer(): Promise<{ readonly port: number }
       res.end(
         renderSafeCallbackHtml(
           'Thiếu thông tin đăng nhập',
-          'Yêu cầu không hợp lệ. Vui lòng thử đăng nhập lại từ ứng dụng LKDF.',
+          'Yêu cầu không hợp lệ. Vui lòng thử đăng nhập lại từ ứng dụng Tam Quốc Sát.',
         ),
       );
       return;
@@ -207,8 +207,8 @@ async function startLocalAuthCallbackServer(): Promise<{ readonly port: number }
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
     res.end(
       renderSafeCallbackHtml(
-        'Đăng nhập LKDF thành công',
-        'Đã đồng bộ đăng nhập về ứng dụng LKDF. Bạn có thể đóng tab này.',
+        'Đăng nhập Tam Quốc Sát thành công',
+        'Đã đồng bộ đăng nhập về ứng dụng Tam Quốc Sát. Bạn có thể đóng tab này.',
       ),
     );
 
@@ -244,7 +244,7 @@ function createMainWindow(): BrowserWindow {
     minWidth: 960,
     minHeight: 600,
     backgroundColor: '#090807',
-    title: 'Tam Quốc Sát LKDF',
+    title: 'Tam Quốc Sát',
     autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
@@ -266,7 +266,7 @@ function createMainWindow(): BrowserWindow {
     void dialog
       .showMessageBox(win, {
         type: 'warning',
-        title: 'Xác nhận thoát ván đấu LKDF',
+        title: 'Xác nhận thoát ván đấu Tam Quốc Sát',
         message:
           'Bạn đang trong ván đấu. Nếu thoát bây giờ, Máy sẽ đánh hộ tạm thời cho đến khi bạn mở lại ứng dụng. Bạn có chắc muốn đóng cửa sổ?',
         buttons: ['Ở lại ván đấu', 'Đóng ứng dụng'],

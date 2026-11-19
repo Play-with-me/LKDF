@@ -1,8 +1,8 @@
 {
   "name": "@lkdf/desktop",
   "version": "0.1.0",
-  "description": "Tam Quốc Sát LKDF — Ứng dụng Windows chơi bài trực tuyến 4–8 người",
-  "author": "LKDF",
+  "description": "Tam Quốc Sát — Ứng dụng Windows chơi bài trực tuyến 4–8 người",
+  "author": "Tam Quốc Sát",
   "private": true,
   "type": "module",
   "main": "dist-electron/main.cjs",

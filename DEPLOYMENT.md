@@ -54,7 +54,7 @@ Kho mã nguồn đã chuẩn bị sẵn file [render.yaml](./render.yaml) tự �
 1. Vào [Render.com](https://render.com/) → **New + → Blueprint** (hoặc *Web Service*) → chọn kho GitHub Private `Play-with-me/LKDF`.
 2. Render tự nhận cấu hình từ `render.yaml`:
    - **Region:** `singapore` (ping thấp cho Việt Nam)
-   - **Build Command:** `npm ci --workspace=@lkdf/server --workspace=@lkdf/shared --include-workspace-root && npm run build:shared && npm run build --workspace=@lkdf/server`
+   - **Build Command:** `npm ci --include=dev --workspace=@lkdf/server --workspace=@lkdf/shared --include-workspace-root && npm run build:shared && npm run build --workspace=@lkdf/server`
    - **Start Command:** `npm run start --workspace=@lkdf/server`
    - **Health Check Path:** `/api/health`
    - *(Lưu ý gói Render Free: có giới hạn băng thông **5 GB/tháng**; nên gửi bản cài lớn đầu tiên `v1.0.0` cho bạn bè qua Google Drive và giữ cập nhật 1-Click qua Render cho các bản vá nhẹ giữa các đợt chơi).*
@@ -80,8 +80,8 @@ Kho mã nguồn đã chuẩn bị sẵn file [render.yaml](./render.yaml) tự �
 npm run package:win
 ```
 Bộ cài sẽ xuất ra tại `apps/desktop/release/`:
-- `TamQuocSat-LKDF-Setup-<version>.exe` *(trình cài đặt NSIS 1 nhấp chuột không cần quyền Admin)*
-- `TamQuocSat-LKDF-Setup-<version>.exe.blockmap`
+- `TamQuocSat-Setup-<version>.exe` *(trình cài đặt NSIS 1 nhấp chuột không cần quyền Admin)*
+- `TamQuocSat-Setup-<version>.exe.blockmap`
 - `latest.yml` *(chứa `version`, `sha512`, `size` để `electron-updater` xác minh)*
 
 ### Phát hành bản mới cho nhóm bạn qua GitHub Private Releases
@@ -91,14 +91,14 @@ Bộ cài sẽ xuất ra tại `apps/desktop/release/`:
    git push origin main --tags
    ```
    *(Hoặc vào tab **Actions → Release Windows Installer → Run workflow** trên GitHub để nhập tay số phiên bản mà không cần mở dòng lệnh).*
-2. Workflow [`.github/workflows/release-windows.yml`](./.github/workflows/release-windows.yml) tự chạy trên Windows runner, kiểm tra toàn bộ test, đóng gói `TamQuocSat-LKDF-Setup-1.0.1.exe` + `latest.yml`, rồi đăng vào **GitHub Releases** của kho Private.
+2. Workflow [`.github/workflows/release-windows.yml`](./.github/workflows/release-windows.yml) tự chạy trên Windows runner, kiểm tra toàn bộ test, đóng gói `TamQuocSat-Setup-1.0.1.exe` + `latest.yml`, rồi đăng vào **GitHub Releases** của kho Private.
 3. Khi nhóm bạn mở ứng dụng bản cũ (`v1.0.0`):
    - App gọi `GET /api/update/latest?currentVersion=1.0.0`.
    - Máy chủ dùng `GITHUB_RELEASE_TOKEN` đọc `latest.yml`, viết lại URL tải trỏ qua `/api/update/download/:asset` mà giữ nguyên mã băm `sha512`.
    - App hiện ngay hộp thoại **`🔔 Đã có phiên bản mới (v1.0.1)!`**. Người chơi bấm đúng **1 nút `[⬇️ Cập nhật ngay]`** → App tự tải qua proxy (`[⬇️ Đang tải bản cập nhật... XX%]`), kiểm tra `sha512`, tự cài đặt đè và khởi động lại ngay.
 
 ### Lưu ý cho lần cài đặt đầu tiên trên Windows (Windows SmartScreen)
-- Ở lần đầu tiên bạn bè tải file `TamQuocSat-LKDF-Setup-1.0.0.exe` về máy, vì phần mềm nội bộ 0 đồng không mua chứng chỉ thương mại của Microsoft, Windows có thể hiện bảng xanh *"Windows protected your PC"*.
+- Ở lần đầu tiên bạn bè tải file `TamQuocSat-Setup-1.0.0.exe` về máy, vì phần mềm nội bộ 0 đồng không mua chứng chỉ thương mại của Microsoft, Windows có thể hiện bảng xanh *"Windows protected your PC"*.
 - Bạn chỉ cần dặn bạn bè bấm **`More info` → `Run anyway`** đúng **1 lần đầu tiên đó**. Từ các lần cập nhật 1-Click về sau bên trong ứng dụng, `electron-updater` tự tải đè và kiểm tra chữ ký `sha512` an toàn mà không phải tự tải tay trên trình duyệt nữa.
 
 ---

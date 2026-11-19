@@ -31,7 +31,7 @@ function createMockGoogleProvider(
 }
 
 function extractManualCodeFromHtml(html: string): string {
-  const match = /<div class="code-box">(LKDF-[A-Z0-9]{4}-[A-Z0-9]{4})<\/div>/.exec(html);
+  const match = /<div class="code-box">((?:TQS|LKDF)-[A-Z0-9]{4}-[A-Z0-9]{4})<\/div>/.exec(html);
   if (!match || !match[1]) {
     throw new Error('Không tìm thấy mã đăng nhập dự phòng trong trang HTML callback.');
   }
@@ -506,5 +506,90 @@ describe('Bước 2.1 — Google OAuth 2.0, Lưu Hồ sơ & Chặn 1 Tài khoả
     });
     expect(meAfterLogout.statusCode).toBe(401);
     expect(meAfterLogout.json<{ code: string }>().code).toBe('SESSION_REVOKED');
+  });
+
+  it('trả về isNewUser ở lần đầu, cho phép đặt Biệt danh và không bị Google ghi đè khi đăng nhập lại', async () => {
+    const srv = await createServer({
+      config: {
+        databaseUrl: ':memory:',
+        jwtSessionSecret: 'test-jwt-secret-key-minimum-32-chars!!',
+      },
+      googleProvider: createMockGoogleProvider({
+        'nick-first': {
+          googleSub: 'google-sub-nickname-01',
+          email: 'nam@example.com',
+          displayName: 'Nguyễn Văn Nam (Gmail)',
+          avatarUrl: 'https://example.com/nam1.png',
+        },
+        'nick-second': {
+          googleSub: 'google-sub-nickname-01',
+          email: 'nam@example.com',
+          displayName: 'Nguyễn Văn Nam Đổi Ở Google',
+          avatarUrl: 'https://example.com/nam2.png',
+        },
+      }),
+    });
+    activeServers.push(srv);
+
+    const s1 = await srv.app.inject({ method: 'POST', url: '/api/auth/google/start', payload: {} });
+    const start1 = s1.json<{ authSessionId: string; pollSecret: string; authUrl: string }>();
+    const state1 = new URL(start1.authUrl).searchParams.get('state') ?? '';
+    await srv.app.inject({
+      method: 'GET',
+      url: `/api/auth/google/callback?code=nick-first&state=${encodeURIComponent(state1)}`,
+    });
+    const poll1 = await srv.app.inject({
+      method: 'GET',
+      url: `/api/auth/google/status/${start1.authSessionId}`,
+      headers: { 'x-auth-poll-secret': start1.pollSecret },
+    });
+    const body1 = poll1.json<{
+      status: string;
+      sessionToken: string;
+      isNewUser: boolean;
+      profile: UserProfile;
+    }>();
+    expect(body1.status).toBe('COMPLETED');
+    expect(body1.isNewUser).toBe(true);
+
+    const invalidNick = await srv.app.inject({
+      method: 'PATCH',
+      url: '/api/profile/display-name',
+      headers: { authorization: `Bearer ${body1.sessionToken}` },
+      payload: { displayName: 'A' },
+    });
+    expect(invalidNick.statusCode).toBe(400);
+
+    const validNick = await srv.app.inject({
+      method: 'PATCH',
+      url: '/api/profile/display-name',
+      headers: { authorization: `Bearer ${body1.sessionToken}` },
+      payload: { displayName: '  Khổng Minh  ' },
+    });
+    expect(validNick.statusCode).toBe(200);
+    expect(validNick.json<{ profile: UserProfile }>().profile.displayName).toBe(
+      'Khổng Minh',
+    );
+
+    const s2 = await srv.app.inject({ method: 'POST', url: '/api/auth/google/start', payload: {} });
+    const start2 = s2.json<{ authSessionId: string; pollSecret: string; authUrl: string }>();
+    const state2 = new URL(start2.authUrl).searchParams.get('state') ?? '';
+    await srv.app.inject({
+      method: 'GET',
+      url: `/api/auth/google/callback?code=nick-second&state=${encodeURIComponent(state2)}`,
+    });
+    const poll2 = await srv.app.inject({
+      method: 'GET',
+      url: `/api/auth/google/status/${start2.authSessionId}`,
+      headers: { 'x-auth-poll-secret': start2.pollSecret },
+    });
+    const body2 = poll2.json<{
+      status: string;
+      isNewUser: boolean;
+      profile: UserProfile;
+    }>();
+    expect(body2.isNewUser).toBe(false);
+    expect(body2.profile.displayName).toBe('Khổng Minh');
+    expect(body2.profile.avatarUrl).toBe('https://example.com/nam2.png');
   });
 });

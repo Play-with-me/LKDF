@@ -1,6 +1,6 @@
 appId: com.lkdf.tamquocsat
-productName: Tam Quoc Sat LKDF
-artifactName: TamQuocSat-LKDF-Setup-${version}.${ext}
+productName: Tam Quoc Sat
+artifactName: TamQuocSat-Setup-${version}.${ext}
 electronVersion: 45.3.3
 asar: true
 npmRebuild: false
@@ -24,8 +24,8 @@ nsis:
   allowElevation: false
   createDesktopShortcut: true
   createStartMenuShortcut: true
-  shortcutName: Tam Quoc Sat LKDF
+  shortcutName: Tam Quoc Sat
   deleteAppDataOnUninstall: false
 publish:
   provider: generic
-  url: https://update.lkdf.invalid/api/update
+  url: https://update.lkdf.invalid/api/update/

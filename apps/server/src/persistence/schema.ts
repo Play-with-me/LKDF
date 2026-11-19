@@ -7,6 +7,7 @@ export const SCHEMA_STATEMENTS: readonly string[] = [
     google_sub TEXT NOT NULL UNIQUE,
     email TEXT NOT NULL,
     display_name TEXT NOT NULL,
+    has_custom_name INTEGER NOT NULL DEFAULT 0,
     avatar_url TEXT NOT NULL,
     sound_enabled INTEGER NOT NULL DEFAULT 1,
     volume REAL NOT NULL DEFAULT 0.8,
@@ -75,6 +76,14 @@ export async function initializeSchema(client: Client): Promise<void> {
   );
   if (!hasActiveSessionCol) {
     await client.execute('ALTER TABLE users ADD COLUMN active_session_id TEXT NULL');
+  }
+  const hasCustomNameCol = userCols.rows.some(
+    (row) => row['name'] === 'has_custom_name',
+  );
+  if (!hasCustomNameCol) {
+    await client.execute(
+      'ALTER TABLE users ADD COLUMN has_custom_name INTEGER NOT NULL DEFAULT 0',
+    );
   }
 
   const roomCols = await client.execute('PRAGMA table_info(room_snapshots)');

@@ -72,7 +72,7 @@ function normalizeCleanBaseUrl(
 function sanitizeSafeFileName(rawName: string): string {
   const base = path.basename(rawName.trim());
   const cleaned = base.replace(/[^A-Za-z0-9._-]/g, '_');
-  return cleaned || 'TamQuocSat-LKDF-Setup.exe';
+  return cleaned || 'TamQuocSat-Setup.exe';
 }
 
 function normalizeReleaseNotes(raw: unknown): string {
@@ -307,7 +307,7 @@ export function createDesktopUpdaterController(deps: UpdaterControllerDeps) {
       try {
         autoUpdater.setFeedURL({
           provider: 'generic',
-          url: `${baseUrl}/api/update`,
+          url: `${baseUrl}/api/update/`,
         });
         await autoUpdater.checkForUpdates();
       } catch (err) {
@@ -355,7 +355,7 @@ export function createDesktopUpdaterController(deps: UpdaterControllerDeps) {
     }
 
     const safeFile = sanitizeSafeFileName(
-      state.installerName ?? `TamQuocSat-LKDF-Setup-${state.latestVersion ?? 'latest'}.exe`,
+      state.installerName ?? `TamQuocSat-Setup-${state.latestVersion ?? 'latest'}.exe`,
     );
     const downloadsDir = app.getPath('downloads');
     const targetPath = path.join(downloadsDir, safeFile);
@@ -498,7 +498,7 @@ export function createDesktopUpdaterController(deps: UpdaterControllerDeps) {
         try {
           autoUpdater.setFeedURL({
             provider: 'generic',
-            url: `${baseUrl}/api/update`,
+            url: `${baseUrl}/api/update/`,
           });
           await autoUpdater.checkForUpdates();
           await autoUpdater.downloadUpdate();
