@@ -1,6 +1,6 @@
 import { useEffect, useRef, type RefObject } from 'react';
 import type { CardInstance, PlayerViewState } from '@lkdf/shared';
-import { getCardArtUrl } from '../../lib/assetCatalog.js';
+import { getCardArtUrl, getUiAssetUrl } from '../../lib/assetCatalog.js';
 import duelFireUrl from '../../../motion-duel-fire.mp4?url';
 
 type BoardMotion = {
@@ -87,7 +87,7 @@ function transferCard(motion: BoardMotion, from: Element, to: Element, card?: Ca
   const end = relativeBounds(motion, to);
   const token = document.createElement('span');
   token.className = 'lkdf-motion-transfer';
-  const art = card ? getCardArtUrl(card.cardKey) : undefined;
+  const art = card ? getCardArtUrl(card.cardKey) : getUiAssetUrl('card-back');
   if (art) {
     const image = document.createElement('img');
     image.src = art;
@@ -121,6 +121,20 @@ function showTransfers(motion: BoardMotion, previous: PlayerViewState, state: Pl
     if (hand) {
       transferCard(motion, pile, hand);
       transferCard(motion, pile, hand, undefined, 135);
+    }
+  }
+  const take = previous.activeInterrupt;
+  if (take?.handPick === 'SELECT' && take.sourceSeat != null && take.id !== state.activeInterrupt?.id) {
+    const taker = state.players.find(player => player.seatIndex === take.sourceSeat);
+    const owner = state.players.find(player => player.seatIndex === take.targetSeat);
+    if (taker && owner && state.actionLog.slice(previous.actionLog.length)
+      .includes(`${taker.displayName} nhận 1 lá úp từ ${owner.displayName}.`)) {
+      const hand = taker.seatIndex === state.viewerSeatIndex
+        ? motion.board.querySelector('.lkdf-hand-row') ?? seatAt(motion, taker.seatIndex)
+        : seatAt(motion, taker.seatIndex);
+      if (hand) transferCard(motion, center, hand);
+      const ownerSeat = seatAt(motion, owner.seatIndex);
+      if (ownerSeat && owner.handCount > 0) transferCard(motion, center, ownerSeat, undefined, 85);
     }
   }
   const harvest = previous.activeInterrupt;

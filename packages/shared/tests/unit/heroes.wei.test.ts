@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   applyGameAction,
   getPendingPrompt,
+  decideBotAction,
+  projectStateForPlayer,
   stepEngine,
   type CardInstance,
   type MasterGameState,
@@ -80,6 +82,8 @@ function makeControlledState(
     turnFlags: { satUsedThisTurn: 0, skipPlayPhase: false },
     nextFrameSeq: 0,
     actionLog: [],
+    refereeAuditLog: [],
+    winnerUserIds: [],
   };
 }
 
@@ -183,8 +187,9 @@ describe('7 Tướng Phe Ngụy (Bước 1.3)', () => {
     it('Phản Quỷ: sau khi chịu sát thương, lấy 1 lá bài từ người gây sát thương', () => {
       const sat = card('sat', 'Sát', 'BASIC', 'SPADE', 7);
       const loot = card('dao', 'Đào', 'BASIC', 'HEART', 3);
+      const spare = card('thiem', 'Thiểm', 'BASIC', 'DIAMOND', 4);
       let state = makeControlledState(4, {
-        0: { heroId: 'guan_yu', handCards: [sat, loot] },
+        0: { heroId: 'guan_yu', handCards: [sat, spare, loot] },
         1: { heroId: 'si_ma_yi', hp: 3, maxHp: 3 },
       });
 
@@ -214,8 +219,35 @@ describe('7 Tướng Phe Ngụy (Bước 1.3)', () => {
         handIndex: 0,
       });
 
-      expect(state.players[1]?.handCards.some((c) => c.id === loot.id)).toBe(true);
-      expect(state.players[0]?.handCards).toHaveLength(0);
+      const view = (seat: number) => projectStateForPlayer(state, state.players[seat]!.userId);
+      expect(getPendingPrompt(state)?.actorSeats).toEqual([0]);
+      expect(view(0).players[0]?.handCards?.map(card => card.id)).toEqual([spare.id, loot.id]);
+      expect(view(1).players[0]?.handCards).toBeNull();
+      expect(() => applyGameAction(state, {
+        type: 'CONFIRM_STEAL_HAND', seatIndex: 1, orderedCardIds: [loot.id, spare.id],
+      })).toThrow('WRONG_ACTOR_FOR_STEAL_PREPARE');
+      expect(() => applyGameAction(state, {
+        type: 'CONFIRM_STEAL_HAND', seatIndex: 0, orderedCardIds: [loot.id, loot.id],
+      })).toThrow('INVALID_STEAL_HAND_ORDER');
+      expect(decideBotAction(view(0))).toEqual({ type: 'CONFIRM_STEAL_HAND', seatIndex: 0 });
+
+      state = applyGameAction(state, {
+        type: 'CONFIRM_STEAL_HAND', seatIndex: 0, orderedCardIds: [loot.id, spare.id],
+      });
+      expect(getPendingPrompt(state)?.actorSeats).toEqual([1]);
+      for (const seat of [0, 1, 2]) {
+        expect(view(seat).players[0]?.handCards).toBeNull();
+        expect(view(seat).activeInterrupt).not.toHaveProperty('handOrder');
+      }
+      expect(() => applyGameAction(state, {
+        type: 'RESPOND_PICK_TARGET_CARD', seatIndex: 1, zone: 'HAND', handIndex: 2,
+      })).toThrow('INVALID_STEAL_HAND_SLOT');
+      state = applyGameAction(state, {
+        type: 'RESPOND_PICK_TARGET_CARD', seatIndex: 1, zone: 'HAND', handIndex: 0,
+      });
+      expect(view(1).players[1]?.handCards?.map(card => card.id)).toContain(loot.id);
+      expect(view(2).players[1]?.handCards).toBeNull();
+      expect(state.players[0]?.handCards.map(card => card.id)).toEqual([spare.id]);
     });
 
     it('Quỷ Tài: đổi lá phán xét cho Thiểm Điện (né 5♠ thành ♥ hoặc ép trúng 5♠)', () => {
@@ -440,6 +472,14 @@ describe('7 Tướng Phe Ngụy (Bước 1.3)', () => {
         targetSeats: [1, 2],
       });
 
+      for (const owner of [1, 2]) {
+        expect(getPendingPrompt(state)?.actorSeats).toEqual([owner]);
+        state = applyGameAction(state, { type: 'CONFIRM_STEAL_HAND', seatIndex: owner });
+        expect(getPendingPrompt(state)?.actorSeats).toEqual([0]);
+        state = applyGameAction(state, {
+          type: 'RESPOND_PICK_TARGET_CARD', seatIndex: 0, zone: 'HAND', handIndex: 0,
+        });
+      }
       expect(state.players[0]?.handCards.map((c) => c.id)).toEqual([c1.id, c2.id]);
       expect(state.players[1]?.handCards).toHaveLength(0);
       expect(state.players[2]?.handCards).toHaveLength(0);

@@ -1273,18 +1273,46 @@ export function applyGameAction(
       return stepEngine(next, rng);
     }
 
+    case 'CONFIRM_STEAL_HAND': {
+      const top = assertTopFrame(state, 'PICK_TARGET_CARD');
+      if (top.handPick !== 'PREPARE' || action.seatIndex !== top.targetSeat) {
+        throw new Error('WRONG_ACTOR_FOR_STEAL_PREPARE');
+      }
+      const ids = getPlayerBySeat(state, top.targetSeat).handCards.map(card => card.id);
+      const order = action.orderedCardIds ?? ids;
+      const owned = new Set(ids);
+      if (order.length !== ids.length || new Set(order).size !== ids.length ||
+          order.some(id => !owned.has(id))) {
+        throw new Error('INVALID_STEAL_HAND_ORDER');
+      }
+      return pushInterrupt(popInterrupt(state).state, {
+        ...top, id: `${top.id}_select`, handPick: 'SELECT', handOrder: [...order],
+      });
+    }
+
     case 'RESPOND_PICK_TARGET_CARD': {
       const top = assertTopFrame(state, 'PICK_TARGET_CARD');
-      if (action.seatIndex !== top.sourceSeat) {
+      if (action.seatIndex !== top.sourceSeat || top.handPick === 'PREPARE') {
         throw new Error('WRONG_ACTOR_FOR_PICK_TARGET');
       }
       const target = getPlayerBySeat(state, top.targetSeat);
       const prevHandCount = target.handCards.length;
+      if (!top.handPick && top.mode === 'STEAL' && action.zone === 'HAND' && prevHandCount > 0) {
+        return pushInterrupt(popInterrupt(state).state, {
+          ...top, id: `${top.id}_prepare`, handPick: 'PREPARE',
+        });
+      }
+      let handIndex = action.handIndex;
+      if (top.handPick === 'SELECT') {
+        const cardId = top.handOrder?.[handIndex ?? -1];
+        handIndex = target.handCards.findIndex(card => card.id === cardId);
+        if (action.zone !== 'HAND' || handIndex < 0) throw new Error('INVALID_STEAL_HAND_SLOT');
+      }
       const res = removeCardFromTargetZone(
         target,
         action.zone,
         rng,
-        action.handIndex,
+        handIndex,
         action.delayedCardId,
       );
       let next = updatePlayer(state, top.targetSeat, () => res.nextPlayer);
@@ -1296,12 +1324,19 @@ export function applyGameAction(
       } else {
         next = appendToDiscardPile(next, [res.removed]);
       }
+      next = popInterrupt(next).state;
+      if (top.handPick === 'SELECT') {
+        const taker = getPlayerBySeat(next, top.sourceSeat);
+        next = {
+          ...next,
+          actionLog: [...next.actionLog, `${taker.displayName} nhận 1 lá úp từ ${target.displayName}.`],
+        };
+      }
       if (action.zone === 'HAND') {
         next = notifyHandCardsLost(next, top.targetSeat, prevHandCount, rng);
       } else if (action.zone !== 'DELAYED') {
         next = notifyEquipLost(next, top.targetSeat, 1, rng);
       }
-      next = popInterrupt(next).state;
       return stepEngine(next, rng);
     }
 
@@ -1476,32 +1511,21 @@ export function applyGameAction(
         );
       }
 
-      const stolen: CardInstance[] = [];
       for (const tSeat of targets) {
         const target = getPlayerBySeat(next, tSeat);
         if (!target.alive || target.handCards.length === 0) {
           throw new Error(`TU_XI_TARGET_HAS_NO_HAND:${tSeat}`);
         }
-        const prevHandCount = target.handCards.length;
-        const res = removeCardFromTargetZone(target, 'HAND', rng);
-        next = updatePlayer(next, tSeat, () => res.nextPlayer);
-        stolen.push(res.removed);
-        next = notifyHandCardsLost(next, tSeat, prevHandCount, rng);
       }
-      next = updatePlayer(next, top.targetSeat, (p) => ({
-        ...p,
-        handCards: [...p.handCards, ...stolen],
-      }));
-      const skipPlay = next.turnFlags?.skipPlayPhase ?? false;
-      next = {
-        ...next,
-        turnPhase: skipPlay ? 'DISCARD' : 'PLAY',
-        actionLog: [
-          ...next.actionLog,
-          `${getPlayerBySeat(next, top.targetSeat).displayName} dùng Đột Tập lấy ${stolen.length} lá từ đối thủ.`,
-        ],
-      };
-      return stepEngine(next, rng);
+      next = { ...next, turnPhase: next.turnFlags?.skipPlayPhase ? 'DISCARD' : 'PLAY' };
+      for (const targetSeat of [...targets].reverse()) {
+        const { state: queued, id } = SKILL_RUNTIME.nextFrameId(next, 'tu_xi_take');
+        next = pushInterrupt(queued, {
+          id, kind: 'PICK_TARGET_CARD', mode: 'STEAL', handPick: 'PREPARE',
+          targetSeat, sourceSeat: top.targetSeat,
+        });
+      }
+      return next;
     }
 
     case 'RESPOND_LUO_YI': {

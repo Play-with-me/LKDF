@@ -893,6 +893,12 @@ export function decideBotAction(
       }
 
       case 'PICK_TARGET_CARD': {
+        if (active.handPick === 'PREPARE') return { type: 'CONFIRM_STEAL_HAND', seatIndex };
+        if (active.handPick === 'SELECT') {
+          const count = getPlayer(view, active.targetSeat)?.handCount ?? 0;
+          return { type: 'RESPOND_PICK_TARGET_CARD', seatIndex, zone: 'HAND',
+            handIndex: Math.floor(_rng() * count) };
+        }
         const target = getPlayer(view, active.targetSeat);
         if (!target) {
           throw new Error(`MISSING_PICK_TARGET:${active.targetSeat}`);

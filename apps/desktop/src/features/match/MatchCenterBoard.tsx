@@ -15,6 +15,7 @@ import {
   SuitGlyph,
   getCardGameIcon,
 } from '../../components/icons/index.js';
+import { TakeHandTray } from './TakeHandTray.js';
 import { PlayingCardFace } from './HandCardItem.js';
 import {
   describePendingActorPrompt,
@@ -460,7 +461,10 @@ export function MatchCenterBoard({
       </div>
 
       {/* Bàn bài trung tâm: Chồng bài rút + Tụ bài đánh ra kiểu Tiến Lên Miền Nam */}
-      {!hasSpecialChoice ? (
+      {interrupt?.handPick && pickTargetPlayer ? (
+        <TakeHandTray key={interrupt.id} interrupt={interrupt} owner={pickTargetPlayer}
+          viewerSeat={playerView.viewerSeatIndex} onSendAction={onSendAction} />
+      ) : !hasSpecialChoice ? (
         <div className="lkdf-battle-card-line flex items-end justify-center gap-7 py-1">
           {/* Chồng bài rút dạng xấp bài úp */}
           <div className="lkdf-battle-pile flex flex-col items-center gap-1.5">
@@ -561,6 +565,13 @@ export function MatchCenterBoard({
               <div className="flex flex-wrap gap-1.5">
                 {getPublicTargetZones(pickTargetPlayer).map((zone: TargetCardZone) => {
                   if (zone === 'HAND') {
+                    if (interrupt.stealing) {
+                      return <button key="HAND" type="button"
+                        className="rounded border border-[#D99B26]/60 bg-[#272D35] px-3 py-1.5 text-xs font-bold"
+                        onClick={() => onSendAction({
+                          type: 'RESPOND_PICK_TARGET_CARD', seatIndex: playerView.viewerSeatIndex, zone: 'HAND',
+                        })}>Lấy từ bài tay ({pickTargetPlayer.handCount})</button>;
+                    }
                     return Array.from({ length: pickTargetPlayer.handCount }, (_, idx) => (
                       <button
                         key={`hand-${idx}`}

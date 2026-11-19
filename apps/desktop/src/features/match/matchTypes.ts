@@ -816,6 +816,16 @@ export function describePendingActorPrompt(view: PlayerViewState): TurnActorProm
           isAllTableWait: false,
         };
       case 'PICK_TARGET_CARD':
+        if (interrupt.handPick) {
+          const preparing = interrupt.handPick === 'PREPARE';
+          const actorSeat = preparing ? interrupt.targetSeat : interrupt.sourceSeat ?? null;
+          const actorNameVi = preparing ? targetName : sourceName;
+          return {
+            headlineVi: preparing ? 'Chuẩn bị bài úp' : 'Chọn bài úp',
+            detailVi: actorSeat === viewerSeat ? 'Đến lượt bạn.' : `Đang chờ ${actorNameVi}.`,
+            actorSeat, actorNameVi, isMyTurn: actorSeat === viewerSeat, isAllTableWait: false,
+          };
+        }
         return {
           headlineVi:
             interrupt.sourceSeat === viewerSeat

@@ -1644,10 +1644,15 @@ export function getPendingPrompt(state: MasterGameState): PendingPrompt | null {
       case 'ASK_HAN_BANG_KIEM':
       case 'ASK_KY_LAN_CUNG':
       case 'ASK_TIE_QI':
-      case 'PICK_TARGET_CARD':
         return {
           kind: top.kind,
           actorSeats: [top.sourceSeat],
+          isSimulatedDelay: false,
+        };
+      case 'PICK_TARGET_CARD':
+        return {
+          kind: top.kind,
+          actorSeats: [top.handPick === 'PREPARE' ? top.targetSeat : top.sourceSeat],
           isSimulatedDelay: false,
         };
       case 'WAIT_COLLATERAL_SAT':

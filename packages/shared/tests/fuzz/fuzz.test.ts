@@ -40,13 +40,15 @@ function assertViewPrivacyStrict(
   const isGameOver = master.turnPhase === 'GAME_OVER';
 
   for (const pub of view.players) {
-    if (pub.seatIndex === viewerSeat) {
+    const folding = view.activeInterrupt?.handPick === 'SELECT' &&
+      view.activeInterrupt.targetSeat === viewerSeat;
+    if (pub.seatIndex === viewerSeat && !folding) {
       expect(pub.handCards).not.toBeNull();
     } else {
       expect(pub.handCards).toBeNull();
       const masterPlayer = master.players.find((p) => p.seatIndex === pub.seatIndex)!;
       const shouldReveal =
-        masterPlayer.isIdentityRevealed || !masterPlayer.alive || isGameOver;
+        pub.seatIndex === viewerSeat || masterPlayer.isIdentityRevealed || !masterPlayer.alive || isGameOver;
       if (!shouldReveal) {
         expect(pub.identity).toBe('UNKNOWN');
       }

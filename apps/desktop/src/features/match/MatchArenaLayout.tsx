@@ -12,6 +12,7 @@ import type {
 } from '@lkdf/shared';
 import { getCardArtUrl, getHeroPortraitUrl, getUiAssetUrl } from '../../lib/assetCatalog.js';
 import {
+  CardBack,
   FactionSeal,
   GameIcon,
   HpJadeMeter,
@@ -256,6 +257,8 @@ export function MatchArenaLayout({
   }, [selfDisplayPhoto]);
 
   const handCards = selfPlayer?.handCards ?? [];
+  const handIsFaceDown = playerView.activeInterrupt?.handPick === 'SELECT' &&
+    playerView.activeInterrupt.targetSeat === playerView.viewerSeatIndex;
   const availableSkills = isPlayPhaseSelf
     ? getAvailablePlaySkills(selfPlayer, playerView.turnFlags)
     : [];
@@ -1068,7 +1071,7 @@ export function MatchArenaLayout({
             </div>
 
             <span className="font-mono-num shrink-0 text-[#B5A792] tabular-nums">
-              Trên tay: <strong className="text-[#EFE6D5]">{handCards.length}</strong> lá
+              Trên tay: <strong className="text-[#EFE6D5]">{selfPlayer?.handCount ?? handCards.length}</strong> lá
             </span>
           </div>
 
@@ -1077,7 +1080,11 @@ export function MatchArenaLayout({
 
           {/* Dải bài neo đáy cố định (0px giật bài khi thanh lệnh bật/tắt) */}
           <div className="lkdf-battle-hand lkdf-scroll flex min-h-0 flex-1 items-end overflow-x-auto overflow-y-hidden px-1">
-            {handCards.length === 0 ? (
+            {handIsFaceDown ? (
+              <div className="mx-auto flex items-end gap-1" aria-label="Bài tay đang úp">
+                {Array.from({ length: selfPlayer?.handCount ?? 0 }, (_, index) => <CardBack key={index} size="md" />)}
+              </div>
+            ) : handCards.length === 0 ? (
               <div className="flex h-full w-full items-center justify-center rounded-xl border border-dashed border-[#A68042]/30 text-[12px] text-[#9CA3AF]">
                 Không còn lá bài nào trên tay
               </div>

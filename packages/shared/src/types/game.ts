@@ -283,6 +283,8 @@ export type InterruptFrame =
       readonly targetSeat: number;
       readonly sourceSeat: number;
       readonly mode: 'STEAL' | 'DISMANTLE';
+      readonly handPick?: 'PREPARE' | 'SELECT';
+      readonly handOrder?: readonly string[];
     }
   | {
       readonly id: string;
@@ -415,6 +417,8 @@ export interface PublicInterruptView {
   readonly responderSeat?: number;
   readonly attackerSeat?: number;
   readonly scrollNameVi?: string;
+  readonly handPick?: 'PREPARE' | 'SELECT';
+  readonly stealing?: boolean;
   readonly guanXingCards?: readonly CardInstance[];
   readonly yiJiCards?: readonly CardInstance[];
   readonly judgeCard?: CardInstance;

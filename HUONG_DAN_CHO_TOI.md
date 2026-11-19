@@ -263,3 +263,5 @@ Hãy gọi kèm `/honest-advisor` và `/ultrathinking` như bạn đã dùng r�
 Đã nối các hiệu ứng có thể xác định từ dữ liệu trận hiện tại. Các cảnh nhiều nhánh vẫn xem ở demo trong khi bổ sung dữ liệu kết quả cho bàn chính. Xem [tiến độ và bằng chứng](PROJECT_MEMORY.md).
 
 - 👉 Bước 4.4 · Duyệt demo tướng tại http://localhost:5174/motion-demo.html. Chọn tướng/kỹ năng trong danh sách. Câu lệnh tiếp nối: Kiểm tra đủ các nhánh hiệu ứng tướng và sửa các cảnh chưa khớp trước khi đưa vào bản chính.
+
+- Bước 4.4 · Khi lấy bài tay, chủ bài có thể đổi hai lá rồi xác nhận úp; người lấy chọn một vị trí. Bước tiếp: “Kiểm tra khay lấy bài tay với ba máy trong trận thật.”

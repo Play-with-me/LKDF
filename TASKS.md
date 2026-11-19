@@ -152,3 +152,5 @@
 - Kiểm chứng bổ sung 2026-11-19: phát sáng mục tiêu đã có, thử Sát 2 ghế -> Đại Uyên 4 ghế -> Kỳ Lân Cung 7 ghế; 85/85 unit đạt. Xem PROJECT_MEMORY.md; giữ Bước 4.4 mở.
 
 - 2026-11-20 · Có bản dựng demo 40 kỹ năng. Bốn cảnh tương tác đã thử, toàn bộ nhánh và tích hợp thật còn chờ. Giữ Bước 4.4 chưa hoàn thành.
+
+- Bước 4.4 · Khay lấy bài tay đã nối vào bàn chính cho Phản Quỷ, Đột Tập và Thuận Thủ. Giữ bước mở để nghiệm thu toàn bộ hiệu ứng.

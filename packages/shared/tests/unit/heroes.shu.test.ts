@@ -482,6 +482,10 @@ describe('Bước 1.3 — 7 Tướng phe Thục (Lưu Bị, Quan Vũ, Trương P
       zone: 'HAND',
       handIndex: 0,
     });
+    state = applyGameAction(state, { type: 'CONFIRM_STEAL_HAND', seatIndex: 2 });
+    state = applyGameAction(state, {
+      type: 'RESPOND_PICK_TARGET_CARD', seatIndex: 0, zone: 'HAND', handIndex: 0,
+    });
     expect(state.players[0]!.handCards.map((c) => c.id)).toContain(targetCard.id);
 
     // Dùng Cẩm nang thời gian (Lạc Bất Tư Thục) -> KHÔNG kích hoạt Tập Trí (không rút draw2)

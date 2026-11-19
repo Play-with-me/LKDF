@@ -121,6 +121,11 @@ export type GameAction =
       readonly cardId: string;
     }
   | {
+      readonly type: 'CONFIRM_STEAL_HAND';
+      readonly seatIndex: number;
+      readonly orderedCardIds?: readonly string[];
+    }
+  | {
       readonly type: 'RESPOND_PICK_TARGET_CARD';
       readonly seatIndex: number;
       readonly zone: TargetCardZone;

@@ -92,6 +92,15 @@ function projectTopInterrupt(
         targetSeat: topFrame.targetSeat,
         sourceSeat: topFrame.otherSeat,
       };
+    case 'PICK_TARGET_CARD':
+      return {
+        id: topFrame.id,
+        kind: topFrame.kind,
+        targetSeat: topFrame.targetSeat,
+        sourceSeat: topFrame.sourceSeat,
+        ...(topFrame.handPick ? { handPick: topFrame.handPick } : {}),
+        stealing: topFrame.mode === 'STEAL',
+      };
     case 'WAIT_GUAN_XING':
       return {
         id: topFrame.id,
@@ -199,6 +208,8 @@ export function projectStateForPlayer(
   }
 
   const viewerSeatIndex = viewerPlayer.seatIndex;
+  const activeInterrupt = projectTopInterrupt(masterState.interruptStack, viewerSeatIndex);
+  const hiddenHandSeat = activeInterrupt?.handPick === 'SELECT' ? activeInterrupt.targetSeat : null;
   const isGameOver = masterState.turnPhase === 'GAME_OVER';
 
   const publicPlayers: PublicPlayerView[] = masterState.players.map((player) => {
@@ -218,7 +229,7 @@ export function projectStateForPlayer(
       maxHp: player.maxHp,
       alive: player.alive,
       handCount: player.handCards.length,
-      handCards: isSelf ? [...player.handCards] : null,
+      handCards: isSelf && player.seatIndex !== hiddenHandSeat ? [...player.handCards] : null,
       equipments: {
         weapon: player.equipments.weapon ? { ...player.equipments.weapon } : null,
         armor: player.equipments.armor ? { ...player.equipments.armor } : null,
@@ -263,7 +274,7 @@ export function projectStateForPlayer(
       : topDiscard ? (physicalFace as typeof topDiscard) : null,
     harvestPool: (masterState.harvestPool ?? []).map((card) => ({ ...card })),
     players: publicPlayers,
-    activeInterrupt: projectTopInterrupt(masterState.interruptStack, viewerSeatIndex),
+    activeInterrupt,
     ...(masterState.turnFlags ? { turnFlags: { ...masterState.turnFlags } } : {}),
     actionLog: [...masterState.actionLog],
     refereeAuditLog: [...masterState.refereeAuditLog],

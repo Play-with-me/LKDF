@@ -153,7 +153,7 @@ Khi giải quyết 1 lá **Sát** (hoặc nguồn sát thương bất kỳ):
 | Tên lá | SL | Chất & Số | Luật & Edge Cases khi viết code |
 | :--- | :---: | :--- | :--- |
 | **Vô Trung Sinh Hữu** | 4 | `7♥, 8♥, 9♥, J♥` | Dùng lên bản thân ở pha Đánh. Nếu không bị *Vô Giải* -> rút ngay `2` lá. |
-| **Thuận Thủ Khiên Dương** | 5 | `3♠, 4♠, J♠, 3♦, 4♦` | Chọn `1` người chơi khác có bài (ở tay / trang bị / khu phán xét) và thỏa `distance <= 1` (Hoàng Nguyệt Anh bỏ qua khoảng cách; miễn nhiễm Lục Tốn). Lấy `1` lá vào tay mình (tay lấy ngẫu nhiên úp; trang bị & phán xét chỉ định). |
+| **Thuận Thủ Khiên Dương** | 5 | `3♠, 4♠, J♠, 3♦, 4♦` | Chọn `1` người chơi khác có bài (ở tay / trang bị / khu phán xét) và thỏa `distance <= 1` (Hoàng Nguyệt Anh bỏ qua khoảng cách; miễn nhiễm Lục Tốn). Lấy `1` lá vào tay mình (tay chọn 1 vị trí úp sau khi chủ bài xác nhận; trang bị & phán xét chỉ định). |
 | **Quá Hà Sái Cầu** | 6 | `3♠, 4♠, Q♠, Q♥, 3♣, 4♣` | Chọn `1` người chơi khác có ít nhất `1` lá ở tay / trang bị / khu phán xét (**không giới hạn khoảng cách**). Hủy `1` lá đó đưa vào chồng bài bỏ. |
 | **Quyết Đấu** | 3 | `A♠, A♣, A♦` | Chọn `1` người chơi khác (miễn nhiễm Gia Cát *Không Thành*). **Mục tiêu đánh ra 1 Sát trước**, rồi luân phiên 2 bên. Bên nào không đánh ra `Sát` chịu `1` sát thương từ bên kia (Lữ Bố ép đối phương đánh `2` Sát mỗi lần). *(Lưu ý: chỉ có 1 cửa sổ Vô Giải lúc bắt đầu Quyết Đấu).* |
 | **Tá Đao Sát Nhân** | 2 | `Q♣, K♣` | Chọn `(A, B)`: `A !== self`, `A` đang **lắp Vũ khí**, `B` nằm trong tầm đánh của `A` (`B` không bị *Không Thành*, được phép `B === self`). Nếu không bị *Vô Giải*: `A` phải đánh ra `1` lá `Sát` vào `B` (tính như `A` dùng *Sát*, được kích hoạt kỹ năng vũ khí như *Thanh Công / Quán Thạch / Hàn Băng* nhưng **không** tính vào giới hạn `1` Sát/lượt của `A` và không được dùng khi không phải lượt `A` nếu không có *Võ Thánh/Long Đảm*), hoặc `A` giao lá Vũ khí đang cầm vào tay bạn. |
@@ -218,12 +218,12 @@ Khi giải quyết 1 lá **Sát** (hoặc nguồn sát thương bất kỳ):
    - **Gian Hùng** *(Sau khi chịu sát thương):* Nếu nguồn gây sát thương là **lá bài** (hoặc nhiều lá như *Trượng Bát Xà Mâu*), lấy các lá đó về tay (không áp dụng cho sát thương từ kỹ năng không kèm bài như *Ly Gián/Phản Gián/Cương Liệt* hay *Thiểm Điện*).
    - **Hộ Giá** *(Chủ Công · Phản ứng):* Khi cần dùng hoặc đánh ra *Thiểm* (bị *Sát* hoặc *Vạn Tiễn*), hỏi lần lượt các tướng **Ngụy khác** theo vòng ghế đánh ra `1 Thiểm` giúp bạn (nếu gặp *Lữ Bố Vô Song*, hỏi đủ 2 lần).
 9. **Tư Mã Ý (`3` máu · Nam):**
-   - **Phản Quỷ** *(Sau khi chịu sát thương):* Nếu có `sourceSeat` (và `sourceSeat` có bài trên tay hoặc trang bị), được bốc ngẫu nhiên `1` lá trên tay hoặc chọn `1` lá trang bị của nguồn sát thương về tay mình (**`1` lần/lượt sát thương**, bất kể `1` hay `2` máu).
+   - **Phản Quỷ** *(Sau khi chịu sát thương):* Nếu có `sourceSeat` (và `sourceSeat` có bài trên tay hoặc trang bị), được chọn `1` vị trí úp trên tay hoặc chọn `1` lá trang bị của nguồn sát thương về tay mình (**`1` lần/lượt sát thương**, bất kể `1` hay `2` máu).
    - **Quỷ Tài** *(Trước khi lá Phán xét có hiệu lực):* Đánh ra `1` lá bài **trên tay** để thay thế lá phán xét hiện tại (lá phán xét cũ vào chồng bài bỏ).
 10. **Hạ Hầu Đôn (`4` máu · Nam):**
     - **Cương Liệt** *(Sau khi chịu sát thương có `sourceSeat` alive):* Lật `1` lá phán xét; nếu kết quả **KHÔNG phải chất Cơ (`♥`)**, nguồn sát thương buộc chọn: **bỏ `2` lá trên tay** HOẶC chịu **`1` sát thương** từ Hạ Hầu Đôn (**`1` lần/lần trúng đòn**; nếu nguồn có `< 2` lá trên tay thì bắt buộc chọn mất 1 máu).
 11. **Trương Liêu (`4` máu · Nam):**
-    - **Đột Tập** *(Pha `DRAW`):* Có quyền **bỏ qua việc rút `2` lá** từ chồng bài rút, thay bằng chọn `1` hoặc `2` người chơi khác đang có bài trên tay, lấy từ tay mỗi người đó **`1` lá ngẫu nhiên**.
+    - **Đột Tập** *(Pha `DRAW`):* Có quyền **bỏ qua việc rút `2` lá** từ chồng bài rút, thay bằng chọn `1` hoặc `2` người chơi khác đang có bài trên tay, lấy từ tay mỗi người đó **`1` lá úp**, giải quyết lần lượt theo trình tự dưới đây.
 12. **Hứa Chử (`4` máu · Nam):**
     - **Lỏa Y** *(Pha `DRAW`):* Có quyền **rút ít hơn `1` lá** (chỉ rút `1` lá); đổi lại cho tới hết lượt, mọi lá **`Sát`** hoặc **`Quyết Đấu`** mà Hứa Chử là người gây sát thương đều **`+1` sát thương**.
 13. **Quách Gia (`3` máu · Nam):**
@@ -271,6 +271,10 @@ Khi giải quyết 1 lá **Sát** (hoặc nguồn sát thương bất kỳ):
     - **Bế Nguyệt** *(Kết thúc lượt `END`):* Rút ngay **`1` lá**.
 
 ---
+
+### Lấy bài tay của người khác
+
+Với Đột Tập, Phản Quỷ và Thuận Thủ Khiên Dương khi chọn bài tay, chủ bài thấy bài của mình và có thể đổi từng cặp trước khi xác nhận úp. Người lấy chỉ nhận số lượng và chọn một vị trí úp. Người ngoài không nhận mặt bài, mã lá hoặc thứ tự bài. Khi hết thời gian chuẩn bị, giữ nguyên thứ tự đang lưu trên máy chủ; khi hết thời gian chọn, máy chủ chọn ngẫu nhiên một vị trí. Trang bị và bài phán xét vẫn xử lý theo quy tắc của từng lá/kỹ năng.
 
 ## 5. Báo Cáo Đối Chiếu & Kiểm Toán Mã Nguồn Hiện Tại (`/honest-advisor` & `/ultrathinking`)
 

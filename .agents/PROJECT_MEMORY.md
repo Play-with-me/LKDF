@@ -80,3 +80,5 @@ Handoff Notes — apps/desktop/motion-scenes.js cung cấp playSkill, được m
 - Hiệu ứng bài và tướng trong demo tăng thời lượng khoảng 15%, gồm nhịp chờ, lửa và mũi tên. Không đổi thời gian lượt online.
 
 - Ô phản ứng bàn chính và DEV tự ôm nội dung, xuống hàng khi cần, nút tối thiểu 36 px và neo trên thanh thời gian. Typecheck, build desktop đạt.
+
+- Bước 4.4 · Handoff: PICK_TARGET_CARD phân pha PREPARE/SELECT; CONFIRM_STEAL_HAND chốt thứ tự riêng, TakeHandTray chỉ hiện mặt cho chủ bài trước khi úp. Đột Tập xếp khay từng mục tiêu. Bot xử lý khi hết giờ. 85 unit, 24 integration và 500 ván giả lập đạt; giữ bước mở.
