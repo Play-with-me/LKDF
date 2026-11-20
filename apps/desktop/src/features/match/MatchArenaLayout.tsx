@@ -661,6 +661,54 @@ export function MatchArenaLayout({
     dragState !== null &&
     (dragState.intent.kind === 'table' || dragState.intent.kind === 'toggle_select');
 
+  const skillControls = (
+    <>
+    {availableSkills.map((skill) => {
+      const active = selection.activeSkillMode === skill.id;
+      return (
+        <button
+          key={skill.id}
+          type="button"
+          aria-pressed={active}
+          title={skill.descriptionVi}
+          onClick={() => onToggleSkillMode(skill.id)}
+          className={[
+            'inline-flex cursor-pointer items-center gap-0.5 rounded border px-1.5 py-0.5 text-[9.5px] leading-tight font-bold transition-colors',
+            active
+              ? 'border-[#D99B26] bg-[#D99B26]/25 text-[#FBBF24]'
+              : 'border-[#3A424C] bg-[#1E2328] text-[#D1D5DB] hover:border-[#D99B26]/70',
+          ].join(' ')}
+        >
+          <GameIcon name="ui:sparkles" size={10} />
+          {skill.nameVi}
+        </button>
+      );
+    })}
+    {availableConverts.map((opt) => {
+      const active = selection.activeConvertMode === opt.mode;
+      return (
+        <button
+          key={opt.mode}
+          type="button"
+          aria-pressed={active}
+          title={opt.descriptionVi}
+          onClick={() => onToggleConvertMode(opt.mode)}
+          className={[
+            'inline-flex cursor-pointer items-center gap-0.5 rounded border px-1.5 py-0.5 text-[9.5px] leading-tight font-bold transition-colors',
+            active
+              ? 'border-[#C83E37] bg-[#C83E37]/25 text-[#FCA5A5]'
+              : 'border-[#3A424C] bg-[#1E2328] text-[#D1D5DB] hover:border-[#C83E37]/70',
+          ].join(' ')}
+        >
+          <GameIcon name="ui:convert" size={10} />
+          {opt.labelVi}
+        </button>
+      );
+    })}
+
+    </>
+  );
+
   return (
     <div ref={arenaRef} className="lkdf-arena-stage relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-[#090807]">
       <div ref={motionLayerRef} className="lkdf-motion-layer" aria-hidden="true" />
@@ -732,9 +780,6 @@ export function MatchArenaLayout({
                 <span aria-hidden="true" className="absolute inset-0 translate-x-0.5 translate-y-0.5 rounded-md border border-[#D99B26]/50 bg-[#15253A]" />
                 <CardBack size="md" className="block shadow-lg" />
               </div>
-              <span className="font-mono-num rounded-full border border-[#303740] bg-[#14171A]/85 px-1.5 py-0.5 text-[10px] font-semibold text-[#F3F4F6] tabular-nums">
-                Rút: {playerView.drawPileCount}
-              </span>
             </div>
           ) : null}
 
@@ -825,6 +870,11 @@ export function MatchArenaLayout({
       <div
         className="lkdf-battle-dock flex h-[var(--dock-h,196px)] shrink-0 min-w-0 items-stretch gap-2.5 border-t border-[#94A3B8]/32 bg-[#0D1016] px-2.5 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]"
       >
+        {isPlayPhaseSelf && (availableSkills.length > 0 || availableConverts.length > 0) ? (
+          <div className="lkdf-battle-active-skills" role="group" aria-label="Kỹ năng chủ động">
+            {skillControls}
+          </div>
+        ) : null}
         {/* Cột Trái: Khung Đôi Mẫu B (Hồ sơ Tướng tràn viền + 4 Ô Trang Bị Ngửa & Phán xét) */}
         <div className="lkdf-battle-player flex w-[var(--left-w,312px)] shrink-0 overflow-hidden rounded-[6px] border border-[#94A3B8]/38 bg-[#12161E] shadow-lg">
           {/* Nửa Trái: Hồ sơ Tướng bản thân (Bấm quay về kỹ năng tướng mình) */}
@@ -922,49 +972,9 @@ export function MatchArenaLayout({
                         className="lkdf-scroll min-h-0 overflow-y-auto space-y-1.5 pr-0.5"
                         onClick={(e) => e.stopPropagation()}
                       >
-                        {selfHero?.skills.filter(skill => !availableSkills.some(candidate => candidate.id === skill.id)).map(skill => (
+                        {selfHero?.skills.map(skill => (
                           <div key={skill.id}><strong>{skill.nameVi}</strong><p>{skill.descriptionVi}</p></div>
                         ))}
-                        {availableSkills.map((skill) => {
-                          const active = selection.activeSkillMode === skill.id;
-                          return (
-                            <div key={skill.id}><button
-                              key={skill.id}
-                              type="button"
-                              title={skill.descriptionVi}
-                              onClick={() => onToggleSkillMode(skill.id)}
-                              className={[
-                                'inline-flex cursor-pointer items-center gap-0.5 rounded border px-1.5 py-0.5 text-[9.5px] leading-tight font-bold transition-colors',
-                                active
-                                  ? 'border-[#D99B26] bg-[#D99B26]/25 text-[#FBBF24]'
-                                  : 'border-[#3A424C] bg-[#1E2328] text-[#D1D5DB] hover:border-[#D99B26]/70',
-                              ].join(' ')}
-                            >
-                              <GameIcon name="ui:sparkles" size={10} />
-                              {skill.nameVi}
-                            </button><p>{skill.descriptionVi}</p></div>
-                          );
-                        })}
-                        {availableConverts.map((opt) => {
-                          const active = selection.activeConvertMode === opt.mode;
-                          return (
-                            <button
-                              key={opt.mode}
-                              type="button"
-                              title={opt.descriptionVi}
-                              onClick={() => onToggleConvertMode(opt.mode)}
-                              className={[
-                                'inline-flex cursor-pointer items-center gap-0.5 rounded border px-1.5 py-0.5 text-[9.5px] leading-tight font-bold transition-colors',
-                                active
-                                  ? 'border-[#C83E37] bg-[#C83E37]/25 text-[#FCA5A5]'
-                                  : 'border-[#3A424C] bg-[#1E2328] text-[#D1D5DB] hover:border-[#C83E37]/70',
-                              ].join(' ')}
-                            >
-                              <GameIcon name="ui:convert" size={10} />
-                              {opt.labelVi}
-                            </button>
-                          );
-                        })}
                       </div>
                     ) : null}
           </aside>
@@ -1081,6 +1091,11 @@ export function MatchArenaLayout({
         <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
           {showLocalReaction ? (
             <div className="lkdf-battle-reaction absolute bottom-full left-1/2 z-30 mb-1.5 max-h-[40dvh] w-max max-w-full -translate-x-1/2 overflow-y-auto">
+              {!isPlayPhaseSelf && availableConverts.length > 0 ? (
+                <div className="mb-1 flex flex-wrap gap-1" role="group" aria-label="Kỹ năng phản ứng">
+                  {skillControls}
+                </div>
+              ) : null}
               {renderActionSidebar()}
             </div>
           ) : null}
@@ -1089,7 +1104,7 @@ export function MatchArenaLayout({
             paused={isTimerPaused} pausedRemainingMs={pausedRemainingMs}
             totalSeconds={playerView.activeInterrupt ? timerConfig.reactionSeconds : timerConfig.mainTurnSeconds} />
           ) : null}
-          <div className="flex shrink-0 items-center justify-between gap-2 pb-0.5 text-[clamp(9.5px,0.85cqw,11.5px)]">
+          <div data-hand-summary className="flex shrink-0 items-center justify-between gap-2 pb-0.5 text-[clamp(9.5px,0.85cqw,11.5px)]">
             <div className="flex min-w-0 items-center gap-3">
               <label className="inline-flex cursor-pointer items-center gap-1.5 font-semibold text-[#D1D5DB] select-none">
                 <input

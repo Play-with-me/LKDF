@@ -96,7 +96,19 @@
 
 .lkdf-battle-seat-summary { margin-top: 2px; }
 .lkdf-battle-seat-equipment { margin-top: 1px; padding-top: 2px; }
-.lkdf-battle-dock { background: #16110f; border-color: #80645264; padding: 6px 8px; gap: 8px; }
+.lkdf-battle-dock { position: relative; background: #16110f; border-color: #80645264; padding: 6px 8px; gap: 8px; }
+.lkdf-battle-active-skills {
+  position: absolute;
+  right: 23%;
+  bottom: 100%;
+  z-index: 30;
+  display: flex;
+  flex-flow: row-reverse wrap;
+  gap: 4px;
+  max-width: 36%;
+  padding-bottom: 1px;
+}
+.lkdf-battle-active-skills button { min-height: 30px; }
 .lkdf-battle-dock > :last-child { background: #201814; border-color: #765c4a8f; }
 .lkdf-battle-player { background: #261c18; border-color: #7b615263; }
 .lkdf-battle-profile { padding: 6px; }

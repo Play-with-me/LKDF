@@ -351,7 +351,7 @@ export async function playSkill({ skillId, stage, center, seats, status, active,
       case 'jian_xiong': damage(origin); await draw(1,origin,center); break;
       case 'fan_kui':
         markTarget();
-        if (!await demoTakeCards({ stage, center, ownerPoint: target, takerPoint: origin, skillName: skill.nameVi })) return true;
+        if (!await demoTakeCards({ stage, center, ownerPoint: target.handPoint, takerPoint: origin.handPoint, skillName: skill.nameVi })) return true;
         break;
       case 'tu_xi': {
         const total = await choices([['Lấy bài của 1 người', 1], ['Lấy bài của 2 người', 2]]);
@@ -359,7 +359,7 @@ export async function playSkill({ skillId, stage, center, seats, status, active,
         for (let index = 0; index < total; index++) {
           glow(seats[index + 1]);
           if (!await demoTakeCards({
-            stage, center, ownerPoint: seats[index + 1], takerPoint: origin, skillName: skill.nameVi, handNumber: index + 1,
+            stage, center, ownerPoint: seats[index + 1].handPoint, takerPoint: origin.handPoint, skillName: skill.nameVi, handNumber: index + 1,
             continueLabel: index + 1 < total ? 'Sang người thứ hai' : undefined,
           })) return true;
         }

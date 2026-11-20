@@ -5,11 +5,12 @@ const SAMPLE_HAND = [
   ['quyet_dau', 'Quyết Đấu'], ['vo_giai_kha_kich', 'Vô Giải Khả Kích'],
 ];
 
-export function demoTakeCards({ stage, center, ownerPoint, takerPoint, skillName, handNumber = 1, count = 1, continueLabel }) {
+export function demoTakeCards({ stage, center, ownerPoint, ownerHand = [], takerPoint, skillName, handNumber = 1, count = 1, continueLabel }) {
   return new Promise(resolve => {
-    let hand = SAMPLE_HAND.slice();
+    const hand = ownerHand.length ? ownerHand.slice() : SAMPLE_HAND;
+    const orderedHand = hand.slice();
     let view = 'owner';
-    let phase = 'shuffle';
+    let phase = 'arrival';
     let sourceSlot = null;
     let picked = new Set();
     const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -41,12 +42,15 @@ export function demoTakeCards({ stage, center, ownerPoint, takerPoint, skillName
       return el;
     };
     const finish = (value, remove = false) => {
-      onRemove.disconnect();
       if (remove) panel.remove();
       resolve(value);
     };
     const onRemove = new MutationObserver(() => {
-      if (!panel.isConnected) finish(false);
+      if (!panel.isConnected) {
+        onRemove.disconnect();
+        for (const [, , card] of ownerHand) card.style.visibility = '';
+        finish(false);
+      }
     });
     onRemove.observe(stage, { childList: true });
 
@@ -55,7 +59,7 @@ export function demoTakeCards({ stage, center, ownerPoint, takerPoint, skillName
       const xFirst = slots[first].getBoundingClientRect().left;
       const xSecond = slots[second].getBoundingClientRect().left;
       sourceSlot = null;
-      if (first !== second) [hand[first], hand[second]] = [hand[second], hand[first]];
+      if (first !== second) [orderedHand[first], orderedHand[second]] = [orderedHand[second], orderedHand[first]];
       render();
       tray.children[second]?.focus();
       if (reduced || first === second) return;
@@ -93,21 +97,22 @@ export function demoTakeCards({ stage, center, ownerPoint, takerPoint, skillName
           render();
           if (phase === 'shuffle' && view !== 'owner') animateShuffle();
         });
-        tab.disabled = phase === 'transfer';
+        tab.disabled = phase === 'arrival' || phase === 'transfer';
         tab.setAttribute('aria-pressed', String(view === key));
         views.append(tab);
       }
       const canReorder = phase === 'shuffle' && view === 'owner';
       const canPick = phase === 'pick' && view === 'taker';
-      notice.textContent = phase === 'shuffle'
+      notice.textContent = phase === 'arrival' ? 'Đang đưa bài từ tay người bị lấy vào khay.'
+        : phase === 'shuffle'
         ? (canReorder ? 'Kéo đổi chỗ hoặc bấm hai lá để đổi vị trí.' : 'Người bị lấy đang xáo bài.')
         : phase === 'pick'
           ? (canPick ? `Chọn lá úp · ${picked.size}/${count}` : 'Đang chờ người rút chọn bài úp.')
           : phase === 'transfer' ? 'Đang chuyển các lá úp về tay.'
-          : (view === 'taker' ? 'Chỉ bạn thấy mặt lá đã nhận.' : 'Đã chuyển bài · mặt lá vẫn úp.');
+          : 'Đã chuyển bài về tay người nhận.';
       tray.replaceChildren();
-      hand.forEach(([key, name], index) => {
-        const showFace = canReorder || (phase === 'result' && view === 'taker' && picked.has(index));
+      if (phase !== 'result') orderedHand.forEach(([key, name,, , printing], index) => {
+        const showFace = canReorder || (phase === 'arrival' && ownerHand.length > 0);
         const slot = button('', () => {
           if (canReorder) {
             if (sourceSlot === null) sourceSlot = index;
@@ -122,7 +127,7 @@ export function demoTakeCards({ stage, center, ownerPoint, takerPoint, skillName
         slot.className = 'skill-take-slot';
         const face = document.createElement('span');
         face.className = 'skill-take-face';
-        if (showFace) renderDemoCard(face, key, name);
+        if (showFace) renderDemoCard(face, key, name, printing);
         else renderDemoBack(face);
         slot.append(face);
         slot.setAttribute('aria-label', showFace ? name : `Lá úp ${index + 1}`);
@@ -139,8 +144,6 @@ export function demoTakeCards({ stage, center, ownerPoint, takerPoint, skillName
             swap(sourceSlot, index);
           };
         }
-        if (phase === 'result' && !picked.has(index)) slot.hidden = true;
-        if (phase === 'result' && picked.has(index)) slot.classList.add('skill-take-received');
         tray.append(slot);
       });
       actions.replaceChildren();
@@ -162,7 +165,7 @@ export function demoTakeCards({ stage, center, ownerPoint, takerPoint, skillName
           const host = stage.getBoundingClientRect();
           if (!reduced && ownerPoint && takerPoint) {
             const flights = [...tray.children].map((slot, index) => {
-              const [x, y] = picked.has(index) ? takerPoint : ownerPoint;
+              const [x, y] = picked.has(index) ? takerPoint : (orderedHand[index][3] ?? ownerPoint);
               const rect = slot.getBoundingClientRect();
               const dx = host.left + x - rect.left - rect.width / 2;
               const dy = host.top + y - rect.top - rect.height / 2;
@@ -174,6 +177,9 @@ export function demoTakeCards({ stage, center, ownerPoint, takerPoint, skillName
             await Promise.allSettled(flights);
           }
           if (!panel.isConnected) return;
+          orderedHand.forEach(([, , card], index) => {
+            if (card && !picked.has(index)) card.style.visibility = '';
+          });
           phase = 'result';
           render();
           if (!continueLabel) finish(true);
@@ -185,5 +191,26 @@ export function demoTakeCards({ stage, center, ownerPoint, takerPoint, skillName
       }
     }
     render();
+    for (const [, , card] of ownerHand) card.style.visibility = 'hidden';
+    const arrive = async () => {
+      if (!reduced && ownerPoint) {
+        const host = stage.getBoundingClientRect();
+        const flights = [...tray.children].map((slot, index) => {
+          const [x, y] = orderedHand[index][3] ?? ownerPoint;
+          const rect = slot.getBoundingClientRect();
+          const dx = host.left + x - rect.left - rect.width / 2;
+          const dy = host.top + y - rect.top - rect.height / 2;
+          return slot.animate([
+            { translate: `${dx}px ${dy}px`, scale: '.45' },
+            { translate: '0 0', scale: '1' },
+          ], { duration: 195, delay: index * 12, easing: 'ease-out', fill: 'backwards' }).finished;
+        });
+        await Promise.allSettled(flights);
+      }
+      if (!panel.isConnected) return;
+      phase = 'shuffle';
+      render();
+    };
+    void arrive();
   });
 }

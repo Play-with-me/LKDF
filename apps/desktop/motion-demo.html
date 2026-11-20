@@ -11,6 +11,27 @@ header [data-scene]{display:none}select{background:#302820;color:#f4e3bd;border:
 .tactic-back > div,.skill-back > div { display:flex;width:100%;height:100%;border:0; }
 </style><header><strong>Diễn tập</strong><a href="https://mixkit.co/free-stock-video/flames-burning-from-below-and-to-the-sides-3760/" target="_blank" rel="noreferrer" title="Mixkit Stock Video Free License · video đã cắt khung và chỉnh màu">Nguồn lửa</a><output aria-live="polite">Đang mở bàn…</output><select id="picker" aria-label="Chọn lá bài"></select><button id="hand-preview">Thử lá trên tay</button><button id="death-preview">Thử bị loại</button><button id="next">Lá kế ›</button><button data-scene="0">Quyết Đấu</button><button data-scene="1">Ngũ Cốc</button><button data-scene="2">Hàn Băng</button><button id="replay">↻ Phát lại</button></header>
 <iframe title="Bàn đấu tám ghế" tabindex="-1" src="/?devPreviewSeats=8&amp;demoFuse"></iframe><div id="stage"></div><aside id="equipment-detail" role="tooltip" hidden><strong id="equipment-title"></strong><p id="equipment-description"></p></aside>
+<style>
+.table-effect-wash {
+ position:absolute; inset:0; z-index:35; pointer-events:none;
+ background:radial-gradient(ellipse at center, #f4bd7421, #100a0429);
+}
+.table-effect-notice video {
+ position:absolute; inset:0; width:100%; height:100%; object-fit:cover;
+ object-position:center bottom; mix-blend-mode:screen; opacity:.42;
+ filter:saturate(.55) brightness(1.2);
+ mask-image:linear-gradient(transparent 12%, #000);
+ z-index:-1;
+}
+.table-effect-notice {
+ position:absolute; z-index:36; transform:translateY(-100%);
+ max-width:calc(100% - 12px); padding:5px 9px; border:1px solid #e8bf85;
+ border-radius:5px; background:#21150e; color:#fff2d4;
+ font-size:clamp(11px, 1.08vw, 14px); font-weight:800; white-space:nowrap;
+ box-shadow:0 0 16px #e4a05d66, inset 0 0 7px #df9d5138;
+ text-shadow:0 1px 3px #100904; pointer-events:none; isolation:isolate; overflow:hidden;
+}
+</style>
 <script type="module">
 import { isPassiveDemoSkill, playSkill } from "./motion-scenes.js";
 import { demoTakeCards } from "./motion-take-cards.js";
@@ -80,10 +101,21 @@ function styleDemoBoard(){
   .lkdf-hero-skill-label[data-demo-skill-highlight="passive"] {
    box-shadow:0 0 8px #9fe3bbaa;
   }
-  .lkdf-battle-dock { height:calc(var(--dock-h, 196px) + 36px); }
-  .lkdf-hand-turn-bar { flex:0 0 36px; }
-  .lkdf-hand-turn-bar:not(:empty) { margin:0; }
-  .lkdf-hand-turn-bar .lkdf-action-bar { min-height:0; }
+  [data-hand-summary] { display:none; }
+  .lkdf-hand-turn-bar:not(:has([data-end-play-phase])) { display:none; }
+  .lkdf-battle-dock { position:relative; }
+  .lkdf-battle-dock > :has(> .lkdf-hand-turn-bar) { position:static; }
+  .lkdf-hand-turn-bar:has([data-end-play-phase]) {
+   position:absolute; top:0; left:calc(var(--left-w, 312px) - 16px);
+   z-index:30; display:flex; margin:0; transform:translate(-100%, -100%);
+  }
+  .lkdf-hand-turn-bar aside:has([data-end-play-phase]),
+  .lkdf-hand-turn-bar aside > div:has([data-end-play-phase]) { display:contents; }
+  .lkdf-hand-turn-bar aside > :not(:has([data-end-play-phase])),
+  .lkdf-hand-turn-bar aside > div > :not([data-end-play-phase]) { display:none; }
+  .lkdf-hand-turn-bar [data-end-play-phase] { width:auto; min-height:32px; white-space:nowrap; }
+  .lkdf-hand-row { --card-h: clamp(108px, calc(18cqh + 18px), 165px); }
+  .lkdf-battle-reaction { display:none; }
   .lkdf-battle-card-line button.lkdf-card-gwent:not(:last-child) {
    scale:.86; filter:brightness(.58) saturate(.62);
   }
@@ -105,6 +137,37 @@ function point(el){
  return [rect.left+rect.width/2+(frame?.left??0)-host.left,rect.top+rect.height/2+(frame?.top??0)-host.top];
 }
 function place(el,[x,y]){el.style.left=x+'px';el.style.top=y+'px'}
+const tableWideCards=new Set(['van_tien_te_phat','nam_man_nhap_xam','dao_vien_ket_nghia','ngu_coc_phong_dang']);
+function announceTableEffect(name){
+ const dock=board.contentDocument.querySelector('.lkdf-battle-dock');
+ const player= dock?.querySelector('.lkdf-battle-player');
+ const notice=element('div','table-effect-notice');
+ notice.setAttribute('role','status');
+ notice.textContent='Đang dùng '+name;
+ const host=stage.getBoundingClientRect(), frame=board.getBoundingClientRect();
+ const dockTop=(dock?.getBoundingClientRect().top??host.height*.75)+frame.top-host.top;
+ const playerRight=(player?.getBoundingClientRect().right??host.width*.36)+frame.left-host.left;
+ place(notice,[playerRight-12,dockTop-4]);
+ const close=()=>notice.remove();
+ if(matchMedia('(prefers-reduced-motion: reduce)').matches)return {ready:Promise.resolve(),close};
+ const rect=notice.getBoundingClientRect();
+ const wash=element('div','table-effect-wash');
+ const fire=document.createElement('video');
+ fire.src='./motion-duel-fire.mp4';
+ fire.muted=true;fire.playsInline=true;fire.autoplay=true;fire.setAttribute('aria-hidden','true');
+ notice.prepend(fire);
+ const flash=wash.animate([{opacity:0},{opacity:1,offset:.12},{opacity:1,offset:.82},{opacity:0}],{duration:1500});
+ void flash.finished.then(()=>wash.remove(),()=>wash.remove());
+ const dx=host.left+host.width/2-rect.left-rect.width/2;
+ const dy=host.top+host.height*.42-rect.top-rect.height/2;
+ const entrance=notice.animate([
+   {translate:`${dx}px ${dy}px`,scale:1.9,opacity:0},
+   {translate:`${dx}px ${dy}px`,scale:2.2,opacity:1,offset:.12},
+   {translate:`${dx}px ${dy}px`,scale:2.2,opacity:1,offset:.84,easing:'ease-in-out'},
+   {translate:'0 0',scale:1,opacity:1},
+ ],{duration:1500});
+ return {ready:entrance.finished.catch(()=>{}),close:()=>{wash.remove();close()}};
+}
 function card(key,name,origin,end,printing){
  const el=element('div','piece');renderDemoCard(el,key,name,printing);
  place(el,[end[0]-35,end[1]-48]);move(el,origin,end);return el
@@ -271,7 +334,8 @@ async function show(){
  center.style.visibility='hidden';const [a,b,t]=seats.map(point),c=point(center);
  const pause=async(ms=750)=>{await wait(ms);return id===generation};
  const k=d.key, isEquip=['WEAPON','ARMOR','PLUS_ONE_HORSE','MINUS_ONE_HORSE'].includes(d.group);
- status.textContent=k==='thiem'?'':k==='vo_giai_kha_kich'?'Chờ cẩm nang':d.name+' · '+d.description;
+ status.textContent=k==='thiem'||tableWideCards.has(k)?'':k==='vo_giai_kha_kich'?'Chờ cẩm nang':d.name+' · '+d.description;
+ const announcement=tableWideCards.has(k)?announceTableEffect(d.name):null;
  const playedCard=['thiem','vo_giai_kha_kich'].includes(k)?null:element('div','piece');
  if(playedCard){
    renderDemoCard(playedCard,k,d.name);
@@ -335,7 +399,13 @@ async function show(){
  }
  if(k==='sat'){status.textContent='Sát đã xuống bàn · chờ Thiểm';label(b,'Chờ Thiểm');if(!await pause(850))return;stage.querySelector('.mark')?.remove();stage.querySelector('.line')?.remove();await playCardHit(seats[1],1,playedCard);if(id===generation)status.textContent='Sát trúng';return}
  if(d.group==='NORMAL_SCROLL'){
-   await playTactic(k,playedCard,seats,c,pause);
+   await announcement?.ready;
+   if(id!==generation)return;
+   try {
+     await playTactic(k,playedCard,seats,c,pause,announcement?.close);
+   } finally {
+     if(k!=='ngu_coc_phong_dang')announcement?.close();
+   }
    return;
  }
  if(d.group==='DELAYED_SCROLL'){
@@ -744,7 +814,7 @@ function shatter(cardEl){
    ],{delay:pace(280+i*5),duration:pace(410)}).finished.then(()=>dust.remove());
  }
 }
-async function playTactic(key,played,seats,c,pause){
+async function playTactic(key,played,seats,c,pause,endNotice){
  const [caster,holder,target]=seats;
  const [a,b]=[point(caster),point(holder)];
  const doc=board.contentDocument;
@@ -757,7 +827,16 @@ async function playTactic(key,played,seats,c,pause){
    }
    break;
  case 'thuan_thu_khien_duong':
-   if(!await demoTakeCards({stage,center:[c[0],c[1]+70],ownerPoint:b,takerPoint:hand,skillName:'Thuận Thủ Khiên Dương'}))return;
+   {
+     const ownerHand=[...doc.querySelectorAll('.lkdf-hand-row button.lkdf-card-gwent')].flatMap(card=>{
+       const [mark,name]=(card.querySelector('[data-hover-name]')?.dataset.hoverName??'').split(' · ');
+       const template=STANDARD_DECK_TEMPLATES.find(item=>item.nameVi===name && formatRankLabel(item.rank)+formatSuitSymbol(item.suit)===mark);
+       return template?[[template.cardKey,name,card,point(card),template]]:[];
+     });
+     const ownerPoint=ownerHand.length?hand:point(holder.querySelector('[data-motion-hand-count]')||holder);
+     const takerPoint=ownerHand.length?point(caster.querySelector('[data-motion-hand-count]')||caster):hand;
+     if(!await demoTakeCards({stage,center:[c[0],c[1]+70],ownerPoint,ownerHand,takerPoint,skillName:'Thuận Thủ Khiên Dương'}))return;
+   }
    break;
  case 'qua_ha_sai_cau': {
    if(!await transferBack(b,discard,pause))return;
@@ -864,6 +943,7 @@ async function playTactic(key,played,seats,c,pause){
  }
  case 'dao_vien_ket_nghia':
    for(const seat of [caster,holder,seats[3]])playHeal(seat);
+   await pause(560);
    break;
  case 'ngu_coc_phong_dang': {
    const spacing=Math.min(76,(stage.clientWidth-110)/seats.length);
@@ -884,12 +964,10 @@ async function playTactic(key,played,seats,c,pause){
      pick.onclick=()=>{
        stage.querySelectorAll('.tactic-pick').forEach(button=>button.remove());
        place(face,[hand[0]-35,hand[1]-48]);move(face,spot,hand);
-       void pause(340).then(()=>face.remove());
-       status.textContent='Đã chọn '+item.name;
+       void pause(340).then(()=>{face.remove();endNotice?.()});
      };
    }
    picks.forEach(pick=>{pick.disabled=false});
-   status.textContent='Ngũ Cốc · chọn 1 lá giữa bàn';
    return;
  }
  case 'vo_giai_kha_kich': {
@@ -902,7 +980,7 @@ async function playTactic(key,played,seats,c,pause){
    break;
  }
  }
- status.textContent=deck.find(item=>item.key===key).name+' · đã diễn tập';
+ if(!tableWideCards.has(key))status.textContent=deck.find(item=>item.key===key).name+' · đã diễn tập';
 }
 function volley(origin, target){
  if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;
@@ -955,7 +1033,9 @@ async function showHero(){
  const caster=frames.find(el=>el.querySelector('button[aria-label]')?.getAttribute('aria-label')==='Xem kỹ năng tướng '+hero.nameVi);
  const actor=caster??frames[0];
  const ordered=actor?[actor,...frames.filter(el=>el!==actor)]:[];
- const seatPoints=ordered.map(el=>Object.assign(point(el),{frame:el}));
+ const seatPoints=ordered.map(el=>Object.assign(point(el),{
+   frame:el, handPoint:point(el.querySelector('[data-motion-hand-count]')||el),
+ }));
  if(seatPoints.length<2){status.textContent='Đang tải bàn';await wait(300);if(generation===current)showHero();return}
  const highlight=mountSkillChip(actor,hero,skill,matchMedia('(prefers-reduced-motion: reduce)').matches);
  await playSkill({skillId,hero,stage,center:c,seats:seatPoints,status,highlight,active:()=>generation===current});

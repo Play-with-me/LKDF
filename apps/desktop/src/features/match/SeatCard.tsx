@@ -353,6 +353,7 @@ export function SeatCard({
           ) : null}
           <div
             className="inline-flex items-center gap-1 rounded border border-[#94A3B8]/35 bg-[#0B0E14]/90 px-1.5 py-0.5"
+            data-motion-hand-count
             title={`Đang cầm ${player.handCount} lá bài trên tay`}
           >
             <CardBack size="xs" />

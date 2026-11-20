@@ -1379,6 +1379,7 @@ export function MatchActionSidebar({
             <button
               type="button"
               onClick={onEndPlayPhase}
+              data-end-play-phase
               className="inline-flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-[#3A424C] bg-[#1E2328] px-3 py-1.5 text-xs font-semibold text-[#E5E7EB] hover:border-[#D99B26]"
             >
               <GameIcon name="ui:skip" size={13} />
@@ -1475,6 +1476,7 @@ export function MatchActionSidebar({
           <button
             type="button"
             onClick={onEndPlayPhase}
+            data-end-play-phase
             className="inline-flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-[#3A424C] bg-[#1E2328] px-3 py-1.5 text-xs font-semibold text-[#E5E7EB] hover:border-[#D99B26]"
           >
             <GameIcon name="ui:skip" size={13} />
