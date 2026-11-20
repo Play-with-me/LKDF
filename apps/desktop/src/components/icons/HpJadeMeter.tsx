@@ -15,36 +15,26 @@ export function HpJadeMeter({
   const safeHp = Math.max(0, Math.min(safeMax, hp));
   const useCompactBar = safeMax > 6;
 
-  const pipColor =
-    safeHp <= 1
-      ? 'bg-[#DC2626] border-[#FCA5A5] shadow-[0_0_6px_rgba(220,38,38,0.55)]'
-      : safeHp <= 2
-        ? 'bg-[#D99B26] border-[#FDE68A] shadow-[0_0_6px_rgba(217,155,38,0.5)]'
-        : 'bg-[#10B981] border-[#6EE7B7] shadow-[0_0_6px_rgba(16,185,129,0.45)]';
+  const vitality = safeHp <= 1 ? 'critical' : safeHp <= 2 ? 'wounded' : 'healthy';
 
   const pipSizeClass =
     size === 'md'
-      ? 'h-3 w-3 border-[1.5px]'
-      : 'h-[clamp(9.5px,0.92cqw,12px)] w-[clamp(9.5px,0.92cqw,12px)] border-[1.5px]';
+      ? 'h-2.5 w-2.5'
+      : 'h-[clamp(7px,0.7cqw,10px)] w-[clamp(7px,0.7cqw,10px)]';
   const textSizeClass =
     size === 'md' ? 'text-[13px]' : 'text-[clamp(11px,0.98cqw,13px)]';
 
   return (
     <div
-      className="inline-flex items-center gap-1.5"
+      className="lkdf-hp-meter inline-flex min-w-0 items-center gap-1"
+      data-vitality={vitality}
       title={`Sinh lực: ${safeHp}/${safeMax}`}
       aria-label={`Sinh lực ${safeHp} trên ${safeMax}`}
     >
       {useCompactBar ? (
-        <div className="h-2.5 w-16 overflow-hidden rounded-full border border-[#3A424C] bg-[#14171A]">
+        <div className="h-2 w-10 shrink-0 overflow-hidden rounded-sm border border-[#625e57] bg-[#151315]">
           <div
-            className={`h-full transition-all duration-150 ${
-              safeHp <= 1
-                ? 'bg-[#C83E37]'
-                : safeHp <= 2
-                  ? 'bg-[#D99B26]'
-                  : 'bg-[#10B981]'
-            }`}
+            className="lkdf-hp-fill h-full"
             style={{ width: `${Math.round((safeHp / safeMax) * 100)}%` }}
           />
         </div>
@@ -56,11 +46,9 @@ export function HpJadeMeter({
               <span
                 key={idx}
                 className={[
-                  'inline-block rounded-full transition-colors duration-150',
+                  'lkdf-hp-jade inline-block shrink-0',
                   pipSizeClass,
-                  filled
-                    ? pipColor
-                    : 'border-[#4B5563] bg-[#14171A]/95 opacity-70',
+                  filled ? 'lkdf-hp-fill' : '',
                 ].join(' ')}
               />
             );

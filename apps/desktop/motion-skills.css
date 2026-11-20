@@ -98,3 +98,28 @@
 .skill-gift .skill-sort-zone {
   grid-template-columns: repeat(3, minmax(0, 74px));
 }
+
+.skill-take-cards {
+  position:absolute; z-index:24; translate:-50% -50%; pointer-events:auto;
+  width:min(420px, 49cqw); padding:10px 12px; text-align:center;
+  border:1px solid #9a774e; border-radius:6px; background:#261c17; color:#f4e3bd;
+  box-shadow:0 4px 16px #120c08c9;
+}
+.skill-take-cards h3 { margin:0 0 6px; font-size:15px; }
+.skill-take-status { margin:6px 0; min-height:1.2em; font-size:12px; }
+.skill-take-views,.skill-take-actions { display:flex; flex-wrap:wrap; gap:4px; justify-content:center; }
+.skill-take-cards button[aria-pressed='true'] { outline:2px solid #e5bd78; outline-offset:-2px; }
+.skill-take-cards button:disabled { cursor:default; }
+.skill-take-actions { margin-top:8px; }
+.skill-take-actions button:disabled { opacity:.5; }
+.skill-take-tray { display:flex; justify-content:center; gap:6px; }
+.skill-take-slot {
+  position:relative; width:clamp(45px, 6.6cqw, 66px); height:clamp(58px, 11cqh, 88px);
+  padding:0; overflow:hidden; border:1px solid #a8895d; background:#151a22;
+}
+.skill-take-slot[hidden] { display:none; }
+.skill-take-slot:focus-visible { outline:2px solid #fff0c2; outline-offset:2px; }
+.skill-take-slot[aria-pressed='true'] { z-index:1; border-color:#f0cb8b; box-shadow:0 0 8px #e7b35e; }
+.skill-take-face { display:flex; flex-direction:column; width:100%; height:100%; pointer-events:none; }
+.skill-take-face > div:only-child { width:100%; height:100%; }
+.skill-take-received { border-color:#c4dfac; }

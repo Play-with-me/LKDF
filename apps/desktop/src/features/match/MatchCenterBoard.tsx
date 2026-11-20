@@ -7,7 +7,7 @@ import type {
   TargetCardZone,
   TimerPresetConfig,
 } from '@lkdf/shared';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { getUiAssetUrl } from '../../lib/assetCatalog.js';
 import {
   CardBack,
@@ -23,6 +23,8 @@ import {
   getPlayerSeatLabel,
 } from './matchTypes.js';
 
+type ThrowOriginLookup = (cardId: string) => { x: number; y: number } | null;
+
 export interface MatchCenterBoardProps {
   readonly playerView: PlayerViewState;
   readonly timerConfig: TimerPresetConfig;
@@ -30,6 +32,7 @@ export interface MatchCenterBoardProps {
   readonly pausedRemainingMs: number | null;
   readonly isTimerPaused: boolean;
   readonly inspectedCardId?: string | null;
+  readonly takeThrowOrigin?: ThrowOriginLookup;
   readonly onSendAction: (action: GameAction) => void;
   readonly onInspectCard?: (card: CardInstance, sourceLabel: string) => void;
 }
@@ -297,6 +300,7 @@ function TablePlayedCard({
   isInspected,
   rotationDeg,
   overlapLeft,
+  takeThrowOrigin,
   onInspect,
 }: {
   readonly card: CardInstance;
@@ -304,12 +308,32 @@ function TablePlayedCard({
   readonly isInspected: boolean;
   readonly rotationDeg: number;
   readonly overlapLeft: boolean;
+  readonly takeThrowOrigin?: ThrowOriginLookup;
   readonly onInspect?: (card: CardInstance, sourceLabel: string) => void;
 }) {
   const rankLabel = formatRankLabel(card.rank);
+  const faceRef = useRef<HTMLButtonElement>(null);
+
+  useLayoutEffect(() => {
+    const face = faceRef.current;
+    const origin = takeThrowOrigin?.(card.id);
+    if (!face || !origin || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    const bounds = face.getBoundingClientRect();
+    const dx = origin.x - bounds.left - bounds.width / 2;
+    const dy = origin.y - bounds.top - bounds.height / 2;
+    const motion = face.animate([
+      { translate: `${dx}px ${dy}px`, scale: 1.1 },
+      { translate: `${dx * .9}px ${dy * .9 - 12}px`, scale: 1.13, offset: .19 },
+      { translate: '0 -3px', scale: 1.03, offset: .86 },
+      { translate: '0 0', scale: 1 },
+    ], { duration: 240, easing: 'cubic-bezier(.22,.72,.32,1)' });
+    return () => motion.cancel();
+  }, [card.id, takeThrowOrigin]);
 
   return (
     <button
+      ref={faceRef}
       type="button"
       onClick={onInspect ? () => onInspect(card, 'Bài ngửa giữa bàn') : undefined}
       title={`Bấm xem kỹ năng ${rankLabel} ${card.nameVi}`}
@@ -336,6 +360,7 @@ export function MatchCenterBoard({
   pausedRemainingMs,
   isTimerPaused,
   inspectedCardId = null,
+  takeThrowOrigin,
   onSendAction,
   onInspectCard,
 }: MatchCenterBoardProps) {
@@ -467,23 +492,6 @@ export function MatchCenterBoard({
       ) : !hasSpecialChoice ? (
         <div className="lkdf-battle-card-line flex items-end justify-center gap-7 py-1">
           {/* Chồng bài rút dạng xấp bài úp */}
-          <div className="lkdf-battle-pile flex flex-col items-center gap-1.5">
-            <div className="relative">
-              <span
-                aria-hidden="true"
-                className="pointer-events-none absolute top-1.5 left-1.5 h-[100px] w-[72px] rounded-lg border border-[#D99B26]/30 bg-[#0F1B2B]"
-              />
-              <span
-                aria-hidden="true"
-                className="pointer-events-none absolute top-0.5 left-0.5 h-[100px] w-[72px] rounded-lg border border-[#D99B26]/50 bg-[#15253A]"
-              />
-              <CardBack size="lg" className="relative z-10 shadow-lg" />
-            </div>
-            <span className="font-mono-num inline-flex items-center gap-1 rounded-full border border-[#303740] bg-[#14171A]/85 px-2.5 py-0.5 text-[11px] font-semibold text-[#D1D5DB] tabular-nums">
-              Rút: <strong className="text-[#F3F4F6]">{playerView.drawPileCount}</strong>
-            </span>
-          </div>
-
           {/* Tụ bài đánh ra kiểu Tiến Lên Miền Nam (xòe ngang đè nhẹ giữa bàn) */}
           <div className="flex flex-col items-center gap-1.5">
             <div className="flex min-h-[104px] min-w-[96px] items-center justify-center px-2">
@@ -497,6 +505,7 @@ export function MatchCenterBoard({
                       isInspected={inspectedCardId === card.id}
                       rotationDeg={TABLE_FAN_ROTATIONS_DEG[idx % TABLE_FAN_ROTATIONS_DEG.length] ?? 0}
                       overlapLeft={idx > 0}
+                      takeThrowOrigin={takeThrowOrigin}
                       onInspect={onInspectCard}
                     />
                   ))}

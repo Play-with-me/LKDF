@@ -153,4 +153,5 @@
 
 - 2026-11-20 · Có bản dựng demo 40 kỹ năng. Bốn cảnh tương tác đã thử, toàn bộ nhánh và tích hợp thật còn chờ. Giữ Bước 4.4 chưa hoàn thành.
 
+- 2026-11-20 · Bước 4.4 · Đã dời chồng rút khỏi vùng bài giữa bàn và gắn điểm xuất phát của hiệu ứng rút đã xác nhận. Giữ Bước 4.4 mở để duyệt các nhánh còn lại.
 - Bước 4.4 · Khay lấy bài tay đã nối vào bàn chính cho Phản Quỷ, Đột Tập và Thuận Thủ. Giữ bước mở để nghiệm thu toàn bộ hiệu ứng.

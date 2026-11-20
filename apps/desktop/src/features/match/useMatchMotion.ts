@@ -106,23 +106,39 @@ function transferCard(motion: BoardMotion, from: Element, to: Element, card?: Ca
   ], { duration: 420, delay, easing: 'ease-out', fill: 'backwards' });
 }
 
-function showTransfers(motion: BoardMotion, previous: PlayerViewState, state: PlayerViewState, freshDiscard: boolean) {
-  const center = motion.board.querySelector('.lkdf-battle-center-stack');
-  const pile = motion.board.querySelector('.lkdf-battle-pile');
-  if (!center) return;
-  if (pile && freshDiscard && state.discardPileTop?.cardKey === 'vo_trung_sinh_huu' &&
-      previous.drawPileCount - state.drawPileCount === 2) {
-    const recipient = state.players.find((player) =>
-      player.seatIndex === state.currentTurnSeat &&
-      player.handCount - (previous.players.find((old) => old.seatIndex === player.seatIndex)?.handCount ?? player.handCount) === 1);
-    const hand = recipient && (recipient.seatIndex === state.viewerSeatIndex
-      ? motion.board.querySelector('.lkdf-hand-row') ?? seatAt(motion, recipient.seatIndex)
-      : seatAt(motion, recipient.seatIndex));
-    if (hand) {
-      transferCard(motion, pile, hand);
-      transferCard(motion, pile, hand, undefined, 135);
+// Only explicit public draw results can identify the recipient and quantity.
+const DRAW_RESULT = /^(?:rút|bỏ qua Đột Tập, rút|kích hoạt Lỏa Y, rút|dùng Vô Trung Sinh Hữu rút|kích hoạt (?:Tập Trí|Khổ Nhục|Liên Doanh|Kiêu Cơ|Bế Nguyệt), rút|kích hoạt Chế Hành, bỏ \d+ lá và rút lại|tiêu diệt Phản Tặc, được rút thưởng) (\d+) lá(?: bài| ở pha Rút bài| nhờ Từ Hùng Song Cổ Kiếm| \(\+1 sát thương Sát\/Quyết Đấu\))?\.$/u;
+
+function showDraws(motion: BoardMotion, previous: PlayerViewState, state: PlayerViewState) {
+  const pile = motion.board.querySelector('[data-motion-draw-pile]');
+  if (!pile || motion.reduced) return;
+
+  let offset = 0;
+  for (const entry of state.actionLog.slice(previous.actionLog.length)) {
+    const recipients = state.players.flatMap((player) => {
+      const prefix = player.displayName + ' ';
+      const result = entry.startsWith(prefix) && DRAW_RESULT.exec(entry.slice(prefix.length));
+      return result ? [{ player, count: Number(result[1]) }] : [];
+    });
+    if (recipients.length !== 1) continue;
+
+    const { player, count } = recipients[0]!;
+    const seat = seatAt(motion, player.seatIndex);
+    const destination = player.seatIndex === state.viewerSeatIndex
+      ? motion.board.querySelector('.lkdf-hand-row') ?? seat
+      : seat;
+    if (!destination) continue;
+    for (let index = 0; index < Math.min(count, 8); index += 1) {
+      transferCard(motion, pile, destination, undefined, Math.min(offset, 420));
+      offset += 65;
     }
   }
+}
+
+function showTransfers(motion: BoardMotion, previous: PlayerViewState, state: PlayerViewState) {
+  showDraws(motion, previous, state);
+  const center = motion.board.querySelector('.lkdf-battle-center-stack');
+  if (!center) return;
   const take = previous.activeInterrupt;
   if (take?.handPick === 'SELECT' && take.sourceSeat != null && take.id !== state.activeInterrupt?.id) {
     const taker = state.players.find(player => player.seatIndex === take.sourceSeat);
@@ -280,7 +296,7 @@ export function useMatchMotion(
     const strike = previous.discardPileTop;
     const freshDiscard = state.discardPileCount > previous.discardPileCount &&
       state.discardPileTop?.id !== strike?.id;
-    showTransfers(motion, previous, state, freshDiscard);
+    showTransfers(motion, previous, state);
     const track = (animation: Animation | null) => {
       if (!animation) return;
       reactions.current.add(animation);

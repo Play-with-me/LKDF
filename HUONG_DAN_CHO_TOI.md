@@ -264,4 +264,5 @@ Hãy gọi kèm `/honest-advisor` và `/ultrathinking` như bạn đã dùng r�
 
 - 👉 Bước 4.4 · Duyệt demo tướng tại http://localhost:5174/motion-demo.html. Chọn tướng/kỹ năng trong danh sách. Câu lệnh tiếp nối: Kiểm tra đủ các nhánh hiệu ứng tướng và sửa các cảnh chưa khớp trước khi đưa vào bản chính.
 
+- 2026-11-20 · Bước 4.4 · Bàn chính đặt chồng bài rút ở góc trên trái. Mở http://localhost:5174/?devPreviewSeats=8 để xem bố cục. Câu lệnh tiếp nối: “Kiểm tra các nhánh rút bài còn thiếu xác nhận trên bàn chính.”
 - Bước 4.4 · Khi lấy bài tay, chủ bài có thể đổi hai lá rồi xác nhận úp; người lấy chọn một vị trí. Bước tiếp: “Kiểm tra khay lấy bài tay với ba máy trong trận thật.”

@@ -184,8 +184,8 @@ export function SeatCard({
       {/* Nền chân dung Tướng tràn viền kiểu Gwent (Mẫu B) */}
       <HeroCardWatermark
         portraitUrl={!photoFailed ? heroPortraitUrl : null}
-        widthClass="w-[68%]"
-        opacityClass="opacity-75"
+        widthClass="w-[78%]"
+        opacityClass="opacity-85"
       />
 
       {/* Nhãn chọn mục tiêu hoặc vùng thả khi kéo bài */}
@@ -295,14 +295,14 @@ export function SeatCard({
               : undefined
           }
           className={[
-            'mt-1 flex items-center gap-1.5 min-w-0',
+            'mt-1 flex items-start gap-1 min-w-0',
             !canClick && canInspectSeatHero ? 'cursor-pointer' : '',
           ].join(' ')}
         >
           {hero ? (
             <>
               <FactionSeal faction={hero.faction} size="xs" />
-              <span className="font-serif-title min-w-0 truncate text-[clamp(11px,0.96cqw,13.5px)] font-bold leading-tight text-[#F5EBD6] drop-shadow-[0_1px_3px_rgba(0,0,0,0.98)]">
+              <span className="font-serif-title min-w-0 flex-1 [overflow-wrap:anywhere] text-[clamp(11px,0.96cqw,13.5px)] font-bold leading-tight text-[#F5EBD6] drop-shadow-[0_1px_3px_rgba(0,0,0,0.98)]">
                 {hero.nameVi}
               </span>
             </>
@@ -311,6 +311,12 @@ export function SeatCard({
               Đang chọn tướng
             </span>
           )}
+          <span
+            data-match-identity={player.isIdentityRevealed ? player.identity : 'UNKNOWN'}
+            className={`lkdf-match-identity lkdf-match-identity-seat ${identityClass}`}
+          >
+            {identityLabel}
+          </span>
         </div>
       </div>
 
@@ -331,10 +337,10 @@ export function SeatCard({
           {player.isBotTakeover ? (
             <span
               title="Máy đánh hộ tạm thời"
-              className="inline-flex items-center gap-0.5 rounded bg-[#D97706]/25 px-1 py-0.5 text-[9px] font-semibold text-[#FBBF24]"
+              className="lkdf-match-bot"
             >
               <GameIcon name="ui:bot" size={10} />
-              Bot
+              Máy
             </span>
           ) : null}
           {isDisconnected ? (
@@ -354,18 +360,7 @@ export function SeatCard({
               {player.handCount}
             </span>
           </div>
-          <span className="inline-flex shrink-0 rounded bg-[#0B0E14]/95">
-            <span
-              className={[
-                'rounded border px-1 py-0.5 text-[8.5px] font-bold leading-none',
-                identityClass,
-              ].join(' ')}
-            >
-              {compact && player.isIdentityRevealed && player.identity === 'LORD'
-                ? 'Chủ'
-                : identityLabel}
-            </span>
-          </span>
+
         </div>
       </div>
 

@@ -1,8 +1,26 @@
-import { renderDemoCard } from './motion-card-face.tsx';
+import { renderDemoBack, renderDemoCard } from './motion-card-face.tsx';
 import './motion-skills.css';
+import { demoTakeCards } from './motion-take-cards.js';
+
+const PASSIVE_CUES = new Map([
+  ['pao_xiao', 'Pha Đánh · Sát không giới hạn'],
+  ['kong_cheng', 'Hết bài tay · chặn chọn mục tiêu'],
+  ['ma_shu', 'Khoảng cách tới đối thủ −1'],
+  ['ji_zhi', 'Dùng Cẩm nang thường · rút 1 lá'],
+  ['qi_cai', 'Dùng Cẩm nang · bỏ giới hạn khoảng cách'],
+  ['jiu_yuan', 'Chủ Công được đồng phe Ngô cứu · hồi 2 máu'],
+  ['ying_zi', 'Pha Rút · rút 3 lá'],
+  ['qian_xun', 'Chặn chọn mục tiêu của Thuận Thủ và Lạc Bất Tư Thục'],
+  ['lian_ying', 'Mất lá cuối trên tay · rút 1 lá'],
+  ['xiao_ji', 'Mất 1 trang bị · rút 2 lá'],
+  ['wu_shuang', 'Sát yêu cầu 2 Thiểm · Quyết Đấu yêu cầu 2 Sát mỗi lần đáp'],
+  ['bi_yue', 'Kết lượt · rút 1 lá'],
+]);
+
+export const isPassiveDemoSkill = id => PASSIVE_CUES.has(id);
 
 // Isolated review scenarios. These outcomes never change a live match.
-export async function playSkill({ skillId, stage, center, seats, status, active, hero }) {
+export async function playSkill({ skillId, stage, center, seats, status, active, hero, highlight }) {
   const skill = hero.skills.find(item => item.id === skillId);
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const colors = { SHU: '#C83E37', WEI: '#3B82F6', WU: '#10B981', QUN: '#9CA3AF' };
@@ -83,12 +101,13 @@ export async function playSkill({ skillId, stage, center, seats, status, active,
   };
   const card = (key, name, point, hidden = false) => {
     const el = add('div', hidden ? 'skill-card skill-back' : 'skill-card', '', point);
-    if (!hidden) renderDemoCard(el, key, name);
+    if (hidden) renderDemoBack(el);
+    else renderDemoCard(el, key, name);
     return el;
   };
   const travel = async (el, from, to) => {
     el.style.left = `${to[0]}px`; el.style.top = `${to[1]}px`;
-    animate(el, [{ transform: `translate(${from[0] - to[0]}px,${from[1] - to[1]}px)` }, { transform: 'none' }], 480);
+    animate(el, [{ translate: `${from[0] - to[0]}px ${from[1] - to[1]}px` }, { translate: 'none' }], 480);
     return pause(490);
   };
   const choices = options => new Promise(resolve => {
@@ -105,10 +124,15 @@ export async function playSkill({ skillId, stage, center, seats, status, active,
     observer.observe(stage, { childList: true });
   });
   const draw = async (count, destination = origin, from = pile) => {
+    if (reduced) return;
+    const source = from === pile ? center.drawOrigin() : from;
     for (let i = 0; i < count; i++) {
-      const el = card('sat', 'Sát', from, true);
-      if (!await travel(el, from, [destination[0] + i * 9, destination[1] + 35])) return;
+      const start = [source[0] - 22, source[1] - 31];
+      const el = add('div', 'tactic-back', '', start);
+      renderDemoBack(el);
+      const landed = await travel(el, start, [destination[0] - 22, destination[1] - 31]);
       el.remove();
+      if (!landed) return;
     }
   };
   const heal = point => {
@@ -122,9 +146,12 @@ export async function playSkill({ skillId, stage, center, seats, status, active,
     const el = add('div', 'damage-number', `−${amount}`, point);
     animate(el, [{ opacity: 1 }, { opacity: 0, transform: 'translateY(-40px)' }], 1000);
   };
-  const hit = async (to = target, dodge = false, amount = 1, playedCard) => {
-    const el = playedCard ?? card('sat', 'Sát', [x - 35, y - 48]);
-    if (!await travel(el, [x - 35, y - 48], [to[0] - 35, to[1] - 48])) return;
+  const hit = async (to = target, dodge = false, amount = 1, playedCard, attacker = origin) => {
+    const landing = [x - 35, y - 48];
+    const el = playedCard ?? card('sat', 'Sát', landing);
+    if (!playedCard && !await travel(el, [attacker[0] - 35, attacker[1] - 48], landing)) return;
+    if (!await pause(reduced ? 0 : 110)) return;
+    if (!await travel(el, landing, [to[0] - 35, to[1] - 48])) return;
     if (dodge) {
       const shade = glow(to); animate(shade, [{ opacity: 1 }, { opacity: .15, transform: 'translateX(32px)' }], 650);
       card('thiem', 'Thiểm', [x + 45, y - 48]);
@@ -145,20 +172,11 @@ export async function playSkill({ skillId, stage, center, seats, status, active,
   };
   const redCard = { key: 'thiem', name: 'Thiểm', printing: { suit: 'DIAMOND', rank: 2 } };
   const blackCard = { key: 'sat', name: 'Sát', printing: { suit: 'SPADE', rank: 7 } };
-  if (origin.frame) glow(origin);
-  const badge = label(`${hero.nameVi} · ${skill.nameVi}`, [origin[0], origin[1] + 65]);
-  badge.classList.add('skill-seat-caption');
-  fitSeat(badge, origin);
-  const flames = origin.frame ? fire(origin, skillId === 'wu_shuang') : null;
-  const inlineTray = skillId === 'ren_de' || skillId === 'guan_xing';
-  const veil = inlineTray ? null : add('div', 'skill-veil');
-  const popup = inlineTray ? null : add('div', 'skill-popup', skill.nameVi, [origin[0], Math.max(55, origin[1] - 20)]);
+  const passiveCue = PASSIVE_CUES.get(skillId);
+  highlight(Boolean(passiveCue));
   status.textContent = `Diễn tập · ${hero.nameVi} · ${skill.nameVi}`;
   if (!await pause(700)) return true;
-  veil?.remove(); popup?.remove();
   const finish = () => {
-    flames?.remove();
-    if (!['pao_xiao','wu_sheng','kong_cheng','ma_shu','qi_cai','qian_xun','wu_shuang','long_dan','qing_guo','jiu_yuan'].includes(skillId)) badge.remove();
     status.textContent = `${skill.nameVi} · kết thúc cảnh diễn tập`;
   };
   const markTarget = () => { glow(target); label(`Mục tiêu · ${skill.nameVi}`, [target[0], target[1] - 65]); };
@@ -290,13 +308,15 @@ export async function playSkill({ skillId, stage, center, seats, status, active,
       const ring=glow(seats[i]); label(`${hero.factionLabelVi} · đang được hỏi`,[seats[i][0],seats[i][1]-60]);
       const answer=await choices([['Đáp ứng bằng '+(skillId==='ji_jiang'?'Sát':'Thiểm'),'yes'],['Bỏ qua người này','no']]);
       ring.remove(); if(!answer||!active()) return true;
-      if(answer==='yes') { await draw(1,origin,seats[i]); if(skillId==='ji_jiang') await hit(); else card('thiem','Thiểm',[x,y-48]); break; }
+      if(answer==='yes') { await draw(1,origin,seats[i]); if(skillId==='ji_jiang') await hit(target,false,1,undefined,seats[i]); else card('thiem','Thiểm',[x,y-48]); break; }
     }
   } else if (skillId==='luo_shen') {
     while(active()) {
       const result=await choices([['Lật lá đen · nhận và tiếp tục','black'],['Lật lá đỏ · kết thúc','red'],['Dừng Lạc Thần','stop']]);
       if(!result||!active()) return true;
       if(result==='stop') break;
+      await draw(1,center);
+      if(!active()) return true;
       const el=card(result==='black'?'sat':'dao',result==='black'?'Sát':'Đào',[x-35,y-48]);
       renderDemoCard(el,result==='black'?'sat':'dao',result==='black'?'Sát':'Đào',{suit:result==='black'?'SPADE':'HEART',rank:7});
       if(!await pause(600)) return true;
@@ -304,9 +324,12 @@ export async function playSkill({ skillId, stage, center, seats, status, active,
       if(result==='red') break;
     }
   } else {
-    const chosen=await choices([['Diễn tập sử dụng '+skill.nameVi,'use'],['Kết thúc cảnh','stop']]);
-    if(!chosen||!active()) return true;
-    if(chosen==='stop') { finish(); return true; }
+    if (!passiveCue) {
+      const chosen=await choices([['Diễn tập sử dụng '+skill.nameVi,'use'],['Kết thúc cảnh','stop']]);
+      if(!chosen||!active()) return true;
+      if(chosen==='stop') { finish(); return true; }
+      highlight(false);
+    }
     switch(skillId) {
 
       case 'wu_sheng': { const el = await convert('sat', 'Sát', redCard); if (el && active()) await hit(target, false, 1, el); break; }
@@ -314,6 +337,8 @@ export async function playSkill({ skillId, stage, center, seats, status, active,
       case 'long_dan': { const result=await choices([['Thiểm thành Sát','sat'],['Sát thành Thiểm','thiem']]); if(!result||!active())return true; const toSat = result === 'sat'; const converted = await convert(result, toSat ? 'Sát' : 'Thiểm', toSat ? {key:'thiem',name:'Thiểm'} : {key:'sat',name:'Sát'}); if (converted && toSat && active()) await hit(target, false, 1, converted); break; }
       case 'kong_cheng': case 'ma_shu': case 'qi_cai': case 'qian_xun': label(skill.descriptionVi,[x,y]); break;
       case 'tie_qi': case 'gang_lie': case 'gui_cai': {
+        await draw(1,center);
+        if(!active()) return true;
         const el=card('sat','Sát',[x-35,y-48]);
         const result=await choices(skillId==='gui_cai'?[['Thay lá phán xét','replace'],['Giữ phán xét','keep']]:[['Phán xét đạt điều kiện','yes'],['Phán xét không đạt','no']]);
         if(!result||!active())return true;
@@ -324,8 +349,22 @@ export async function playSkill({ skillId, stage, center, seats, status, active,
       }
       case 'ji_zhi': case 'lian_ying': case 'bi_yue': await draw(1); break;
       case 'jian_xiong': damage(origin); await draw(1,origin,center); break;
-      case 'fan_kui': markTarget(); await draw(1,origin,target); break;
-      case 'tu_xi': markTarget(); await draw(1,origin,target); if(seats[2])await draw(1,origin,seats[2]); break;
+      case 'fan_kui':
+        markTarget();
+        if (!await demoTakeCards({ stage, center, ownerPoint: target, takerPoint: origin, skillName: skill.nameVi })) return true;
+        break;
+      case 'tu_xi': {
+        const total = await choices([['Lấy bài của 1 người', 1], ['Lấy bài của 2 người', 2]]);
+        if (!total || !active()) return true;
+        for (let index = 0; index < total; index++) {
+          glow(seats[index + 1]);
+          if (!await demoTakeCards({
+            stage, center, ownerPoint: seats[index + 1], takerPoint: origin, skillName: skill.nameVi, handNumber: index + 1,
+            continueLabel: index + 1 < total ? 'Sang người thứ hai' : undefined,
+          })) return true;
+        }
+        break;
+      }
       case 'luo_yi': await draw(1); label('Lỏa Y · Sát / Quyết Đấu +1 sát thương',[origin[0],origin[1]+90]); if(await choices([['Thử Sát tăng sát thương','hit'],['Kết thúc lượt','end']])==='hit'&&active()){await hit(target,false,2);} break;
       case 'tian_du': await draw(1,origin,center); break;
       case 'yi_ji': await draw(2); if(await choices([['Chia hai lá cho mục tiêu','give'],['Giữ lại hai lá','keep']])==='give'&&active()){markTarget();await draw(2,target,origin);} break;
@@ -333,11 +372,15 @@ export async function playSkill({ skillId, stage, center, seats, status, active,
       case 'zhi_heng': await discard(2); await draw(2); break;
       case 'jiu_yuan': heal(origin); label('+2 máu',[origin[0],origin[1]-30]); break;
       case 'qi_xi': if (!await convert('qua_ha_sai_cau','Quá Hà Sái Cầu',blackCard)) return true; markTarget(); await draw(1,pile,target); break;
-      case 'ke_ji': label('Khắc Kỷ · bỏ qua pha bỏ bài',[x,y]); break;
+      case 'ke_ji': {
+        const skip = await choices([['Bỏ qua pha Bỏ bài','skip'],['Vẫn bỏ bài','discard']]);
+        if (skip === 'skip') label('Khắc Kỷ · bỏ qua pha Bỏ bài',[x,y]);
+        break;
+      }
       case 'ku_rou': damage(origin); await draw(2); break;
       case 'ying_zi': await draw(3); break;
       case 'guo_se': { const el = await convert('lac_bat_tu_thuc','Lạc Bất Tư Thục',redCard); if (!el || !active()) return true; markTarget(); await travel(el,[x-35,y-48],[target[0]-35,target[1]-48]); break; }
-      case 'liu_li': { await discard(); const selected=await choices(seats.slice(2,5).map((_,i)=>['Chuyển Sát sang ghế '+(i+3),i+2])); if(selected!==null&&active()){glow(seats[selected]);await hit(seats[selected]);} break; }
+      case 'liu_li': { await discard(); const selected=await choices(seats.slice(2,5).map((_,i)=>['Chuyển Sát sang ghế '+(i+3),i+2])); if(selected!==null&&active()){glow(seats[selected]);await hit(seats[selected],false,1,undefined,target);} break; }
       case 'jie_yin': await discard(2); markTarget(); heal(origin); heal(target); break;
       case 'xiao_ji': await draw(1,pile,origin); await draw(2); break;
       case 'qing_nang': case 'ji_jiu': if (!await convert('dao','Đào',redCard)) return true; markTarget(); heal(target); break;
@@ -348,7 +391,7 @@ export async function playSkill({ skillId, stage, center, seats, status, active,
         const b=add('img','skill-duelist','',[x+45,y-100]);b.src='/src/assets/art/heroes/zhang_fei.webp';b.alt='Trương Phi';
         glow(target);glow(other);
         const result=await choices([['Bắt đầu Quyết Đấu','duel'],['Dùng Vô Giải','cancel']]);
-        if(result==='duel'&&active()){const duelFires=[fire([x-100,y]),fire([x+100,y])];await hit(target);if(active())await hit(other);duelFires.forEach(el=>el.remove());}
+        if(result==='duel'&&active()){const duelFires=[fire([x-100,y]),fire([x+100,y])];await hit(target,false,1,undefined,other);if(active())await hit(other,false,1,undefined,target);duelFires.forEach(el=>el.remove());}
         break;
       }
     }

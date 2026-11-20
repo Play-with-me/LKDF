@@ -223,6 +223,18 @@ export function MatchArenaLayout({
 }: MatchArenaLayoutProps) {
   const arenaRef = useRef<HTMLDivElement>(null);
   const motionLayerRef = useRef<HTMLDivElement>(null);
+  const pendingThrowRef = useRef<{ cardId: string; x: number; y: number; sentAt: number } | null>(null);
+
+  useEffect(() => {
+    pendingThrowRef.current = null;
+  }, [connectionLost, playerView.matchId]);
+
+  const takeThrowOrigin = useCallback((cardId: string) => {
+    const pending = pendingThrowRef.current;
+    if (connectionLost || !pending || pending.cardId !== cardId) return null;
+    pendingThrowRef.current = null;
+    return performance.now() - pending.sentAt <= 4000 ? pending : null;
+  }, [connectionLost]);
   useMatchMotion(arenaRef, motionLayerRef, playerView, connectionLost || playerView.turnPhase === 'HERO_SELECT');
   const ordered = getOrderedSeatsClockwiseFromSelf(
     playerView.players,
@@ -462,12 +474,23 @@ export function MatchArenaLayout({
       setDragState(null);
 
       const { intent, card } = session;
+      const rememberThrow = () => {
+        if (!e) return;
+        const ghost = ghostRef.current?.getBoundingClientRect();
+        pendingThrowRef.current = {
+          cardId: card.id,
+          x: ghost ? ghost.left + ghost.width / 2 : e.clientX,
+          y: ghost ? ghost.top + ghost.height / 2 : e.clientY,
+          sentAt: performance.now(),
+        };
+      };
       if (intent.kind === 'blocked') {
         setDragFeedbackVi(intent.reasonVi);
         return;
       }
 
       if (intent.kind === 'seat' && hover.nextSeatIdx !== null) {
+        rememberThrow();
         onSendAction({
           type: 'PLAY_CARD',
           seatIndex: playerView.viewerSeatIndex,
@@ -490,6 +513,7 @@ export function MatchArenaLayout({
       }
 
       if (intent.kind === 'table' && hover.nextTable) {
+        rememberThrow();
         onSendAction(intent.action);
         setInspector(null);
         onClearSelection?.();
@@ -502,13 +526,17 @@ export function MatchArenaLayout({
       }
     };
 
+    const cancelDrag = () => {
+      dragSessionRef.current = null;
+      setDragState(null);
+    };
     window.addEventListener('pointermove', onPointerMove);
     window.addEventListener('pointerup', finishDrag);
-    window.addEventListener('pointercancel', () => finishDrag());
+    window.addEventListener('pointercancel', cancelDrag);
     return () => {
       window.removeEventListener('pointermove', onPointerMove);
       window.removeEventListener('pointerup', finishDrag);
-      window.removeEventListener('pointercancel', () => finishDrag());
+      window.removeEventListener('pointercancel', cancelDrag);
     };
   }, [
     onClearSelection,
@@ -698,6 +726,18 @@ export function MatchArenaLayout({
           {/* 3–7 ghế đối thủ phân bố đều & co giãn theo bàn */}
           {opponents.map(renderOpponentSeat)}
 
+          {!isHeroSelectPhase ? (
+            <div className="lkdf-battle-pile absolute top-2 left-2 z-10 flex flex-col items-center gap-1">
+              <div data-motion-draw-pile className="relative">
+                <span aria-hidden="true" className="absolute inset-0 translate-x-0.5 translate-y-0.5 rounded-md border border-[#D99B26]/50 bg-[#15253A]" />
+                <CardBack size="md" className="block shadow-lg" />
+              </div>
+              <span className="font-mono-num rounded-full border border-[#303740] bg-[#14171A]/85 px-1.5 py-0.5 text-[10px] font-semibold text-[#F3F4F6] tabular-nums">
+                Rút: {playerView.drawPileCount}
+              </span>
+            </div>
+          ) : null}
+
           {/* Bảng trung tâm ở lòng Bàn Tròn */}
           {!isHeroSelectPhase ? (
             <div className="lkdf-battle-center absolute top-[61%] left-1/2 z-10 flex max-h-[calc(100%-108px)] w-[clamp(240px,30cqw,416px)] -translate-x-1/2 -translate-y-1/2 flex-col items-center">
@@ -713,6 +753,7 @@ export function MatchArenaLayout({
                     : null
                 }
                 onSendAction={onSendAction}
+                takeThrowOrigin={takeThrowOrigin}
                 onInspectCard={(card, sourceLabel) =>
                   handleInspectCard(card, `played:${card.id}`, sourceLabel)
                 }
@@ -795,8 +836,8 @@ export function MatchArenaLayout({
           >
             <HeroCardWatermark
               portraitUrl={!selfPhotoFailed ? selfPortraitUrl : null}
-              widthClass="w-[74%]"
-              opacityClass="opacity-72"
+              widthClass="w-[94%]"
+              opacityClass="opacity-90"
             />
             <div className="relative z-10 flex min-h-0 flex-1 flex-col gap-1">
               {selfPlayer ? (
@@ -829,16 +870,16 @@ export function MatchArenaLayout({
                       <div className="flex items-center gap-1 min-w-0">
                         <span
                           title={selfPlayer.displayName}
-                          className="truncate text-[clamp(10px,0.9cqw,12px)] font-bold text-[#E2E8F0] drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)]"
+                          className="min-w-0 [overflow-wrap:anywhere] text-[clamp(10px,0.9cqw,12px)] leading-tight font-bold text-[#E2E8F0] drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)]"
                         >
                           {selfPlayer.displayName}
                         </span>
                       </div>
-                      <div className="mt-0.5 flex items-center gap-1 min-w-0">
+                      <div className="mt-1 flex items-start gap-1 min-w-0">
                         {selfHero ? (
                           <>
                             <FactionSeal faction={selfHero.faction} size="xs" />
-                            <span className="min-w-0 truncate font-serif-title text-[clamp(11px,0.96cqw,13px)] font-bold text-[#F5EBD6] drop-shadow-[0_1px_2px_rgba(0,0,0,0.98)]">
+                            <span className="min-w-0 [overflow-wrap:anywhere] font-serif-title text-[clamp(11px,0.96cqw,13px)] leading-tight font-bold text-[#F5EBD6] drop-shadow-[0_1px_2px_rgba(0,0,0,0.98)]">
                               {selfHero.nameVi}
                             </span>
                           </>
@@ -846,32 +887,26 @@ export function MatchArenaLayout({
                           <span className="truncate text-[10px] text-[#9CA3AF]">Chưa chọn</span>
                         )}
                       </div>
-                      <span
-                        className={[
-                          'mt-1 inline-block rounded border px-1.5 py-0 text-[9px] font-bold bg-[#0B0E14]/90',
-                          getIdentityBadgeClass(selfPlayer.identity),
-                        ].join(' ')}
-                      >
-                        {getIdentityLabelVi(selfPlayer.identity)}
-                      </span>
                     </div>
                   </div>
 
-                  {/* Máu + Nút kỹ năng nhanh */}
-                  <div className="flex min-h-0 flex-1 flex-col gap-1">
-                    <div className="flex shrink-0 items-center justify-between gap-1">
-                      <HpJadeMeter hp={selfPlayer.hp} maxHp={selfPlayer.maxHp} size="sm" />
-                      {!selfPlayer.alive ? (
-                        <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-[#FCA5A5]">
-                          <GameIcon name="death-skull" size={11} />
-                          Tử trận
+                  <div
+                    data-match-identity={selfPlayer.identity}
+                    className={`lkdf-match-identity lkdf-match-identity-self ${getIdentityBadgeClass(selfPlayer.identity)}`}
+                  >
+                    <span className="lkdf-match-identity-kicker">Thân phận</span>
+                    <strong>{getIdentityLabelVi(selfPlayer.identity)}</strong>
+                  </div>
+
+                  <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+                    <HpJadeMeter hp={selfPlayer.hp} maxHp={selfPlayer.maxHp} size="md" />
+                    {!selfPlayer.alive ? (
+                      <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-[#FCA5A5]">
+                        <GameIcon name="death-skull" size={11} />
+                        Tử trận
                         </span>
                       ) : null}
-                    </div>
-
-
                   </div>
-
                 </>
               ) : (
                 <div className="text-[11px] text-[#9CA3AF]">Đang tải thông tin ghế...</div>

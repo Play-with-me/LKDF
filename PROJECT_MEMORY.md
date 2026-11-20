@@ -300,4 +300,5 @@ Lớp hiệu ứng bàn chính đã nối các thay đổi xác nhận được 
 
 - Bước 4.4: bàn chính nhận mặt bài chuyển đổi theo cùng ID, giữ chất/số và lá vật lý trong luật. Demo hiệu ứng tướng vẫn tách riêng. Typecheck, build, unit 85/85 và integration 24/24 đạt.
 
+- 2026-11-20 · Bước 4.4 · Dời chồng rút lên góc trên trái của bàn chung. Typecheck, build desktop và 85/85 unit đạt. Bàn thử 8 ghế ở 1864×929 không chạm ghế hay vùng bài trung tâm. Đã thấy phần tử hiệu ứng chuyển lá xuất hiện, chưa đo trọn đường bay hoặc nghiệm thu online.
 - Bước 4.4 · Khay lấy bài tay tích hợp cho Phản Quỷ, Đột Tập và Thuận Thủ. Typecheck, build desktop, 85/85 unit, 24/24 integration và 500/500 ván giả lập đạt. Chờ nghiệm thu nhiều máy.
