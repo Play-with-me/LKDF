@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { createClient, type Client, type InStatement, type Row } from '@libsql/client';
 import {
   HERO_BY_ID,
@@ -858,19 +858,36 @@ export class LibsqlPersistenceStore implements PersistenceStore {
     });
   }
 
+  private readonly savedUndoIdsByRoom = new Map<string, Set<string>>();
+
   async saveRoomSnapshot(snapshot: RoomSnapshotRecord): Promise<void> {
     return this.enqueueWrite(async () => {
       await this.init();
-      const boundedUndo = snapshot.undoHistory.slice(-5);
-      await this.client.execute({
+      const roomCode = snapshot.roomState.roomCode;
+      const savedIds = this.savedUndoIdsByRoom.get(roomCode);
+      const undoIds: string[] = [];
+      const statesToInsert = new Map<string, string>();
+      for (const state of snapshot.undoHistory.slice(-5)) {
+        const json = JSON.stringify(state);
+        const id = createHash('sha256').update(json).digest('hex');
+        undoIds.push(id);
+        if (!savedIds?.has(id)) statesToInsert.set(id, json);
+      }
+
+      const statements: InStatement[] = Array.from(statesToInsert, ([id, json]) => ({
+        sql: 'INSERT OR IGNORE INTO room_undo_states (room_code, state_id, state_json) VALUES (?, ?, ?)',
+        args: [roomCode, id, json],
+      }));
+      statements.push({
         sql: `INSERT INTO room_snapshots (
                 room_code, room_state_json, master_game_state_json,
-                undo_history_json, phase_deadline_at, paused_remaining_ms, updated_at
+                undo_state_ids_json, phase_deadline_at, paused_remaining_ms, updated_at
               ) VALUES (?, ?, ?, ?, ?, ?, ?)
               ON CONFLICT(room_code) DO UPDATE SET
                 room_state_json = excluded.room_state_json,
                 master_game_state_json = excluded.master_game_state_json,
-                undo_history_json = excluded.undo_history_json,
+                undo_history_json = NULL,
+                undo_state_ids_json = excluded.undo_state_ids_json,
                 phase_deadline_at = excluded.phase_deadline_at,
                 paused_remaining_ms = excluded.paused_remaining_ms,
                 updated_at = excluded.updated_at`,
@@ -878,19 +895,32 @@ export class LibsqlPersistenceStore implements PersistenceStore {
           snapshot.roomState.roomCode,
           JSON.stringify(snapshot.roomState),
           snapshot.masterGameState ? JSON.stringify(snapshot.masterGameState) : null,
-          boundedUndo.length > 0 ? JSON.stringify(boundedUndo) : null,
+          JSON.stringify(undoIds),
           snapshot.phaseDeadlineAt,
           snapshot.pausedRemainingMs,
           snapshot.updatedAt,
         ],
       });
+      statements.push({
+        sql: 'DELETE FROM room_undo_states WHERE room_code = ? AND state_id NOT IN (SELECT value FROM json_each(?))',
+        args: [roomCode, JSON.stringify(undoIds)],
+      });
+      try {
+        await this.client.batch(statements, 'write');
+      } catch (error) {
+        // The commit may have reached the database even if the response was lost.
+        this.savedUndoIdsByRoom.delete(roomCode);
+        throw error;
+      }
+      if (undoIds.length > 0) this.savedUndoIdsByRoom.set(roomCode, new Set(undoIds));
+      else this.savedUndoIdsByRoom.delete(roomCode);
     });
   }
 
   async getRoomSnapshot(roomCode: string): Promise<RoomSnapshotRecord | null> {
     await this.init();
     const result = await this.client.execute({
-      sql: 'SELECT * FROM room_snapshots WHERE room_code = ? LIMIT 1',
+      sql: `${ROOM_SNAPSHOT_SELECT} WHERE room_code = ? LIMIT 1`,
       args: [roomCode.trim().toUpperCase()],
     });
     const row = result.rows[0];
@@ -900,7 +930,7 @@ export class LibsqlPersistenceStore implements PersistenceStore {
   async listRecoverableRoomSnapshots(): Promise<readonly RoomSnapshotRecord[]> {
     await this.init();
     const result = await this.client.execute(
-      'SELECT * FROM room_snapshots ORDER BY updated_at DESC',
+      `${ROOM_SNAPSHOT_SELECT} ORDER BY updated_at DESC`,
     );
     const records: RoomSnapshotRecord[] = [];
     for (const row of result.rows) {
@@ -916,8 +946,13 @@ export class LibsqlPersistenceStore implements PersistenceStore {
     return this.enqueueWrite(async () => {
       await this.init();
       const normalized = roomCode.trim().toUpperCase();
+      this.savedUndoIdsByRoom.delete(normalized);
       await this.client.batch(
         [
+          {
+            sql: 'DELETE FROM room_undo_states WHERE room_code = ?',
+            args: [normalized],
+          },
           {
             sql: 'DELETE FROM room_snapshots WHERE room_code = ?',
             args: [normalized],
@@ -948,6 +983,18 @@ function rowToNullableNumber(row: Row, key: string): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+const ROOM_SNAPSHOT_SELECT = `SELECT room_snapshots.*,
+  CASE WHEN undo_state_ids_json IS NULL THEN undo_history_json ELSE (
+    SELECT json_group_array(json(state_json)) FROM (
+      SELECT states.state_json
+      FROM json_each(room_snapshots.undo_state_ids_json) AS ids
+      JOIN room_undo_states AS states
+        ON states.room_code = room_snapshots.room_code AND states.state_id = ids.value
+      ORDER BY ids.key
+    )
+  ) END AS resolved_undo_history_json
+  FROM room_snapshots`;
+
 function mapRoomSnapshotRow(row: Row): RoomSnapshotRecord | null {
   try {
     const roomState = JSON.parse(rowToString(row, 'room_state_json')) as RoomState;
@@ -955,7 +1002,7 @@ function mapRoomSnapshotRow(row: Row): RoomSnapshotRecord | null {
     const masterGameState = masterRaw
       ? (JSON.parse(masterRaw) as MasterGameState)
       : null;
-    const undoRaw = rowToNullableString(row, 'undo_history_json');
+    const undoRaw = rowToNullableString(row, 'resolved_undo_history_json');
     const undoHistory = undoRaw
       ? (JSON.parse(undoRaw) as MasterGameState[])
       : [];

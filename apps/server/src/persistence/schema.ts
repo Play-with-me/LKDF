@@ -86,8 +86,17 @@ export async function initializeSchema(client: Client): Promise<void> {
     );
   }
 
+  await client.execute(`CREATE TABLE IF NOT EXISTS room_undo_states (
+    room_code TEXT NOT NULL,
+    state_id TEXT NOT NULL,
+    state_json TEXT NOT NULL,
+    PRIMARY KEY (room_code, state_id)
+  )`);
   const roomCols = await client.execute('PRAGMA table_info(room_snapshots)');
   const roomColNames = new Set(roomCols.rows.map((r) => String(r['name'] ?? '')));
+  if (!roomColNames.has('undo_state_ids_json')) {
+    await client.execute('ALTER TABLE room_snapshots ADD COLUMN undo_state_ids_json TEXT NULL');
+  }
   if (!roomColNames.has('undo_history_json')) {
     await client.execute(
       'ALTER TABLE room_snapshots ADD COLUMN undo_history_json TEXT NULL',

@@ -1,7 +1,7 @@
 import { getPendingPrompt, type GameAction } from '@lkdf/shared';
 import { WebSocket } from 'ws';
 import type { MatchCoordinatorConfig } from '../config.js';
-import type { RoomManager } from './index.js';
+import type { RoomManager, RoomViewerPayload } from './index.js';
 import type { WsClientMessage } from './wsSchemas.js';
 
 const DEFAULT_SIMULATED_NULLIFY_MIN_MS = 2000;
@@ -18,7 +18,7 @@ interface RoomTimerHandles {
 }
 
 export interface MatchCoordinator {
-  bindAuthenticatedSocket(userId: string, socket: WebSocket): Promise<void>;
+  bindAuthenticatedSocket(userId: string, socket: WebSocket, actionLogDeltas?: boolean): Promise<void>;
   handleDisplacedSocket(socket: WebSocket): void;
   handleSocketClosed(socket: WebSocket): void;
   handleAuthenticatedMessage(
@@ -46,6 +46,7 @@ export function createMatchCoordinator(deps: {
   const roomTimersByCode = new Map<string, RoomTimerHandles>();
   const hostFailoverTimersByCode = new Map<string, NodeJS.Timeout>();
   const disconnectGraceByUserId = new Map<string, NodeJS.Timeout>();
+  const logBySocket = new WeakMap<WebSocket, { matchId: string; entries: readonly string[] } | null>();
   const sentMatchEndedIds = new Set<string>();
   let isShutDown = false;
 
@@ -85,6 +86,32 @@ export function createMatchCoordinator(deps: {
     roomTimersByCode.delete(roomCode);
   };
 
+  const sendRoomView = (
+    socket: WebSocket,
+    view: RoomViewerPayload,
+    event?: string,
+    forceFull = false,
+  ): void => {
+    const playerView = view.playerView;
+    const previous = logBySocket.get(socket);
+    const entries = playerView?.actionLog;
+    const useDelta = !forceFull && playerView && previous?.matchId === playerView.matchId &&
+      previous.entries.every((entry, index) => entry === entries?.[index]);
+
+    sendJson(socket, {
+      type: 'ROOM_STATE',
+      ...(event ? { event } : {}),
+      ...view,
+      ...(useDelta && entries ? {
+        playerView: { ...playerView, actionLog: entries.slice(previous.entries.length) },
+        actionLogOffset: previous.entries.length,
+      } : {}),
+    });
+    if (previous !== undefined) {
+      logBySocket.set(socket, playerView ? { matchId: playerView.matchId, entries: playerView.actionLog } : null);
+    }
+  };
+
   const broadcastRoomState = (roomCode: string, eventReason?: string): void => {
     if (isShutDown) {
       return;
@@ -103,11 +130,7 @@ export function createMatchCoordinator(deps: {
       if (!viewRes.ok) {
         continue;
       }
-      sendJson(sock, {
-        type: 'ROOM_STATE',
-        ...(eventReason ? { event: eventReason } : {}),
-        ...viewRes.data,
-      });
+      sendRoomView(sock, viewRes.data, eventReason, eventReason === 'REFEREE_UNDO_ONE_STEP');
 
       const master = snap.masterGameState;
       if (
@@ -228,7 +251,9 @@ export function createMatchCoordinator(deps: {
   );
 
   return {
-    async bindAuthenticatedSocket(userId: string, socket: WebSocket): Promise<void> {
+    async bindAuthenticatedSocket(userId: string, socket: WebSocket, actionLogDeltas = false): Promise<void> {
+      if (actionLogDeltas) logBySocket.set(socket, null);
+      else logBySocket.delete(socket);
       const pendingGrace = disconnectGraceByUserId.get(userId);
       if (pendingGrace) {
         clearTimeout(pendingGrace);
@@ -267,11 +292,7 @@ export function createMatchCoordinator(deps: {
 
       const viewRes = deps.roomManager.getRoomViewForUser(userId, activeRoomCode);
       if (viewRes.ok) {
-        sendJson(socket, {
-          type: 'ROOM_STATE',
-          event: 'SYNC_ON_CONNECT',
-          ...viewRes.data,
-        });
+        sendRoomView(socket, viewRes.data, 'SYNC_ON_CONNECT', true);
       }
       scheduleRoomRuntime(activeRoomCode);
     },
@@ -366,11 +387,7 @@ export function createMatchCoordinator(deps: {
 
           const freshView = deps.roomManager.getRoomViewForUser(userId, roomCode);
           if (freshView.ok) {
-            sendJson(socket, {
-              type: 'ROOM_STATE',
-              event: 'SUBSCRIBED',
-              ...freshView.data,
-            });
+            sendRoomView(socket, freshView.data, 'SUBSCRIBED', true);
           }
           scheduleRoomRuntime(roomCode);
           return;

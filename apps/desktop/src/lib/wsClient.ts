@@ -125,6 +125,8 @@ export function createRoomWsClient(options: RoomWsClientOptions): RoomWsClient {
 
     const socket = new WebSocket(wsUrl);
     activeSocket = socket;
+    let previousPlayerView: RoomViewerPayload['playerView'] = null;
+    let awaitingFullRoomState = false;
 
     socket.addEventListener('open', () => {
       if (closedManually || activeSocket !== socket) {
@@ -134,6 +136,7 @@ export function createRoomWsClient(options: RoomWsClientOptions): RoomWsClient {
       socket.send(
         JSON.stringify({
           type: 'AUTH',
+          actionLogDeltas: true,
           sessionToken: options.sessionToken,
           seatMode: 'TAKEOVER',
         }),
@@ -172,6 +175,21 @@ export function createRoomWsClient(options: RoomWsClientOptions): RoomWsClient {
       if (msgType === 'ROOM_STATE') {
         const eventReason =
           typeof parsed['event'] === 'string' ? parsed['event'] : undefined;
+        let playerView = (parsed['playerView'] as RoomViewerPayload['playerView'] | undefined) ?? null;
+        const offset = parsed['actionLogOffset'];
+        if (typeof offset === 'number') {
+          if (awaitingFullRoomState) return;
+          if (!playerView || !previousPlayerView ||
+              previousPlayerView.matchId !== playerView.matchId ||
+              previousPlayerView.actionLog.length !== offset) {
+            awaitingFullRoomState = true;
+            socket.send(JSON.stringify({ type: 'SUBSCRIBE_ROOM', roomCode: normalizedRoomCode }));
+            return;
+          }
+          playerView = { ...playerView, actionLog: [...previousPlayerView.actionLog, ...playerView.actionLog] };
+        }
+        awaitingFullRoomState = false;
+        previousPlayerView = playerView;
         const payload: RoomViewerPayload = {
           roomState: parsed['roomState'] as RoomViewerPayload['roomState'],
           timerConfig: parsed['timerConfig'] as RoomViewerPayload['timerConfig'],
@@ -179,9 +197,7 @@ export function createRoomWsClient(options: RoomWsClientOptions): RoomWsClient {
             (parsed['phaseDeadlineAt'] as string | null | undefined) ?? null,
           pausedRemainingMs:
             (parsed['pausedRemainingMs'] as number | null | undefined) ?? null,
-          playerView:
-            (parsed['playerView'] as RoomViewerPayload['playerView'] | undefined) ??
-            null,
+          playerView,
           refereeAuditLog:
             (parsed['refereeAuditLog'] as
               | RoomViewerPayload['refereeAuditLog']

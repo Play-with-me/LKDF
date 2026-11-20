@@ -227,7 +227,7 @@ export async function createServer(
             displayName: verified.profile.displayName,
           }),
         );
-        await coordinator.bindAuthenticatedSocket(userId, socket);
+        await coordinator.bindAuthenticatedSocket(userId, socket, msg.actionLogDeltas);
         return;
       }
 

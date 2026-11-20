@@ -252,6 +252,7 @@ export const ClientGameActionSchema = z.discriminatedUnion('type', [
 export const WsClientMessageSchema = z.discriminatedUnion('type', [
   z.object({
     type: z.literal('AUTH'),
+    actionLogDeltas: z.boolean().optional(),
     sessionToken: z.string().min(1),
     seatMode: z.enum(['CLAIM_SEAT', 'TAKEOVER']).optional(),
   }),

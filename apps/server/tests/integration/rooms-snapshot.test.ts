@@ -498,6 +498,8 @@ describe('Bước 2.2 — Phòng chờ 4–8 người thật, 3 mức Đồng h�
         (pl) => pl.seatIndex !== combatViewOnSrv3.playerView?.viewerSeatIndex,
       )?.handCards,
     ).toBeNull();
-    expect(srv3.roomManager.getSnapshotRecord(roomCode)?.undoHistory).toHaveLength(5);
+    expect(srv3.roomManager.getSnapshotRecord(roomCode)?.undoHistory).toEqual(
+      boundedUndoSnap?.undoHistory,
+    );
   });
 });
