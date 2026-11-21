@@ -34,6 +34,11 @@ Vì bạn là người mới và không lập trình, bạn **không cần đọ
 ## 2. Lộ Trình Từ Đầu Đến Cuối & Các Câu Lệnh "Copy – Dán" Cho Bạn
 
 > **📌 Trạng thái hiện tại của bạn (AI tự động cập nhật sau mỗi bước):**
+> - ✅ **Tiếng trúng đòn và kết liễu:** Đã thay bản phối, tách khỏi âm báo lượt và sửa nhận nhầm bài của tướng tử trận. Electron đã kiểm bằng diễn tiến ván do lõi trận tạo.
+> - ✅ **Tiếng hồi máu:** Đã thay âm đọc tên bằng hai nốt nhẹ, kiểm hồi thường, Thanh Nang, Đào và Đào Viên trong Electron.
+> - ✅ **Âm hiệu ứng bàn đấu:** Đã thêm bộ tiếng hành động phân biệt theo loại. Mất máu nghe tiếng chém, tướng bị loại nghe tiếng kết liễu. Kỹ năng chỉ dùng âm báo, tên hiện bằng chữ.
+> - ✅ **Chồng nhạc khi mở nhiều tab:** Nhạc sảnh và nhạc trận phát theo tab game đang dùng. Electron đã kiểm trên ba trang game chạy đồng thời.
+> - ✅ **Nhạc trong ván:** Đã phối lại với dây gảy, sáo và tiếng gõ nhẹ. Electron xác nhận nhạc chờ dừng trước khi nhạc trận bắt đầu và nhạc trận dừng khi hết ván.
 > - ✅ **Đã kiểm chứng chọn bài sáng mục tiêu (2026-11-19):** Sát mặc định 2 ghế, thêm ngựa -1 có 4 ghế, thêm cung tầm 5 có 7 ghế; 85/85 unit đạt. Tính năng đã có, chưa nhập demo.
 > - ✅ **ĐÃ XONG Bước 4.3** — Giao diện bàn đấu đã duyệt đã vào mã nguồn game. Xem [bố trí bàn đấu](./DESIGN.md#32-bố-cục-responsive-trên-máy-tính-windows-960600-tối-thiểu--mở-mặc-định-1280720--co-giãn-mượt-tới-2k).
 > - 👉 **BẠN ĐANG Ở ĐÂY — Bước 4.4.** `Làm bản demo animation đánh bài và hiệu ứng của Sát, Thiểm, Đào và Vô Giải để tôi duyệt.`

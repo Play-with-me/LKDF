@@ -53,6 +53,7 @@ export const TIMER_PRESETS: Readonly<Record<TimerPreset, TimerPresetConfig>> = {
 
 export interface UserPreferences {
   readonly soundEnabled: boolean;
+  readonly musicEnabled?: boolean;
   readonly volume: number;
 }
 

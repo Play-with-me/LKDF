@@ -20,14 +20,16 @@ import type {
   RoomSeat,
   RoomState,
 } from '@lkdf/shared';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { playMatchCue } from '../../lib/soundFx.js';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useGameAmbience } from '../../lib/useGameAmbience.js';
+import { useInterfaceSounds } from '../../lib/useInterfaceSounds.js';
 import { MatchSettings } from './MatchSettings.js';
 import { GameIcon } from '../../components/icons/index.js';
 import { ActionLogDialog } from './ActionLogDialog.js';
 import { GameOverSummaryModal } from './GameOverSummaryModal.js';
 import { MatchActionSidebar } from './MatchActionSidebar.js';
 import { MatchArenaLayout } from './MatchArenaLayout.js';
+import { playMatchActionCues } from './matchSounds.js';
 import {
   EMPTY_MATCH_SELECTION,
   describePendingActorPrompt,
@@ -107,6 +109,7 @@ export function DevMatchPreview({
   const [auditLog, setAuditLog] = useState<RefereeAuditEntry[]>([]);
   const [isPaused, setIsPaused] = useState<boolean>(false);
   const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
+  const [musicEnabled, setMusicEnabled] = useState<boolean>(true);
   const [autoSkipNullify, setAutoSkipNullify] = useState<boolean>(false);
   const [selection, setSelection] = useState<MatchSelectionState>(EMPTY_MATCH_SELECTION);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -202,6 +205,15 @@ export function DevMatchPreview({
       })),
     };
   }, [masterState]);
+
+  const lastSoundView = useRef<typeof playerView | null>(null);
+  const musicActive = musicEnabled && playerView.turnPhase !== 'GAME_OVER';
+  useInterfaceSounds(soundEnabled, musicActive);
+  useGameAmbience(musicActive ? 0.16 : 0, 'battle');
+  useEffect(() => {
+    if (soundEnabled) playMatchActionCues(lastSoundView.current, playerView);
+    lastSoundView.current = playerView;
+  }, [playerView, soundEnabled]);
 
   const roomState: RoomState = useMemo(
     () => ({
@@ -498,18 +510,23 @@ export function DevMatchPreview({
         <div className="flex flex-wrap items-center gap-1.5">
           <button
             type="button"
-            onClick={() => {
-              const next = !soundEnabled;
-              setSoundEnabled(next);
-              if (next) {
-                playMatchCue('TURN_START', true);
-              }
-              void window.lkdfDesktop?.flashTaskbarFrame(true).catch(() => undefined);
-            }}
+            aria-label="Hiệu ứng âm thanh"
+            aria-pressed={soundEnabled}
+            onClick={() => setSoundEnabled(enabled => !enabled)}
             className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-[#9A7B4F]/40 bg-[#14100D]/90 px-2 py-1 text-[11px] font-medium text-[#EFE6D5] hover:border-[#D99B26] xl:px-2.5 xl:text-xs"
           >
             <GameIcon name={soundEnabled ? 'ui:volume-on' : 'ui:volume-off'} size={13} />
-            <span className="hidden lg:inline">{soundEnabled ? 'Âm thanh' : 'Tắt tiếng'}</span>
+            <span className="hidden lg:inline">Hiệu ứng âm thanh</span>
+          </button>
+          <button
+            type="button"
+            aria-label="Nhạc nền"
+            aria-pressed={musicEnabled}
+            onClick={() => setMusicEnabled(enabled => !enabled)}
+            className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-[#9A7B4F]/40 bg-[#14100D]/90 px-2 py-1 text-[11px] font-medium text-[#EFE6D5] hover:border-[#D99B26] xl:px-2.5 xl:text-xs"
+          >
+            <GameIcon name={musicEnabled ? 'ui:volume-on' : 'ui:volume-off'} size={13} />
+            <span>Nhạc nền</span>
           </button>
           <button
             type="button"

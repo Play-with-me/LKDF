@@ -122,6 +122,11 @@ Mọi màn hình trong ứng dụng (Đăng nhập, Sảnh chính, Phòng chờ,
 
 ### 5.3. Tiện ích hệ điều hành Windows
 - **Nháy thanh tác vụ (Taskbar Flash) & Âm thanh nhắc lượt:** Khi cửa sổ ứng dụng đang bị thu nhỏ hoặc nằm dưới cửa sổ khác mà đến lượt bạn đánh / cần bạn phản ứng (*Thiểm, Đào, Vô Giải*), biểu tượng ứng dụng trên thanh Taskbar Windows sẽ nháy sáng màu cam và phát một tiếng trống/chuông ngắn (nếu chưa tắt âm thanh).
+- **Âm thanh bàn đấu:** Âm đánh bài, trang bị và thay đổi máu theo trạng thái xác nhận của trận. Không phát lại các âm này khi tải lại trạng thái hoặc hoàn tác. Khi vào bàn, nhạc chờ dừng trước khi bản 108 BPM bắt đầu. Tiếng dây gảy giữ nhịp, sáo ngân dài và tiếng gõ trầm chỉ xuất hiện ở vài điểm chuyển câu. Nhạc nền dừng khi ván kết thúc. Bản xem thử có công tắc nhạc riêng.
+- **Nhạc nền khi mở nhiều tab:** Trên trình duyệt, nhạc nền chỉ phát ở tab game đang hiển thị và có tiêu điểm. Khi chọn lại tab, nhạc phù hợp với màn hình hiện tại phát trở lại.
+- **Tiếng hành động:** Vũ khí, giáp và hai loại ngựa có âm riêng. Sát, Đào, Thiểm, chiêu toàn bàn, kích hoạt kỹ năng tướng công khai và phán xét có âm báo ngắn. Tên kỹ năng hiện bằng chữ. Hành động mất máu phát tiếng chém, kết liễu chỉ phát khi tướng đã bị loại. Xào bài lúc mở ván hoặc tái tạo chồng rút, chia bài và rút bài có tiếng giấy.
+- **Tiếng hồi máu:** Hồi máu thông thường dùng hai nốt ngân ngắn. Đào và Đào Viên giữ âm báo riêng, cùng với tiếng giấy khi kỹ năng tiêu hao lá bài.
+- **Ưu tiên tiếng trúng đòn và kết liễu:** Tiếng chém phát khi máu giảm. Khi hết lượt cứu và tướng bị loại, tiếng kết liễu phát trước tiếng rút thưởng và chuông báo lượt hoặc kết ván. Bài của tướng bị loại đưa vào chồng bỏ không phát âm đánh bài.
 - **Chống đóng nhầm cửa sổ giữa ván:** Nếu người chơi bấm nút `[X]` ở góc trên phải cửa sổ Windows (hoặc bấm `Alt + F4`) khi đang trong ván đấu, ứng dụng hiện hộp thoại hỏi: *"Bạn đang trong ván đấu. Nếu thoát bây giờ, Máy sẽ đánh hộ tạm thời cho đến khi bạn mở lại ứng dụng. Bạn có chắc muốn đóng cửa sổ?"* với 2 nút **`[Ở lại ván đấu]`** (mặc định) và **`[Đóng ứng dụng]`**.
 
 ---

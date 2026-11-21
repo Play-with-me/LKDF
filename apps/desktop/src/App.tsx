@@ -1,3 +1,5 @@
+import { useGameAmbience } from './lib/useGameAmbience.js';
+import { useInterfaceSounds } from './lib/useInterfaceSounds.js';
 import type { PlayerCount } from '@lkdf/shared';
 import {
   Suspense,
@@ -128,6 +130,14 @@ export function App() {
   const [profile, setProfile] = useState<UserProfile | null>(
     initialDevPreviewMode === 'nickname' ? DEV_PREVIEW_NICKNAME_PROFILE : null,
   );
+  const effectsEnabled = profile?.preferences.soundEnabled ?? false;
+  const musicEnabled = profile?.preferences.musicEnabled ?? effectsEnabled;
+  const lobbyMusicActive = musicEnabled && (screen === 'HOME' || screen === 'WAITING_ROOM');
+  useInterfaceSounds(
+    effectsEnabled && screen !== 'DEV_PREVIEW',
+    lobbyMusicActive || (musicEnabled && screen === 'MATCH'),
+  );
+  useGameAmbience(lobbyMusicActive ? 0.23 : 0);
   const [activeRoom, setActiveRoom] = useState<RoomViewerPayload | null>(null);
   const [justLoggedIn, setJustLoggedIn] = useState<boolean>(false);
   const [loginNotice, setLoginNotice] = useState<string | null>(null);

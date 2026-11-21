@@ -6,8 +6,21 @@ export type MatchSoundEvent =
   | 'VICTORY'
   | 'CARD_PLAY'
   | 'DAMAGE'
+  | 'ELIMINATION'
   | 'HEAL'
-  | 'EQUIP';
+  | 'WEAPON'
+  | 'ARMOR'
+  | 'MOUNT_PLUS'
+  | 'MOUNT_MINUS'
+  | 'SAT'
+  | 'DAO'
+  | 'THIEM'
+  | 'HERO_SKILL'
+  | 'TABLE_SKILL'
+  | 'SHUFFLE'
+  | 'DEAL'
+  | 'DEAL_OPENING'
+  | 'JUDGE';
 
 interface ToneStep {
   readonly freq: number;
@@ -18,17 +31,31 @@ interface ToneStep {
 }
 
 const SFX_STEM_BY_EVENT: Readonly<Record<MatchSoundEvent, string>> = {
-  TURN_START: 'turn-start',
-  ACTION_PROMPT: 'action-prompt',
-  VICTORY: 'victory',
-  CARD_PLAY: 'card-play',
-  DAMAGE: 'damage',
-  HEAL: 'heal',
-  EQUIP: 'equip',
+  TURN_START: 'xich-bich-turn',
+  ACTION_PROMPT: 'xich-bich-reaction',
+  VICTORY: 'xich-bich-victory',
+  CARD_PLAY: 'xich-bich-card-drop',
+  DAMAGE: 'xich-bich-damage-slash',
+  ELIMINATION: 'xich-bich-elimination',
+  HEAL: 'xich-bich-heal',
+  WEAPON: 'xich-bich-weapon',
+  ARMOR: 'xich-bich-armor',
+  MOUNT_PLUS: 'xich-bich-mount-plus',
+  MOUNT_MINUS: 'xich-bich-mount-minus',
+  SAT: 'xich-bich-sat',
+  DAO: 'xich-bich-dao',
+  THIEM: 'xich-bich-thiem',
+  HERO_SKILL: 'xich-bich-hero-skill',
+  TABLE_SKILL: 'xich-bich-table-skill',
+  SHUFFLE: 'xich-bich-shuffle',
+  DEAL: 'xich-bich-deal',
+  DEAL_OPENING: 'xich-bich-deal-opening',
+  JUDGE: 'xich-bich-judge',
 };
 
 let sharedAudioCtx: AudioContext | null = null;
-const cachedAudioByUrl = new Map<string, HTMLAudioElement>();
+const decodedSounds = new Map<string, AudioBuffer>();
+const pendingSounds = new Set<string>();
 
 function getAudioContext(): AudioContext | null {
   if (typeof window === 'undefined') {
@@ -42,32 +69,67 @@ function getAudioContext(): AudioContext | null {
     return null;
   }
   if (!sharedAudioCtx || sharedAudioCtx.state === 'closed') {
-    sharedAudioCtx = new AudioCtx();
+    sharedAudioCtx = new AudioCtx({ latencyHint: 'interactive' });
+    decodedSounds.clear();
+    pendingSounds.clear();
   }
   return sharedAudioCtx;
 }
 
-function tryPlayCustomSfxFile(event: MatchSoundEvent): boolean {
-  const url = getSfxUrl(SFX_STEM_BY_EVENT[event]);
-  if (!url || typeof Audio === 'undefined') {
-    return false;
-  }
+const INTERFACE_STEMS = { hover: 'xich-bich-hover', click: 'xich-bich-click' } as const;
+
+export function prepareGameSounds(): void {
   try {
-    let audio = cachedAudioByUrl.get(url);
-    if (!audio) {
-      audio = new Audio(url);
-      audio.volume = 0.55;
-      cachedAudioByUrl.set(url, audio);
+    const ctx = getAudioContext();
+    if (!ctx) return;
+    for (const stem of [...Object.values(INTERFACE_STEMS), ...Object.values(SFX_STEM_BY_EVENT)]) {
+      const url = getSfxUrl(stem);
+      if (!url || decodedSounds.has(stem) || pendingSounds.has(stem)) continue;
+      pendingSounds.add(stem);
+      void fetch(url)
+        .then(response => {
+          if (!response.ok) throw new Error();
+          return response.arrayBuffer();
+        })
+        .then(bytes => ctx.decodeAudioData(bytes))
+        .then(buffer => { if (ctx === sharedAudioCtx) decodedSounds.set(stem, buffer); })
+        .catch(() => undefined)
+        .finally(() => { if (ctx === sharedAudioCtx) pendingSounds.delete(stem); });
     }
-    audio.currentTime = 0;
-    void audio.play().catch(() => undefined);
-    return true;
   } catch {
-    return false;
+    // Audio initialization may be unavailable.
   }
 }
 
-const CUE_PATTERNS: Record<MatchSoundEvent, readonly ToneStep[]> = {
+export function unlockGameSounds(): void {
+  try {
+    const ctx = getAudioContext();
+    if (ctx?.state === 'suspended') void ctx.resume().catch(() => undefined);
+  } catch {
+    // The browser may require a trusted gesture.
+  }
+}
+
+function playDecodedSound(stem: string, volume: number, delaySec = 0): boolean {
+  const ctx = sharedAudioCtx;
+  const buffer = decodedSounds.get(stem);
+  if (!ctx || !buffer || ctx.state === 'closed') return false;
+
+  const source = ctx.createBufferSource();
+  const gain = ctx.createGain();
+  source.buffer = buffer;
+  gain.gain.value = volume;
+  source.connect(gain);
+  gain.connect(ctx.destination);
+  source.onended = () => {
+    source.disconnect();
+    gain.disconnect();
+  };
+  source.start(ctx.currentTime + delaySec);
+  return true;
+}
+
+const CUE_PATTERNS: Partial<Record<MatchSoundEvent, readonly ToneStep[]>> = {
   TURN_START: [
     { freq: 164.81, delaySec: 0, durationSec: 0.14, gain: 0.12, type: 'triangle' },
     { freq: 392.0, delaySec: 0.04, durationSec: 0.2, gain: 0.08, type: 'sine' },
@@ -86,26 +148,49 @@ const CUE_PATTERNS: Record<MatchSoundEvent, readonly ToneStep[]> = {
     { freq: 293.66, delaySec: 0, durationSec: 0.07, gain: 0.08, type: 'triangle' },
   ],
   DAMAGE: [
-    { freq: 130.81, delaySec: 0, durationSec: 0.14, gain: 0.13, type: 'sawtooth' },
-    { freq: 98.0, delaySec: 0.05, durationSec: 0.16, gain: 0.1, type: 'triangle' },
+    { freq: 171, delaySec: 0, durationSec: 0.11, gain: 0.18, type: 'sawtooth' },
+    { freq: 89, delaySec: 0.028, durationSec: 0.15, gain: 0.24, type: 'triangle' },
+  ],
+  ELIMINATION: [
+    { freq: 143, delaySec: 0, durationSec: 0.14, gain: 0.18, type: 'sawtooth' },
+    { freq: 81, delaySec: 0.033, durationSec: 0.34, gain: 0.28, type: 'triangle' },
+    { freq: 59, delaySec: 0.085, durationSec: 0.40, gain: 0.18, type: 'triangle' },
   ],
   HEAL: [
     { freq: 523.25, delaySec: 0, durationSec: 0.12, gain: 0.08, type: 'sine' },
     { freq: 659.25, delaySec: 0.08, durationSec: 0.18, gain: 0.08, type: 'sine' },
   ],
-  EQUIP: [
+  WEAPON: [
     { freq: 440.0, delaySec: 0, durationSec: 0.09, gain: 0.08, type: 'triangle' },
     { freq: 659.25, delaySec: 0.05, durationSec: 0.12, gain: 0.07, type: 'sine' },
   ],
 };
 
-export function playMatchCue(event: MatchSoundEvent, enabled: boolean): void {
-  if (!enabled) {
+export function playMatchCue(event: MatchSoundEvent, enabled: boolean, volume = 0.85, delaySec = 0): void {
+  if (!enabled || volume <= 0) {
     return;
   }
-  if (tryPlayCustomSfxFile(event)) {
+  if (playDecodedSound(SFX_STEM_BY_EVENT[event], volume, delaySec)) {
     return;
   }
+  const fallback = CUE_PATTERNS[event];
+  if (fallback) playTones(fallback, volume, delaySec);
+}
+
+const INTERFACE_CUES: Record<'hover' | 'click', readonly ToneStep[]> = {
+  hover: [{ freq: 480, delaySec: 0, durationSec: 0.042, gain: 0.13, type: 'sine' }],
+  click: [
+    { freq: 320, delaySec: 0, durationSec: 0.055, gain: 0.22, type: 'triangle' },
+    { freq: 520, delaySec: 0.025, durationSec: 0.045, gain: 0.12, type: 'sine' },
+  ],
+};
+export function playInterfaceCue(event: 'hover' | 'click'): void {
+  if (event === 'hover' && sharedAudioCtx?.state !== 'running') return;
+  if (event === 'click') unlockGameSounds();
+  if (!playDecodedSound(INTERFACE_STEMS[event], 1)) playTones(INTERFACE_CUES[event], 1);
+}
+
+function playTones(steps: readonly ToneStep[], volume: number, delaySec = 0): void {
   try {
     const ctx = getAudioContext();
     if (!ctx) {
@@ -115,8 +200,7 @@ export function playMatchCue(event: MatchSoundEvent, enabled: boolean): void {
       void ctx.resume().catch(() => undefined);
     }
 
-    const now = ctx.currentTime;
-    const steps = CUE_PATTERNS[event];
+    const now = ctx.currentTime + delaySec;
     for (const step of steps) {
       const osc = ctx.createOscillator();
       const gainNode = ctx.createGain();
@@ -126,8 +210,8 @@ export function playMatchCue(event: MatchSoundEvent, enabled: boolean): void {
 
       gainNode.gain.setValueAtTime(0.0001, now + step.delaySec);
       gainNode.gain.linearRampToValueAtTime(
-        step.gain,
-        now + step.delaySec + 0.015,
+        Math.max(0.0001, step.gain * volume),
+        now + step.delaySec + 0.003,
       );
       gainNode.gain.exponentialRampToValueAtTime(
         0.0001,
@@ -142,5 +226,56 @@ export function playMatchCue(event: MatchSoundEvent, enabled: boolean): void {
     }
   } catch {
     // Bỏ qua an toàn nếu chưa có user gesture hoặc không hỗ trợ Web Audio.
+  }
+}
+
+export type AmbientTrack = 'lobby' | 'battle';
+const ambientBuffers = new Map<AmbientTrack, Promise<AudioBuffer>>();
+
+export async function createAmbientLoop(track: AmbientTrack, signal: AbortSignal): Promise<{
+  setLevel: (level: number) => void;
+  stop: () => void;
+} | null> {
+  try {
+    const url = getSfxUrl(`xich-bich-${track}-music`);
+    const ctx = getAudioContext();
+    if (!url || !ctx) return null;
+    let ambientBuffer = ambientBuffers.get(track);
+    if (!ambientBuffer) {
+      ambientBuffer = fetch(url)
+        .then(response => {
+          if (!response.ok) throw new Error();
+          return response.arrayBuffer();
+        })
+        .then(bytes => ctx.decodeAudioData(bytes))
+        .catch(error => {
+          ambientBuffers.delete(track);
+          throw error;
+        });
+      ambientBuffers.set(track, ambientBuffer);
+    }
+    const buffer = await ambientBuffer;
+    if (signal.aborted) return null;
+
+    const source = ctx.createBufferSource();
+    const gain = ctx.createGain();
+    gain.gain.value = 0;
+    source.buffer = buffer;
+    source.loop = true;
+    source.connect(gain);
+    gain.connect(ctx.destination);
+    // If autoplay is blocked, the existing gesture handler unlocks the shared context.
+    source.start();
+
+    return {
+      setLevel(level) { gain.gain.setTargetAtTime(level, ctx.currentTime, 0.025); },
+      stop() {
+        source.stop();
+        source.disconnect();
+        gain.disconnect();
+      },
+    };
+  } catch {
+    return null;
   }
 }

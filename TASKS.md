@@ -130,6 +130,12 @@
 
 - [x] **Bước 4.3 — Tích hợp bố trí bàn đấu đã duyệt.** Xem đặc tả tại [DESIGN.md §3.2](./DESIGN.md#32-bố-cục-responsive-trên-máy-tính-windows-960600-tối-thiểu--mở-mặc-định-1280720--co-giãn-mượt-tới-2k). Đã chạy `typecheck`, `build`, **85/85** unit test, xem bàn 8 ghế ở `960×600` trong pha Vô Giải và thử lấy lá Ngũ Cốc vào tay.
 - [ ] **Bước 4.4 — Animation đánh bài và hiệu ứng lá bài.** Đầu tiên kiểm tra hành động đánh bài được xác nhận, hướng lá bay và thời điểm hiện kết quả. Sau đó duyệt hiệu ứng theo nhóm lá. Kiểm tra giảm chuyển động, kết nối lại và hoàn tác để tránh phát lại hiệu ứng cũ.
+  - [x] Nối âm đánh bài, trang bị và thay đổi máu với trạng thái trận. Thêm nhạc nền riêng trong ván. Electron xác nhận 10 tình huống âm và hai công tắc độc lập trong bản xem thử.
+  - [x] Phối lại nhạc trong ván ở 108 BPM và kiểm luồng chuyển nhạc từ phòng chờ đến hết ván trong Electron với dữ liệu mô phỏng.
+  - [x] Dừng nhạc nền khi chuyển tab hoặc cửa sổ trên trình duyệt. Electron kiểm chuyển tiêu điểm giữa sảnh chính, sảnh demo và bàn 4 người.
+  - [x] Thêm bộ tiếng bài, trang bị, kỹ năng, phán xét, xào và chia bài. Thay tiếng mất máu bằng tiếng chém và thêm âm kết liễu riêng. Electron kiểm 28 tình huống mô phỏng.
+  - [x] Thay âm hồi máu và tiếng đặt bài cũ bằng hiệu ứng thuần nhạc cụ và tiếng giấy. Electron kiểm bốn nhánh hồi máu.
+  - [x] Làm rõ tiếng trúng đòn và kết liễu, sửa âm đánh bài phát nhầm khi thu bài của tướng bị loại. Kiểm sáu tình huống qua lõi trận và Web Audio trong Electron.
 
 ### Giai Đoạn 5 — Cập Nhật 1-Click Từ GitHub Private, Đóng Gói & Nghiệm Thu
 

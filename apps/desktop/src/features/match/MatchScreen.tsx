@@ -1,12 +1,14 @@
+import { readDevicePreference } from '../../lib/devicePreferences.js';
 import type {
   GameAction,
   HeroId,
   RefereeActionType,
 } from '@lkdf/shared';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useEffectEvent, useRef, useState } from 'react';
 import { ApiError } from '../../lib/api.js';
 import type { LkdfApiClient } from '../../lib/api.js';
 import { playMatchCue } from '../../lib/soundFx.js';
+import { useGameAmbience } from '../../lib/useGameAmbience.js';
 import type { RoomViewerPayload, UserProfile } from '../../lib/types.js';
 import { createRoomWsClient } from '../../lib/wsClient.js';
 import type { RoomWsClient, WsConnectionStatus } from '../../lib/wsClient.js';
@@ -16,6 +18,7 @@ import { ActionLogDialog } from './ActionLogDialog.js';
 import { GameOverSummaryModal } from './GameOverSummaryModal.js';
 import { MatchActionSidebar } from './MatchActionSidebar.js';
 import { MatchArenaLayout } from './MatchArenaLayout.js';
+import { playMatchActionCues } from './matchSounds.js';
 import {
   EMPTY_MATCH_SELECTION,
   describePendingActorPrompt,
@@ -66,6 +69,8 @@ export function MatchScreen({
   const [showRefereeDialog, setShowRefereeDialog] = useState<boolean>(false);
 
   const wsClientRef = useRef<RoomWsClient | null>(null);
+  const lastSoundView = useRef<RoomViewerPayload['playerView']>(null);
+  const impactSoundEndsAt = useRef(0);
   const prevAttentionRef = useRef<boolean>(false);
   const prevGameOverRef = useRef<boolean>(false);
 
@@ -76,6 +81,19 @@ export function MatchScreen({
     roomPayload.roomState.status === 'FINISHED';
   const isMatchActive =
     roomPayload.roomState.status === 'IN_GAME' && !isGameOver;
+  const musicEnabled = currentUser.preferences.musicEnabled ?? currentUser.preferences.soundEnabled;
+  useGameAmbience(isMatchActive && musicEnabled ? 0.16 : 0, 'battle');
+
+  const playRoomUpdateCues = useEffectEvent((view: RoomViewerPayload['playerView'], reason?: string) => {
+    const previous = lastSoundView.current;
+    lastSoundView.current = view;
+    if (currentUser.preferences.soundEnabled &&
+      reason !== 'SYNC_ON_CONNECT' && reason !== 'SUBSCRIBED' && reason !== 'REFEREE_UNDO_ONE_STEP') {
+      const cues = playMatchActionCues(previous, view);
+      if (cues.has('ELIMINATION')) impactSoundEndsAt.current = performance.now() + 520;
+      else if (cues.has('DAMAGE')) impactSoundEndsAt.current = performance.now() + 210;
+    }
+  });
 
   useEffect(() => {
     setRoomPayload(initialRoom);
@@ -100,9 +118,11 @@ export function MatchScreen({
       sessionToken,
       roomCode,
       onStatusChange: (nextStatus) => {
+        if (nextStatus !== 'CONNECTED') lastSoundView.current = null;
         setWsStatus(nextStatus);
       },
-      onRoomState: (payload) => {
+      onRoomState: (payload, reason) => {
+        playRoomUpdateCues(payload.playerView, reason);
         setRoomPayload(payload);
         setActionError(null);
         if (payload.roomState.status === 'LOBBY') {
@@ -134,18 +154,21 @@ export function MatchScreen({
     }
     const prompt = describePendingActorPrompt(playerView);
     const needsMyAttention = prompt.isMyTurn && !isGameOver;
+    const cueDelay = Math.max(0, impactSoundEndsAt.current - performance.now()) / 1000;
 
     if (needsMyAttention && !prevAttentionRef.current) {
       const cueType = playerView.activeInterrupt ? 'ACTION_PROMPT' : 'TURN_START';
-      playMatchCue(cueType, currentUser.preferences.soundEnabled);
-      void window.lkdfDesktop?.flashTaskbarFrame(true).catch(() => undefined);
+      playMatchCue(cueType, currentUser.preferences.soundEnabled, undefined, cueDelay);
+      if (readDevicePreference('taskbarFlash')) {
+        void window.lkdfDesktop?.flashTaskbarFrame(true).catch(() => undefined);
+      }
     } else if (!needsMyAttention && prevAttentionRef.current) {
       void window.lkdfDesktop?.flashTaskbarFrame(false).catch(() => undefined);
     }
     prevAttentionRef.current = needsMyAttention;
 
     if (isGameOver && !prevGameOverRef.current) {
-      playMatchCue('VICTORY', currentUser.preferences.soundEnabled);
+      playMatchCue('VICTORY', currentUser.preferences.soundEnabled, undefined, cueDelay);
     }
     prevGameOverRef.current = isGameOver;
   }, [currentUser.preferences.soundEnabled, isGameOver, playerView]);
@@ -444,6 +467,8 @@ export function MatchScreen({
         <div className="flex flex-wrap items-center gap-1.5">
           <button
             type="button"
+            aria-label="Hiệu ứng âm thanh"
+            aria-pressed={currentUser.preferences.soundEnabled}
             disabled={isTogglingSound}
             onClick={() => {
               void handleToggleSound();
@@ -455,7 +480,7 @@ export function MatchScreen({
               size={13}
             />
             <span className="hidden lg:inline">
-              {currentUser.preferences.soundEnabled ? 'Âm thanh' : 'Tắt tiếng'}
+              Hiệu ứng âm thanh
             </span>
           </button>
 

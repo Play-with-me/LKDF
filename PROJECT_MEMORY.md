@@ -302,3 +302,9 @@ Lớp hiệu ứng bàn chính đã nối các thay đổi xác nhận được 
 
 - 2026-11-20 · Bước 4.4 · Dời chồng rút lên góc trên trái của bàn chung. Typecheck, build desktop và 85/85 unit đạt. Bàn thử 8 ghế ở 1864×929 không chạm ghế hay vùng bài trung tâm. Đã thấy phần tử hiệu ứng chuyển lá xuất hiện, chưa đo trọn đường bay hoặc nghiệm thu online.
 - Bước 4.4 · Khay lấy bài tay tích hợp cho Phản Quỷ, Đột Tập và Thuận Thủ. Typecheck, build desktop, 85/85 unit, 24/24 integration và 500/500 ván giả lập đạt. Chờ nghiệm thu nhiều máy.
+
+- Bước 4.4 (2026-11-21): Tạo 15 tệp WAV cho âm hiệu ứng bàn đấu. Kỹ năng dùng âm báo ngắn. HP giảm phát tiếng chém, tướng chính thức bị loại phát âm kết liễu, tạm trì hoãn tín hiệu thắng nếu hai sự kiện sát nhau. Electron xác nhận 15 tệp và 28 tình huống mô phỏng. Typecheck, build desktop, 85 unit và 26 tích hợp đạt.
+
+- Bước 4.4 (2026-11-21): Thay các tệp OGG cũ trong nhánh hồi máu và đặt bài bằng WAV tự tổng hợp. Electron xác nhận chính xác buffer ở bốn tình huống hồi thường, Thanh Nang, Đào và Đào Viên. Typecheck, build desktop và 85 unit đạt.
+
+- Bước 4.4 (2026-11-21): Phối lại tiếng chém mất máu 210 ms và tiếng kết liễu 520 ms. Bài của tướng tử trận có thể đẩy Đào lên đỉnh chồng bỏ, nay không kích hoạt âm đánh Đào. Electron kiểm sáu chuyển tiếp từ lõi trận, typecheck, build, 85 unit và 26 tích hợp đạt.
