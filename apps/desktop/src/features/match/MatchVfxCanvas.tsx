@@ -418,8 +418,8 @@ export function MatchVfxCanvas({ stageRef, events, duelSeats }: MatchVfxCanvasPr
       // 2. Render & advance discrete VFX effects
       const remaining: ActiveEffect[] = [];
       for (const eff of effectsRef.current) {
-        const elapsed = ts - eff.startTime;
-        const p = Math.min(1, elapsed / eff.duration);
+        const elapsed = Math.max(0, ts - eff.startTime);
+        const p = Math.max(0, Math.min(1, elapsed / eff.duration));
         if (p >= 1) continue;
         remaining.push(eff);
 
@@ -435,12 +435,12 @@ export function MatchVfxCanvas({ stageRef, events, duelSeats }: MatchVfxCanvasPr
           ctx.lineWidth = 3.5 * (1 - p * 0.5);
           ctx.lineCap = 'round';
           ctx.beginPath();
-          ctx.arc(0, 0, 38 + easeOut * 16, -Math.PI * 0.42, Math.PI * 0.42);
+          ctx.arc(0, 0, Math.max(0.5, 38 + easeOut * 16), -Math.PI * 0.42, Math.PI * 0.42);
           ctx.stroke();
           ctx.strokeStyle = `rgba(232, 93, 74, ${fadeOut * 0.85})`;
           ctx.lineWidth = 6 * (1 - p * 0.6);
           ctx.beginPath();
-          ctx.arc(-4, 0, 34 + easeOut * 14, -Math.PI * 0.35, Math.PI * 0.35);
+          ctx.arc(-4, 0, Math.max(0.5, 34 + easeOut * 14), -Math.PI * 0.35, Math.PI * 0.35);
           ctx.stroke();
           ctx.restore();
         } else if (eff.kind === 'THIEM' && eff.targets[0]) {
@@ -451,12 +451,12 @@ export function MatchVfxCanvas({ stageRef, events, duelSeats }: MatchVfxCanvasPr
           ctx.lineWidth = 4 * (1 - p * 0.4);
           ctx.lineCap = 'round';
           ctx.beginPath();
-          ctx.arc(0, 0, 32 + easeOut * 12, -Math.PI * 0.65, Math.PI * 0.65);
+          ctx.arc(0, 0, Math.max(0.5, 32 + easeOut * 12), -Math.PI * 0.65, Math.PI * 0.65);
           ctx.stroke();
           ctx.restore();
         } else if (eff.kind === 'NULLIFICATION') {
           const maxR = eff.nullifyDepth >= 1 ? 115 : 82;
-          const r = 18 + easeOut * maxR;
+          const r = Math.max(0.5, 18 + easeOut * maxR);
           ctx.save();
           ctx.strokeStyle =
             eff.nullifyDepth >= 1
@@ -470,13 +470,13 @@ export function MatchVfxCanvas({ stageRef, events, duelSeats }: MatchVfxCanvasPr
             ctx.strokeStyle = `rgba(253, 230, 138, ${fadeOut * 0.85})`;
             ctx.lineWidth = 2;
             ctx.beginPath();
-            ctx.arc(eff.center.x, eff.center.y, r * 0.72, 0, Math.PI * 2);
+            ctx.arc(eff.center.x, eff.center.y, Math.max(0.5, r * 0.72), 0, Math.PI * 2);
             ctx.stroke();
           }
           ctx.restore();
         } else if (eff.kind === 'NAM_MAN') {
           ctx.save();
-          const r = 40 + easeOut * 220;
+          const r = Math.max(0.5, 40 + easeOut * 220);
           ctx.strokeStyle = `rgba(217, 155, 38, ${fadeOut * 0.75})`;
           ctx.lineWidth = 5 * (1 - p * 0.5);
           ctx.setLineDash([18, 12]);
@@ -525,7 +525,7 @@ export function MatchVfxCanvas({ stageRef, events, duelSeats }: MatchVfxCanvasPr
           ctx.strokeStyle = `rgba(220, 38, 38, ${fadeOut * 0.9})`;
           ctx.lineWidth = 3;
           ctx.beginPath();
-          ctx.arc(t.cx, t.cy, 24 + easeOut * 44, 0, Math.PI * 2);
+          ctx.arc(t.cx, t.cy, Math.max(0.5, 24 + easeOut * 44), 0, Math.PI * 2);
           ctx.stroke();
           ctx.restore();
         }
@@ -546,7 +546,7 @@ export function MatchVfxCanvas({ stageRef, events, duelSeats }: MatchVfxCanvasPr
           ctx.fillStyle = pt.color;
           if (pt.shape === 'petal') {
             ctx.beginPath();
-            ctx.ellipse(0, 0, pt.size, pt.size * 0.55, 0, 0, Math.PI * 2);
+            ctx.ellipse(0, 0, Math.max(0.5, pt.size), Math.max(0.3, pt.size * 0.55), 0, 0, Math.PI * 2);
             ctx.fill();
           } else if (pt.shape === 'shard') {
             ctx.beginPath();
@@ -558,7 +558,7 @@ export function MatchVfxCanvas({ stageRef, events, duelSeats }: MatchVfxCanvasPr
             ctx.fill();
           } else {
             ctx.beginPath();
-            ctx.arc(0, 0, pt.size, 0, Math.PI * 2);
+            ctx.arc(0, 0, Math.max(0.5, pt.size), 0, Math.PI * 2);
             ctx.fill();
           }
           ctx.restore();

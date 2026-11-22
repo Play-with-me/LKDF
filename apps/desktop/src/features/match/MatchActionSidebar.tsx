@@ -257,15 +257,17 @@ export function MatchActionSidebar({
       const isCounter = (nullifyInterrupt.nullifyDepth ?? 0) % 2 === 1;
       return (
         <aside className={`${sidebarShellClass} border-[#D99B26]/50`}>
-          <div className={isBar ? 'flex items-center gap-2' : 'space-y-1'}>
-            <span className="inline-block shrink-0 rounded bg-[#D99B26]/20 px-2 py-0.5 text-[11px] font-bold text-[#FDE68A]">
-              {isCounter ? 'Phản Vô Giải' : 'Chặn Cẩm nang'}
-            </span>
-            <p className="text-xs leading-snug text-[#D1D5DB]">
-              {isCounter ? 'Phản Vô Giải' : 'Chặn'}: <strong>{origName}</strong> →{' '}
-              <strong>{origTargetName}</strong>
-            </p>
-          </div>
+          {!isBar ? (
+            <div className="space-y-1">
+              <span className="inline-block shrink-0 rounded bg-[#D99B26]/20 px-2 py-0.5 text-[11px] font-bold text-[#FDE68A]">
+                {isCounter ? 'Phản Vô Giải' : 'Chặn Cẩm nang'}
+              </span>
+              <p className="text-xs leading-snug text-[#D1D5DB]">
+                {isCounter ? 'Phản Vô Giải' : 'Chặn'}: <strong>{origName}</strong> →{' '}
+                <strong>{origTargetName}</strong>
+              </p>
+            </div>
+          ) : null}
           <div className={btnGroupClass}>
             {canNullify ? (
               <button
@@ -279,10 +281,11 @@ export function MatchActionSidebar({
                   });
                   onClearSelection();
                 }}
-                className={`inline-flex ${reactBtnWidth} cursor-pointer items-center justify-center gap-1.5 rounded-lg bg-[#C83E37] px-3.5 py-2 text-xs font-bold text-white hover:bg-[#D84B43]`}
+                className={`inline-flex ${reactBtnWidth} max-h-[42px] cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-lg bg-[#C83E37] px-3.5 py-2 text-xs font-bold text-white hover:bg-[#D84B43]`}
               >
                 <GameIcon name="eye-shield" size={14} />
-                Đánh Vô Giải Khả Kích
+                <span>Đánh Vô Giải Khả Kích</span>
+                {isBar ? <kbd className="font-mono-num text-[10px] opacity-75">[Enter]</kbd> : null}
               </button>
             ) : null}
             {selfPlayer.alive ? (
@@ -296,10 +299,11 @@ export function MatchActionSidebar({
                   });
                   onClearSelection();
                 }}
-                className={`inline-flex ${reactBtnWidth} cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-[#3A424C] bg-[#1E2328] px-3.5 py-2 text-xs font-semibold text-[#E5E7EB] hover:border-[#D99B26]`}
+                className={`inline-flex ${reactBtnWidth} max-h-[42px] cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border border-[#3A424C] bg-[#1E2328] px-3.5 py-2 text-xs font-semibold text-[#E5E7EB] hover:border-[#D99B26]`}
               >
                 <GameIcon name="ui:skip" size={13} />
-                Không dùng Vô Giải
+                <span>Không dùng Vô Giải</span>
+                {isBar ? <kbd className="font-mono-num text-[10px] opacity-75">[Esc]</kbd> : null}
               </button>
             ) : (
               <p className="text-xs text-[#9CA3AF]">Đang chờ người chơi khác phản ứng...</p>
@@ -1447,19 +1451,21 @@ export function MatchActionSidebar({
               });
               onClearSelection();
             }}
-            className={`inline-flex ${turnBtnWidth} cursor-pointer items-center justify-center gap-1.5 rounded-lg bg-[#C83E37] px-3 py-1.5 text-xs font-bold text-white hover:bg-[#D84B43] disabled:cursor-not-allowed disabled:opacity-45`}
+            className={`inline-flex ${turnBtnWidth} max-h-[42px] cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-lg bg-[#C83E37] px-3 py-1.5 text-xs font-bold text-white hover:bg-[#D84B43] disabled:cursor-not-allowed disabled:opacity-45`}
           >
             <GameIcon name="card-discard" size={14} />
-            Bỏ {discardNeeded} lá bài đã chọn
+            <span>Bỏ {discardNeeded} lá</span>
+            {isBar ? <kbd className="font-mono-num text-[10px] opacity-75">[Enter]</kbd> : null}
           </button>
           {hasSelection ? (
             <button
               type="button"
               onClick={onClearSelection}
-              className={`inline-flex ${turnBtnWidth} cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-[#3A424C] bg-[#1E2328] px-3 py-1.5 text-xs font-semibold text-[#D1D5DB]`}
+              className={`inline-flex ${turnBtnWidth} max-h-[42px] cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border border-[#3A424C] bg-[#1E2328] px-3 py-1.5 text-xs font-semibold text-[#D1D5DB]`}
             >
               <GameIcon name="ui:undo" size={13} />
-              Hủy chọn (Esc)
+              <span>Hủy chọn</span>
+              <kbd className="font-mono-num text-[10px] opacity-75">[Esc]</kbd>
             </button>
           ) : null}
         </div>
@@ -1585,27 +1591,30 @@ export function MatchActionSidebar({
                 });
                 onClearSelection();
               }}
-              className={`inline-flex ${turnBtnWidth} cursor-pointer items-center justify-center gap-1.5 rounded-lg bg-[#C83E37] px-3 py-1.5 text-xs font-bold text-white hover:bg-[#D84B43] disabled:cursor-not-allowed disabled:opacity-45`}
+              className={`inline-flex ${turnBtnWidth} max-h-[42px] cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-lg bg-[#C83E37] px-3 py-1.5 text-xs font-bold text-white hover:bg-[#D84B43] disabled:cursor-not-allowed disabled:opacity-45`}
             >
               <GameIcon name={skillIcon} size={13} />
-              {skillActionLabel}
+              <span>{skillActionLabel}</span>
+              {isBar ? <kbd className="font-mono-num text-[10px] opacity-75">[Enter]</kbd> : null}
             </button>
             <button
               type="button"
               onClick={onClearSelection}
-              className={`inline-flex ${turnBtnWidth} cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-[#3A424C] bg-[#1E2328] px-3 py-1.5 text-xs font-semibold text-[#D1D5DB] hover:border-[#D99B26]`}
+              className={`inline-flex ${turnBtnWidth} max-h-[42px] cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border border-[#3A424C] bg-[#1E2328] px-3 py-1.5 text-xs font-semibold text-[#D1D5DB] hover:border-[#D99B26]`}
             >
               <GameIcon name="ui:undo" size={13} />
-              Hủy chọn (Esc)
+              <span>Hủy chọn</span>
+              <kbd className="font-mono-num text-[10px] opacity-75">[Esc]</kbd>
             </button>
             <button
               type="button"
               onClick={onEndPlayPhase}
               data-end-play-phase
-              className={`inline-flex ${turnBtnWidth} cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-[#3A424C] bg-[#1E2328] px-3 py-1.5 text-xs font-semibold text-[#E5E7EB] hover:border-[#D99B26]`}
+              className={`inline-flex ${turnBtnWidth} max-h-[42px] cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border border-[#3A424C] bg-[#1E2328] px-3 py-1.5 text-xs font-semibold text-[#E5E7EB] hover:border-[#D99B26]`}
             >
               <GameIcon name="ui:skip" size={13} />
-              Kết thúc lượt đánh (E)
+              <span>Kết thúc lượt</span>
+              <kbd className="font-mono-num text-[10px] opacity-75">[E]</kbd>
             </button>
           </div>
         </aside>
@@ -1681,10 +1690,11 @@ export function MatchActionSidebar({
                 });
                 onClearSelection();
               }}
-              className={`inline-flex ${turnBtnWidth} cursor-pointer items-center justify-center gap-1.5 rounded-lg bg-[#C83E37] px-3 py-1.5 text-xs font-bold text-white hover:bg-[#D84B43] disabled:cursor-not-allowed disabled:opacity-45`}
+              className={`inline-flex ${turnBtnWidth} max-h-[42px] cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-lg bg-[#C83E37] px-3 py-1.5 text-xs font-bold text-white hover:bg-[#D84B43] disabled:cursor-not-allowed disabled:opacity-45`}
             >
               <GameIcon name={actionSpec.icon} size={14} />
               <span className="truncate">{actionSpec.label}</span>
+              {isBar ? <kbd className="font-mono-num text-[10px] opacity-75">[Enter]</kbd> : null}
             </button>
           ) : null}
 
@@ -1692,10 +1702,11 @@ export function MatchActionSidebar({
             <button
               type="button"
               onClick={onClearSelection}
-              className={`inline-flex ${turnBtnWidth} cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-[#3A424C] bg-[#1E2328] px-3 py-1.5 text-xs font-semibold text-[#D1D5DB] hover:border-[#D99B26]`}
+              className={`inline-flex ${turnBtnWidth} max-h-[42px] cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border border-[#3A424C] bg-[#1E2328] px-3 py-1.5 text-xs font-semibold text-[#D1D5DB] hover:border-[#D99B26]`}
             >
               <GameIcon name="ui:undo" size={13} />
-              Hủy chọn (Esc)
+              <span>Hủy chọn</span>
+              <kbd className="font-mono-num text-[10px] opacity-75">[Esc]</kbd>
             </button>
           ) : null}
 
@@ -1703,10 +1714,11 @@ export function MatchActionSidebar({
             type="button"
             onClick={onEndPlayPhase}
             data-end-play-phase
-            className={`inline-flex ${turnBtnWidth} cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-[#3A424C] bg-[#1E2328] px-3 py-1.5 text-xs font-semibold text-[#E5E7EB] hover:border-[#D99B26]`}
+            className={`inline-flex ${turnBtnWidth} max-h-[42px] cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border border-[#3A424C] bg-[#1E2328] px-3 py-1.5 text-xs font-semibold text-[#E5E7EB] hover:border-[#D99B26]`}
           >
             <GameIcon name="ui:skip" size={13} />
-            Kết thúc lượt đánh (E)
+            <span>Kết thúc lượt</span>
+            <kbd className="font-mono-num text-[10px] opacity-75">[E]</kbd>
           </button>
         </div>
       </aside>

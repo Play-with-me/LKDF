@@ -134,10 +134,10 @@ export function PlayingCardFace({
       <div className="pointer-events-none relative z-10 flex shrink-0 flex-col items-center justify-center border-t border-[#B89352]/40 bg-gradient-to-b from-[#1B212C] to-[#11161D] px-1 py-1 text-center">
         <div
           className={[
-            'font-serif-title w-full font-bold leading-[1.08] break-words text-[#F4EBD8]',
+            'font-serif-title w-full font-bold break-words text-[#F4EBD8]',
             isLongName
-              ? 'text-[clamp(7.8px,0.72cqw,9.5px)] tracking-[-0.01em]'
-              : 'text-[clamp(9px,0.82cqw,11px)]',
+              ? 'text-[clamp(9.2px,0.78cqw,10.5px)] leading-[1.06] px-0.5 tracking-[-0.01em]'
+              : 'text-[clamp(10px,0.86cqw,11.5px)] leading-[1.08]',
           ].join(' ')}
         >
           {card.nameVi}
@@ -167,6 +167,7 @@ export interface HandCardItemProps {
   readonly fanIndex?: number;
   readonly fanCount?: number;
   readonly onToggle: (cardId: string) => void;
+  readonly onDoubleClickCard?: (card: CardInstance, element: HTMLButtonElement) => void;
   readonly onPointerDownCard?: (
     card: CardInstance,
     event: React.PointerEvent<HTMLButtonElement>,
@@ -183,6 +184,7 @@ export function HandCardItem({
   fanIndex,
   fanCount,
   onToggle,
+  onDoubleClickCard,
   onPointerDownCard,
 }: HandCardItemProps) {
   const isFanned =
@@ -209,6 +211,11 @@ export function HandCardItem({
           : undefined
       }
       onClick={() => onToggle(card.id)}
+      onDoubleClick={
+        !disabled && onDoubleClickCard
+          ? (e) => onDoubleClickCard(card, e.currentTarget)
+          : undefined
+      }
       aria-pressed={selected}
       data-selected={selected ? 'true' : undefined}
       data-dragging={dragging ? 'true' : undefined}

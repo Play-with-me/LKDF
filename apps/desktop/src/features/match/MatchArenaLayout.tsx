@@ -11,7 +11,7 @@ import type {
   TimerPresetConfig,
 } from '@lkdf/shared';
 import { getCardArtUrl, getHeroPortraitUrl, getUiAssetUrl } from '../../lib/assetCatalog.js';
-import { readDevicePreference, writeDevicePreference } from '../../lib/devicePreferences.js';
+import { prefersReducedMotion, readDevicePreference, writeDevicePreference } from '../../lib/devicePreferences.js';
 import {
   CardBack,
   FactionSeal,
@@ -93,6 +93,10 @@ interface PendingPointerSession {
   active: boolean;
   hoverSeatIdx: number | null;
   hoverTable: boolean;
+  lastX: number;
+  lastTs: number;
+  tiltDeg: number;
+  snapCenter: { x: number; y: number } | null;
 }
 
 /**
@@ -439,16 +443,49 @@ export function MatchArenaLayout({
         active: false,
         hoverSeatIdx: null,
         hoverTable: false,
+        lastX: event.clientX,
+        lastTs: performance.now(),
+        tiltDeg: 0,
+        snapCenter: null,
       };
     },
     [onDropDiscardCard, playerView, selection, selfPlayer?.alive],
   );
 
+  const handleDoubleClickCard = useCallback(
+    (card: CardInstance, element: HTMLButtonElement) => {
+      if (!selfPlayer?.alive) return;
+      const intent = buildCardDragDropIntent(playerView, card, selection);
+      if (intent.kind !== 'table') return;
+      const rect = element.getBoundingClientRect();
+      pendingThrowRef.current = {
+        cardId: card.id,
+        x: rect.left + rect.width / 2,
+        y: rect.top + rect.height / 2,
+        sentAt: performance.now(),
+      };
+      onSendAction(intent.action);
+      setInspector(null);
+      onClearSelection?.();
+    },
+    [onClearSelection, onSendAction, playerView, selection, selfPlayer?.alive],
+  );
+
   useEffect(() => {
-    const syncGhostTransform = (clientX: number, clientY: number) => {
-      if (ghostRef.current) {
-        ghostRef.current.style.transform = `translate3d(${clientX - 39}px, ${clientY - 56}px, 0) rotate(-4deg) scale(1.06)`;
-      }
+    const syncGhostTransform = (
+      clientX: number,
+      clientY: number,
+      session: PendingPointerSession,
+    ) => {
+      if (!ghostRef.current) return;
+      const x = session.snapCenter
+        ? clientX + (session.snapCenter.x - clientX) * 0.3
+        : clientX;
+      const y = session.snapCenter
+        ? clientY + (session.snapCenter.y - clientY) * 0.3
+        : clientY;
+      const scale = session.snapCenter ? 1.08 : 1.06;
+      ghostRef.current.style.transform = `translate3d(${x - 39}px, ${y - 56}px, 0) rotate(${session.tiltDeg.toFixed(2)}deg) scale(${scale})`;
     };
 
     const detectDropHover = (clientX: number, clientY: number, intent: DragDropIntent) => {
@@ -490,7 +527,16 @@ export function MatchArenaLayout({
         onCardLift?.();
       }
 
-      syncGhostTransform(e.clientX, e.clientY);
+      const ts = performance.now();
+      const dtMs = Math.max(8, ts - session.lastTs);
+      const vx = (e.clientX - session.lastX) / dtMs;
+      const reducedMotion = prefersReducedMotion();
+      const targetTilt = reducedMotion ? 0 : Math.max(-15, Math.min(15, vx * 12));
+      session.tiltDeg = session.tiltDeg * 0.55 + targetTilt * 0.45;
+      session.lastX = e.clientX;
+      session.lastTs = ts;
+
+      syncGhostTransform(e.clientX, e.clientY, session);
       const { nextSeatIdx, nextTable } = detectDropHover(
         e.clientX,
         e.clientY,
@@ -501,8 +547,18 @@ export function MatchArenaLayout({
         nextSeatIdx !== session.hoverSeatIdx ||
         nextTable !== session.hoverTable
       ) {
-        if (nextSeatIdx !== null && nextSeatIdx !== session.hoverSeatIdx) {
-          onTargetLock?.(nextSeatIdx);
+        if (nextSeatIdx !== session.hoverSeatIdx) {
+          if (nextSeatIdx !== null) {
+            onTargetLock?.(nextSeatIdx);
+            const rect = arenaRef.current
+              ?.querySelector(`[data-drop-seat="${nextSeatIdx}"]`)
+              ?.getBoundingClientRect();
+            session.snapCenter = rect
+              ? { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }
+              : null;
+          } else {
+            session.snapCenter = null;
+          }
         }
         session.hoverSeatIdx = nextSeatIdx;
         session.hoverTable = nextTable;
@@ -524,7 +580,7 @@ export function MatchArenaLayout({
               },
         );
       }
-      syncGhostTransform(e.clientX, e.clientY);
+      syncGhostTransform(e.clientX, e.clientY, session);
     };
 
     const finishDrag = (e?: PointerEvent) => {
@@ -721,7 +777,8 @@ export function MatchArenaLayout({
           onInspectHero={handleInspectHero}
           onInspectCard={handleInspectCard}
         />
-        {prompt.actorSeat === opp.seatIndex ? (
+        {(prompt.actorSeat === opp.seatIndex || isActor) &&
+        (phaseDeadlineAt !== null || pausedRemainingMs !== null) ? (
           <div className="lkdf-bot-seat-clock">
             <FuseTimer key={phaseDeadlineAt ?? 'paused'} deadline={phaseDeadlineAt}
               paused={isTimerPaused} pausedRemainingMs={pausedRemainingMs}
@@ -1333,9 +1390,13 @@ export function MatchArenaLayout({
                     className={
                       index === 0
                         ? ''
-                        : handCards.length > 7
-                          ? '-ml-4'
-                          : 'ml-1.5'
+                        : handCards.length >= 10
+                          ? '-ml-6'
+                          : handCards.length >= 8
+                            ? '-ml-4'
+                            : handCards.length >= 6
+                              ? '-ml-1.5'
+                              : 'ml-1.5'
                     }
                   >
                     <HandCardItem
@@ -1348,6 +1409,7 @@ export function MatchArenaLayout({
                       fanIndex={index}
                       fanCount={handCards.length}
                       onToggle={handleCardToggleFromUi}
+                      onDoubleClickCard={handleDoubleClickCard}
                       onPointerDownCard={handleStartCardPointerDown}
                     />
                   </div>

@@ -70,10 +70,14 @@ export function MatchHoverTooltip() {
         };
 
         const centeredX = Math.max(8, Math.min(rect.left + rect.width / 2 - w / 2, innerWidth - w - 8));
+        const midX = Math.max(8, Math.round((innerWidth - w) / 2));
         const defaultY = Math.max(8, anchorTop - h - 8);
         const candidates: Array<{ x: number; y: number }> = [
           { x: centeredX, y: defaultY },
           { x: centeredX, y: Math.max(8, anchorTop - h - 4) },
+          { x: centeredX, y: Math.max(8, anchorTop - h - 2) },
+          { x: midX, y: defaultY },
+          { x: midX, y: Math.max(8, anchorTop - h - 4) },
         ];
 
         if (centerRect) {

@@ -125,10 +125,10 @@ function GuanXingPlanner({
       </div>
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
         <div className="rounded border border-[#2D333B] bg-[#1E2328] p-2">
-          <div className="mb-1 text-[11px] font-bold text-[#86EFAC]">
+          <div className="mb-1.5 text-[11px] font-bold text-[#86EFAC]">
             Đầu chồng bài (rút trước)
           </div>
-          <div className="flex flex-wrap gap-1">
+          <div className="flex flex-wrap gap-1.5">
             {topIds.map((id, idx) => {
               const card = cardById.get(id);
               if (!card) return null;
@@ -137,23 +137,23 @@ function GuanXingPlanner({
                   key={id}
                   type="button"
                   onClick={() => moveCard(id, 'BOTTOM')}
-                  title="Bấm để chuyển xuống đáy"
-                  className={[
-                    'cursor-pointer rounded border border-[#B89352]/60 bg-[#1B212C] px-2 py-0.5 text-[11px] font-bold hover:border-[#E6BE6C]',
-                    isRedSuit(card.suit) ? 'text-[#FCA5A5]' : 'text-[#F4EBD8]',
-                  ].join(' ')}
+                  title={`Bấm để chuyển ${formatCardShort(card)} xuống đáy`}
+                  className="lkdf-card-gwent group relative flex h-[68px] w-[48px] shrink-0 cursor-pointer flex-col overflow-hidden rounded-[5px] border border-[#86EFAC]/65 text-left transition-transform duration-150 hover:-translate-y-0.5 hover:border-[#FBBF24]"
                 >
-                  {idx + 1}. {formatCardShort(card)} ↓
+                  <PlayingCardFace card={card} showCategoryTag={false} />
+                  <span className="absolute top-0.5 right-0.5 z-10 rounded bg-[#14171A]/90 px-1 text-[9px] font-bold text-[#86EFAC] ring-1 ring-[#86EFAC]/50">
+                    #{idx + 1}
+                  </span>
                 </button>
               );
             })}
           </div>
         </div>
         <div className="rounded border border-[#2D333B] bg-[#1E2328] p-2">
-          <div className="mb-1 text-[11px] font-bold text-[#93C5FD]">
+          <div className="mb-1.5 text-[11px] font-bold text-[#93C5FD]">
             Đáy chồng bài
           </div>
-          <div className="flex flex-wrap gap-1">
+          <div className="flex flex-wrap gap-1.5">
             {bottomIds.map((id) => {
               const card = cardById.get(id);
               if (!card) return null;
@@ -162,13 +162,10 @@ function GuanXingPlanner({
                   key={id}
                   type="button"
                   onClick={() => moveCard(id, 'TOP')}
-                  title="Bấm để chuyển lên đầu"
-                  className={[
-                    'cursor-pointer rounded border border-[#B89352]/60 bg-[#1B212C] px-2 py-0.5 text-[11px] font-bold hover:border-[#E6BE6C]',
-                    isRedSuit(card.suit) ? 'text-[#FCA5A5]' : 'text-[#F4EBD8]',
-                  ].join(' ')}
+                  title={`Bấm để chuyển ${formatCardShort(card)} lên đầu`}
+                  className="lkdf-card-gwent group relative flex h-[68px] w-[48px] shrink-0 cursor-pointer flex-col overflow-hidden rounded-[5px] border border-[#93C5FD]/55 opacity-85 text-left transition-transform duration-150 hover:-translate-y-0.5 hover:border-[#FBBF24] hover:opacity-100"
                 >
-                  {formatCardShort(card)} ↑
+                  <PlayingCardFace card={card} showCategoryTag={false} />
                 </button>
               );
             })}
@@ -192,6 +189,7 @@ function YiJiDistributor({
     () => playerView.players.filter((p) => p.alive),
     [playerView.players],
   );
+  const [selectedCardId, setSelectedCardId] = useState<string | null>(() => cards[0]?.id ?? null);
   const [assignByCardId, setAssignByCardId] = useState<Record<string, number>>(() => {
     const init: Record<string, number> = {};
     for (const c of cards) {
@@ -206,6 +204,7 @@ function YiJiDistributor({
       init[c.id] = playerView.viewerSeatIndex;
     }
     setAssignByCardId(init);
+    setSelectedCardId(cards[0]?.id ?? null);
   }, [cards, playerView.viewerSeatIndex]);
 
   const handleConfirm = () => {
@@ -242,41 +241,69 @@ function YiJiDistributor({
           Chia bài Di Kế
         </button>
       </div>
-      <div className="flex flex-wrap gap-2">
-        {cards.map((card) => (
-          <div
-            key={card.id}
-            className="flex items-center gap-2 rounded border border-[#3A424C] bg-[#1E2328] p-1.5"
-          >
-            <span
-              className={[
-                'rounded border border-[#B89352]/60 bg-[#1B212C] px-2 py-0.5 text-[11px] font-bold',
-                isRedSuit(card.suit) ? 'text-[#FCA5A5]' : 'text-[#F4EBD8]',
-              ].join(' ')}
-            >
-              {formatCardShort(card)}
-            </span>
-            <select
-              aria-label={`Chọn người nhận ${card.nameVi}`}
-              value={assignByCardId[card.id] ?? playerView.viewerSeatIndex}
-              onChange={(e) =>
-                setAssignByCardId((prev) => ({
-                  ...prev,
-                  [card.id]: Number(e.target.value),
-                }))
-              }
-              className="rounded border border-[#3A424C] bg-[#14171A] px-2 py-0.5 text-[11px] text-[#F3F4F6]"
-            >
-              {alivePlayers.map((p) => (
-                <option key={p.seatIndex} value={p.seatIndex}>
-                  {p.seatIndex === playerView.viewerSeatIndex
-                    ? `${p.displayName} (Bản thân)`
-                    : getPlayerSeatLabel(playerView.players, p.seatIndex)}
-                </option>
-              ))}
-            </select>
-          </div>
-        ))}
+      <div className="flex flex-wrap items-start gap-2">
+        <div className="flex flex-wrap gap-1.5">
+          {cards.map((card) => {
+            const targetSeat = assignByCardId[card.id] ?? playerView.viewerSeatIndex;
+            const isSelected = selectedCardId === card.id;
+            const shortTarget =
+              targetSeat === playerView.viewerSeatIndex
+                ? 'Bản thân'
+                : `Ghế #${targetSeat + 1}`;
+            return (
+              <button
+                key={card.id}
+                type="button"
+                onClick={() => setSelectedCardId(card.id)}
+                title={`Chọn ${formatCardShort(card)} để gán người nhận`}
+                className={[
+                  'lkdf-card-gwent relative flex h-[68px] w-[48px] shrink-0 cursor-pointer flex-col overflow-hidden rounded-[5px] text-left transition-transform duration-150',
+                  isSelected
+                    ? 'border-2 border-[#FBBF24] ring-2 ring-[#FBBF24]/50 -translate-y-0.5'
+                    : 'border border-[#B89352]/60 hover:border-[#E6BE6C]',
+                ].join(' ')}
+              >
+                <PlayingCardFace card={card} showCategoryTag={false} />
+                <span className="absolute inset-x-0 bottom-0 z-10 truncate bg-[#14171A]/90 px-1 py-0.5 text-center text-[9px] font-bold text-[#FDE68A]">
+                  {shortTarget}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+        <div className="flex min-w-0 flex-1 flex-wrap gap-1">
+          {alivePlayers.map((p) => {
+            const activeTarget =
+              selectedCardId !== null &&
+              (assignByCardId[selectedCardId] ?? playerView.viewerSeatIndex) === p.seatIndex;
+            const label =
+              p.seatIndex === playerView.viewerSeatIndex
+                ? 'Bản thân'
+                : `Ghế #${p.seatIndex + 1} · ${p.displayName}`;
+            return (
+              <button
+                key={p.seatIndex}
+                type="button"
+                disabled={selectedCardId === null}
+                onClick={() => {
+                  if (!selectedCardId) return;
+                  setAssignByCardId((prev) => ({
+                    ...prev,
+                    [selectedCardId]: p.seatIndex,
+                  }));
+                }}
+                className={[
+                  'cursor-pointer rounded-full border px-2 py-0.5 text-[10.5px] font-semibold transition-colors',
+                  activeTarget
+                    ? 'border-[#FBBF24] bg-[#D99B26]/25 text-[#FDE68A]'
+                    : 'border-[#3A424C] bg-[#1E2328] text-[#D1D5DB] hover:border-[#B89352]',
+                ].join(' ')}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
@@ -317,20 +344,36 @@ function TablePlayedCard({
 
   useLayoutEffect(() => {
     const face = faceRef.current;
+    if (!face) return;
     const origin = takeThrowOrigin?.(card.id);
-    if (!face || !origin || prefersReducedMotion()) return;
+    if (prefersReducedMotion()) return;
 
-    const bounds = face.getBoundingClientRect();
-    const dx = origin.x - bounds.left - bounds.width / 2;
-    const dy = origin.y - bounds.top - bounds.height / 2;
-    const motion = face.animate([
-      { translate: `${dx}px ${dy}px`, scale: 1.1 },
-      { translate: `${dx * .9}px ${dy * .9 - 12}px`, scale: 1.13, offset: .19 },
-      { translate: '0 -3px', scale: 1.03, offset: .86 },
-      { translate: '0 0', scale: 1 },
-    ], { duration: 240, easing: 'cubic-bezier(.22,.72,.32,1)' });
+    const motion = origin
+      ? (() => {
+          const bounds = face.getBoundingClientRect();
+          const dx = origin.x - bounds.left - bounds.width / 2;
+          const dy = origin.y - bounds.top - bounds.height / 2;
+          return face.animate(
+            [
+              { translate: `${dx}px ${dy}px`, scale: 1.1 },
+              { translate: `${dx * 0.9}px ${dy * 0.9 - 12}px`, scale: 1.13, offset: 0.19 },
+              { translate: '0 -3px', scale: 1.03, offset: 0.86 },
+              { translate: '0 0', scale: 1 },
+            ],
+            { duration: 240, easing: 'cubic-bezier(.22,.72,.32,1)' },
+          );
+        })()
+      : face.animate(
+          [
+            { transform: `perspective(600px) rotateY(-82deg) rotate(${rotationDeg}deg) scale(0.95)`, opacity: 0.2 },
+            { transform: `perspective(600px) rotateY(0deg) rotate(${rotationDeg}deg) scale(1)`, opacity: 1 },
+          ],
+          { duration: 280, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' },
+        );
     return () => motion.cancel();
-  }, [card.id, takeThrowOrigin]);
+    // Run arrival flight or 3D reveal strictly once per card arrival without stealing takeThrowOrigin during render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [card.id]);
 
   return (
     <button
@@ -554,7 +597,7 @@ export function MatchCenterBoard({
         </div>
       ) : (
         /* Khu tương tác đặc biệt (chỉ bật nổi giữa bàn khi tới lượt chọn bài chung/mục tiêu/Quan Tinh/Di Kế) */
-        <div className="lkdf-battle-choice lkdf-scroll max-h-[185px] w-full space-y-1.5 overflow-y-auto rounded-xl border border-[#D99B26]/65 bg-[#14171A]/95 p-2.5 shadow-2xl">
+        <div className="lkdf-battle-choice lkdf-scroll w-full space-y-1.5 overflow-y-auto rounded-xl border border-[#D99B26]/65 bg-[#14171A]/95 p-2.5 shadow-2xl">
           {/* Ngũ Cốc Phong Đăng */}
           {interrupt.kind === 'WAIT_HARVEST_PICK' &&
           playerView.harvestPool.length > 0 ? (
@@ -572,7 +615,7 @@ export function MatchCenterBoard({
                       })
                     }
                     className={[
-                      'lkdf-card-gwent relative flex flex-col overflow-hidden border border-[#B89352]/60 rounded cursor-pointer hover:border-[#E6BE6C]',
+                      'lkdf-card-gwent lkdf-card-flip-3d relative flex flex-col overflow-hidden border border-[#B89352]/60 rounded cursor-pointer hover:border-[#E6BE6C]',
                       isRedSuit(card.suit) ? 'text-[#FCA5A5]' : 'text-[#F4EBD8]',
                     ].join(' ')}
                   >
