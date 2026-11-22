@@ -297,6 +297,38 @@ export function registerRoomRoutes(
     };
   });
 
+  app.post('/api/rooms/:roomCode/return-lobby', async (request, reply) => {
+    const auth = await authService.verifyAuthorizationHeader(
+      request.headers.authorization,
+    );
+    if (!auth.ok) {
+      return reply.status(auth.statusCode).send(auth);
+    }
+
+    const params = request.params as { roomCode?: string };
+    const codeParsed = RoomCodeParamSchema.safeParse(params.roomCode ?? '');
+    if (!codeParsed.success) {
+      return reply.status(400).send({
+        ok: false,
+        code: 'INVALID_ROOM_CODE',
+        messageVi: 'Mã phòng phải gồm đúng 6 ký tự.',
+      });
+    }
+
+    const returned = await roomManager.resetRoomToLobby(
+      auth.profile.userId,
+      codeParsed.data,
+    );
+    if (!returned.ok) {
+      return reply.status(returned.statusCode).send(returned);
+    }
+
+    return {
+      ok: true,
+      ...returned.data,
+    };
+  });
+
   app.post('/api/rooms/:roomCode/select-hero', async (request, reply) => {
     const auth = await authService.verifyAuthorizationHeader(
       request.headers.authorization,

@@ -554,11 +554,13 @@ function decidePlayPhaseAction(view: PlayerViewState): GameAction {
     hand.find((c) => c.cardKey === 'lac_bat_tu_thuc') ??
     (self.heroId === 'da_qiao' ? hand.find((c) => c.suit === 'DIAMOND' && c.cardKey !== 'dao') : undefined);
   if (lac) {
-    const target = rankedEnemies.find(
-      (p) =>
-        canTargetWithBasicCard(p, 'lac_bat_tu_thuc') &&
-        !p.delayedScrolls.some((d) => d.cardKey === 'lac_bat_tu_thuc'),
-    );
+    const target =
+      rankedEnemies.find(
+        (p) =>
+          canTargetWithBasicCard(p, 'lac_bat_tu_thuc') &&
+          !p.delayedScrolls.some((d) => d.cardKey === 'lac_bat_tu_thuc'),
+      ) ??
+      rankedEnemies.find((p) => canTargetWithBasicCard(p, 'lac_bat_tu_thuc'));
     if (target) {
       return {
         type: 'PLAY_CARD',
@@ -615,13 +617,14 @@ function decidePlayPhaseAction(view: PlayerViewState): GameAction {
     }
   }
 
-  // 5. Đánh Sát vào mục tiêu hợp lệ trong tầm đánh
+  // 5. Đánh Sát vào mục tiêu hợp lệ trong tầm đánh (trừ Vòng 1 Hòa Bình)
+  const canAttackRound = !(view.peacefulFirstRound && view.roundNumber === 1);
   const unlimitedSat =
     self.heroId === 'zhang_fei' ||
     self.equipments.weapon?.cardKey === 'gia_cat_lien_no';
   const satUsed = flags?.satUsedThisTurn ?? 0;
 
-  if (unlimitedSat || satUsed < 1) {
+  if (canAttackRound && (unlimitedSat || satUsed < 1)) {
     const attackTargets = rankedEnemies.filter(
       (p) =>
         isInAttackRange(view, seatIndex, p.seatIndex) &&

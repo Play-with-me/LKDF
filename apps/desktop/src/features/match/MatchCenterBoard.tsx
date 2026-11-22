@@ -320,22 +320,16 @@ function getPublicTargetZones(player: PublicPlayerView): TargetCardZone[] {
   return zones;
 }
 
-const TABLE_FAN_ROTATIONS_DEG = [-7, -2.5, 2, -4, 3] as const;
-
 function TablePlayedCard({
   card,
   isLatest,
   isInspected,
-  rotationDeg,
-  overlapLeft,
   takeThrowOrigin,
   onInspect,
 }: {
   readonly card: CardInstance;
   readonly isLatest: boolean;
   readonly isInspected: boolean;
-  readonly rotationDeg: number;
-  readonly overlapLeft: boolean;
   readonly takeThrowOrigin?: ThrowOriginLookup;
   readonly onInspect?: (card: CardInstance, sourceLabel: string) => void;
 }) {
@@ -365,8 +359,8 @@ function TablePlayedCard({
         })()
       : face.animate(
           [
-            { transform: `perspective(600px) rotateY(-82deg) rotate(${rotationDeg}deg) scale(0.95)`, opacity: 0.2 },
-            { transform: `perspective(600px) rotateY(0deg) rotate(${rotationDeg}deg) scale(1)`, opacity: 1 },
+            { transform: 'perspective(600px) rotateY(-82deg) scale(0.95)', opacity: 0.2 },
+            { transform: 'perspective(600px) rotateY(0deg) scale(1)', opacity: 1 },
           ],
           { duration: 280, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' },
         );
@@ -382,21 +376,89 @@ function TablePlayedCard({
       type="button"
       onClick={onInspect ? () => onInspect(card, 'Bài ngửa giữa bàn') : undefined}
       title={`Bấm xem kỹ năng ${rankLabel} ${card.nameVi}`}
-      style={{ transform: `rotate(${rotationDeg}deg)` }}
       className={[
         'lkdf-card-gwent group relative flex h-[104px] w-[74px] shrink-0 flex-col overflow-hidden rounded-[6px] text-left text-[#F4EBD8] transition-transform duration-150 select-none',
         onInspect ? 'cursor-pointer hover:-translate-y-1.5 hover:z-30' : '',
-        overlapLeft ? '-ml-6' : '',
         isInspected
           ? 'z-30 border-2 border-[#FDE68A] shadow-[0_12px_24px_rgba(230,190,108,0.45)] ring-2 ring-[#E6BE6C]/70'
           : isLatest
-            ? 'z-20 border-[1.5px] border-[#E6BE6C] shadow-[0_12px_24px_rgba(0,0,0,0.72)] ring-1 ring-[#E6BE6C]/55'
-            : 'z-10 border-[1.5px] border-[#6E7889]/75 brightness-[0.88] shadow-md',
+            ? 'z-20 border-[1.5px] border-[#E6BE6C] shadow-[0_10px_22px_rgba(230,190,108,0.34)] ring-1 ring-[#E6BE6C]/70'
+            : 'z-10 border-[1.5px] border-[#6E7889]/80 brightness-95 shadow-md',
       ].join(' ')}
     >
       <PlayingCardFace card={card} showCategoryTag />
     </button>
   );
+}
+
+function buildTargetedSelfAlertVi(view: PlayerViewState): string | null {
+  const interrupt = view.activeInterrupt;
+  if (!interrupt) return null;
+  const viewer = view.viewerSeatIndex;
+  const getName = (seat: number | undefined | null) =>
+    seat === undefined || seat === null ? 'Đối thủ' : getPlayerSeatLabel(view.players, seat);
+
+  if (
+    interrupt.kind === 'WAIT_DODGE' &&
+    interrupt.targetSeat === viewer &&
+    interrupt.sourceSeat !== undefined &&
+    interrupt.sourceSeat !== viewer
+  ) {
+    return `🎯 ${getName(interrupt.sourceSeat)} đang đánh Sát vào BẠN!`;
+  }
+  if (
+    interrupt.kind === 'WAIT_DUEL_SAT' &&
+    interrupt.targetSeat === viewer &&
+    interrupt.sourceSeat !== undefined &&
+    interrupt.sourceSeat !== viewer
+  ) {
+    return `🎯 ${getName(interrupt.sourceSeat)} đang Quyết Đấu với BẠN!`;
+  }
+  if (
+    interrupt.kind === 'WAIT_AOE_SAT' &&
+    interrupt.targetSeat === viewer &&
+    interrupt.sourceSeat !== undefined &&
+    interrupt.sourceSeat !== viewer
+  ) {
+    return `🎯 ${getName(interrupt.sourceSeat)} dùng Nam Man Nhập Xâm nhắm BẠN!`;
+  }
+  if (
+    interrupt.kind === 'WAIT_AOE_DODGE' &&
+    interrupt.targetSeat === viewer &&
+    interrupt.sourceSeat !== undefined &&
+    interrupt.sourceSeat !== viewer
+  ) {
+    return `🎯 ${getName(interrupt.sourceSeat)} dùng Vạn Tiễn Tề Phát nhắm BẠN!`;
+  }
+  if (
+    interrupt.kind === 'PICK_TARGET_CARD' &&
+    interrupt.targetSeat === viewer &&
+    interrupt.sourceSeat !== undefined &&
+    interrupt.sourceSeat !== viewer
+  ) {
+    return `🎯 ${getName(interrupt.sourceSeat)} đang ${interrupt.stealing ? 'Thuận Thủ Khiên Dương' : 'Quá Hà Sái Cầu'} bài của BẠN!`;
+  }
+  if (
+    interrupt.kind === 'WAIT_COLLATERAL_SAT' &&
+    interrupt.attackerSeat === viewer &&
+    interrupt.sourceSeat !== undefined &&
+    interrupt.sourceSeat !== viewer
+  ) {
+    return `🎯 ${getName(interrupt.sourceSeat)} dùng Tá Đao Sát Nhân lên BẠN!`;
+  }
+  if (interrupt.kind === 'WAIT_NULLIFICATION') {
+    const nullifyInterrupt = interrupt as typeof interrupt & {
+      readonly originalScrollNameVi?: string;
+      readonly originalTargetSeat?: number;
+      readonly nullifyDepth?: number;
+    };
+    const origTarget = nullifyInterrupt.originalTargetSeat ?? interrupt.targetSeat;
+    const origName = nullifyInterrupt.originalScrollNameVi ?? interrupt.scrollNameVi ?? 'Cẩm nang';
+    if (origTarget === viewer && (nullifyInterrupt.nullifyDepth ?? 0) % 2 === 0) {
+      return `⚠️ Cẩm nang [${origName}] đang nhắm vào BẠN!`;
+    }
+  }
+  return null;
 }
 
 export function MatchCenterBoard({
@@ -439,7 +501,7 @@ export function MatchCenterBoard({
         return prev;
       }
       const withoutDup = prev.filter((c) => c.id !== topCard.id);
-      return [...withoutDup, topCard].slice(-5);
+      return [...withoutDup, topCard].slice(-3);
     });
   }, [playerView.discardPileCount, playerView.discardPileTop, playerView.matchId]);
 
@@ -472,9 +534,14 @@ export function MatchCenterBoard({
     playerView.actionLog.length > 0
       ? playerView.actionLog[playerView.actionLog.length - 1]
       : null;
-  const statusSubtitle = prompt.isMyTurn
-    ? prompt.detailVi
-    : (latestActionEntry ?? prompt.detailVi);
+  const targetAlertVi = buildTargetedSelfAlertVi(playerView);
+  const isFirstRoundPeaceful = Boolean(
+    playerView.peacefulFirstRound &&
+      playerView.roundNumber === 1 &&
+      playerView.turnPhase !== 'HERO_SELECT' &&
+      playerView.turnPhase !== 'GAME_OVER',
+  );
+  const spotlightText = latestActionEntry ?? prompt.detailVi;
   const cloudBorderUrl = getUiAssetUrl('tex-cloud-border');
   const inkBaseUrl = getUiAssetUrl('tex-ink-base');
   const plaqueStyle = cloudBorderUrl
@@ -489,8 +556,8 @@ export function MatchCenterBoard({
 
   return (
     <div className="lkdf-battle-center-stack flex max-h-full min-h-0 min-w-0 w-full flex-col items-center gap-1.5">
-      {/* Thanh trạng thái lượt + 1 dòng hướng dẫn/nhật ký gọn */}
-      <div className="flex max-w-[min(460px,54cqw)] flex-col items-center gap-0.5">
+      {/* Thanh trạng thái lượt + Cảnh báo nhắm vào BẠN + Nhật ký hành động mới nhất */}
+      <div className="flex w-full max-w-[min(500px,100%)] flex-col items-center gap-1">
         <div
           style={plaqueStyle}
           className={
@@ -530,21 +597,47 @@ export function MatchCenterBoard({
           ) : null}
         </div>
 
+        {(targetAlertVi || isFirstRoundPeaceful) ? (
+          <div className="flex flex-wrap items-center justify-center gap-1.5">
+            {targetAlertVi ? (
+              <div
+                role="alert"
+                data-targeted-alert="true"
+                className="inline-flex max-w-full items-center gap-1 rounded-full border border-[#F87171]/85 bg-[#451212]/94 px-2.5 py-0.5 text-[10.5px] font-extrabold text-[#FEE2E2] shadow-[0_0_16px_rgba(220,38,38,0.45)]"
+              >
+                <span>{targetAlertVi}</span>
+              </div>
+            ) : null}
+            {isFirstRoundPeaceful ? (
+              <span
+                data-round1-peace="true"
+                className="inline-flex items-center gap-1 rounded-full border border-[#34D399]/55 bg-[#064E3B]/75 px-2.5 py-0.5 text-[10px] font-bold text-[#A7F3D0]"
+              >
+                🕊️ Vòng 1 Hòa Bình · Chưa đánh Sát
+              </span>
+            ) : null}
+          </div>
+        ) : null}
 
-
-        <p title={statusSubtitle} className="max-w-full truncate px-2 text-center text-[11px] text-[#9CA3AF]">
-          {statusSubtitle}
-        </p>
+        {spotlightText ? (
+          <div
+            data-action-spotlight={playerView.actionLog.length}
+            title={spotlightText}
+            className="w-max max-w-full rounded-lg border border-[#B89352]/45 bg-[#12161F]/92 px-2 py-0.5 text-center text-[10.5px] font-semibold leading-snug text-[#FDE68A] shadow"
+          >
+            <span className="line-clamp-2">📣 {spotlightText}</span>
+          </div>
+        ) : null}
       </div>
 
-      {/* Tier 2: Bàn bài trung tâm — Chồng bài rút + Tụ bài đánh ra */}
+      {/* Tier 2: Bàn bài trung tâm — Chồng bài rút + Các lá bài đánh ra tách rời dễ đọc */}
       {interrupt?.handPick && pickTargetPlayer ? (
         <TakeHandTray key={interrupt.id} interrupt={interrupt} owner={pickTargetPlayer}
           viewerSeat={playerView.viewerSeatIndex} onSendAction={onSendAction} />
       ) : !hasSpecialChoice ? (
-        <div className="lkdf-battle-card-line flex items-end justify-center gap-6 pt-1.5 pb-1">
+        <div className="lkdf-battle-card-line flex items-end justify-center gap-3 pt-1 pb-1">
           {/* Chồng bài rút dạng xấp bài úp */}
-          <div className="flex flex-col items-center gap-1.5">
+          <div className="flex flex-col items-center gap-1.5 shrink-0">
             <div data-motion-draw-pile className="relative flex h-[104px] w-[74px] items-center justify-center">
               <span aria-hidden="true" className="absolute inset-0 translate-x-1 translate-y-1 rounded-[6px] border border-[#D99B26]/40 bg-[#15253A]" />
               <span aria-hidden="true" className="absolute inset-0 translate-x-0.5 translate-y-0.5 rounded-[6px] border border-[#D99B26]/55 bg-[#182B44]" />
@@ -554,19 +647,17 @@ export function MatchCenterBoard({
               Rút: <strong className="text-[#F3F4F6]">{playerView.drawPileCount}</strong>
             </span>
           </div>
-          {/* Tụ bài đánh ra kiểu Tiến Lên Miền Nam (xòe ngang đè nhẹ giữa bàn) */}
-          <div className="flex flex-col items-center gap-1.5">
-            <div className="flex min-h-[104px] min-w-[96px] items-center justify-center px-2">
+          {/* Các lá bài đã đánh / bỏ gần nhất (tách rời thẳng hàng, 0px đè lên nhau) */}
+          <div className="flex flex-col items-center gap-1.5 min-w-0">
+            <div className="flex min-h-[104px] min-w-[74px] items-center justify-center px-0.5">
               {recentDiscards.length > 0 ? (
-                <div className="flex items-center justify-center">
+                <div className="flex items-center justify-center gap-1.5">
                   {recentDiscards.map((card, idx) => (
                     <TablePlayedCard
                       key={`${card.id}-${idx}`}
                       card={card}
                       isLatest={idx === recentDiscards.length - 1}
                       isInspected={inspectedCardId === card.id}
-                      rotationDeg={TABLE_FAN_ROTATIONS_DEG[idx % TABLE_FAN_ROTATIONS_DEG.length] ?? 0}
-                      overlapLeft={idx > 0}
                       takeThrowOrigin={takeThrowOrigin}
                       onInspect={onInspectCard}
                     />

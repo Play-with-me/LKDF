@@ -1624,9 +1624,13 @@ export function MatchActionSidebar({
     const effectiveKey = getEffectivePlayCardKey(selection, ownedCards);
     const needTruongBatCards =
       selection.activeConvertMode === 'truong_bat' && selection.selectedCardIds.length !== 2;
+    const isFirstRoundSatBlocked = Boolean(
+      view.peacefulFirstRound && view.roundNumber === 1 && effectiveKey === 'sat',
+    );
     const canPlayCard =
       effectiveKey !== null &&
       !needTruongBatCards &&
+      !isFirstRoundSatBlocked &&
       selection.selectedCardIds.length >= 1 &&
       hasEnoughTargets;
 
@@ -1634,13 +1638,15 @@ export function MatchActionSidebar({
       ? getPlayButtonSpec(effectiveKey, ownedCards, selection, view.players)
       : null;
 
-    const hintText = needTruongBatCards
-      ? `Trượng Bát: chọn đủ 2 lá (${selection.selectedCardIds.length}/2)`
-      : effectiveKey && !hasEnoughTargets
-        ? targetSpec.promptVi || 'Hãy bấm chọn 1 mục tiêu sáng viền vàng trên bàn'
-        : effectiveKey
-          ? 'Sẵn sàng thực hiện hành động.'
-          : 'Chọn lá bài bên dưới hoặc kỹ năng ở thẻ tướng.';
+    const hintText = isFirstRoundSatBlocked
+      ? 'Vòng 1 Hòa Bình: chưa được đánh Sát ở vòng đầu tiên.'
+      : needTruongBatCards
+        ? `Trượng Bát: chọn đủ 2 lá (${selection.selectedCardIds.length}/2)`
+        : effectiveKey && !hasEnoughTargets
+          ? targetSpec.promptVi || 'Hãy bấm chọn 1 mục tiêu sáng viền vàng trên bàn'
+          : effectiveKey
+            ? 'Sẵn sàng thực hiện hành động.'
+            : 'Chọn lá bài bên dưới hoặc kỹ năng ở thẻ tướng.';
 
     return (
       <aside className={`${sidebarShellClass} border-[#2D343C]`}>
@@ -1651,7 +1657,7 @@ export function MatchActionSidebar({
             </span>
             <p className="text-xs leading-snug text-[#D1D5DB]">{hintText}</p>
           </div>
-        ) : needTruongBatCards || (effectiveKey && !hasEnoughTargets) ? (
+        ) : isFirstRoundSatBlocked || needTruongBatCards || (effectiveKey && !hasEnoughTargets) ? (
           <span className="text-[11px] font-semibold text-[#FDE68A]">{hintText}</span>
         ) : null}
         <div className={btnGroupClass}>

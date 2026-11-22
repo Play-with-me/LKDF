@@ -188,10 +188,10 @@
 .lkdf-battle-judgment { margin-top: 2px; border-top: 1px solid #6e564465; padding-top: 3px; color: #c9b5a4; }
 .lkdf-battle-judgment > div { margin: 0; border: 0; padding: 0; }
 .lkdf-battle-hand { padding-top: 5px; padding-bottom: 4px; }
-.lkdf-battle-center { width: clamp(260px, 34cqw, 450px); }
-.lkdf-battle-center-stack { gap: 6px; }
+.lkdf-battle-center { width: clamp(236px, 28.5cqw, 356px); }
+.lkdf-battle-center-stack { gap: 4px; }
 .lkdf-battle-center-stack > div > p { color: #c5b6a5; }
-.lkdf-battle-card-line { position: relative; width: min(360px, 100%); }
+.lkdf-battle-card-line { position: relative; width: min(348px, 100%); }
 .lkdf-battle-reaction .lkdf-action-bar {
   flex-wrap: wrap;
   justify-content: center;
@@ -686,10 +686,43 @@ dialog[open]::backdrop {
   box-shadow: 0 0 14px #c89b4b, inset 0 0 8px #c89b4b88;
 }
 .lkdf-battle-card-line [data-recent-discard='older']:not(:hover):not(:focus-visible) {
-  scale: .86;
-  filter: brightness(.58) saturate(.62);
+  filter: brightness(.84) saturate(.88);
 }
-.lkdf-battle-card-line [data-recent-discard='latest'] { scale: 1.12; }
+.lkdf-battle-card-line [data-recent-discard='latest'] {
+  box-shadow: 0 0 14px rgba(230, 190, 108, 0.35);
+}
+
+.lkdf-hero-gacha-stage .grid > button {
+  animation: lkdf-card-flip-3d-in 320ms var(--ease-out, cubic-bezier(0.22, 1, 0.36, 1)) both;
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+}
+.lkdf-hero-gacha-stage .grid > button:nth-child(1) { animation-delay: 40ms; }
+.lkdf-hero-gacha-stage .grid > button:nth-child(2) { animation-delay: 110ms; }
+.lkdf-hero-gacha-stage .grid > button:nth-child(3) { animation-delay: 180ms; }
+.lkdf-hero-gacha-stage .grid > button:nth-child(4) { animation-delay: 250ms; }
+.lkdf-hero-gacha-stage .grid > button:nth-child(5) { animation-delay: 320ms; }
+
+@keyframes lkdf-countdown-pop {
+  0% { transform: scale(1.42); opacity: 0.2; }
+  70% { transform: scale(0.96); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+.lkdf-countdown-num {
+  animation: lkdf-countdown-pop 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lkdf-hero-gacha-stage .grid > button,
+  .lkdf-countdown-num { animation: none !important; animation-delay: 0ms !important; }
+}
+[data-lkdf-reduce-motion='true'] .lkdf-hero-gacha-stage .grid > button,
+[data-lkdf-reduce-motion] .lkdf-hero-gacha-stage .grid > button,
+[data-lkdf-reduce-motion='true'] .lkdf-countdown-num,
+[data-lkdf-reduce-motion] .lkdf-countdown-num {
+  animation: none !important;
+  animation-delay: 0ms !important;
+}
 .lkdf-motion-damage {
   z-index: 3;
   color: #ff9b7c;

@@ -29,6 +29,7 @@ export interface SeatCardProps {
   readonly playerView: PlayerViewState;
   readonly isDisconnected?: boolean;
   readonly isActiveActor: boolean;
+  readonly isCurrentTurnOwner?: boolean;
   readonly isTargetEligible: boolean;
   readonly isSelectedTarget: boolean;
   readonly isInspectedHero?: boolean;
@@ -72,6 +73,7 @@ export function SeatCard({
   playerView,
   isDisconnected = false,
   isActiveActor,
+  isCurrentTurnOwner = false,
   isTargetEligible,
   isSelectedTarget,
   isInspectedHero = false,
@@ -169,6 +171,7 @@ export function SeatCard({
       data-drop-seat={player.seatIndex}
       data-seat-name={player.displayName}
       data-faction={hero?.faction}
+      data-turn-owner={isCurrentTurnOwner ? 'true' : undefined}
       data-active-turn={isActiveActor ? 'true' : undefined}
       data-dying={isDying ? 'true' : undefined}
       data-hp-impact={hpImpact ? (hpImpact.delta < 0 ? 'damage' : 'heal') : undefined}
@@ -181,7 +184,7 @@ export function SeatCard({
             } as React.CSSProperties)
           : undefined
       }
-      data-lkdf-battle-rest={!isDragHovered && !isDragTargetEligible && !isSelectedTarget && !isTargetEligible && !isActiveActor && !isInspectedHero}
+      data-lkdf-battle-rest={!isDragHovered && !isDragTargetEligible && !isSelectedTarget && !isTargetEligible && !isActiveActor && !isCurrentTurnOwner && !isInspectedHero}
       role={canClick ? 'button' : undefined}
       tabIndex={canClick ? 0 : undefined}
       onClick={canClick ? () => onSelectTarget?.(player.seatIndex) : undefined}
@@ -207,11 +210,13 @@ export function SeatCard({
               ? 'border-[#E6BE6C] bg-[#1A212E] ring-2 ring-[#E6BE6C]/65 shadow-[0_0_18px_rgba(230,190,108,0.35)]'
               : isTargetEligible
                 ? 'cursor-pointer border-[#E6BE6C] hover:bg-[#1A212E] shadow-[0_0_14px_rgba(230,190,108,0.28)]'
-                : isActiveActor
-                  ? 'border-[#E6BE6C] ring-1 ring-[#E6BE6C]/75'
-                  : isInspectedHero
-                    ? 'border-[#E6BE6C] ring-1 ring-[#E6BE6C]/55'
-                    : 'border-[#94A3B8]/38',
+                : isCurrentTurnOwner
+                  ? 'border-[#FBBF24] ring-2 ring-[#E6BE6C]/85 shadow-[0_0_18px_rgba(230,190,108,0.38)]'
+                  : isActiveActor
+                    ? 'border-[#F97316] ring-1 ring-[#F97316]/80 shadow-[0_0_14px_rgba(249,115,22,0.34)]'
+                    : isInspectedHero
+                      ? 'border-[#E6BE6C] ring-1 ring-[#E6BE6C]/55'
+                      : 'border-[#94A3B8]/38',
         canClick
           ? 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E6BE6C]'
           : '',
@@ -275,7 +280,7 @@ export function SeatCard({
         </span>
       ) : null}
 
-      {/* Hàng 1: Tên người chơi + Khoảng cách + Nút soi tướng ⓘ (không hộp rác) */}
+      {/* Hàng 1: Tên người chơi + #Ghế + Nhãn lượt/phản ứng gọn inline + Cách */}
       <div className="relative z-10 min-w-0">
         <div className="flex items-center justify-between gap-1 min-w-0">
           <div
@@ -308,9 +313,38 @@ export function SeatCard({
             <span className="truncate text-[clamp(10px,0.86cqw,11.5px)] font-semibold text-[#D8DEE9] drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)]">
               {player.displayName}
             </span>
-            <span className="font-mono-num shrink-0 text-[9px] text-[#94A3B8]">
+            <span
+              title={`Thứ tự lượt theo chiều kim đồng hồ: Ghế #${player.seatIndex + 1}`}
+              className="font-mono-num shrink-0 rounded border border-[#475569]/60 bg-[#0B0E14]/85 px-1 text-[8.5px] font-bold text-[#E2E8F0]"
+            >
               #{player.seatIndex + 1}
             </span>
+            {(isCurrentTurnOwner || isActiveActor) && playerView.turnPhase !== 'HERO_SELECT' && playerView.turnPhase !== 'GAME_OVER' ? (
+              <span
+                data-turn-badge={isCurrentTurnOwner ? (isActiveActor ? 'turn-active' : 'turn-waiting') : 'reacting'}
+                title={
+                  isCurrentTurnOwner && isActiveActor
+                    ? 'Đang trong lượt chính'
+                    : isCurrentTurnOwner
+                      ? 'Lượt chính (Đang chờ phản ứng)'
+                      : 'Đang phản ứng'
+                }
+                className={[
+                  'inline-flex shrink-0 items-center gap-0.5 rounded px-1 py-0 text-[8px] leading-[13px] font-extrabold uppercase shadow-sm',
+                  isCurrentTurnOwner && isActiveActor
+                    ? 'border border-[#FBBF24]/85 bg-[#D99B26]/28 text-[#FEF08A]'
+                    : isCurrentTurnOwner
+                      ? 'border border-[#E6BE6C]/55 bg-[#D99B26]/14 text-[#F6DFA8]'
+                      : 'border border-[#FB923C]/85 bg-[#9A3412]/70 text-[#FFEDD5]',
+                ].join(' ')}
+              >
+                {isCurrentTurnOwner && isActiveActor
+                  ? '🚩 Lượt'
+                  : isCurrentTurnOwner
+                    ? '🚩 Chờ'
+                    : '⚡ Phản ứng'}
+              </span>
+            ) : null}
           </div>
 
           <div className="flex shrink-0 items-center gap-1">

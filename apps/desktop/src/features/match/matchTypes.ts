@@ -226,6 +226,7 @@ export function getAvailablePlaySkills(
   player: PublicPlayerView | undefined,
   turnFlags?: TurnFlags,
   players?: readonly PublicPlayerView[],
+  isFirstRoundPeaceful = false,
 ): readonly PlaySkillOption[] {
   if (!player || !player.alive || !player.heroId) {
     return [];
@@ -253,6 +254,7 @@ export function getAvailablePlaySkills(
         player.equipments.weapon?.cardKey === 'gia_cat_lien_no' ||
         (turnFlags?.satUsedThisTurn ?? 0) < 1;
       if (
+        !isFirstRoundPeaceful &&
         player.identity === 'LORD' &&
         canUseSatThisTurn &&
         !turnFlags?.jiJiangDeclinedThisTurn &&
@@ -333,12 +335,14 @@ export function getAvailablePlaySkills(
 export function getAvailableConvertModes(
   player: PublicPlayerView | undefined,
   isPlayPhase: boolean,
+  isFirstRoundPeaceful = false,
 ): readonly ConvertCardOption[] {
   if (!player || !player.alive) {
     return [];
   }
+  const canInitiateSat = !(isPlayPhase && isFirstRoundPeaceful);
   const options: ConvertCardOption[] = [];
-  if (player.heroId === 'guan_yu') {
+  if (player.heroId === 'guan_yu' && canInitiateSat) {
     options.push({
       mode: 'wu_sheng',
       labelVi: 'Võ Thánh (Đỏ → Sát)',
@@ -348,13 +352,15 @@ export function getAvailableConvertModes(
     });
   }
   if (player.heroId === 'zhao_yun') {
-    options.push({
-      mode: 'long_dan_sat',
-      labelVi: 'Long Đảm (Thiểm → Sát)',
-      descriptionVi: 'Dùng lá Thiểm như lá Sát.',
-      requiredCards: 1,
-      targetCardKey: 'sat',
-    });
+    if (canInitiateSat) {
+      options.push({
+        mode: 'long_dan_sat',
+        labelVi: 'Long Đảm (Thiểm → Sát)',
+        descriptionVi: 'Dùng lá Thiểm như lá Sát.',
+        requiredCards: 1,
+        targetCardKey: 'sat',
+      });
+    }
     if (!isPlayPhase) {
       options.push({
         mode: 'long_dan_thiem',
@@ -365,7 +371,7 @@ export function getAvailableConvertModes(
       });
     }
   }
-  if (player.equipments.weapon?.cardKey === 'truong_bat_xa_mau') {
+  if (player.equipments.weapon?.cardKey === 'truong_bat_xa_mau' && canInitiateSat) {
     options.push({
       mode: 'truong_bat',
       labelVi: 'Trượng Bát (2 lá → Sát)',
@@ -510,6 +516,14 @@ export function getRequiredTargetSpec(
           promptVi: 'Hãy bấm chọn 1 người chơi để giao bài (Nhân Đức)',
         };
       case 'ji_jiang':
+        if (view.turnPhase === 'PLAY' && view.peacefulFirstRound && view.roundNumber === 1) {
+          return {
+            minTargets: 1,
+            maxTargets: 1,
+            eligibleSeats: [],
+            promptVi: 'Vòng 1 Hòa Bình: chưa được đánh Sát ở vòng đầu tiên.',
+          };
+        }
         return {
           minTargets: 1,
           maxTargets: 1,
@@ -586,6 +600,14 @@ export function getRequiredTargetSpec(
 
   switch (effectiveKey) {
     case 'sat': {
+      if (view.turnPhase === 'PLAY' && view.peacefulFirstRound && view.roundNumber === 1) {
+        return {
+          minTargets: 1,
+          maxTargets: 1,
+          eligibleSeats: [],
+          promptVi: 'Vòng 1 Hòa Bình: chưa được đánh Sát ở vòng đầu tiên.',
+        };
+      }
       const isLastHandCard =
         handCards.length === 1 &&
         selection.selectedCardIds.length === 1 &&
@@ -697,11 +719,7 @@ export function getRequiredTargetSpec(
     }
     case 'lac_bat_tu_thuc': {
       const eligible = aliveOthers
-        .filter(
-          (p) =>
-            p.heroId !== 'lu_xun' &&
-            !p.delayedScrolls.some((c) => c.cardKey === 'lac_bat_tu_thuc'),
-        )
+        .filter((p) => p.heroId !== 'lu_xun')
         .map((p) => p.seatIndex);
       return {
         minTargets: 1,
@@ -789,17 +807,27 @@ export function describePendingActorPrompt(view: PlayerViewState): TurnActorProm
         const origTargetName = getPlayerSeatLabel(view.players, origTargetSeat);
         const depth = nullifyInterrupt.nullifyDepth ?? 0;
         const isCounter = depth % 2 === 1;
+        const canRespond = interrupt.canRespondNullification === true;
+        const targetsViewer = origTargetSeat === viewerSeat && !isCounter;
         return {
-          headlineVi: isCounter
-            ? 'Đang chờ phản Vô Giải Khả Kích...'
-            : 'Đang chờ phản ứng Vô Giải Khả Kích toàn bàn...',
-          detailVi: isCounter
-            ? `${origName} → ${origTargetName}. Phản Vô Giải sẽ giữ cẩm nang gốc tiếp tục hiệu lực.`
-            : `Cẩm nang sắp có hiệu lực: ${origName} (Mục tiêu: ${origTargetName}).`,
+          headlineVi: canRespond
+            ? isCounter
+              ? `Phản Vô Giải Khả Kích — Có chặn ${origName}?`
+              : targetsViewer
+                ? `⚠️ ${origName} nhắm vào BẠN — Đánh Vô Giải Khả Kích?`
+                : `Có đánh Vô Giải chặn ${origName} (${origTargetName})?`
+            : isCounter
+              ? `Đang giải quyết phản Vô Giải (${origName})...`
+              : `Đang giải quyết ${origName} → ${origTargetName}...`,
+          detailVi: canRespond
+            ? isCounter
+              ? `${origName} → ${origTargetName}. Phản Vô Giải sẽ giữ cẩm nang gốc tiếp tục hiệu lực.`
+              : `Cẩm nang sắp có hiệu lực lên ${origTargetName}. Chọn Đánh Vô Giải hoặc Cho qua.`
+            : `${origName} nhắm vào ${origTargetName}.`,
           actorSeat: null,
           actorNameVi: null,
-          isMyTurn: interrupt.canRespondNullification === true,
-          isAllTableWait: true,
+          isMyTurn: canRespond,
+          isAllTableWait: canRespond,
         };
       }
       case 'ASK_TU_HUNG':
@@ -1510,6 +1538,12 @@ export function buildCardDragDropIntent(
       return { kind: 'blocked', reasonVi: 'Máu đang đầy — chưa thể dùng Đào.' };
     }
     if (effectiveKey === 'sat') {
+      if (view.peacefulFirstRound && view.roundNumber === 1) {
+        return {
+          kind: 'blocked',
+          reasonVi: 'Vòng 1 Hòa Bình: chưa được đánh Sát ở vòng đầu tiên.',
+        };
+      }
       const unlimited =
         selfPlayer.heroId === 'zhang_fei' ||
         selfPlayer.equipments.weapon?.cardKey === 'gia_cat_lien_no';
@@ -1589,6 +1623,7 @@ export function buildCardDragDropIntent(
 }
 
 const MATCH_ERROR_VI_MAP: Readonly<Record<string, string>> = {
+  FIRST_ROUND_SAT_FORBIDDEN: 'Vòng 1 Hòa Bình: chưa được đánh Sát ở vòng đầu tiên.',
   SAT_LIMIT_REACHED: 'Bạn đã dùng Sát trong lượt này rồi.',
   HP_ALREADY_FULL: 'Máu đang đầy, chưa thể dùng Đào.',
   TARGET_OUT_OF_RANGE: 'Mục tiêu nằm ngoài tầm đánh.',
@@ -1598,7 +1633,7 @@ const MATCH_ERROR_VI_MAP: Readonly<Record<string, string>> = {
     'Không thể bỏ chính Quán Thạch Phủ để kích hoạt Quán Thạch Phủ.',
   DELAYED_ZONE_NOT_ALLOWED: 'Không thể chọn lá ở khu Thời gian.',
   SIMULATED_DELAY_CANNOT_BE_ANSWERED_BY_PLAYER:
-    'Đang giữ nhịp chờ Vô Giải (2–3.5s) để tránh lộ bài.',
+    'Đang giữ nhịp chờ Vô Giải ngắn để tránh lộ bài.',
   INVALID_LIU_LI_TARGET: 'Mục tiêu Lưu Ly phải là người khác trong tầm đánh.',
   LIU_LI_REQUIRES_CARD_AND_TARGET: 'Lưu Ly cần chọn 1 lá bài và 1 mục tiêu trong tầm.',
   JI_JIANG_NOT_AVAILABLE: 'Không thể kích hoạt Kích Tướng lúc này.',

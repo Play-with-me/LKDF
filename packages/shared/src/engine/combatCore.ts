@@ -699,11 +699,18 @@ function advanceToNextTurn(state: MasterGameState): MasterGameState {
     return state;
   }
 
+  const lordSeat =
+    state.players.find((p) => p.identity === 'LORD')?.seatIndex ??
+    state.heroDraft?.lordSeatIndex ??
+    0;
+  const lordPos = ordered.findIndex((p) => p.seatIndex === lordSeat);
+  const curRel = lordPos >= 0 ? (curPos - lordPos + total) % total : curPos;
+
   let nextSeat = state.currentTurnSeat;
   let wrapped = false;
   for (let step = 1; step <= total; step += 1) {
     const idx = (curPos + step) % total;
-    if (curPos + step >= total) {
+    if (curRel + step >= total) {
       wrapped = true;
     }
     const candidate = ordered[idx];
@@ -879,16 +886,14 @@ function resolveJudgmentEffect(
         ...p,
         delayedScrolls: [...p.delayedScrolls, delayedCard],
       }));
-      if (nextSeat === ownerSeat) {
-        const prevJudged = next.turnFlags?.judgedLightningIds ?? [];
-        next = {
-          ...next,
-          turnFlags: {
-            ...(next.turnFlags ?? { satUsedThisTurn: 0, skipPlayPhase: false }),
-            judgedLightningIds: [...prevJudged, delayedCard.id],
-          },
-        };
-      }
+      const prevJudged = next.turnFlags?.judgedLightningIds ?? [];
+      next = {
+        ...next,
+        turnFlags: {
+          ...(next.turnFlags ?? { satUsedThisTurn: 0, skipPlayPhase: false }),
+          judgedLightningIds: [...prevJudged, delayedCard.id],
+        },
+      };
       next = {
         ...next,
         actionLog: [
@@ -1066,13 +1071,7 @@ function findNextLightningSeat(
   fromSeat: number,
 ): number {
   const clockwise = getClockwiseAliveSeats(state, fromSeat, false);
-  for (const seat of clockwise) {
-    const candidate = getPlayerBySeat(state, seat);
-    if (!candidate.delayedScrolls.some((c) => c.cardKey === 'thiem_dien')) {
-      return seat;
-    }
-  }
-  return fromSeat;
+  return clockwise[0] ?? fromSeat;
 }
 
 function executeScrollEffect(
@@ -1124,16 +1123,14 @@ function executeScrollEffect(
         ...p,
         delayedScrolls: [...p.delayedScrolls, effect.scrollCard],
       }));
-      if (nextSeat === effect.targetSeat) {
-        const prevJudged = next.turnFlags?.judgedLightningIds ?? [];
-        next = {
-          ...next,
-          turnFlags: {
-            ...(next.turnFlags ?? { satUsedThisTurn: 0, skipPlayPhase: false }),
-            judgedLightningIds: [...prevJudged, effect.scrollCard.id],
-          },
-        };
-      }
+      const prevJudged = next.turnFlags?.judgedLightningIds ?? [];
+      next = {
+        ...next,
+        turnFlags: {
+          ...(next.turnFlags ?? { satUsedThisTurn: 0, skipPlayPhase: false }),
+          judgedLightningIds: [...prevJudged, effect.scrollCard.id],
+        },
+      };
       return {
         ...next,
         actionLog: [
@@ -1543,8 +1540,11 @@ export function stepEngine(
             break;
           }
           const alreadyJudged = new Set(state.turnFlags?.judgedLightningIds ?? []);
+          const skipPlayAlready = state.turnFlags?.skipPlayPhase ?? false;
           const remainingScrolls = curPlayer.delayedScrolls.filter(
-            (c) => !alreadyJudged.has(c.id),
+            (c) =>
+              !alreadyJudged.has(c.id) &&
+              !(skipPlayAlready && c.cardKey === 'lac_bat_tu_thuc'),
           );
           if (remainingScrolls.length > 0) {
             const scrollToJudge = remainingScrolls[remainingScrolls.length - 1]!;

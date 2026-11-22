@@ -156,7 +156,7 @@ describe('Kiểm chứng toàn diện chuẩn luật Yoka Standard (1A + 2A)', (
     expect(lState.discardPile.some((c) => c.id === lightning.id)).toBe(false);
   });
 
-  it('Thiểm Điện KHÔNG lặp vô hạn khi chỉ còn 1 mục tiêu hợp lệ (người khác có sẵn Thiểm Điện)', () => {
+  it('Thiểm Điện chuyển qua ghế kế tiếp kể cả khi đã có Thiểm Điện (không lặp vô hạn trong lượt)', () => {
     const l1 = card('thiem_dien', 'Thiểm Điện 1', 'DELAYED_SCROLL', 'SPADE', 1);
     const l2 = card('thiem_dien', 'Thiểm Điện 2', 'DELAYED_SCROLL', 'HEART', 12);
     const safeJudge = card('dao', 'An toàn', 'BASIC', 'HEART', 4);
@@ -172,13 +172,14 @@ describe('Kiểm chứng toàn diện chuẩn luật Yoka Standard (1A + 2A)', (
       'PLAY',
     );
     state = { ...state, currentTurnSeat: 1 };
-    // Ghế 1 kết thúc lượt -> chuyển sang ghế 0 pha JUDGE -> phán xét l1 an toàn -> quay lại ghế 0 nhưng KHÔNG lặp lại!
+    // Ghế 1 kết thúc lượt -> chuyển sang ghế 0 pha JUDGE -> phán xét l1 an toàn -> chồng sang ghế 1 và sang PLAY bình thường!
     state = passNullifications(
       applyGameAction(state, { type: 'END_PLAY_PHASE', seatIndex: 1 }),
     );
     expect(state.currentTurnSeat).toBe(0);
     expect(state.turnPhase).toBe('PLAY');
-    expect(state.players[0]!.delayedScrolls.some((c) => c.id === l1.id)).toBe(true);
+    expect(state.players[0]!.delayedScrolls).toHaveLength(0);
+    expect(state.players[1]!.delayedScrolls.map((c) => c.id)).toEqual([l2.id, l1.id]);
   });
 
   it('Hoàng Cái (Khổ Nhục) khi tự hạ về 0 máu và được cứu Đào vẫn rút đủ 2 lá', () => {
@@ -570,5 +571,116 @@ describe('Kiểm chứng toàn diện chuẩn luật Yoka Standard (1A + 2A)', (
     });
     expect('isSimulatedDelay' in (view2.activeInterrupt ?? {})).toBe(false);
     expect('eligibleSeats' in (view2.activeInterrupt ?? {})).toBe(false);
+  });
+
+  it('Vòng 1 Hòa Bình: cấm Sát trong toàn bộ Vòng 1 (kể cả khi Chủ Công ngồi giữa bàn), sang Vòng 2 mở khóa Sát', () => {
+    const sat0 = card('sat', 'Sát 0', 'BASIC', 'SPADE', 7);
+    const sat2 = card('sat', 'Sát 2', 'BASIC', 'HEART', 8);
+    const sat3 = card('sat', 'Sát 3', 'BASIC', 'CLUB', 9);
+    // Chủ Công ngồi Ghế 2 (không phải ghế 0) -> Vòng 1 gồm Ghế 2 -> 3 -> 0 -> 1, về lại Ghế 2 mới lên Vòng 2
+    let state: MasterGameState = {
+      ...makeState(4, {
+        0: { identity: 'REBEL', heroId: 'zhang_fei', handCards: [sat0] },
+        1: { identity: 'SPY', heroId: 'zhao_yun', handCards: [] },
+        2: { identity: 'LORD', heroId: 'liu_bei', handCards: [sat2], maxHp: 5, hp: 5 },
+        3: { identity: 'LOYALIST', heroId: 'guan_yu', handCards: [sat3] },
+      }),
+      peacefulFirstRound: true,
+      roundNumber: 1,
+      currentTurnSeat: 2,
+    };
+
+    expect(() =>
+      applyGameAction(state, {
+        type: 'PLAY_CARD',
+        seatIndex: 2,
+        cardIds: [sat2.id],
+        targetSeats: [3],
+      }),
+    ).toThrow('FIRST_ROUND_SAT_FORBIDDEN');
+
+    // Ghế 2 -> 3 -> 0 -> 1 vẫn thuộc roundNumber === 1!
+    state = applyGameAction(state, { type: 'END_PLAY_PHASE', seatIndex: 2 });
+    state = applyGameAction(state, { type: 'END_PLAY_PHASE', seatIndex: 3 });
+    expect(state.currentTurnSeat).toBe(0);
+    expect(state.roundNumber).toBe(1);
+    expect(() =>
+      applyGameAction(state, {
+        type: 'PLAY_CARD',
+        seatIndex: 0,
+        cardIds: [sat0.id],
+        targetSeats: [1],
+      }),
+    ).toThrow('FIRST_ROUND_SAT_FORBIDDEN');
+
+    state = applyGameAction(state, { type: 'END_PLAY_PHASE', seatIndex: 0 });
+    expect(state.currentTurnSeat).toBe(1);
+    expect(state.roundNumber).toBe(1);
+
+    // Kết thúc lượt Ghế 1 -> quay về Chủ Công Ghế 2 => Vòng 2 mở khóa Sát!
+    state = applyGameAction(state, { type: 'END_PLAY_PHASE', seatIndex: 1 });
+    expect(state.currentTurnSeat).toBe(2);
+    expect(state.roundNumber).toBe(2);
+    const satPlayed = applyGameAction(state, {
+      type: 'PLAY_CARD',
+      seatIndex: 2,
+      cardIds: [sat2.id],
+      targetSeats: [3],
+    });
+    expect(satPlayed.interruptStack.at(-1)?.kind).toBe('WAIT_DODGE');
+  });
+
+  it('Chồng 2 Lạc Bất Tư Thục & 2 Thiểm Điện: Lạc đầu làm mất lượt thì Lạc thứ 2 giữ lại cho vòng sau; Sét vẫn phán xét đủ', () => {
+    const lac1 = card('lac_bat_tu_thuc', 'Lạc 1', 'DELAYED_SCROLL', 'SPADE', 6);
+    const lac2 = card('lac_bat_tu_thuc', 'Lạc 2', 'DELAYED_SCROLL', 'CLUB', 6);
+    const set1 = card('thiem_dien', 'Sét 1', 'DELAYED_SCROLL', 'SPADE', 1);
+    const set2 = card('thiem_dien', 'Sét 2', 'DELAYED_SCROLL', 'HEART', 12);
+
+    // Có thể đặt chồng Lạc thứ 2 và Sét thứ 2 trong PLAY
+    let state = makeState(4, {
+      0: { heroId: 'zhang_fei', handCards: [lac2, set2], delayedScrolls: [set1] },
+      1: { heroId: 'zhao_yun', handCards: [], delayedScrolls: [lac1] },
+    }, [
+      card('sat', 'Phán xét Lạc 2 trượt ♠8', 'BASIC', 'SPADE', 8),
+      card('dao', 'Ghế 1 Rút 1', 'BASIC', 'HEART', 4),
+      card('dao', 'Ghế 1 Rút 2', 'BASIC', 'HEART', 5),
+      card('dao', 'Ghế 2 Rút 1', 'BASIC', 'HEART', 2),
+      card('dao', 'Ghế 2 Rút 2', 'BASIC', 'HEART', 3),
+      card('dao', 'Ghế 3 Rút 1', 'BASIC', 'HEART', 6),
+      card('dao', 'Ghế 3 Rút 2', 'BASIC', 'HEART', 7),
+      card('sat', 'Sét B trượt ♦K', 'BASIC', 'DIAMOND', 13),
+      card('dao', 'Sét A trượt ♥Q', 'BASIC', 'HEART', 12),
+      card('dao', 'Ghế 0 Rút 1', 'BASIC', 'HEART', 9),
+      card('dao', 'Ghế 0 Rút 2', 'BASIC', 'HEART', 10),
+    ]);
+    state = applyGameAction(state, {
+      type: 'PLAY_CARD',
+      seatIndex: 0,
+      cardIds: [lac2.id],
+      targetSeats: [1],
+    });
+    state = applyGameAction(state, {
+      type: 'PLAY_CARD',
+      seatIndex: 0,
+      cardIds: [set2.id],
+      targetSeats: [],
+    });
+    expect(state.players[0]!.delayedScrolls).toHaveLength(2);
+    expect(state.players[1]!.delayedScrolls).toHaveLength(2);
+
+    // Sang lượt Ghế 1 có [lac1, lac2] -> lac2 (đỉnh stack LIFO) trượt ♠8 làm mất pha Đánh -> lac1 được giữ nguyên sang vòng sau!
+    state = applyGameAction(state, { type: 'END_PLAY_PHASE', seatIndex: 0 });
+    state = passNullifications(state);
+    expect(state.currentTurnSeat).toBe(2); // Ghế 1 đã mất pha Đánh & rút 2 lá nên qua Ghế 2
+    expect(state.players[1]!.delayedScrolls.some((c) => c.id === lac1.id)).toBe(true);
+
+    // Cho Ghế 2, 3 qua lượt để quay về Ghế 0: cả 2 Thiểm Điện [set1, set2] trên Ghế 0 đều phán xét và chuyển sang Ghế 1!
+    state = applyGameAction(state, { type: 'END_PLAY_PHASE', seatIndex: 2 });
+    state = applyGameAction(state, { type: 'END_PLAY_PHASE', seatIndex: 3 });
+    state = passNullifications(state);
+    expect(state.currentTurnSeat).toBe(0);
+    expect(state.players[0]!.delayedScrolls).toHaveLength(0);
+    expect(state.players[1]!.delayedScrolls.some((c) => c.id === set1.id)).toBe(true);
+    expect(state.players[1]!.delayedScrolls.some((c) => c.id === set2.id)).toBe(true);
   });
 });

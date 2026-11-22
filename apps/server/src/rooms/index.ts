@@ -108,6 +108,10 @@ export interface RoomManager {
     roomCode: string,
     options?: { readonly rng?: () => number },
   ): Promise<RoomOperationResult<RoomViewerPayload>>;
+  resetRoomToLobby(
+    userId: string,
+    roomCode: string,
+  ): Promise<RoomOperationResult<RoomViewerPayload>>;
   selectHero(
     userId: string,
     roomCode: string,
@@ -964,13 +968,32 @@ export function createRoomManager(deps: {
           };
         }
 
-        if (record.roomState.status !== 'LOBBY') {
+        if (record.roomState.status === 'IN_GAME') {
           return {
             ok: false,
             statusCode: 409,
             code: 'MATCH_ALREADY_STARTED',
-            messageVi: 'Ván đấu này đã được bắt đầu trước đó.',
+            messageVi: 'Ván đấu này đang diễn ra.',
           };
+        }
+        if (record.roomState.status === 'FINISHED') {
+          record.roomState = {
+            ...record.roomState,
+            status: 'LOBBY',
+            isTimerPaused: false,
+            seats: record.roomState.seats.map((seat) => ({
+              ...seat,
+              isBotTakeover: false,
+              ...(seat.userId !== record.roomState.actingHostUserId
+                ? { isReady: seat.connectionStatus === 'ONLINE' }
+                : {}),
+            })),
+          };
+          record.masterGameState = null;
+          record.undoHistory = [];
+          record.lastMatchAuditLog = [];
+          record.phaseDeadlineAt = null;
+          record.pausedRemainingMs = null;
         }
 
         const seatCount = record.roomState.seats.length;
@@ -2014,6 +2037,66 @@ export function createRoomManager(deps: {
           },
         );
         return { ok: true, data: toSnapshotRecord(record) };
+      });
+    },
+
+    async resetRoomToLobby(
+      userId: string,
+      roomCodeRaw: string,
+    ): Promise<RoomOperationResult<RoomViewerPayload>> {
+      const roomCode = normalizeRoomCode(roomCodeRaw);
+      return runWithRoomLock(roomCode, async () => {
+        const record = roomsByCode.get(roomCode);
+        if (!record) {
+          return {
+            ok: false,
+            statusCode: 404,
+            code: 'ROOM_NOT_FOUND',
+            messageVi: 'Không tìm thấy phòng chơi này.',
+          };
+        }
+        const isMember = record.roomState.seats.some((s) => s.userId === userId);
+        if (!isMember) {
+          return {
+            ok: false,
+            statusCode: 403,
+            code: 'NOT_ROOM_MEMBER',
+            messageVi: 'Bạn không thuộc danh sách ghế của phòng này.',
+          };
+        }
+        if (record.roomState.status === 'IN_GAME') {
+          return {
+            ok: false,
+            statusCode: 409,
+            code: 'MATCH_STILL_ACTIVE',
+            messageVi: 'Ván đấu vẫn đang diễn ra.',
+          };
+        }
+        if (record.roomState.status === 'FINISHED') {
+          const nowIso = new Date(getNowMs()).toISOString();
+          record.roomState = {
+            ...record.roomState,
+            status: 'LOBBY',
+            isTimerPaused: false,
+            seats: record.roomState.seats.map((seat) => ({
+              ...seat,
+              isBotTakeover: false,
+              ...(seat.userId !== record.roomState.actingHostUserId
+                ? { isReady: seat.connectionStatus === 'ONLINE' }
+                : {}),
+            })),
+          };
+          record.masterGameState = null;
+          record.undoHistory = [];
+          record.lastMatchAuditLog = [];
+          record.phaseDeadlineAt = null;
+          record.pausedRemainingMs = null;
+          record.matchStartedAtMs = null;
+          record.updatedAt = nowIso;
+          await deps.persistence.saveRoomSnapshot(toSnapshotRecord(record));
+          emitRoomUpdated(roomCode, 'RETURNED_TO_LOBBY');
+        }
+        return { ok: true, data: buildViewerPayload(record, userId) };
       });
     },
 

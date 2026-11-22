@@ -506,14 +506,14 @@ describe('Bước 1.2 — Máy trạng thái lượt, 108 lá bài (gồm 4 lá 
     expect(s1.players[0]!.alive).toBe(true);
     expect(s1.turnPhase).toBe('PLAY');
 
-    // 2. Thiểm Điện không trúng (♥Q) chuyển sang ghế kế tiếp, nhảy qua ghế đã có Thiểm Điện
+    // 2. Thiểm Điện không trúng (♥Q) chuyển sang ghế kế tiếp và được phép chồng lên ghế đã có Thiểm Điện
     const lightningA = card('thiem_dien', 'Sét A', 'DELAYED_SCROLL', 'SPADE', 1);
     const lightningB = card('thiem_dien', 'Sét B', 'DELAYED_SCROLL', 'HEART', 12);
     let s2 = makeControlledState(
       4,
       {
         0: { delayedScrolls: [lightningA] },
-        1: { delayedScrolls: [lightningB] }, // Ghế 1 đã có Thiểm Điện!
+        1: { delayedScrolls: [lightningB] }, // Ghế 1 đã có Thiểm Điện vẫn nhận chồng Sét A!
       },
       [
         card('dao', 'Phán xét trượt ♥Q', 'BASIC', 'HEART', 12),
@@ -524,11 +524,11 @@ describe('Bước 1.2 — Máy trạng thái lượt, 108 lá bài (gồm 4 lá 
     s2 = { ...s2, turnPhase: 'JUDGE' };
     s2 = stepEngine(s2);
     s2 = applyGameAction(s2, { type: 'RESOLVE_SIMULATED_NULLIFICATION' });
-    // Sét A phải nhảy qua Ghế 1 sang Ghế 2!
+    // Sét A chuyển sang Ghế 1 (chồng lên [lightningB, lightningA])!
     expect(s2.players[0]!.delayedScrolls).toHaveLength(0);
-    expect(s2.players[1]!.delayedScrolls).toHaveLength(1);
-    expect(s2.players[2]!.delayedScrolls).toHaveLength(1);
-    expect(s2.players[2]!.delayedScrolls[0]!.id).toBe(lightningA.id);
+    expect(s2.players[1]!.delayedScrolls).toHaveLength(2);
+    expect(s2.players[1]!.delayedScrolls.map((c) => c.id)).toEqual([lightningB.id, lightningA.id]);
+    expect(s2.players[2]!.delayedScrolls).toHaveLength(0);
 
     // 3. Lạc Bất Tư Thục ra chất Đen -> mất pha Đánh bài, chuyển sang Bỏ bài/Kết lượt
     const lac = card('lac_bat_tu_thuc', 'Lạc Bất Tư Thục', 'DELAYED_SCROLL', 'SPADE', 6);

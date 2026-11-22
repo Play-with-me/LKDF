@@ -83,6 +83,7 @@ export function startMatchCombat(
     turnPhase: 'JUDGE',
     roundNumber: 1,
     currentTurnSeat: state.heroDraft.lordSeatIndex,
+    peacefulFirstRound: state.peacefulFirstRound ?? true,
     turnFlags: { satUsedThisTurn: 0, skipPlayPhase: false },
     nextFrameSeq: state.nextFrameSeq ?? 0,
   };
@@ -177,6 +178,9 @@ function handlePlayCard(
   if (action.cardIds.length === 2) {
     if (!hasTruongBat(actor) || action.asCardKey !== 'sat') {
       throw new Error('INVALID_TWO_CARD_COMBO');
+    }
+    if (state.peacefulFirstRound && state.roundNumber === 1) {
+      throw new Error('FIRST_ROUND_SAT_FORBIDDEN');
     }
     const satUsed = state.turnFlags?.satUsedThisTurn ?? 0;
     if (!hasUnlimitedSat && satUsed >= 1) {
@@ -319,6 +323,9 @@ function handlePlayCard(
 
   // 3. SÁT
   if (effectiveKey === 'sat') {
+    if (state.peacefulFirstRound && state.roundNumber === 1) {
+      throw new Error('FIRST_ROUND_SAT_FORBIDDEN');
+    }
     // Nếu Võ Thánh chuyển lá trang bị Đỏ thành Sát, kiểm tra giới hạn Sát và tầm đánh
     // trên trạng thái SAU KHI gỡ trang bị đó (tránh dùng tầm/Liên Nỗ của chính lá bị bỏ).
     const stateForStrikeCheck = !found.isHand
@@ -412,9 +419,6 @@ function handlePlayCard(
     if (!canTargetPlayerWithCard(state, target, 'lac_bat_tu_thuc')) {
       throw new Error('TARGET_IMMUNE_TO_CARD');
     }
-    if (target.delayedScrolls.some((c) => c.cardKey === 'lac_bat_tu_thuc')) {
-      throw new Error('TARGET_ALREADY_HAS_LAC');
-    }
     const prevHandCount = actor.handCards.length;
     const removedRes = removeAnyCardFromPlayer(actor, cardId);
     let next = updatePlayer(state, action.seatIndex, () => removedRes.nextPlayer);
@@ -442,9 +446,6 @@ function handlePlayCard(
 
   if (effectiveKey === 'thiem_dien') {
     const selfPlayer = getPlayerBySeat(state, action.seatIndex);
-    if (selfPlayer.delayedScrolls.some((c) => c.cardKey === 'thiem_dien')) {
-      throw new Error('ALREADY_HAS_THIEM_DIEN');
-    }
     const prevHandCount = selfPlayer.handCards.length;
     const { nextPlayer, removed } = removeCardsFromHand(selfPlayer, [cardId]);
     let next = updatePlayer(state, action.seatIndex, () => nextPlayer);

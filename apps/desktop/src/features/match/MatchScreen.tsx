@@ -271,6 +271,38 @@ export function MatchScreen({
     void handleManualSync();
   }, [handleManualSync]);
 
+  const returningToLobbyRef = useRef(false);
+  const handleReturnToLobbyClick = useCallback(async () => {
+    if (returningToLobbyRef.current) return;
+    returningToLobbyRef.current = true;
+    setActionError(null);
+    try {
+      const resetPayload = await api.returnRoomToLobby(sessionToken, roomCode);
+      onReturnToLobby(resetPayload);
+    } catch (err: unknown) {
+      if (err instanceof ApiError && err.statusCode === 401) {
+        onSessionInvalid(err.message);
+        return;
+      }
+      try {
+        const latest = await api.getRoom(sessionToken, roomCode);
+        if (latest.roomState.status === 'LOBBY') {
+          onReturnToLobby(latest);
+          return;
+        }
+        setActionError(
+          formatMatchErrorVi(err, 'Không thể đưa phòng về sảnh chờ. Vui lòng thử lại.'),
+        );
+      } catch {
+        setActionError(
+          formatMatchErrorVi(err, 'Không thể đưa phòng về sảnh chờ. Vui lòng thử lại.'),
+        );
+      }
+    } finally {
+      returningToLobbyRef.current = false;
+    }
+  }, [api, onReturnToLobby, onSessionInvalid, roomCode, sessionToken]);
+
   const handleToggleSound = useCallback(async () => {
     setIsTogglingSound(true);
     setActionError(null);
@@ -749,7 +781,7 @@ export function MatchScreen({
           roomState={roomPayload.roomState}
           playerView={playerView}
           onReturnToLobby={() => {
-            onReturnToLobby(roomPayload);
+            void handleReturnToLobbyClick();
           }}
           onLeaveRoom={() => {
             void handleLeaveRoom();

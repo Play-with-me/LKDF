@@ -88,6 +88,9 @@ function handleJiJiang(
   if (!lord.alive || lord.identity !== 'LORD') {
     throw new Error('Kích Tướng là kỹ năng Chủ Công, chỉ kích hoạt khi đóng vai Chủ Công.');
   }
+  if (state.peacefulFirstRound && state.roundNumber === 1) {
+    throw new Error('FIRST_ROUND_SAT_FORBIDDEN');
+  }
 
   const hasLienNo = lord.equipments.weapon?.cardKey === 'gia_cat_lien_no';
   if (!hasLienNo && (state.turnFlags?.satUsedThisTurn ?? 0) >= 1) {

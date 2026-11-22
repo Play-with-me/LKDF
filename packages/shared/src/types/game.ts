@@ -611,6 +611,7 @@ export interface MasterGameState {
   readonly harvestPool?: readonly CardInstance[];
   readonly turnFlags?: TurnFlags;
   readonly nextFrameSeq?: number;
+  readonly peacefulFirstRound?: boolean;
   readonly actionLog: readonly string[];
   readonly refereeAuditLog: readonly RefereeAuditEntry[];
   readonly winningFaction: WinningFaction | null;
@@ -623,6 +624,7 @@ export interface PlayerViewState {
   readonly roundNumber: number;
   readonly currentTurnSeat: number;
   readonly turnPhase: TurnPhase;
+  readonly peacefulFirstRound?: boolean;
   readonly heroDraft: PublicHeroDraftView | null;
   readonly drawPileCount: number;
   readonly discardPileCount: number;

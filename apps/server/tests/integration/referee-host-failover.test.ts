@@ -165,6 +165,7 @@ function buildDeterministicPlayState(
   return {
     ...baseMaster,
     roundNumber: 1,
+    peacefulFirstRound: false,
     currentTurnSeat: 0,
     turnPhase: 'PLAY',
     heroDraft: {

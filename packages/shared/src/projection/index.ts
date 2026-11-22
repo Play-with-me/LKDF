@@ -294,6 +294,7 @@ export function projectStateForPlayer(
     roundNumber: masterState.roundNumber,
     currentTurnSeat: masterState.currentTurnSeat,
     turnPhase: masterState.turnPhase,
+    ...(masterState.peacefulFirstRound ? { peacefulFirstRound: true } : {}),
     heroDraft: projectHeroDraftForViewer(masterState.heroDraft, viewerSeatIndex),
     drawPileCount: masterState.drawPile.length,
     discardPileCount: masterState.discardPile.length,

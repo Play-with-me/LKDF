@@ -167,6 +167,7 @@ export interface LkdfApiClient {
     roomCode: string,
   ): Promise<{ readonly deleted: boolean; readonly room: RoomViewerPayload | null }>;
   startMatch(token: string, roomCode: string): Promise<RoomViewerPayload>;
+  returnRoomToLobby(token: string, roomCode: string): Promise<RoomViewerPayload>;
   getStatsMeta(): Promise<StatsMetaResponse>;
   queryStats(
     filter: StatsFilterInput,
@@ -411,6 +412,16 @@ export function createApiClient(serverUrl: string): LkdfApiClient {
     startMatch(token, roomCode) {
       return requestJson<RoomViewerPayload>(
         `/api/rooms/${encodeURIComponent(roomCode.trim().toUpperCase())}/start`,
+        {
+          method: 'POST',
+          token,
+        },
+      );
+    },
+
+    returnRoomToLobby(token, roomCode) {
+      return requestJson<RoomViewerPayload>(
+        `/api/rooms/${encodeURIComponent(roomCode.trim().toUpperCase())}/return-lobby`,
         {
           method: 'POST',
           token,

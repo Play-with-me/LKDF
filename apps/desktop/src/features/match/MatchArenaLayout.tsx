@@ -12,6 +12,7 @@ import type {
 } from '@lkdf/shared';
 import { getCardArtUrl, getHeroPortraitUrl, getUiAssetUrl } from '../../lib/assetCatalog.js';
 import { prefersReducedMotion, readDevicePreference, writeDevicePreference } from '../../lib/devicePreferences.js';
+import { isMatchSoundEnabled, playMatchCue } from '../../lib/soundFx.js';
 import {
   CardBack,
   FactionSeal,
@@ -128,21 +129,21 @@ const ROUND_TABLE_COORDS_BY_OPPONENTS: Readonly<Record<number, readonly RoundSea
     { leftPct: 87, topPct: 67 },
   ],
   6: [
-    { leftPct: 13, topPct: 76 },
-    { leftPct: 10.5, topPct: 45 },
-    { leftPct: 30, topPct: 16 },
-    { leftPct: 70, topPct: 16 },
-    { leftPct: 89.5, topPct: 45 },
-    { leftPct: 87, topPct: 76 },
+    { leftPct: 12, topPct: 81 },
+    { leftPct: 9.5, topPct: 50 },
+    { leftPct: 22.5, topPct: 16 },
+    { leftPct: 77.5, topPct: 16 },
+    { leftPct: 90.5, topPct: 50 },
+    { leftPct: 88, topPct: 81 },
   ],
   7: [
-    { leftPct: 13, topPct: 76 },
-    { leftPct: 10.5, topPct: 45 },
-    { leftPct: 24, topPct: 16 },
+    { leftPct: 11.5, topPct: 81.5 },
+    { leftPct: 9.5, topPct: 50.5 },
+    { leftPct: 22.5, topPct: 16 },
     { leftPct: 50, topPct: 13 },
-    { leftPct: 74.5, topPct: 16 },
-    { leftPct: 89.5, topPct: 45 },
-    { leftPct: 87, topPct: 76 },
+    { leftPct: 77.5, topPct: 16 },
+    { leftPct: 90.5, topPct: 50.5 },
+    { leftPct: 88.5, topPct: 81.5 },
   ],
 };
 
@@ -210,6 +211,23 @@ function FuseTimer({ deadline, paused, pausedRemainingMs, totalSeconds }: {
 
 const EMPTY_AIMING_SEATS: readonly number[] = [];
 
+type OpeningCeremonyStage = 'COUNTDOWN' | 'IDENTITY_GACHA' | 'HERO_GACHA';
+
+function getIdentityMissionVi(identity: PublicPlayerView['identity']): string {
+  switch (identity) {
+    case 'LORD':
+      return 'Chủ Công (+1 Máu tối đa) — Tiêu diệt Phản Tặc & Nội Gián để giữ vững giang sơn.';
+    case 'LOYALIST':
+      return 'Trung Thần — Hộ giá Chủ Công đến thắng lợi cuối cùng.';
+    case 'REBEL':
+      return 'Phản Tặc — Hạ gục Chủ Công để giành chiến thắng cho toàn phe.';
+    case 'SPY':
+      return 'Nội Gián — Tiêu diệt tất cả phe khác rồi đối đầu đơn đấu Chủ Công sau cùng.';
+    default:
+      return 'Thân phận ẩn — Quan sát chiến cuộc và bảo vệ mục tiêu.';
+  }
+}
+
 export function MatchArenaLayout({
   playerView,
   roomSeats,
@@ -270,6 +288,117 @@ export function MatchArenaLayout({
   const opponents = ordered.slice(1);
   const coords = getRoundSeatCoords(opponents.length);
   const isCompactSeats = playerView.players.length >= 7;
+
+  const isHeroSelectPhaseNow = playerView.turnPhase === 'HERO_SELECT';
+  const selfHeroAlreadySelected = Boolean(selfPlayer?.heroId);
+  const completedCeremonyMatchIdRef = useRef<string | null>(null);
+  const ceremonyTimersRef = useRef<number[]>([]);
+  const [ceremonyState, setCeremonyState] = useState<{
+    readonly matchId: string;
+    readonly stage: OpeningCeremonyStage;
+    readonly countdown: number;
+    readonly identityRevealed: boolean;
+  }>(() => ({
+    matchId: playerView.matchId,
+    stage:
+      isHeroSelectPhaseNow && !selfHeroAlreadySelected && !prefersReducedMotion()
+        ? 'COUNTDOWN'
+        : 'HERO_GACHA',
+    countdown: 3,
+    identityRevealed: false,
+  }));
+
+  const handleSkipOpeningCeremony = useCallback(() => {
+    ceremonyTimersRef.current.forEach((id) => window.clearTimeout(id));
+    ceremonyTimersRef.current = [];
+    completedCeremonyMatchIdRef.current = playerView.matchId;
+    setCeremonyState({
+      matchId: playerView.matchId,
+      stage: 'HERO_GACHA',
+      countdown: 0,
+      identityRevealed: true,
+    });
+  }, [playerView.matchId]);
+
+  useEffect(() => {
+    if (!isHeroSelectPhaseNow || selfHeroAlreadySelected) {
+      ceremonyTimersRef.current.forEach((id) => window.clearTimeout(id));
+      ceremonyTimersRef.current = [];
+      completedCeremonyMatchIdRef.current = playerView.matchId;
+      setCeremonyState({
+        matchId: playerView.matchId,
+        stage: 'HERO_GACHA',
+        countdown: 0,
+        identityRevealed: true,
+      });
+      return;
+    }
+
+    if (completedCeremonyMatchIdRef.current === playerView.matchId) {
+      return;
+    }
+    ceremonyTimersRef.current.forEach((id) => window.clearTimeout(id));
+    ceremonyTimersRef.current = [];
+
+    if (prefersReducedMotion()) {
+      completedCeremonyMatchIdRef.current = playerView.matchId;
+      setCeremonyState({
+        matchId: playerView.matchId,
+        stage: 'HERO_GACHA',
+        countdown: 0,
+        identityRevealed: true,
+      });
+      return;
+    }
+
+    setCeremonyState({
+      matchId: playerView.matchId,
+      stage: 'COUNTDOWN',
+      countdown: 3,
+      identityRevealed: false,
+    });
+    playMatchCue('COUNTDOWN_START', isMatchSoundEnabled());
+
+    const t1 = window.setTimeout(() => {
+      setCeremonyState((prev) =>
+        prev.matchId === playerView.matchId ? { ...prev, countdown: 2 } : prev,
+      );
+      playMatchCue('TIMER_TICK', isMatchSoundEnabled());
+    }, 360);
+    const t2 = window.setTimeout(() => {
+      setCeremonyState((prev) =>
+        prev.matchId === playerView.matchId ? { ...prev, countdown: 1 } : prev,
+      );
+      playMatchCue('TIMER_TICK', isMatchSoundEnabled());
+    }, 720);
+    const t3 = window.setTimeout(() => {
+      setCeremonyState((prev) =>
+        prev.matchId === playerView.matchId
+          ? { ...prev, stage: 'IDENTITY_GACHA', countdown: 0, identityRevealed: false }
+          : prev,
+      );
+      playMatchCue('SHUFFLE', isMatchSoundEnabled());
+    }, 1080);
+    const t4 = window.setTimeout(() => {
+      setCeremonyState((prev) =>
+        prev.matchId === playerView.matchId ? { ...prev, identityRevealed: true } : prev,
+      );
+      playMatchCue('PANEL_OPEN', isMatchSoundEnabled());
+    }, 1240);
+    const t5 = window.setTimeout(() => {
+      completedCeremonyMatchIdRef.current = playerView.matchId;
+      setCeremonyState((prev) =>
+        prev.matchId === playerView.matchId ? { ...prev, stage: 'HERO_GACHA' } : prev,
+      );
+      playMatchCue('DEAL_OPENING', isMatchSoundEnabled());
+    }, 2350);
+
+    ceremonyTimersRef.current = [t1, t2, t3, t4, t5];
+    return () => {
+      ceremonyTimersRef.current.forEach((id) => window.clearTimeout(id));
+      ceremonyTimersRef.current = [];
+    };
+  }, [isHeroSelectPhaseNow, playerView.matchId, selfHeroAlreadySelected]);
 
   const prompt = describePendingActorPrompt(playerView);
   const targetSpec = getRequiredTargetSpec(playerView, selection);
@@ -337,12 +466,20 @@ export function MatchArenaLayout({
   } : undefined;
   const handIsFaceDown = playerView.activeInterrupt?.handPick === 'SELECT' &&
     playerView.activeInterrupt.targetSeat === playerView.viewerSeatIndex;
+  const isFirstRoundPeaceful = Boolean(
+    playerView.peacefulFirstRound && playerView.roundNumber === 1,
+  );
   const availableSkills = isPlayPhaseSelf
-    ? getAvailablePlaySkills(selfPlayer, playerView.turnFlags, playerView.players)
+    ? getAvailablePlaySkills(
+        selfPlayer,
+        playerView.turnFlags,
+        playerView.players,
+        isFirstRoundPeaceful,
+      )
     : [];
   const availableConverts =
     isPlayPhaseSelf || (playerView.activeInterrupt !== null && prompt.isMyTurn)
-      ? getAvailableConvertModes(selfPlayer, isPlayPhaseSelf)
+      ? getAvailableConvertModes(selfPlayer, isPlayPhaseSelf, isFirstRoundPeaceful)
       : [];
 
   const isBotTakeoverSelf = Boolean(selfPlayer?.isBotTakeover);
@@ -456,7 +593,12 @@ export function MatchArenaLayout({
     (card: CardInstance, element: HTMLButtonElement) => {
       if (!selfPlayer?.alive) return;
       const intent = buildCardDragDropIntent(playerView, card, selection);
-      if (intent.kind !== 'table') return;
+      if (intent.kind !== 'table') {
+        if (intent.kind === 'blocked' && intent.reasonVi) {
+          setDragFeedbackVi(intent.reasonVi);
+        }
+        return;
+      }
       const rect = element.getBoundingClientRect();
       pendingThrowRef.current = {
         cardId: card.id,
@@ -720,11 +862,13 @@ export function MatchArenaLayout({
     const isEligible =
       isTargetSelectionActive && targetSpec.eligibleSeats.includes(opp.seatIndex);
     const isSelected = selection.selectedTargets.includes(opp.seatIndex);
+    const isCurrentTurnOwner =
+      playerView.turnPhase !== 'HERO_SELECT' &&
+      playerView.turnPhase !== 'GAME_OVER' &&
+      playerView.currentTurnSeat === opp.seatIndex;
     const isActor =
       prompt.actorSeat === opp.seatIndex ||
-      (playerView.activeInterrupt === null &&
-        playerView.turnPhase !== 'HERO_SELECT' &&
-        playerView.currentTurnSeat === opp.seatIndex);
+      (playerView.activeInterrupt === null && isCurrentTurnOwner);
 
     const dragEligible =
       Boolean(dragState) &&
@@ -747,8 +891,8 @@ export function MatchArenaLayout({
           left: `${coord.leftPct}%`,
           top: isTopBand
             ? coord.topPct <= 14
-              ? 'clamp(4px, 1.1cqh, 10px)'
-              : 'clamp(10px, 2.2cqh, 18px)'
+              ? 'clamp(3px, 0.8cqh, 8px)'
+              : 'clamp(6px, 1.3cqh, 12px)'
             : `${coord.topPct}%`,
         }}
         className={[
@@ -762,6 +906,7 @@ export function MatchArenaLayout({
           playerView={playerView}
           isDisconnected={isDisconnectedBySeat.get(opp.seatIndex) ?? false}
           isActiveActor={isActor}
+          isCurrentTurnOwner={isCurrentTurnOwner}
           isTargetEligible={isEligible}
           isSelectedTarget={isSelected}
           isInspectedHero={inspector?.kind === 'hero' && inspector.seatIndex === opp.seatIndex}
@@ -777,7 +922,7 @@ export function MatchArenaLayout({
           onInspectHero={handleInspectHero}
           onInspectCard={handleInspectCard}
         />
-        {(prompt.actorSeat === opp.seatIndex || isActor) &&
+        {(prompt.actorSeat === opp.seatIndex || (playerView.activeInterrupt === null && isCurrentTurnOwner)) &&
         (phaseDeadlineAt !== null || pausedRemainingMs !== null) ? (
           <div className="lkdf-bot-seat-clock">
             <FuseTimer key={phaseDeadlineAt ?? 'paused'} deadline={phaseDeadlineAt}
@@ -877,13 +1022,15 @@ export function MatchArenaLayout({
       ) : null}
       {dragState ? <DragGhostCard card={dragState.card} ghostRef={ghostRef} /> : null}
 
-      {/* Thanh cảnh báo rớt mạng / Máy đánh hộ */}
+      {/* Thanh cảnh báo rớt mạng / Máy đánh hộ (chừa lề phải cho cụm nút Tự bỏ qua Vô Giải + Cài đặt) */}
       {showNetworkBanner ? (
-        <div className="flex shrink-0 items-center justify-between gap-3 border-b border-[#D97706]/50 bg-[#D97706]/20 px-4 py-1 text-[12px] font-semibold text-[#FDE68A]">
+        <div className="flex shrink-0 items-center justify-between gap-3 border-b border-[#D97706]/50 bg-[#D97706]/20 py-1 pl-4 pr-[230px] text-[12px] font-semibold text-[#FDE68A]">
           <span className="inline-flex min-w-0 items-center gap-2 truncate">
-            <GameIcon name="ui:wifi-off" size={14} className="shrink-0" />
+            <GameIcon name={connectionLost ? 'ui:wifi-off' : 'ui:bot'} size={14} className="shrink-0" />
             <span className="truncate">
-              Mất kết nối mạng — Đang tự động kết nối lại... Ghế của bạn đang được Máy đánh hộ tạm thời
+              {connectionLost
+                ? 'Mất kết nối mạng — Đang tự động kết nối lại... Ghế của bạn đang được Máy đánh hộ tạm thời'
+                : 'Bạn vừa quá giờ thao tác — Ghế của bạn đang được Máy đánh hộ tạm thời'}
             </span>
           </span>
           <button
@@ -892,7 +1039,7 @@ export function MatchArenaLayout({
             className="inline-flex shrink-0 cursor-pointer items-center gap-1 rounded border border-[#D99B26] bg-[#14171A] px-2.5 py-0.5 text-[11px] font-bold text-[#FBBF24] hover:bg-[#1E2328]"
           >
             <GameIcon name="ui:refresh" size={12} />
-            Kết nối lại ngay
+            {connectionLost ? 'Kết nối lại ngay' : 'Lấy lại điều khiển'}
           </button>
         </div>
       ) : null}
@@ -939,7 +1086,7 @@ export function MatchArenaLayout({
 
           {/* Bảng trung tâm ở lòng Bàn Tròn (3 tầng tách bạch: Banner + Trạng thái + Rút/Đánh) */}
           {!isHeroSelectPhase ? (
-            <div className="lkdf-battle-center absolute top-[50%] left-1/2 z-10 flex max-h-[calc(100%-84px)] w-[clamp(260px,34cqw,450px)] -translate-x-1/2 -translate-y-1/2 flex-col items-center">
+            <div className="lkdf-battle-center absolute top-[52%] left-1/2 z-10 flex max-h-[calc(100%-84px)] w-[clamp(236px,28.5cqw,356px)] -translate-x-1/2 -translate-y-1/2 flex-col items-center">
               <MatchCenterBoard
                 playerView={playerView}
                 timerConfig={timerConfig}
@@ -959,20 +1106,97 @@ export function MatchArenaLayout({
               />
             </div>
           ) : (
-            <div className="absolute inset-0 z-30 flex items-center justify-center bg-[#0B0E11]/60 p-3">
+            <div className="absolute inset-0 z-30 flex items-center justify-center bg-[#0B0E11]/68 p-3 backdrop-blur-[2px]">
               <div className="h-full max-h-[440px] w-full max-w-[min(1040px,calc(100%-1rem))] min-h-0">
-                <HeroSelectPanel
-                  playerView={playerView}
-                  remainingSeconds={
-                    phaseDeadlineAt && !isTimerPaused
-                      ? Math.max(0, Math.ceil((Date.parse(phaseDeadlineAt) - Date.now()) / 1000))
-                      : pausedRemainingMs !== null
-                        ? Math.max(0, Math.ceil(pausedRemainingMs / 1000))
-                        : null
-                  }
-                  isTimerPaused={isTimerPaused}
-                  onSelectHero={onSelectHero}
-                />
+                {ceremonyState.stage !== 'HERO_GACHA' ? (
+                  <section
+                    data-opening-ceremony={ceremonyState.stage}
+                    className="relative flex h-full w-full flex-col justify-between overflow-hidden rounded-2xl border border-[#CA9A48]/70 bg-[radial-gradient(ellipse_at_top,#261812_0%,#11151D_62%,#090B10_100%)] p-5 text-[#F4EBD8] shadow-[0_24px_64px_rgba(0,0,0,0.86)]"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="inline-flex items-center gap-2 rounded-full border border-[#CA9A48]/55 bg-[#1B130E]/90 px-3 py-1 text-[11px] font-bold tracking-wider text-[#FDE68A] uppercase">
+                        <span>{ceremonyState.stage === 'COUNTDOWN' ? '⚔️ Nghi thức Khai chiến' : '🎴 Rút Thân Phận'}</span>
+                      </div>
+                      <button
+                        type="button"
+                        data-skip-ceremony="true"
+                        onClick={handleSkipOpeningCeremony}
+                        className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[#CA9A48]/65 bg-[#1A1D24]/95 px-3 py-1.5 text-xs font-bold text-[#FDE68A] transition-colors hover:border-[#FDE68A] hover:bg-[#2A2218]"
+                      >
+                        <span>Bỏ qua hiệu ứng</span>
+                        <span aria-hidden="true">⏭</span>
+                      </button>
+                    </div>
+
+                    <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-4 text-center">
+                      {ceremonyState.stage === 'COUNTDOWN' ? (
+                        <>
+                          <div
+                            key={`cd-${ceremonyState.countdown}`}
+                            className="lkdf-countdown-num flex h-28 w-28 items-center justify-center rounded-full border-2 border-[#E6BE6C] bg-[radial-gradient(circle,#7F1D1D_0%,#2A0E0E_74%,#120A0A_100%)] font-serif-title text-6xl font-black text-[#FEF08A] shadow-[0_0_40px_rgba(230,190,108,0.45)]"
+                          >
+                            {ceremonyState.countdown}
+                          </div>
+                          <div className="space-y-1">
+                            <h2 className="font-serif-title text-xl font-bold tracking-wide text-[#FDE68A]">
+                              Chuẩn bị bốc Thân Phận &amp; Tướng Lĩnh
+                            </h2>
+                            <p className="text-xs text-[#CBD5E1]">
+                              Bàn {playerView.players.length} người · Vòng 1 Hòa Bình chưa được đánh Sát
+                            </p>
+                          </div>
+                        </>
+                      ) : !ceremonyState.identityRevealed ? (
+                        <div className="flex flex-col items-center gap-3">
+                          <div className="flex h-44 w-36 flex-col items-center justify-center gap-2 rounded-xl border-2 border-[#CA9A48]/80 bg-[radial-gradient(circle_at_top,#2B1E14_0%,#12161E_85%)] p-4 shadow-[0_0_32px_rgba(202,154,72,0.28)]">
+                            <span className="font-serif-title text-4xl font-black text-[#E6BE6C]">令</span>
+                            <span className="text-xs font-bold tracking-widest text-[#E6BE6C] uppercase">Thân Phận</span>
+                          </div>
+                          <p className="text-sm font-semibold text-[#FDE68A]">Đang mở ấn lệnh Thân Phận của bạn...</p>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center gap-3">
+                          <div
+                            className={[
+                              'lkdf-card-flip-3d flex w-[min(380px,100%)] flex-col items-center gap-2 rounded-xl border-2 px-6 py-5 shadow-[0_18px_46px_rgba(0,0,0,0.75)]',
+                              getIdentityBadgeClass(selfPlayer?.identity ?? 'UNKNOWN'),
+                            ].join(' ')}
+                          >
+                            <span className="text-[11px] font-bold tracking-[0.18em] text-[#E2E8F0] uppercase">
+                              Thân Phận Của Bạn
+                            </span>
+                            <strong className="font-serif-title text-2xl font-black tracking-wide text-[#FEF08A]">
+                              {getIdentityLabelVi(selfPlayer?.identity ?? 'UNKNOWN')}
+                            </strong>
+                            <p className="text-xs leading-relaxed text-[#F3F4F6]">
+                              {getIdentityMissionVi(selfPlayer?.identity ?? 'UNKNOWN')}
+                            </p>
+                          </div>
+                          <p className="text-xs text-[#CBD5E1]">Đang mở danh sách Tướng chiêu mộ...</p>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="text-center text-[11px] text-[#94A3B8]">
+                      Bước {ceremonyState.stage === 'COUNTDOWN' ? '1/3 · Đếm ngược khai trận' : '2/3 · Mở Thân Phận'} → Bước 3/3: Chọn Tướng
+                    </div>
+                  </section>
+                ) : (
+                  <div className="lkdf-hero-gacha-stage h-full w-full">
+                    <HeroSelectPanel
+                      playerView={playerView}
+                      remainingSeconds={
+                        phaseDeadlineAt && !isTimerPaused
+                          ? Math.max(0, Math.ceil((Date.parse(phaseDeadlineAt) - Date.now()) / 1000))
+                          : pausedRemainingMs !== null
+                            ? Math.max(0, Math.ceil(pausedRemainingMs / 1000))
+                            : null
+                      }
+                      isTimerPaused={isTimerPaused}
+                      onSelectHero={onSelectHero}
+                    />
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -1160,9 +1384,15 @@ export function MatchArenaLayout({
                       <div className="flex items-center gap-1 min-w-0">
                         <span
                           title={selfPlayer.displayName}
-                          className="min-w-0 [overflow-wrap:anywhere] text-[clamp(10px,0.9cqw,12px)] leading-tight font-bold text-[#E2E8F0] drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)]"
+                          className="min-w-0 truncate text-[clamp(10px,0.9cqw,12px)] leading-tight font-bold text-[#E2E8F0] drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)]"
                         >
                           {selfPlayer.displayName}
+                        </span>
+                        <span
+                          title={`Thứ tự lượt theo chiều kim đồng hồ: Ghế #${selfPlayer.seatIndex + 1}`}
+                          className="font-mono-num shrink-0 rounded border border-[#475569]/60 bg-[#0B0E14]/85 px-1 text-[8.5px] font-bold text-[#E2E8F0]"
+                        >
+                          #{selfPlayer.seatIndex + 1}
                         </span>
                       </div>
                       <div className="mt-1 flex items-start gap-1 min-w-0">
@@ -1187,6 +1417,34 @@ export function MatchArenaLayout({
                     <span className="lkdf-match-identity-kicker">Thân phận</span>
                     <strong>{getIdentityLabelVi(selfPlayer.identity)}</strong>
                   </div>
+
+                  {!isHeroSelectPhase && playerView.turnPhase !== 'GAME_OVER' && (playerView.currentTurnSeat === selfPlayer.seatIndex || prompt.isMyTurn || isFirstRoundPeaceful) ? (
+                    <div className="flex flex-wrap items-center gap-1">
+                      {playerView.currentTurnSeat === selfPlayer.seatIndex ? (
+                        <span
+                          data-self-turn-badge="turn"
+                          className="inline-flex items-center gap-0.5 rounded border border-[#FBBF24]/80 bg-[#D99B26]/25 px-1.5 py-0 text-[8.5px] leading-[13px] font-extrabold text-[#FEF08A]"
+                        >
+                          🚩 Lượt chính của bạn
+                        </span>
+                      ) : prompt.isMyTurn ? (
+                        <span
+                          data-self-turn-badge="reacting"
+                          className="inline-flex items-center gap-0.5 rounded border border-[#FB923C]/85 bg-[#9A3412]/70 px-1.5 py-0 text-[8.5px] leading-[13px] font-extrabold text-[#FFEDD5]"
+                        >
+                          ⚡ Bạn đang phản ứng
+                        </span>
+                      ) : null}
+                      {isFirstRoundPeaceful ? (
+                        <span
+                          data-self-peace-badge="true"
+                          className="inline-flex items-center gap-0.5 rounded border border-[#34D399]/55 bg-[#064E3B]/75 px-1.5 py-0 text-[8.5px] leading-[13px] font-bold text-[#A7F3D0]"
+                        >
+                          🕊️ V1 Hòa Bình
+                        </span>
+                      ) : null}
+                    </div>
+                  ) : null}
 
                   <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1">
                     <HpJadeMeter hp={selfPlayer.hp} maxHp={selfPlayer.maxHp} size="md" />
