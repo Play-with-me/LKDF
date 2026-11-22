@@ -36,7 +36,9 @@ export type MatchSoundEvent =
   | 'LIGHTNING'
   | 'CONTROL_SCROLL'
   | 'DYING'
-  | 'TIMER_TICK';
+  | 'TIMER_TICK'
+  | 'CARD_LIFT'
+  | 'TARGET_LOCK';
 
 export type AudioBusName = 'sfx' | 'ui' | 'alert';
 export type AmbientTrack = 'lobby' | 'waiting' | 'battle' | 'climax';
@@ -68,6 +70,8 @@ const CUE_CONFIG_BY_EVENT: Readonly<Record<MatchSoundEvent, CueConfig>> = {
   READY_ON: { stem: 'tqs-ready_on', bus: 'ui', defaultGain: 0.80, cooldownMs: 100 },
   HERO_LOCK: { stem: 'tqs-hero_lock', bus: 'sfx', defaultGain: 0.88, cooldownMs: 110, duckMusicMs: 550 },
   COUNTDOWN_START: { stem: 'tqs-countdown_start', bus: 'alert', defaultGain: 0.88, cooldownMs: 250, duckMusicMs: 1200 },
+  CARD_LIFT: { stem: 'tqs-card_lift', bus: 'ui', defaultGain: 0.44, cooldownMs: 65, pitchJitter: 0.035 },
+  TARGET_LOCK: { stem: 'tqs-target_lock', bus: 'ui', defaultGain: 0.48, cooldownMs: 75, pitchJitter: 0.025 },
 
   // Nhóm 2: Cẩm nang đặc trưng & Cao trào
   NULLIFICATION: { stem: 'tqs-nullification', bus: 'sfx', defaultGain: 0.90, cooldownMs: 110, duckMusicMs: 700 },
@@ -119,10 +123,21 @@ interface MixerNodes {
   readonly alertBus: GainNode;
 }
 
+const MAX_CONCURRENT_SFX_VOICES = 8;
+const ROUND_ROBIN_VARIANTS: Readonly<Record<string, readonly string[]>> = {
+  'tqs-sat': ['tqs-sat', 'tqs-sat-v2', 'tqs-sat-v3'],
+  'tqs-thiem': ['tqs-thiem', 'tqs-thiem-v2', 'tqs-thiem-v3'],
+  'tqs-card_play': ['tqs-card_play', 'tqs-card_play-v2', 'tqs-card_play-v3'],
+  'tqs-deal': ['tqs-deal', 'tqs-deal-v2', 'tqs-deal-v3'],
+  'tqs-damage': ['tqs-damage', 'tqs-damage-v2', 'tqs-damage-v3'],
+};
+
 let sharedMixer: MixerNodes | null = null;
 const decodedSounds = new Map<string, AudioBuffer>();
 const pendingSounds = new Set<string>();
 const lastPlayedAt = new Map<string, number>();
+const activeSfxVoices = new Set<AudioBufferSourceNode>();
+const lastRoundRobinIndex = new Map<string, number>();
 let duckReleaseTimer: number | null = null;
 let matchSoundEnabled = true;
 
@@ -262,6 +277,12 @@ export function prepareGameSounds(): void {
     preloadStem(mixer, INTERFACE_CONFIG.click.stem);
     for (const cfg of Object.values(CUE_CONFIG_BY_EVENT)) {
       preloadStem(mixer, cfg.stem);
+      const variants = ROUND_ROBIN_VARIANTS[cfg.stem];
+      if (variants) {
+        for (const variant of variants) {
+          preloadStem(mixer, variant);
+        }
+      }
     }
   } catch {
     // Audio initialization may be unavailable.
@@ -287,35 +308,74 @@ function canPlayWithCooldown(key: string, cooldownMs: number): boolean {
   return true;
 }
 
+function resolveRoundRobinStem(baseStem: string): string {
+  const variants = ROUND_ROBIN_VARIANTS[baseStem];
+  if (!variants || variants.length === 0) return baseStem;
+  const prevIdx = lastRoundRobinIndex.get(baseStem) ?? -1;
+  const nextIdx = (prevIdx + 1) % variants.length;
+  lastRoundRobinIndex.set(baseStem, nextIdx);
+  const candidate = variants[nextIdx];
+  if (candidate && decodedSounds.has(candidate)) {
+    return candidate;
+  }
+  return baseStem;
+}
+
 function playDecodedSound(
   stem: string,
   bus: AudioBusName,
   volume: number,
   delaySec = 0,
   pitchJitter = 0,
+  pan = 0,
+  playbackRateMultiplier = 1,
 ): boolean {
   const mixer = sharedMixer;
-  const buffer = decodedSounds.get(stem);
+  const resolvedStem = resolveRoundRobinStem(stem);
+  const buffer = decodedSounds.get(resolvedStem);
   if (!mixer || !buffer || mixer.ctx.state === 'closed') {
-    if (mixer && !buffer && !pendingSounds.has(stem)) {
-      preloadStem(mixer, stem);
+    if (mixer && !buffer && !pendingSounds.has(resolvedStem)) {
+      preloadStem(mixer, resolvedStem);
     }
     return false;
+  }
+
+  if (bus === 'sfx' && activeSfxVoices.size >= MAX_CONCURRENT_SFX_VOICES) {
+    return true;
   }
 
   const { ctx } = mixer;
   const source = ctx.createBufferSource();
   const gain = ctx.createGain();
+  const clampedPan = Math.max(-1, Math.min(1, pan));
+  const panner =
+    clampedPan !== 0 && typeof ctx.createStereoPanner === 'function'
+      ? ctx.createStereoPanner()
+      : null;
+
   source.buffer = buffer;
-  if (pitchJitter > 0) {
-    source.playbackRate.value = 1 + (Math.random() * 2 - 1) * pitchJitter;
-  }
+  const jitter = pitchJitter > 0 ? 1 + (Math.random() * 2 - 1) * pitchJitter : 1;
+  source.playbackRate.value = jitter * playbackRateMultiplier;
   gain.gain.value = volume;
-  source.connect(gain);
-  gain.connect(getBusNode(mixer, bus));
+
+  if (panner) {
+    panner.pan.value = clampedPan;
+    source.connect(gain);
+    gain.connect(panner);
+    panner.connect(getBusNode(mixer, bus));
+  } else {
+    source.connect(gain);
+    gain.connect(getBusNode(mixer, bus));
+  }
+
+  if (bus === 'sfx') {
+    activeSfxVoices.add(source);
+  }
   source.onended = () => {
+    activeSfxVoices.delete(source);
     source.disconnect();
     gain.disconnect();
+    panner?.disconnect();
   };
   source.start(ctx.currentTime + delaySec);
   return true;
@@ -366,18 +426,25 @@ const CUE_PATTERNS: Partial<Record<MatchSoundEvent, readonly ToneStep[]>> = {
   ],
 };
 
+export interface MatchCueOptions {
+  readonly pan?: number;
+  readonly playbackRateMultiplier?: number;
+}
+
 export function playMatchCue(
   event: MatchSoundEvent,
   enabled: boolean,
   volume?: number,
   delaySec = 0,
+  options?: MatchCueOptions,
 ): void {
   const cfg = CUE_CONFIG_BY_EVENT[event];
   const effectiveVolume = volume ?? cfg.defaultGain;
   if (!enabled || effectiveVolume <= 0) {
     return;
   }
-  if (!canPlayWithCooldown(event, cfg.cooldownMs)) {
+  const cooldownKey = delaySec > 0 ? `${event}:${Math.round(delaySec * 1000)}` : event;
+  if (!canPlayWithCooldown(cooldownKey, cfg.cooldownMs)) {
     return;
   }
   if (cfg.duckMusicMs) {
@@ -387,7 +454,17 @@ export function playMatchCue(
       triggerMusicDucking(cfg.duckMusicMs);
     }
   }
-  if (playDecodedSound(cfg.stem, cfg.bus, effectiveVolume, delaySec, cfg.pitchJitter ?? 0)) {
+  if (
+    playDecodedSound(
+      cfg.stem,
+      cfg.bus,
+      effectiveVolume,
+      delaySec,
+      cfg.pitchJitter ?? 0,
+      options?.pan ?? 0,
+      options?.playbackRateMultiplier ?? 1,
+    )
+  ) {
     return;
   }
   const fallback = CUE_PATTERNS[event];
@@ -462,17 +539,18 @@ function playTones(
 }
 
 type BaseMusicTrack = 'lobby' | 'battle';
-const ambientBuffers = new Map<BaseMusicTrack, Promise<AudioBuffer>>();
+type AmbientStemKey = 'lobby' | 'battle' | 'climax-drums';
+const ambientBuffers = new Map<AmbientStemKey, Promise<AudioBuffer>>();
 
-function resolveBaseTrack(track: AmbientTrack): BaseMusicTrack {
-  return track === 'lobby' || track === 'waiting' ? 'lobby' : 'battle';
-}
-
-function loadAmbientBuffer(ctx: AudioContext, baseTrack: BaseMusicTrack): Promise<AudioBuffer> {
-  const existing = ambientBuffers.get(baseTrack);
+function loadAmbientStem(ctx: AudioContext, stemKey: AmbientStemKey): Promise<AudioBuffer> {
+  const existing = ambientBuffers.get(stemKey);
   if (existing) return existing;
-  const url = getSfxUrl(`xich-bich-${baseTrack}-music`);
-  if (!url) return Promise.reject(new Error('Missing ambient URL'));
+  const stemName =
+    stemKey === 'climax-drums'
+      ? 'xich-bich-climax-drums'
+      : `xich-bich-${stemKey}-music`;
+  const url = getSfxUrl(stemName);
+  if (!url) return Promise.reject(new Error(`Missing ambient URL: ${stemName}`));
   const promise = fetch(url)
     .then(response => {
       if (!response.ok) throw new Error();
@@ -480,48 +558,15 @@ function loadAmbientBuffer(ctx: AudioContext, baseTrack: BaseMusicTrack): Promis
     })
     .then(bytes => ctx.decodeAudioData(bytes))
     .catch(error => {
-      ambientBuffers.delete(baseTrack);
+      ambientBuffers.delete(stemKey);
       throw error;
     });
-  ambientBuffers.set(baseTrack, promise);
+  ambientBuffers.set(stemKey, promise);
   return promise;
 }
 
-function scheduleClimaxPulse(
-  mixer: MixerNodes,
-  buffer: AudioBuffer,
-  playbackRate: number,
-  filterType: BiquadFilterType,
-  filterHz: number,
-  durationSec: number,
-  peakGain: number,
-): void {
-  const { ctx } = mixer;
-  const t = ctx.currentTime;
-  const src = ctx.createBufferSource();
-  const filter = ctx.createBiquadFilter();
-  const g = ctx.createGain();
-
-  src.buffer = buffer;
-  src.playbackRate.value = playbackRate;
-  filter.type = filterType;
-  filter.frequency.setValueAtTime(filterHz, t);
-  filter.Q.value = 0.7;
-
-  g.gain.setValueAtTime(0.0001, t);
-  g.gain.linearRampToValueAtTime(peakGain, t + 0.008);
-  g.gain.exponentialRampToValueAtTime(0.0001, t + durationSec);
-
-  src.connect(filter);
-  filter.connect(g);
-  g.connect(mixer.musicBus);
-  src.onended = () => {
-    src.disconnect();
-    filter.disconnect();
-    g.disconnect();
-  };
-  src.start(t);
-  src.stop(t + durationSec + 0.03);
+function resolveBaseTrack(track: AmbientTrack): BaseMusicTrack {
+  return track === 'lobby' || track === 'waiting' ? 'lobby' : 'battle';
 }
 
 export interface AmbientLoopHandle {
@@ -547,78 +592,11 @@ export async function createAmbientLoop(
 
     let activeSource: AudioBufferSourceNode | null = null;
     let activeGain: GainNode | null = null;
-    let climaxTimer: number | null = null;
-    let climaxBeat = 0;
+    let climaxSource: AudioBufferSourceNode | null = null;
+    let climaxGain: GainNode | null = null;
 
-    function stopClimaxLayer(): void {
-      if (climaxTimer !== null) {
-        window.clearInterval(climaxTimer);
-        climaxTimer = null;
-      }
-      climaxBeat = 0;
-    }
-
-    function startClimaxLayer(): void {
-      stopClimaxLayer();
-      // 108 BPM eighth-note pulse = 277.7ms matching xich-bich-battle-music
-      const stepMs = (60 / 108 / 2) * 1000;
-      climaxTimer = window.setInterval(() => {
-        if (stopped || currentTrack !== 'climax' || currentLevel <= 0 || ctx.state !== 'running') {
-          return;
-        }
-        const step = climaxBeat % 8;
-        climaxBeat += 1;
-
-        if (step === 0 || step === 4) {
-          const drumBuf = step === 0
-            ? (decodedSounds.get('tqs-elimination') ?? decodedSounds.get('tqs-turn_start'))
-            : decodedSounds.get('tqs-turn_start');
-          if (drumBuf) {
-            scheduleClimaxPulse(
-              mixer!,
-              drumBuf,
-              step === 0 ? 0.86 : 0.96,
-              'lowpass',
-              step === 0 ? 155 : 190,
-              step === 0 ? 0.26 : 0.21,
-              (step === 0 ? 0.54 : 0.40) * currentLevel,
-            );
-          } else {
-            preloadStem(mixer!, 'tqs-turn_start');
-            preloadStem(mixer!, 'tqs-elimination');
-          }
-        } else if (step === 3 || step === 6) {
-          const woodBuf = decodedSounds.get('tqs-timer_tick');
-          if (woodBuf) {
-            scheduleClimaxPulse(
-              mixer!,
-              woodBuf,
-              step === 3 ? 0.90 : 1.0,
-              'lowpass',
-              1800,
-              0.14,
-              0.20 * currentLevel,
-            );
-          } else {
-            preloadStem(mixer!, 'tqs-timer_tick');
-          }
-        } else if (step === 7) {
-          const shimmerBuf = decodedSounds.get('tqs-thiem');
-          if (shimmerBuf) {
-            scheduleClimaxPulse(
-              mixer!,
-              shimmerBuf,
-              1.05,
-              'highpass',
-              1800,
-              0.12,
-              0.10 * currentLevel,
-            );
-          } else {
-            preloadStem(mixer!, 'tqs-thiem');
-          }
-        }
-      }, stepMs);
+    function climaxTargetGain(mode: AmbientTrack, level: number): number {
+      return mode === 'climax' && level > 0 ? 0.52 * level : 0.0001;
     }
 
     function fadeOutAndDispose(src: AudioBufferSourceNode | null, g: GainNode | null, fadeSec: number): void {
@@ -637,10 +615,8 @@ export async function createAmbientLoop(
     function applyFilterAndClimax(mode: AmbientTrack): void {
       const targetCutoff = mode === 'waiting' ? 1650 : 20000;
       mixer!.musicFilter.frequency.setTargetAtTime(targetCutoff, ctx.currentTime, 0.16);
-      if (mode === 'climax') {
-        startClimaxLayer();
-      } else {
-        stopClimaxLayer();
+      if (climaxGain && !stopped) {
+        climaxGain.gain.setTargetAtTime(climaxTargetGain(mode, currentLevel), ctx.currentTime, 0.18);
       }
     }
 
@@ -652,11 +628,21 @@ export async function createAmbientLoop(
     async function mountTrack(mode: AmbientTrack, fadeInSec: number): Promise<boolean> {
       const token = ++switchToken;
       const base = resolveBaseTrack(mode);
-      const buffer = await loadAmbientBuffer(ctx, base);
+      const [buffer, drumsBuffer] = await Promise.all([
+        loadAmbientStem(ctx, base),
+        base === 'battle'
+          ? loadAmbientStem(ctx, 'climax-drums').catch(() => null)
+          : Promise.resolve(null),
+      ]);
       if (stopped || signal.aborted || token !== switchToken) return false;
 
       if (activeSource && activeGain) {
         fadeOutAndDispose(activeSource, activeGain, 0.5);
+      }
+      if (climaxSource && climaxGain) {
+        fadeOutAndDispose(climaxSource, climaxGain, 0.5);
+        climaxSource = null;
+        climaxGain = null;
       }
 
       const source = ctx.createBufferSource();
@@ -664,19 +650,35 @@ export async function createAmbientLoop(
       source.buffer = buffer;
       source.loop = true;
 
-      const now = ctx.currentTime;
+      const startTime = ctx.currentTime;
       const target = effectiveGainFor(mode, currentLevel);
       if (fadeInSec > 0 && target > 0) {
-        gain.gain.setValueAtTime(0.0001, now);
-        gain.gain.linearRampToValueAtTime(target, now + fadeInSec);
+        gain.gain.setValueAtTime(0.0001, startTime);
+        gain.gain.linearRampToValueAtTime(target, startTime + fadeInSec);
       } else {
-        gain.gain.setValueAtTime(target, now);
+        gain.gain.setValueAtTime(target, startTime);
       }
 
       source.connect(gain);
       gain.connect(mixer!.musicBus);
-      // If autoplay is blocked, the existing gesture handler unlocks the shared context.
-      source.start(now);
+
+      if (base === 'battle' && drumsBuffer) {
+        const cSource = ctx.createBufferSource();
+        const cGain = ctx.createGain();
+        cSource.buffer = drumsBuffer;
+        cSource.loop = true;
+        cGain.gain.setValueAtTime(climaxTargetGain(mode, currentLevel), startTime);
+        cSource.connect(cGain);
+        cGain.connect(mixer!.musicBus);
+        // Sample-locked dual playback: start both at the exact same AudioContext timestamp.
+        source.start(startTime);
+        cSource.start(startTime);
+        climaxSource = cSource;
+        climaxGain = cGain;
+      } else {
+        // If autoplay is blocked, the existing gesture handler unlocks the shared context.
+        source.start(startTime);
+      }
 
       activeSource = source;
       activeGain = gain;
@@ -694,6 +696,9 @@ export async function createAmbientLoop(
         if (activeGain && !stopped) {
           activeGain.gain.setTargetAtTime(effectiveGainFor(currentTrack, level), ctx.currentTime, 0.025);
         }
+        if (climaxGain && !stopped) {
+          climaxGain.gain.setTargetAtTime(climaxTargetGain(currentTrack, level), ctx.currentTime, 0.025);
+        }
       },
       setTrack(nextTrack) {
         if (stopped || nextTrack === currentTrack) return;
@@ -709,13 +714,19 @@ export async function createAmbientLoop(
       stop() {
         if (stopped) return;
         stopped = true;
-        stopClimaxLayer();
         if (activeSource && activeGain) {
           try { activeSource.stop(); } catch { /* ignore */ }
           activeSource.disconnect();
           activeGain.disconnect();
           activeSource = null;
           activeGain = null;
+        }
+        if (climaxSource && climaxGain) {
+          try { climaxSource.stop(); } catch { /* ignore */ }
+          climaxSource.disconnect();
+          climaxGain.disconnect();
+          climaxSource = null;
+          climaxGain = null;
         }
       },
     };

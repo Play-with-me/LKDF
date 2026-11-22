@@ -18,7 +18,7 @@ import { ActionLogDialog } from './ActionLogDialog.js';
 import { GameOverSummaryModal } from './GameOverSummaryModal.js';
 import { MatchActionSidebar } from './MatchActionSidebar.js';
 import { MatchArenaLayout } from './MatchArenaLayout.js';
-import { playMatchActionCues } from './matchSounds.js';
+import { computeSeatStereoPan, playMatchActionCues } from './matchSounds.js';
 import {
   EMPTY_MATCH_SELECTION,
   describePendingActorPrompt,
@@ -676,6 +676,12 @@ export function MatchScreen({
             onReconnect={handleReconnect}
             onToggleCard={handleToggleCard}
             onToggleTarget={handleToggleTarget}
+            onCardLift={() => playMatchCue('CARD_LIFT', currentUser.preferences.soundEnabled)}
+            onTargetLock={(seatIndex) =>
+              playMatchCue('TARGET_LOCK', currentUser.preferences.soundEnabled, undefined, 0, {
+                pan: computeSeatStereoPan(seatIndex, playerView.viewerSeatIndex, playerView.players.length),
+              })
+            }
             onToggleSkillMode={handleToggleSkillMode}
             onToggleConvertMode={handleToggleConvertMode}
             onSendAction={handleSendAction}

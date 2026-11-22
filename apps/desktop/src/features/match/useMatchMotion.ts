@@ -2,7 +2,7 @@ import { prefersReducedMotion } from '../../lib/devicePreferences.js';
 import { useEffect, useRef, useState, type RefObject } from 'react';
 import type { CardInstance, PlayerViewState } from '@lkdf/shared';
 import { getCardArtUrl, getUiAssetUrl } from '../../lib/assetCatalog.js';
-import duelFireUrl from '../../../motion-duel-fire.mp4?url';
+import type { VfxEvent, VfxKind } from './MatchVfxCanvas.js';
 
 export type ActionArcKind = 'attack' | 'scroll' | 'heal';
 
@@ -16,6 +16,17 @@ export interface CombatActionArc {
 export interface SeatHpImpact {
   readonly id: number;
   readonly delta: number;
+}
+
+export interface SeatRecoilVector {
+  readonly id: number;
+  readonly x: number;
+  readonly y: number;
+}
+
+export interface SeatSkillStamp {
+  readonly id: number;
+  readonly label: string;
 }
 
 type BoardMotion = {
@@ -198,47 +209,35 @@ function animateStrike(motion: BoardMotion, seat: HTMLElement, strike: CardInsta
   face.append(illustration, title);
   position(face, x - 30, y - 41);
   motion.layer.append(face);
-  const duration = dodged ? 650 : 450;
-  const impact = dodged ? 1.16 : .94;
+  const duration = dodged ? 650 : 460;
+  const impact = dodged ? 1.16 : 0.94;
+  // Anticipation pullback (-8% of vector) before commitment strike, then weighted follow-through
+  const antiX = -dx * 0.08;
+  const antiY = -dy * 0.08;
   animateElement(face, [
-    { transform: 'none' },
-    { transform: 'translate(' + dx * impact + 'px,' + dy * impact + 'px) rotate(12deg)', offset: .51 },
-    { transform: 'none', opacity: 0 },
-  ], { duration, easing: 'ease-in-out' });
+    { transform: 'translate(0px, 0px) scale(1)' },
+    { transform: `translate(${antiX}px, ${antiY}px) rotate(-6deg) scale(0.94)`, offset: 0.14 },
+    { transform: `translate(${dx * impact}px, ${dy * impact}px) rotate(12deg) scale(1.06)`, offset: 0.54 },
+    { transform: `translate(${dx * impact}px, ${dy * impact}px) scale(0.92)`, opacity: 0 },
+  ], { duration, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' });
   const reaction = seat.animate(dodged ? [
     { opacity: 1 }, { opacity: .33, translate: '-10px -4px', offset: .42 },
     { opacity: .47, translate: '-10px -4px', offset: .68 }, { opacity: 1, translate: 'none' },
   ] : [
     { translate: 'none' }, { translate: '7px 0', offset: .22 }, { translate: 'none' },
-  ], { duration: dodged ? duration : 165, delay: dodged ? 0 : 220, easing: 'ease-in-out' });
+  ], { duration: dodged ? duration : 165, delay: dodged ? 0 : 220, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' });
   return reaction;
 }
 
-function syncDuel(motion: BoardMotion, state: PlayerViewState) {
+function getDuelSeats(state: PlayerViewState): number[] {
   const prompt = state.activeInterrupt;
-  const seats = prompt?.kind === 'WAIT_DUEL_SAT' ? [prompt.targetSeat, prompt.sourceSeat].sort() : [];
-  const key = seats.join(':');
-  if (motion.layer.dataset.duel === key) return;
-  motion.layer.dataset.duel = key;
-  motion.layer.querySelectorAll('.lkdf-motion-duel').forEach((el) => el.remove());
-  if (motion.reduced) return;
-  for (const index of seats) {
-    if (index == null) continue;
-    const seat = seatAt(motion, index);
-    if (!seat) continue;
-    const bounds = relativeBounds(motion, seat);
-    const video = document.createElement('video');
-    video.className = 'lkdf-motion-duel';
-    video.src = duelFireUrl;
-    video.muted = true;
-    video.loop = true;
-    video.playsInline = true;
-    video.autoplay = true;
-    position(video, bounds.x, bounds.y);
-    video.style.width = bounds.width + 'px';
-    video.style.height = bounds.height + 'px';
-    motion.layer.append(video);
+  if (prompt?.kind !== 'WAIT_DUEL_SAT') return [];
+  const seats: number[] = [];
+  if (prompt.targetSeat != null) seats.push(prompt.targetSeat);
+  if (prompt.sourceSeat != null && prompt.sourceSeat !== prompt.targetSeat) {
+    seats.push(prompt.sourceSeat);
   }
+  return seats.sort((a, b) => a - b);
 }
 
 function detectPublicActionArcs(
@@ -344,31 +343,59 @@ export function useMatchMotion(
 ): {
   readonly activeArcs: readonly CombatActionArc[];
   readonly hpImpacts: Readonly<Record<number, SeatHpImpact>>;
+  readonly vfxEvents: readonly VfxEvent[];
+  readonly duelSeats: readonly number[];
+  readonly recoilVectorBySeat: Readonly<Record<number, SeatRecoilVector>>;
+  readonly skillStampBySeat: Readonly<Record<number, SeatSkillStamp>>;
 } {
   const baseline = useRef<PlayerViewState | null>(null);
   const pending = useRef(new Set<number>());
   const reactions = useRef(new Set<Animation>());
   const arcSeqRef = useRef(0);
   const impactSeqRef = useRef(0);
+  const vfxSeqRef = useRef(0);
+  const recoilSeqRef = useRef(0);
+  const stampSeqRef = useRef(0);
+
+  const traumaRef = useRef(0);
+  const shakeRafRef = useRef<number | null>(null);
+  const shakeLastTsRef = useRef(0);
+  const shakePhaseRef = useRef(0);
+
   const [activeArcs, setActiveArcs] = useState<readonly CombatActionArc[]>([]);
   const [hpImpacts, setHpImpacts] = useState<Readonly<Record<number, SeatHpImpact>>>({});
+  const [vfxEvents, setVfxEvents] = useState<readonly VfxEvent[]>([]);
+  const [duelSeats, setDuelSeats] = useState<readonly number[]>([]);
+  const [recoilVectorBySeat, setRecoilVectorBySeat] = useState<Readonly<Record<number, SeatRecoilVector>>>({});
+  const [skillStampBySeat, setSkillStampBySeat] = useState<Readonly<Record<number, SeatSkillStamp>>>({});
 
   useEffect(() => {
     const motionLayer = layer.current;
     const timeouts = pending.current;
     const running = reactions.current;
+    const boardEl = board.current;
     return () => {
       timeouts.forEach(window.clearTimeout);
       timeouts.clear();
       running.forEach((animation) => animation.cancel());
       running.clear();
+      if (shakeRafRef.current !== null) {
+        cancelAnimationFrame(shakeRafRef.current);
+        shakeRafRef.current = null;
+      }
+      traumaRef.current = 0;
+      if (boardEl) boardEl.style.transform = '';
       motionLayer?.replaceChildren();
       if (motionLayer) delete motionLayer.dataset.duel;
       baseline.current = null;
       setActiveArcs([]);
       setHpImpacts({});
+      setVfxEvents([]);
+      setDuelSeats([]);
+      setRecoilVectorBySeat({});
+      setSkillStampBySeat({});
     };
-  }, [layer, state.matchId, suspended]);
+  }, [board, layer, state.matchId, suspended]);
 
   useEffect(() => {
     const previous = baseline.current;
@@ -379,8 +406,97 @@ export function useMatchMotion(
       layer: layer.current,
       reduced: prefersReducedMotion(),
     };
+
+    const addTrauma = (amount: number) => {
+      if (motion.reduced) return;
+      traumaRef.current = Math.min(1, traumaRef.current + amount);
+      if (shakeRafRef.current !== null) return;
+      shakeLastTsRef.current = performance.now();
+      const stepShake = (ts: number) => {
+        const dt = Math.min(0.05, Math.max(0.001, (ts - shakeLastTsRef.current) / 1000));
+        shakeLastTsRef.current = ts;
+        traumaRef.current = Math.max(0, traumaRef.current - 2.4 * dt);
+        const shake = traumaRef.current * traumaRef.current;
+        shakePhaseRef.current += dt * 42;
+        if (board.current) {
+          if (traumaRef.current <= 0) {
+            board.current.style.transform = '';
+          } else {
+            const ox = Math.sin(shakePhaseRef.current * 1.7) * 5 * shake;
+            const oy = Math.sin(shakePhaseRef.current * 2.3) * 4 * shake;
+            board.current.style.transform = `translate3d(${ox.toFixed(2)}px, ${oy.toFixed(2)}px, 0)`;
+          }
+        }
+        if (traumaRef.current > 0) {
+          shakeRafRef.current = requestAnimationFrame(stepShake);
+        } else {
+          shakeRafRef.current = null;
+        }
+      };
+      shakeRafRef.current = requestAnimationFrame(stepShake);
+    };
+
+    const emitVfx = (kind: VfxKind, opts?: { fromSeat?: number; toSeats?: readonly number[]; nullifyDepth?: number }) => {
+      if (motion.reduced) return;
+      vfxSeqRef.current += 1;
+      const ev: VfxEvent = { id: vfxSeqRef.current, kind, ...opts };
+      setVfxEvents((prev) => [...prev, ev]);
+      const t = window.setTimeout(() => {
+        pending.current.delete(t);
+        setVfxEvents((prev) => prev.filter((item) => item.id !== ev.id));
+      }, 650);
+      pending.current.add(t);
+    };
+
+    const triggerRecoil = (toSeat: number, fromSeat?: number) => {
+      if (motion.reduced) return;
+      const toEl = seatAt(motion, toSeat);
+      if (!toEl) return;
+      const toRect = relativeBounds(motion, toEl);
+      const fromEl = fromSeat != null ? seatAt(motion, fromSeat) : motion.board.querySelector('.lkdf-battle-center-stack');
+      let dx = 0;
+      let dy = 8;
+      if (fromEl) {
+        const fromRect = relativeBounds(motion, fromEl);
+        const vx = (toRect.x + toRect.width / 2) - (fromRect.x + fromRect.width / 2);
+        const vy = (toRect.y + toRect.height / 2) - (fromRect.y + fromRect.height / 2);
+        const dist = Math.hypot(vx, vy) || 1;
+        dx = Math.round((vx / dist) * 10);
+        dy = Math.round((vy / dist) * 10);
+      }
+      recoilSeqRef.current += 1;
+      const rid = recoilSeqRef.current;
+      setRecoilVectorBySeat((prev) => ({ ...prev, [toSeat]: { id: rid, x: dx, y: dy } }));
+      const t = window.setTimeout(() => {
+        pending.current.delete(t);
+        setRecoilVectorBySeat((prev) => {
+          if (prev[toSeat]?.id !== rid) return prev;
+          const next = { ...prev };
+          delete next[toSeat];
+          return next;
+        });
+      }, 240);
+      pending.current.add(t);
+    };
+
+    const triggerSkillStamp = (seatIndex: number, label: string) => {
+      stampSeqRef.current += 1;
+      const sid = stampSeqRef.current;
+      setSkillStampBySeat((prev) => ({ ...prev, [seatIndex]: { id: sid, label } }));
+      const t = window.setTimeout(() => {
+        pending.current.delete(t);
+        setSkillStampBySeat((prev) => {
+          if (prev[seatIndex]?.id !== sid) return prev;
+          const next = { ...prev };
+          delete next[seatIndex];
+          return next;
+        });
+      }, 450);
+      pending.current.add(t);
+    };
+
     if (!previous) {
-      syncDuel(motion, state);
+      setDuelSeats(getDuelSeats(state));
       return;
     }
     const continued = previous.actionLog.length <= state.actionLog.length &&
@@ -396,10 +512,13 @@ export function useMatchMotion(
       delete motion.layer.dataset.duel;
       setActiveArcs([]);
       setHpImpacts({});
-      syncDuel(motion, state);
+      setVfxEvents([]);
+      setRecoilVectorBySeat({});
+      setSkillStampBySeat({});
+      setDuelSeats(getDuelSeats(state));
       return;
     }
-    syncDuel(motion, state);
+    setDuelSeats(getDuelSeats(state));
     showTurnHandoff(motion, previous, state);
 
     const emittedArcs = detectPublicActionArcs(previous, state);
@@ -416,6 +535,45 @@ export function useMatchMotion(
       }, 650);
       pending.current.add(expireTimeout);
     }
+
+    // Detect Guofeng VFX from new actionLog lines
+    const newLogs = state.actionLog.slice(previous.actionLog.length);
+    for (const line of newLogs) {
+      if (line.includes('Nam Man Nhập Xâm')) {
+        emitVfx('NAM_MAN', { toSeats: state.players.filter((p) => p.alive).map((p) => p.seatIndex) });
+        addTrauma(0.32);
+      } else if (line.includes('Vạn Tiễn Tề Phát')) {
+        emitVfx('VAN_TIEN', { toSeats: state.players.filter((p) => p.alive).map((p) => p.seatIndex) });
+        addTrauma(0.32);
+      } else if (line.includes('Vô Giải Khả Kích')) {
+        const depth =
+          previous.activeInterrupt?.kind === 'WAIT_NULLIFICATION'
+            ? (previous.activeInterrupt.nullifyDepth ?? 0)
+            : state.activeInterrupt?.kind === 'WAIT_NULLIFICATION'
+              ? (state.activeInterrupt.nullifyDepth ?? 0)
+              : 0;
+        emitVfx('NULLIFICATION', { nullifyDepth: depth });
+        addTrauma(depth >= 1 ? 0.48 : 0.3);
+      } else if (line.includes('Thiểm Điện') && line.includes('sát thương')) {
+        const victim = state.players.find((p) => line.startsWith(`${p.displayName} `));
+        if (victim) {
+          emitVfx('LIGHTNING', { toSeats: [victim.seatIndex] });
+          addTrauma(0.78);
+        }
+      }
+      // Skill stamp detection ("kích hoạt <SkillName>")
+      for (const actor of state.players) {
+        const prefix = `${actor.displayName} kích hoạt `;
+        if (line.startsWith(prefix)) {
+          const rest = line.slice(prefix.length);
+          const skillName = rest.split(/[,.(]/)[0]?.trim();
+          if (skillName && skillName.length <= 24) {
+            triggerSkillStamp(actor.seatIndex, skillName);
+          }
+        }
+      }
+    }
+
     const incomingDodge = previous.activeInterrupt;
     const strike = previous.discardPileTop;
     const freshDiscard = state.discardPileCount > previous.discardPileCount &&
@@ -452,16 +610,36 @@ export function useMatchMotion(
         incomingDodge.targetSeat === player.seatIndex;
       const dodged = respondingToStrike && delta === 0 && freshDiscard &&
         state.discardPileTop?.cardKey === 'thiem' && state.activeInterrupt?.id !== incomingDodge.id;
-      if (dodged) track(animateStrike(motion, seat, strike, true));
+      if (dodged) {
+        track(animateStrike(motion, seat, strike, true));
+        emitVfx('THIEM', { toSeats: [player.seatIndex] });
+      }
       if (delta < 0 && respondingToStrike && !motion.reduced) {
         track(animateStrike(motion, seat, strike, false));
         const timeout = window.setTimeout(() => {
           pending.current.delete(timeout);
-          if (seat.isConnected) triggerHpImpact(player.seatIndex, delta);
+          if (seat.isConnected) {
+            triggerHpImpact(player.seatIndex, delta);
+            emitVfx('SAT', { fromSeat: incomingDodge?.sourceSeat ?? undefined, toSeats: [player.seatIndex] });
+            triggerRecoil(player.seatIndex, incomingDodge?.sourceSeat ?? undefined);
+            addTrauma(0.42);
+          }
         }, 225);
         pending.current.add(timeout);
-      } else if (delta !== 0) {
+      } else if (delta < 0) {
         triggerHpImpact(player.seatIndex, delta);
+        triggerRecoil(player.seatIndex, state.currentTurnSeat);
+        addTrauma(0.32);
+      } else if (delta > 0) {
+        triggerHpImpact(player.seatIndex, delta);
+        emitVfx('HEAL', { toSeats: [player.seatIndex] });
+      }
+      if (old.alive && !player.alive) {
+        emitVfx('ELIMINATION', { toSeats: [player.seatIndex] });
+        addTrauma(0.85);
+      } else if (old.hp > 0 && player.hp <= 0 && player.alive) {
+        emitVfx('DYING', { toSeats: [player.seatIndex] });
+        addTrauma(0.6);
       }
       for (const slot of ['weapon', 'armor', 'plusOneHorse', 'minusOneHorse'] as const) {
         const equipment = player.equipments[slot];
@@ -470,5 +648,5 @@ export function useMatchMotion(
     }
   }, [board, layer, state, suspended]);
 
-  return { activeArcs, hpImpacts };
+  return { activeArcs, hpImpacts, vfxEvents, duelSeats, recoilVectorBySeat, skillStampBySeat };
 }

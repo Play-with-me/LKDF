@@ -158,14 +158,98 @@ export function getMatchActionCues(
   return cues;
 }
 
+export function computeSeatStereoPan(
+  seatIndex: number | null | undefined,
+  viewerSeatIndex: number | null | undefined,
+  playerCount: number,
+): number {
+  if (
+    seatIndex == null ||
+    viewerSeatIndex == null ||
+    playerCount <= 1 ||
+    seatIndex === viewerSeatIndex
+  ) {
+    return 0;
+  }
+  const rel = ((seatIndex - viewerSeatIndex) % playerCount + playerCount) % playerCount;
+  if (rel === 0) return 0;
+  return Number((-0.45 * Math.sin((rel / playerCount) * 2 * Math.PI)).toFixed(3));
+}
+
 export function playMatchActionCues(
   before: PlayerViewState | null,
   after: PlayerViewState | null,
 ): ReadonlySet<ActionCue> {
   const cues = getMatchActionCues(before, after);
+  if (!before || !after || cues.size === 0) return cues;
+
+  const playerCount = after.players.length;
+  const viewerSeat = after.viewerSeatIndex;
+  const oldDelayedIds = new Set(before.players.flatMap(player => player.delayedScrolls.map(card => card.id)));
+
+  const damagePans: number[] = [];
+  const healPans: number[] = [];
+  const equipPans = new Map<ActionCue, number>();
+  let dyingPan = 0;
+  let elimPan = 0;
+  let scrollPan = 0;
+
+  for (const player of after.players) {
+    const old = before.players.find(entry => entry.seatIndex === player.seatIndex);
+    if (!old) continue;
+    const pan = computeSeatStereoPan(player.seatIndex, viewerSeat, playerCount);
+    if (player.alive && player.hp < old.hp) damagePans.push(pan);
+    if (player.hp > old.hp) healPans.push(pan);
+    if (old.alive && !player.alive) elimPan = pan;
+    if (old.hp > 0 && player.hp <= 0 && player.alive) dyingPan = pan;
+    for (const slot of ['weapon', 'armor', 'plusOneHorse', 'minusOneHorse'] as const) {
+      const equipment = player.equipments[slot];
+      if (equipment && equipment.id !== old.equipments[slot]?.id) {
+        equipPans.set(EQUIPMENT_CUES[slot], pan);
+      }
+    }
+    for (const card of player.delayedScrolls) {
+      if (!oldDelayedIds.has(card.id)) {
+        scrollPan = pan;
+      }
+    }
+  }
+
+  const actorPan = computeSeatStereoPan(after.currentTurnSeat, viewerSeat, playerCount);
+  const nullifyDepth =
+    before.activeInterrupt?.kind === 'WAIT_NULLIFICATION'
+      ? (before.activeInterrupt.nullifyDepth ?? 0)
+      : after.activeInterrupt?.kind === 'WAIT_NULLIFICATION'
+        ? (after.activeInterrupt.nullifyDepth ?? 0)
+        : 0;
+
   for (const cue of cues) {
+    if (cue === 'DAMAGE' && damagePans.length > 0) {
+      damagePans.forEach((pan, idx) => {
+        playMatchCue('DAMAGE', true, ACTION_GAINS.DAMAGE, idx * 0.038, { pan });
+      });
+      continue;
+    }
+    if (cue === 'HEAL' && healPans.length > 0) {
+      healPans.forEach((pan, idx) => {
+        playMatchCue('HEAL', true, ACTION_GAINS.HEAL, idx * 0.038, { pan });
+      });
+      continue;
+    }
     const delay = cue === 'DEAL' ? (cues.has('ELIMINATION') ? 0.46 : 0.12) : 0;
-    playMatchCue(cue, true, ACTION_GAINS[cue], delay);
+    let pan = 0;
+    if (cue === 'DYING') pan = dyingPan;
+    else if (cue === 'ELIMINATION') pan = elimPan;
+    else if (cue === 'LIGHTNING' || cue === 'CONTROL_SCROLL') pan = scrollPan || actorPan;
+    else if (equipPans.has(cue)) pan = equipPans.get(cue) ?? 0;
+    else if (cue === 'SAT' || cue === 'STEAL_DISMANTLE') pan = actorPan;
+
+    const playbackRateMultiplier =
+      cue === 'NULLIFICATION' && nullifyDepth > 0
+        ? 2 ** ((Math.min(nullifyDepth, 3) * 2) / 12)
+        : 1;
+
+    playMatchCue(cue, true, ACTION_GAINS[cue], delay, { pan, playbackRateMultiplier });
   }
   return cues;
 }

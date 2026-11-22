@@ -71,7 +71,10 @@ export function MatchHoverTooltip() {
 
         const centeredX = Math.max(8, Math.min(rect.left + rect.width / 2 - w / 2, innerWidth - w - 8));
         const defaultY = Math.max(8, anchorTop - h - 8);
-        const candidates: Array<{ x: number; y: number }> = [{ x: centeredX, y: defaultY }];
+        const candidates: Array<{ x: number; y: number }> = [
+          { x: centeredX, y: defaultY },
+          { x: centeredX, y: Math.max(8, anchorTop - h - 4) },
+        ];
 
         if (centerRect) {
           const belowCenterY = Math.max(8, centerRect.bottom + 4);
@@ -87,8 +90,13 @@ export function MatchHoverTooltip() {
           );
         }
         if (stackRect && stackRect.height > 0) {
+          const aisleY = Math.max(8, dockRect.top - h - 3);
           const flushDockY = Math.max(8, dockRect.top - h - 8);
           candidates.push(
+            { x: Math.max(8, stackRect.left - w - 8), y: aisleY },
+            { x: Math.min(innerWidth - w - 8, stackRect.right + 8), y: aisleY },
+            { x: 8, y: aisleY },
+            { x: Math.max(8, innerWidth - w - 8), y: aisleY },
             { x: Math.max(8, stackRect.left - w - 8), y: flushDockY },
             { x: Math.min(innerWidth - w - 8, stackRect.right + 8), y: flushDockY },
           );
@@ -97,7 +105,7 @@ export function MatchHoverTooltip() {
         let best = candidates[0]!;
         let bestOverlap = overlapsAny(best.x, best.y);
         for (const cand of candidates.slice(1)) {
-          if (cand.x < 4 || cand.x + w > innerWidth - 4 || cand.y < 4 || cand.y + h > dockRect.top - 4) {
+          if (cand.x < 4 || cand.x + w > innerWidth - 4 || cand.y < 4 || cand.y + h > dockRect.top - 2) {
             continue;
           }
           const area = overlapsAny(cand.x, cand.y);

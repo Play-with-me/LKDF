@@ -24,6 +24,7 @@ import { HandCardItem, PlayingCardFace } from './HandCardItem.js';
 import { HeroCardWatermark } from './HeroCardWatermark.js';
 import { HeroSelectPanel } from './HeroSelectPanel.js';
 import { MatchActionArc } from './MatchActionArc.js';
+import { MatchVfxCanvas } from './MatchVfxCanvas.js';
 import { MatchCenterBoard } from './MatchCenterBoard.js';
 import { cardHover, MatchHoverTooltip } from './MatchHoverTooltip.js';
 import { SeatCard } from './SeatCard.js';
@@ -67,6 +68,8 @@ export interface MatchArenaLayoutProps {
   readonly onSendAction: (action: GameAction) => void;
   readonly onSelectHero: (heroId: HeroId) => void;
   readonly onClearSelection?: () => void;
+  readonly onCardLift?: () => void;
+  readonly onTargetLock?: (seatIndex: number) => void;
   readonly renderActionSidebar: () => ReactNode;
 }
 
@@ -131,9 +134,9 @@ const ROUND_TABLE_COORDS_BY_OPPONENTS: Readonly<Record<number, readonly RoundSea
   7: [
     { leftPct: 13, topPct: 76 },
     { leftPct: 10.5, topPct: 45 },
-    { leftPct: 26.5, topPct: 16 },
+    { leftPct: 24, topPct: 16 },
     { leftPct: 50, topPct: 13 },
-    { leftPct: 73.5, topPct: 16 },
+    { leftPct: 74.5, topPct: 16 },
     { leftPct: 89.5, topPct: 45 },
     { leftPct: 87, topPct: 76 },
   ],
@@ -221,6 +224,8 @@ export function MatchArenaLayout({
   onSendAction,
   onSelectHero,
   onClearSelection,
+  onCardLift,
+  onTargetLock,
   renderActionSidebar,
 }: MatchArenaLayoutProps) {
   const arenaRef = useRef<HTMLDivElement>(null);
@@ -237,7 +242,14 @@ export function MatchArenaLayout({
     pendingThrowRef.current = null;
     return performance.now() - pending.sentAt <= 4000 ? pending : null;
   }, [connectionLost]);
-  const { activeArcs, hpImpacts } = useMatchMotion(
+  const {
+    activeArcs,
+    hpImpacts,
+    vfxEvents,
+    duelSeats,
+    recoilVectorBySeat,
+    skillStampBySeat,
+  } = useMatchMotion(
     arenaRef,
     motionLayerRef,
     playerView,
@@ -475,6 +487,7 @@ export function MatchArenaLayout({
         if (dist < 8) return;
         session.active = true;
         suppressClickCardIdRef.current = session.card.id;
+        onCardLift?.();
       }
 
       syncGhostTransform(e.clientX, e.clientY);
@@ -488,6 +501,9 @@ export function MatchArenaLayout({
         nextSeatIdx !== session.hoverSeatIdx ||
         nextTable !== session.hoverTable
       ) {
+        if (nextSeatIdx !== null && nextSeatIdx !== session.hoverSeatIdx) {
+          onTargetLock?.(nextSeatIdx);
+        }
         session.hoverSeatIdx = nextSeatIdx;
         session.hoverTable = nextTable;
         setDragState({
@@ -699,6 +715,8 @@ export function MatchArenaLayout({
           dragHoverLabelVi={dragHoverLabel}
           compact={isCompactSeats}
           hpImpact={hpImpacts[opp.seatIndex] ?? null}
+          recoilVector={recoilVectorBySeat[opp.seatIndex] ?? null}
+          skillStamp={skillStampBySeat[opp.seatIndex] ?? null}
           onSelectTarget={isEligible ? onToggleTarget : undefined}
           onInspectHero={handleInspectHero}
           onInspectCard={handleInspectCard}
@@ -786,12 +804,19 @@ export function MatchArenaLayout({
     <div ref={arenaRef} className="lkdf-arena-stage relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-[#090807]">
       <div ref={motionLayerRef} className="lkdf-motion-layer" aria-hidden="true" />
       {!isHeroSelectPhase ? (
-        <MatchActionArc
-          stageRef={arenaRef}
-          activeArcs={activeArcs}
-          selfSeatIndex={playerView.viewerSeatIndex}
-          aimingTargetSeats={aimingTargetSeats}
-        />
+        <>
+          <MatchActionArc
+            stageRef={arenaRef}
+            activeArcs={activeArcs}
+            selfSeatIndex={playerView.viewerSeatIndex}
+            aimingTargetSeats={aimingTargetSeats}
+          />
+          <MatchVfxCanvas
+            stageRef={arenaRef}
+            events={vfxEvents}
+            duelSeats={duelSeats}
+          />
+        </>
       ) : null}
       {dragState ? <DragGhostCard card={dragState.card} ghostRef={ghostRef} /> : null}
 

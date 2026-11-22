@@ -17,7 +17,7 @@ import {
   getCardGameIcon,
 } from '../../components/icons/index.js';
 import { HeroCardWatermark } from './HeroCardWatermark.js';
-import type { SeatHpImpact } from './useMatchMotion.js';
+import type { SeatHpImpact, SeatRecoilVector, SeatSkillStamp } from './useMatchMotion.js';
 import {
   getIdentityBadgeClass,
   getIdentityLabelVi,
@@ -38,6 +38,8 @@ export interface SeatCardProps {
   readonly dragHoverLabelVi?: string;
   readonly compact?: boolean;
   readonly hpImpact?: SeatHpImpact | null;
+  readonly recoilVector?: SeatRecoilVector | null;
+  readonly skillStamp?: SeatSkillStamp | null;
   readonly onSelectTarget?: (seatIndex: number) => void;
   readonly onInspectHero?: (seatIndex: number) => void;
   readonly onInspectCard?: (
@@ -79,6 +81,8 @@ export function SeatCard({
   dragHoverLabelVi,
   compact = false,
   hpImpact = null,
+  recoilVector = null,
+  skillStamp = null,
   onSelectTarget,
   onInspectHero,
   onInspectCard,
@@ -168,6 +172,15 @@ export function SeatCard({
       data-active-turn={isActiveActor ? 'true' : undefined}
       data-dying={isDying ? 'true' : undefined}
       data-hp-impact={hpImpact ? (hpImpact.delta < 0 ? 'damage' : 'heal') : undefined}
+      data-recoil={recoilVector ? recoilVector.id : undefined}
+      style={
+        recoilVector
+          ? ({
+              '--recoil-x': `${recoilVector.x}px`,
+              '--recoil-y': `${recoilVector.y}px`,
+            } as React.CSSProperties)
+          : undefined
+      }
       data-lkdf-battle-rest={!isDragHovered && !isDragTargetEligible && !isSelectedTarget && !isTargetEligible && !isActiveActor && !isInspectedHero}
       role={canClick ? 'button' : undefined}
       tabIndex={canClick ? 0 : undefined}
@@ -210,6 +223,17 @@ export function SeatCard({
         widthClass="w-[78%]"
         opacityClass="opacity-85"
       />
+
+      {/* Ấn ký kỹ năng gọn nhẹ (<= 450ms) */}
+      {skillStamp ? (
+        <span
+          key={`stamp-${skillStamp.id}`}
+          aria-hidden="true"
+          className="lkdf-skill-stamp pointer-events-none absolute bottom-1 right-1.5 z-35 rounded border border-[#E6BE6C]/80 bg-[#14171A]/95 px-1.5 py-0.5 text-[10px] font-bold tracking-wide text-[#FDE68A] shadow-md"
+        >
+          {skillStamp.label}
+        </span>
+      ) : null}
 
       {/* Hiệu ứng phản hồi sinh lực (hit-stop / hồi máu) */}
       {hpImpact ? (
@@ -420,63 +444,73 @@ export function SeatCard({
         </div>
       </div>
 
-      {/* Hàng 5: Trang bị đang mặc — chỉ hiện khi có đồ, mỗi món 1 thanh ngang 100% chiều rộng */}
-      {equippedItems.length > 0 ? (
-        <div className="lkdf-battle-seat-equipment relative z-10 flex flex-col gap-0.5 border-t border-[#94A3B8]/25 pt-0.5">
-          {equippedItems.map(({ slot, label, prefix, item }) => {
-            const artUrl = getCardArtUrl(item.card.cardKey);
-            const active = inspectedCardSourceId === item.sourceId;
-            const red = isCardRed(item.card);
-            return (
-              <button
-                key={slot}
-                type="button"
-                data-equipment-slot={slot}
-                {...cardHover(item.card)}
-                aria-label={`${label} · ${item.card.nameVi}`}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  onInspectCard?.(item.card, item.sourceId, item.sourceLabel);
-                }}
-                className={[
-                  'flex h-[21px] w-full min-w-0 cursor-pointer items-center gap-1 overflow-hidden rounded border px-1 text-left text-[10px] leading-none transition-colors',
-                  active
-                    ? 'border-[#FDE68A] bg-[#E6BE6C]/22 ring-1 ring-[#FDE68A]/55'
-                    : 'border-[#B89352]/40 bg-[#0B0E14]/92 hover:border-[#E6BE6C]',
-                ].join(' ')}
-              >
-                {artUrl ? (
-                  <img
-                    src={artUrl}
-                    alt=""
-                    draggable={false}
-                    className="h-[16px] w-[13px] shrink-0 rounded-[2px] object-cover"
-                  />
-                ) : (
-                  <GameIcon name={getCardGameIcon(item.card.cardKey)} size={11} className="shrink-0 text-[#E6BE6C]" />
-                )}
-                <span
-                  className={`font-mono-num inline-flex shrink-0 items-center gap-0.5 text-[9.5px] font-extrabold leading-none ${
-                    red ? 'text-[#FCA5A5]' : 'text-[#F1F5F9]'
-                  }`}
+      {/* Hàng 5: Trang bị đang mặc — chỉ hiện khi có đồ; >= 3 món tự xếp 2 cột gọn để không đội chiều cao */}
+      {equippedItems.length > 0 ? (() => {
+        const compactEquipGrid = equippedItems.length >= 3;
+        return (
+          <div
+            className={
+              compactEquipGrid
+                ? 'lkdf-battle-seat-equipment relative z-10 grid grid-cols-2 gap-0.5 border-t border-[#94A3B8]/25 pt-0.5'
+                : 'lkdf-battle-seat-equipment relative z-10 flex flex-col gap-0.5 border-t border-[#94A3B8]/25 pt-0.5'
+            }
+          >
+            {equippedItems.map(({ slot, label, prefix, item }) => {
+              const artUrl = getCardArtUrl(item.card.cardKey);
+              const active = inspectedCardSourceId === item.sourceId;
+              const red = isCardRed(item.card);
+              return (
+                <button
+                  key={slot}
+                  type="button"
+                  data-equipment-slot={slot}
+                  {...cardHover(item.card)}
+                  aria-label={`${label} · ${item.card.nameVi}`}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onInspectCard?.(item.card, item.sourceId, item.sourceLabel);
+                  }}
+                  className={[
+                    compactEquipGrid ? 'h-[19px] text-[9.5px]' : 'h-[21px] text-[10px]',
+                    'flex w-full min-w-0 cursor-pointer items-center gap-1 overflow-hidden rounded border px-1 text-left leading-none transition-colors',
+                    active
+                      ? 'border-[#FDE68A] bg-[#E6BE6C]/22 ring-1 ring-[#FDE68A]/55'
+                      : 'border-[#B89352]/40 bg-[#0B0E14]/92 hover:border-[#E6BE6C]',
+                  ].join(' ')}
                 >
-                  <span className="shrink-0">{formatRankLabel(item.card.rank)}</span>
-                  <SuitGlyph suit={item.card.suit} size={9} tone="darkSurface" className="shrink-0" />
-                  <span className="sr-only">{formatSuitSymbol(item.card.suit)}</span>
-                </span>
-                {prefix ? (
-                  <span className="shrink-0 rounded bg-[#B89352]/25 px-1 py-px text-[8.5px] font-extrabold text-[#FDE68A]">
-                    {prefix}
+                  {artUrl ? (
+                    <img
+                      src={artUrl}
+                      alt=""
+                      draggable={false}
+                      className="h-[15px] w-[12px] shrink-0 rounded-[2px] object-cover"
+                    />
+                  ) : (
+                    <GameIcon name={getCardGameIcon(item.card.cardKey)} size={11} className="shrink-0 text-[#E6BE6C]" />
+                  )}
+                  <span
+                    className={`font-mono-num inline-flex shrink-0 items-center gap-0.5 text-[9.5px] font-extrabold leading-none ${
+                      red ? 'text-[#FCA5A5]' : 'text-[#F1F5F9]'
+                    }`}
+                  >
+                    <span className="shrink-0">{formatRankLabel(item.card.rank)}</span>
+                    <SuitGlyph suit={item.card.suit} size={9} tone="darkSurface" className="shrink-0" />
+                    <span className="sr-only">{formatSuitSymbol(item.card.suit)}</span>
                   </span>
-                ) : null}
-                <span className="min-w-0 flex-1 truncate font-semibold text-[#F5EBD6]">
-                  {item.card.nameVi}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      ) : null}
+                  {prefix ? (
+                    <span className="shrink-0 rounded bg-[#B89352]/25 px-1 py-px text-[8.5px] font-extrabold text-[#FDE68A]">
+                      {prefix}
+                    </span>
+                  ) : null}
+                  <span className="min-w-0 flex-1 truncate font-semibold text-[#F5EBD6]">
+                    {item.card.nameVi}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        );
+      })() : null}
 
       {/* Hàng 6: Phán xét (chỉ hiện khi có bài phán xét) */}
       {delayedItems.length > 0 ? (
