@@ -222,6 +222,7 @@ html[data-demo-skill] .lkdf-battle-reaction {
 
 @media (max-height: 650px) {
   .lkdf-battle-choice { max-height: 138px; }
+  .lkdf-battle-choice .lkdf-card-gwent { height: 54px !important; width: 38px !important; }
   .lkdf-battle-center { top: 50.5%; }
   .lkdf-battle-center-stack { gap: 4px; }
   .lkdf-battle-center .line-clamp-2 { font-size: 10.5px; line-height: 1.2; }
@@ -1157,6 +1158,11 @@ dialog[open]::backdrop {
     opacity: 0;
     transform: scale(0.96) translateY(-2px);
   }
+}
+
+[data-lkdf-reduce-motion] .lkdf-battle-seat[data-recoil],
+[data-lkdf-reduce-motion] .lkdf-skill-stamp {
+  animation: none !important;
 }
 
 @media (prefers-reduced-motion: reduce) {

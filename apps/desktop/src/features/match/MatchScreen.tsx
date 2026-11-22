@@ -1,4 +1,4 @@
-import { readDevicePreference } from '../../lib/devicePreferences.js';
+import { readDevicePreference, writeDevicePreference } from '../../lib/devicePreferences.js';
 import type {
   GameAction,
   HeroId,
@@ -61,6 +61,9 @@ export function MatchScreen({
   const [wsReconnectKey, setWsReconnectKey] = useState<number>(0);
   const [selection, setSelection] = useState<MatchSelectionState>(EMPTY_MATCH_SELECTION);
   const [autoSkipNullification, setAutoSkipNullification] = useState<boolean>(false);
+  const [reduceMotion, setReduceMotion] = useState<boolean>(() =>
+    readDevicePreference('reduceMotion'),
+  );
   const [actionError, setActionError] = useState<string | null>(null);
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
   const [isTogglingSound, setIsTogglingSound] = useState<boolean>(false);
@@ -428,6 +431,11 @@ export function MatchScreen({
     [handleSendAction, playerView],
   );
 
+  const handleToggleReduceMotion = useCallback((enabled: boolean) => {
+    writeDevicePreference('reduceMotion', enabled);
+    setReduceMotion(enabled);
+  }, []);
+
   const handleEndPlayPhase = useCallback(() => {
     if (!playerView) {
       return;
@@ -555,10 +563,16 @@ export function MatchScreen({
           </button>
         }
       >
-        <label className="mb-3 flex cursor-pointer items-center gap-2 text-xs font-semibold text-[#EFE6D5]">
-          <input type="checkbox" checked={autoSkipNullification} onChange={(event) => handleToggleAutoSkipNullification(event.target.checked)} className="accent-[#D99B26]" />
-          Tự bỏ qua Vô Giải
-        </label>
+        <div className="mb-3 flex flex-wrap items-center gap-4">
+          <label className="flex cursor-pointer items-center gap-2 text-xs font-semibold text-[#EFE6D5]">
+            <input type="checkbox" checked={autoSkipNullification} onChange={(event) => handleToggleAutoSkipNullification(event.target.checked)} className="accent-[#D99B26]" />
+            Tự bỏ qua Vô Giải
+          </label>
+          <label className="flex cursor-pointer items-center gap-2 text-xs font-semibold text-[#EFE6D5]">
+            <input type="checkbox" checked={reduceMotion} onChange={(event) => handleToggleReduceMotion(event.target.checked)} className="accent-[#D99B26]" />
+            Giảm chuyển động
+          </label>
+        </div>
         <div className="mb-3 flex min-w-0 flex-wrap items-center gap-2 text-xs">
           <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded border border-[#CA9A48]/60 bg-[#9E2B25] font-serif-title text-[12px] font-bold text-[#F5EBDC] shadow-inner">
             殺

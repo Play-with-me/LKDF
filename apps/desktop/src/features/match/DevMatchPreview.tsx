@@ -21,6 +21,7 @@ import type {
   RoomState,
 } from '@lkdf/shared';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { readDevicePreference, writeDevicePreference } from '../../lib/devicePreferences.js';
 import { useGameAmbience } from '../../lib/useGameAmbience.js';
 import { useInterfaceSounds } from '../../lib/useInterfaceSounds.js';
 import { playMatchCue } from '../../lib/soundFx.js';
@@ -72,9 +73,11 @@ function buildPreviewSeats(count: PlayerCount): RoomSeat[] {
   }));
 }
 
+type PreviewStage = 'HERO_SELECT' | 'IN_PLAY' | 'GUAN_XING' | 'YI_JI' | 'GAME_OVER';
+
 function createPreviewMatchState(
   count: PlayerCount,
-  mode: 'HERO_SELECT' | 'IN_PLAY',
+  mode: PreviewStage,
 ): MasterGameState {
   const seats = buildPreviewSeats(count);
   let state = createInitialMatchSetup({
@@ -95,6 +98,63 @@ function createPreviewMatchState(
 
   state = autoSelectTimedOutHeroes(state);
   state = startMatchCombat(state);
+
+  if (mode === 'GUAN_XING') {
+    const gxCount = Math.min(5, count);
+    const gxCards = state.drawPile.slice(0, gxCount);
+    return {
+      ...state,
+      currentTurnSeat: 0,
+      turnPhase: 'JUDGE',
+      drawPile: state.drawPile.slice(gxCount),
+      players: state.players.map((p, i) => (i === 0 ? { ...p, heroId: 'zhuge_liang' } : p)),
+      interruptStack: [
+        {
+          id: 'dev_gx_1',
+          kind: 'WAIT_GUAN_XING',
+          targetSeat: 0,
+          cards: gxCards,
+        },
+      ],
+    };
+  }
+
+  if (mode === 'YI_JI') {
+    const yjCards = state.drawPile.slice(0, 2);
+    return {
+      ...state,
+      currentTurnSeat: 0,
+      turnPhase: 'PLAY',
+      drawPile: state.drawPile.slice(2),
+      players: state.players.map((p, i) => (i === 0 ? { ...p, heroId: 'guo_jia' } : p)),
+      interruptStack: [
+        {
+          id: 'dev_yj_1',
+          kind: 'WAIT_YI_JI',
+          targetSeat: 0,
+          cards: yjCards,
+        },
+      ],
+    };
+  }
+
+  if (mode === 'GAME_OVER') {
+    const winners = state.players
+      .filter((p) => p.identity === 'LORD' || p.identity === 'LOYALIST')
+      .map((p) => p.userId);
+    return {
+      ...state,
+      turnPhase: 'GAME_OVER',
+      winningFaction: 'LORD_LOYALIST',
+      winnerUserIds: winners,
+      players: state.players.map((p) =>
+        p.identity === 'REBEL'
+          ? { ...p, hp: 0, alive: false, isIdentityRevealed: true }
+          : { ...p, isIdentityRevealed: true },
+      ),
+    };
+  }
+
   return state;
 }
 
@@ -103,7 +163,7 @@ export function DevMatchPreview({
   onExitPreview,
 }: DevMatchPreviewProps) {
   const [playerCount, setPlayerCount] = useState<PlayerCount>(initialPlayerCount);
-  const [previewStage, setPreviewStage] = useState<'HERO_SELECT' | 'IN_PLAY'>('IN_PLAY');
+  const [previewStage, setPreviewStage] = useState<PreviewStage>('IN_PLAY');
   const [masterState, setMasterState] = useState<MasterGameState>(() =>
     createPreviewMatchState(initialPlayerCount, 'IN_PLAY'),
   );
@@ -113,14 +173,22 @@ export function DevMatchPreview({
   const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
   const [musicEnabled, setMusicEnabled] = useState<boolean>(true);
   const [autoSkipNullify, setAutoSkipNullify] = useState<boolean>(false);
+  const [reduceMotion, setReduceMotion] = useState<boolean>(() =>
+    readDevicePreference('reduceMotion'),
+  );
   const [selection, setSelection] = useState<MatchSelectionState>(EMPTY_MATCH_SELECTION);
   const [actionError, setActionError] = useState<string | null>(null);
   const [showLogDialog, setShowLogDialog] = useState<boolean>(false);
   const [showRulesDialog, setShowRulesDialog] = useState<boolean>(false);
   const [showRefereeDialog, setShowRefereeDialog] = useState<boolean>(false);
 
+  const handleToggleReduceMotion = useCallback((enabled: boolean) => {
+    writeDevicePreference('reduceMotion', enabled);
+    setReduceMotion(enabled);
+  }, []);
+
   const resetPreview = useCallback(
-    (nextCount: PlayerCount, nextStage: 'HERO_SELECT' | 'IN_PLAY') => {
+    (nextCount: PlayerCount, nextStage: PreviewStage) => {
       setPlayerCount(nextCount);
       setPreviewStage(nextStage);
       setMasterState(createPreviewMatchState(nextCount, nextStage));
@@ -579,15 +647,51 @@ export function DevMatchPreview({
           </button>
         }
       >
-        <label className="mb-3 flex cursor-pointer items-center gap-2 text-xs font-semibold text-[#EFE6D5]">
-          <input
-            type="checkbox"
-            checked={autoSkipNullify}
-            onChange={(event) => handleToggleAutoSkipNullify(event.target.checked)}
-            className="accent-[#D99B26]"
-          />
-          Tự bỏ qua Vô Giải
-        </label>
+        <div className="mb-3 flex flex-wrap items-center gap-4">
+          <label className="flex cursor-pointer items-center gap-2 text-xs font-semibold text-[#EFE6D5]">
+            <input
+              type="checkbox"
+              checked={autoSkipNullify}
+              onChange={(event) => handleToggleAutoSkipNullify(event.target.checked)}
+              className="accent-[#D99B26]"
+            />
+            Tự bỏ qua Vô Giải
+          </label>
+          <label className="flex cursor-pointer items-center gap-2 text-xs font-semibold text-[#EFE6D5]">
+            <input
+              type="checkbox"
+              checked={reduceMotion}
+              onChange={(event) => handleToggleReduceMotion(event.target.checked)}
+              className="accent-[#D99B26]"
+            />
+            Giảm chuyển động
+          </label>
+        </div>
+        <div className="mb-2.5 flex min-w-0 flex-wrap items-center gap-1.5 text-[11px]">
+          <span className="shrink-0 text-[#B5A792]">Cảnh thử:</span>
+          {(
+            [
+              ['HERO_SELECT', 'Chọn tướng'],
+              ['IN_PLAY', 'Đánh bài'],
+              ['GUAN_XING', 'Quan Tinh'],
+              ['YI_JI', 'Di Kế'],
+              ['GAME_OVER', 'Kết ván'],
+            ] as const
+          ).map(([stageKey, label]) => (
+            <button
+              key={stageKey}
+              type="button"
+              onClick={() => resetPreview(playerCount, stageKey)}
+              className={`cursor-pointer rounded px-2 py-0.5 font-semibold ${
+                previewStage === stageKey
+                  ? 'bg-[#D99B26] text-[#14100D]'
+                  : 'border border-[#9A7B4F]/40 bg-[#14100D]/90 text-[#D1D5DB] hover:border-[#D99B26]'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
         <div className="mb-3 flex min-w-0 flex-wrap items-center gap-2 text-xs">
           <span className="shrink-0 rounded border border-[#D99B26]/60 bg-[#9E2B25]/85 px-2 py-0.5 font-semibold text-[#FDE68A]">
             DEV · {playerCount}P

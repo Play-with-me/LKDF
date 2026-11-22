@@ -149,6 +149,9 @@
   - [x] Thêm bộ tiếng bài, trang bị, kỹ năng, phán xét, xào và chia bài. Thay tiếng mất máu bằng tiếng chém và thêm âm kết liễu riêng. Electron kiểm 28 tình huống mô phỏng.
   - [x] Thay âm hồi máu và tiếng đặt bài cũ bằng hiệu ứng thuần nhạc cụ và tiếng giấy. Electron kiểm bốn nhánh hồi máu.
   - [x] Làm rõ tiếng trúng đòn và kết liễu, sửa âm đánh bài phát nhầm khi thu bài của tướng bị loại. Kiểm sáu tình huống qua lõi trận và Web Audio trong Electron.
+  - [x] Chặng 1 (`7c3929a` lên `main`): VFX `<canvas>` 2D Quốc Phong, hit-stop, giật hướng ghế, âm thanh stereo trái-phải theo ghế & đồng bộ trống Cao Trào `108 BPM`.
+  - [x] Chặng 2 (`36b1bdc` lên `main`): Kéo bài nghiêng theo `vx` + hít tâm ghế, Double-Click đánh nhanh, dây cháy `60fps` đối thủ, gợi ý `[Enter]`/`[Esc]`/`[E]`, `Quan Tinh`/`Di Kế` thẻ Gwent, `GameOverSummaryModal` Cổ Phong, vá bán kính `MatchVfxCanvas` & tooltip `WAIT_NULLIFICATION`.
+  - [x] Chặng 3 (Đã commit & push lên `main` — Kiểm trực quan & Giảm chuyển động giữa ván): Ô tích `Giảm chuyển động` trong `Cài đặt` giữa trận (`MatchScreen`, `DevMatchPreview`, `index.css`) + nút `Cảnh thử` (`Chọn tướng`, `Đánh bài`, `Quan Tinh`, `Di Kế`, `Kết ván`) đã kiểm E2E live trên cả `960×600` và `1280×720`.
 
 ### Giai Đoạn 5 — Cập Nhật 1-Click Từ GitHub Private, Đóng Gói & Nghiệm Thu
 
