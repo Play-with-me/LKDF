@@ -1625,6 +1625,14 @@ export function stepEngine(
         break;
       }
       case 'DRAW': {
+        if (state.peacefulFirstRound && state.roundNumber === 1) {
+          const skipPlay = state.turnFlags?.skipPlayPhase ?? false;
+          state = {
+            ...state,
+            turnPhase: skipPlay ? 'DISCARD' : 'PLAY',
+          };
+          break;
+        }
         if (!state.turnFlags?.drawSkillChecked) {
           state = {
             ...state,

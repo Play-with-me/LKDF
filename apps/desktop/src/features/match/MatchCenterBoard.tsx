@@ -613,7 +613,7 @@ export function MatchCenterBoard({
                 data-round1-peace="true"
                 className="inline-flex items-center gap-1 rounded-full border border-[#34D399]/55 bg-[#064E3B]/75 px-2.5 py-0.5 text-[10px] font-bold text-[#A7F3D0]"
               >
-                🕊️ Vòng 1 Hòa Bình · Chưa đánh Sát
+                🕊️ Vòng 1 Hòa Bình · Không rút bài &amp; Chưa đánh Sát
               </span>
             ) : null}
           </div>

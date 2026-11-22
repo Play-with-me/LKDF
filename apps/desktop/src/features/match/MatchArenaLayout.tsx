@@ -1142,7 +1142,7 @@ export function MatchArenaLayout({
                               Chuẩn bị bốc Thân Phận &amp; Tướng Lĩnh
                             </h2>
                             <p className="text-xs text-[#CBD5E1]">
-                              Bàn {playerView.players.length} người · Vòng 1 Hòa Bình chưa được đánh Sát
+                              Bàn {playerView.players.length} người · Vòng 1 Hòa Bình: giữ 4 lá đầu, không rút thêm &amp; chưa đánh Sát
                             </p>
                           </div>
                         </>

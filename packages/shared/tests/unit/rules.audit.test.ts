@@ -599,11 +599,16 @@ describe('Kiểm chứng toàn diện chuẩn luật Yoka Standard (1A + 2A)', (
       }),
     ).toThrow('FIRST_ROUND_SAT_FORBIDDEN');
 
-    // Ghế 2 -> 3 -> 0 -> 1 vẫn thuộc roundNumber === 1!
+    // Ghế 2 -> 3 -> 0 -> 1 vẫn thuộc roundNumber === 1 và không rút 2 lá ở Vòng 1!
     state = applyGameAction(state, { type: 'END_PLAY_PHASE', seatIndex: 2 });
+    expect(state.currentTurnSeat).toBe(3);
+    expect(state.roundNumber).toBe(1);
+    expect(state.players[3]!.handCards).toHaveLength(1);
+
     state = applyGameAction(state, { type: 'END_PLAY_PHASE', seatIndex: 3 });
     expect(state.currentTurnSeat).toBe(0);
     expect(state.roundNumber).toBe(1);
+    expect(state.players[0]!.handCards).toHaveLength(1);
     expect(() =>
       applyGameAction(state, {
         type: 'PLAY_CARD',
@@ -616,11 +621,13 @@ describe('Kiểm chứng toàn diện chuẩn luật Yoka Standard (1A + 2A)', (
     state = applyGameAction(state, { type: 'END_PLAY_PHASE', seatIndex: 0 });
     expect(state.currentTurnSeat).toBe(1);
     expect(state.roundNumber).toBe(1);
+    expect(state.players[1]!.handCards).toHaveLength(0);
 
-    // Kết thúc lượt Ghế 1 -> quay về Chủ Công Ghế 2 => Vòng 2 mở khóa Sát!
+    // Kết thúc lượt Ghế 1 -> quay về Chủ Công Ghế 2 => Vòng 2 rút 2 lá & mở khóa Sát!
     state = applyGameAction(state, { type: 'END_PLAY_PHASE', seatIndex: 1 });
     expect(state.currentTurnSeat).toBe(2);
     expect(state.roundNumber).toBe(2);
+    expect(state.players[2]!.handCards).toHaveLength(3);
     const satPlayed = applyGameAction(state, {
       type: 'PLAY_CARD',
       seatIndex: 2,

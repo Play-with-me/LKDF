@@ -5,6 +5,8 @@ import {
   createInitialMatchSetup,
   getPendingPrompt,
   projectStateForPlayer,
+  selectLordHero,
+  selectPlayerHero,
   startMatchCombat,
   stepEngine,
   type CardInstance,
@@ -107,15 +109,52 @@ describe('Bước 1.2 — Máy trạng thái lượt, 108 lá bài (gồm 4 lá 
       seats: makeSeats(4),
       rng: () => 0.3,
     });
-    setup = autoSelectTimedOutHeroes(setup, () => 0.3);
+    const draftLordSeat = setup.heroDraft!.lordSeatIndex;
+    setup = selectLordHero(setup, draftLordSeat, 'liu_bei', () => 0.3);
+    for (const p of setup.players) {
+      if (p.seatIndex === draftLordSeat) continue;
+      const cands = setup.heroDraft!.candidatesBySeat[p.seatIndex]!;
+      const safeHero =
+        cands.find((h) => h !== 'zhuge_liang' && h !== 'zhen_ji') ?? cands[0]!;
+      setup = selectPlayerHero(setup, p.seatIndex, safeHero);
+    }
     let state = startMatchCombat(setup, () => 0.3);
 
     const lordSeat = state.currentTurnSeat;
+    expect(state.roundNumber).toBe(1);
+    expect(state.turnPhase).toBe('PLAY');
+    // Vòng 1 Hòa Bình: giữ nguyên 4 lá đầu, chưa rút 2 lá
+    expect(state.players.find((p) => p.seatIndex === lordSeat)!.handCards).toHaveLength(4);
+    expect(state.drawPile).toHaveLength(108 - 4 * 4);
+
+    // Cho cả 4 ghế qua hết Vòng 1 (không ghế nào rút bài từ chồng rút ở Vòng 1)
+    for (let i = 0; i < 4; i++) {
+      const activeSeat = state.currentTurnSeat;
+      expect(state.roundNumber).toBe(1);
+      expect(state.drawPile).toHaveLength(108 - 4 * 4);
+      expect(state.players.find((p) => p.seatIndex === activeSeat)!.handCards).toHaveLength(4);
+      state = applyGameAction(state, { type: 'END_PLAY_PHASE', seatIndex: activeSeat });
+      if (state.turnPhase === 'DISCARD' && state.currentTurnSeat === activeSeat) {
+        const cur = state.players.find((p) => p.seatIndex === activeSeat)!;
+        const dropIds = cur.handCards.slice(0, cur.handCards.length - cur.hp).map((c) => c.id);
+        state = applyGameAction(state, {
+          type: 'DISCARD_CARDS',
+          seatIndex: activeSeat,
+          cardIds: dropIds,
+        });
+      }
+    }
+
+    // Quay về Chủ Công ở Vòng 2 -> bắt đầu rút 2 lá -> 6 lá trên tay
     const lord = state.players.find((p) => p.seatIndex === lordSeat)!;
-    // 4 lá đầu + 2 lá pha Rút bài = 6 lá
+    expect(state.roundNumber).toBe(2);
+    expect(state.currentTurnSeat).toBe(lordSeat);
     expect(state.turnPhase).toBe('PLAY');
     expect(lord.handCards).toHaveLength(6);
     expect(state.drawPile).toHaveLength(108 - 4 * 4 - 2);
+
+    const nextSeat = (lordSeat + 1) % 4;
+    const nextSeatHandBeforeR2 = state.players.find((p) => p.seatIndex === nextSeat)!.handCards.length;
 
     // Kết thúc pha Đánh bài -> vào DISCARD vì cầm 6 lá > maxHp (5 máu)
     state = applyGameAction(state, { type: 'END_PLAY_PHASE', seatIndex: lordSeat });
@@ -129,11 +168,13 @@ describe('Bước 1.2 — Máy trạng thái lượt, 108 lá bài (gồm 4 lá 
       cardIds: toDiscard,
     });
 
-    // Sang lượt ghế tiếp theo và tự rút 2 lá
-    const nextSeat = (lordSeat + 1) % 4;
+    // Sang lượt ghế tiếp theo ở Vòng 2 và tự rút 2 lá
     expect(state.currentTurnSeat).toBe(nextSeat);
+    expect(state.roundNumber).toBe(2);
     expect(state.turnPhase).toBe('PLAY');
-    expect(state.players.find((p) => p.seatIndex === nextSeat)!.handCards).toHaveLength(6);
+    expect(state.players.find((p) => p.seatIndex === nextSeat)!.handCards).toHaveLength(
+      nextSeatHandBeforeR2 + 2,
+    );
 
     // Kiểm tra hết chồng bài rút -> tự động trộn chồng bài bỏ
     const lowDrawState = makeControlledState(
