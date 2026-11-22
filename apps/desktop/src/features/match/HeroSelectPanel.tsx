@@ -193,7 +193,12 @@ export function HeroSelectPanel({
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+          <div
+            className={[
+              'grid gap-2',
+              draft.myCandidates.length > 3 ? 'grid-cols-5' : 'grid-cols-3',
+            ].join(' ')}
+          >
             {draft.myCandidates.map((heroId) => {
               const hero = getHeroDefinition(heroId);
               const factionStyle = getFactionStyle(hero.faction);
@@ -203,7 +208,10 @@ export function HeroSelectPanel({
               return (
                 <div
                   key={hero.id}
-                  className="relative flex flex-col justify-between gap-2.5 overflow-hidden rounded-[6px] border border-[#94A3B8]/38 bg-[#12161E] p-3 shadow-lg transition-colors hover:border-[#E6BE6C]"
+                  className={[
+                    'relative flex min-w-0 flex-col justify-between gap-2 overflow-hidden rounded-[6px] border border-[#94A3B8]/38 bg-[#12161E] shadow-lg transition-colors hover:border-[#E6BE6C]',
+                    draft.myCandidates.length > 3 ? 'p-2' : 'p-2.5',
+                  ].join(' ')}
                 >
                   <HeroCardWatermark portraitUrl={portraitUrl} widthClass="w-[62%]" opacityClass="opacity-60" />
                   <div className="relative z-10">

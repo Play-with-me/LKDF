@@ -122,6 +122,11 @@ export function openNullificationWindow(
   targetSeat: number,
   sourceSeat: number,
   scrollNameVi: string,
+  extra?: {
+    readonly originalScrollNameVi?: string;
+    readonly originalTargetSeat?: number;
+    readonly nullifyDepth?: number;
+  },
 ): MasterGameState {
   const clockwise = getClockwiseAliveSeats(state, state.currentTurnSeat, true);
   const eligibleSeats = clockwise.filter((seat) => {
@@ -139,6 +144,9 @@ export function openNullificationWindow(
     targetSeat,
     sourceSeat,
     scrollNameVi,
+    originalScrollNameVi: extra?.originalScrollNameVi ?? scrollNameVi,
+    originalTargetSeat: extra?.originalTargetSeat ?? targetSeat,
+    nullifyDepth: extra?.nullifyDepth ?? 0,
     isSimulatedDelay: eligibleSeats.length === 0,
     eligibleSeats,
     passedSeats: [],

@@ -190,6 +190,9 @@ export type InterruptFrame =
       readonly targetSeat: number;
       readonly sourceSeat: number;
       readonly scrollNameVi: string;
+      readonly originalScrollNameVi?: string;
+      readonly originalTargetSeat?: number;
+      readonly nullifyDepth?: number;
       readonly isSimulatedDelay: boolean;
       readonly eligibleSeats: readonly number[];
       readonly passedSeats: readonly number[];
@@ -431,6 +434,9 @@ export interface PublicInterruptView {
   readonly responderSeat?: number;
   readonly attackerSeat?: number;
   readonly scrollNameVi?: string;
+  readonly originalScrollNameVi?: string;
+  readonly originalTargetSeat?: number;
+  readonly nullifyDepth?: number;
   readonly canRespondNullification?: boolean;
   readonly allowDelayed?: boolean;
   readonly handPick?: 'PREPARE' | 'SELECT';

@@ -429,6 +429,9 @@ export function MatchCenterBoard({
     playerView.actionLog.length > 0
       ? playerView.actionLog[playerView.actionLog.length - 1]
       : null;
+  const statusSubtitle = prompt.isMyTurn
+    ? prompt.detailVi
+    : (latestActionEntry ?? prompt.detailVi);
   const cloudBorderUrl = getUiAssetUrl('tex-cloud-border');
   const inkBaseUrl = getUiAssetUrl('tex-ink-base');
   const plaqueStyle = cloudBorderUrl
@@ -442,21 +445,9 @@ export function MatchCenterBoard({
     : undefined;
 
   return (
-    <div className="lkdf-battle-center-stack flex max-h-full min-h-0 min-w-0 w-full flex-col items-center gap-3">
-      {/* Tier 3: Khung thông báo hành động gần nhất (tách biệt hoàn toàn khỏi thanh trạng thái) */}
-      {latestActionEntry ? (
-        <div className="lkdf-center-tier-banner flex min-h-[24px] w-full max-w-[min(460px,54cqw)] items-center justify-center px-2">
-          <span
-            title={latestActionEntry}
-            className="max-w-full truncate rounded-full border border-[#D99B26]/35 bg-[#17120E]/92 px-3 py-0.5 text-[11px] font-semibold text-[#FDE68A] shadow-sm"
-          >
-            {latestActionEntry}
-          </span>
-        </div>
-      ) : null}
-
-      {/* Tier 1: Thanh trạng thái lượt + 1 dòng hướng dẫn gọn (luôn cách xa tụ bài) */}
-      <div className="mb-1 flex max-w-[min(460px,54cqw)] flex-col items-center gap-1">
+    <div className="lkdf-battle-center-stack flex max-h-full min-h-0 min-w-0 w-full flex-col items-center gap-1.5">
+      {/* Thanh trạng thái lượt + 1 dòng hướng dẫn/nhật ký gọn */}
+      <div className="flex max-w-[min(460px,54cqw)] flex-col items-center gap-0.5">
         <div
           style={plaqueStyle}
           className={
@@ -498,8 +489,8 @@ export function MatchCenterBoard({
 
 
 
-        <p className="max-w-full truncate px-2 text-center text-[11px] text-[#9CA3AF]">
-          {prompt.detailVi}
+        <p title={statusSubtitle} className="max-w-full truncate px-2 text-center text-[11px] text-[#9CA3AF]">
+          {statusSubtitle}
         </p>
       </div>
 
@@ -508,7 +499,7 @@ export function MatchCenterBoard({
         <TakeHandTray key={interrupt.id} interrupt={interrupt} owner={pickTargetPlayer}
           viewerSeat={playerView.viewerSeatIndex} onSendAction={onSendAction} />
       ) : !hasSpecialChoice ? (
-        <div className="lkdf-battle-card-line flex items-end justify-center gap-6 pt-3 pb-2">
+        <div className="lkdf-battle-card-line flex items-end justify-center gap-6 pt-1.5 pb-1">
           {/* Chồng bài rút dạng xấp bài úp */}
           <div className="flex flex-col items-center gap-1.5">
             <div data-motion-draw-pile className="relative flex h-[104px] w-[74px] items-center justify-center">

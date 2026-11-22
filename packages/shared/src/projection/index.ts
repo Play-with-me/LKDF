@@ -68,6 +68,9 @@ function projectTopInterrupt(
         targetSeat: topFrame.targetSeat,
         sourceSeat: topFrame.sourceSeat,
         scrollNameVi: topFrame.scrollNameVi,
+        originalScrollNameVi: topFrame.originalScrollNameVi ?? topFrame.scrollNameVi,
+        originalTargetSeat: topFrame.originalTargetSeat ?? topFrame.targetSeat,
+        nullifyDepth: topFrame.nullifyDepth ?? 0,
         canRespondNullification: !topFrame.isSimulatedDelay &&
           topFrame.eligibleSeats.includes(viewerSeatIndex) &&
           !topFrame.passedSeats.includes(viewerSeatIndex),

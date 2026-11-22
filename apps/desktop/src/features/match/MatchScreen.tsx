@@ -22,6 +22,7 @@ import { playMatchActionCues } from './matchSounds.js';
 import {
   EMPTY_MATCH_SELECTION,
   describePendingActorPrompt,
+  formatMatchErrorVi,
   getRequiredTargetSpec,
 } from './matchTypes.js';
 import type {
@@ -148,7 +149,7 @@ export function MatchScreen({
         onSessionInvalid(info.messageVi);
       },
       onActionError: (err) => {
-        setActionError(err.messageVi);
+        setActionError(formatMatchErrorVi(err.messageVi));
       },
     });
     wsClientRef.current = client;
@@ -158,6 +159,18 @@ export function MatchScreen({
       client.close();
     };
   }, [onReturnToLobby, onSessionInvalid, roomCode, serverUrl, sessionToken, wsReconnectKey]);
+
+  useEffect(() => {
+    if (!actionError) {
+      return undefined;
+    }
+    const timer = window.setTimeout(() => {
+      setActionError(null);
+    }, 2800);
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [actionError]);
 
   // Nháy Taskbar & âm thanh nhắc khi tới lượt hoặc cần phản ứng
   useEffect(() => {
@@ -243,7 +256,7 @@ export function MatchScreen({
         return;
       }
       setActionError(
-        err instanceof Error ? err.message : 'Không thể đồng bộ trạng thái bàn đấu.',
+        formatMatchErrorVi(err, 'Không thể đồng bộ trạng thái bàn đấu.'),
       );
     } finally {
       setIsSyncing(false);
@@ -269,7 +282,7 @@ export function MatchScreen({
         return;
       }
       setActionError(
-        err instanceof Error ? err.message : 'Không thể cập nhật cài đặt âm thanh.',
+        formatMatchErrorVi(err, 'Không thể cập nhật cài đặt âm thanh.'),
       );
     } finally {
       setIsTogglingSound(false);
@@ -288,7 +301,7 @@ export function MatchScreen({
         return;
       }
       setActionError(
-        err instanceof Error ? err.message : 'Không thể rời bàn đấu.',
+        formatMatchErrorVi(err, 'Không thể rời bàn đấu.'),
       );
     } finally {
       setIsLeavingRoom(false);
@@ -314,19 +327,38 @@ export function MatchScreen({
     setSelection(EMPTY_MATCH_SELECTION);
   }, []);
 
-  const handleToggleCard = useCallback((cardId: string) => {
-    setSelection((prev) => {
-      const exists = prev.selectedCardIds.includes(cardId);
-      const nextCards = exists
-        ? prev.selectedCardIds.filter((id) => id !== cardId)
-        : [...prev.selectedCardIds, cardId];
-      return {
-        ...prev,
-        selectedCardIds: nextCards,
-        selectedTargets: exists ? [] : prev.selectedTargets,
-      };
-    });
-  }, []);
+  const handleToggleCard = useCallback(
+    (cardId: string) => {
+      const isMultiCardPhase = Boolean(
+        playerView?.turnPhase === 'DISCARD' ||
+          playerView?.activeInterrupt?.kind === 'ASK_QUAN_THACH_PHU' ||
+          playerView?.activeInterrupt?.kind === 'WAIT_GANG_LIE_CHOICE',
+      );
+      setSelection((prev) => {
+        const allowMulti =
+          isMultiCardPhase ||
+          prev.activeSkillMode === 'ren_de' ||
+          prev.activeSkillMode === 'zhi_heng' ||
+          prev.activeSkillMode === 'jie_yin' ||
+          prev.activeConvertMode === 'truong_bat';
+        const exists = prev.selectedCardIds.includes(cardId);
+        if (exists) {
+          const nextCards = prev.selectedCardIds.filter((id) => id !== cardId);
+          return {
+            ...prev,
+            selectedCardIds: nextCards,
+            selectedTargets: nextCards.length === 0 ? [] : prev.selectedTargets,
+          };
+        }
+        return {
+          ...prev,
+          selectedCardIds: allowMulti ? [...prev.selectedCardIds, cardId] : [cardId],
+          selectedTargets: allowMulti ? prev.selectedTargets : [],
+        };
+      });
+    },
+    [playerView?.activeInterrupt?.kind, playerView?.turnPhase],
+  );
 
   const handleToggleTarget = useCallback(
     (seatIndex: number) => {
@@ -501,7 +533,28 @@ export function MatchScreen({
 
   return (
     <section className="relative flex h-screen w-screen min-h-0 min-w-0 flex-col overflow-hidden bg-[#090807] text-[#EFE6D5]">
-      <MatchSettings error={actionError}>
+      <MatchSettings
+        topRightExtra={
+            <button
+            type="button"
+            title="Tự động bỏ qua cơ hội Vô Giải Khả Kích toàn bàn"
+            aria-pressed={autoSkipNullification}
+            onClick={() => handleToggleAutoSkipNullification(!autoSkipNullification)}
+            className={`cursor-pointer rounded-lg border px-2 py-1 text-[11px] leading-tight font-semibold whitespace-nowrap transition-colors ${
+              autoSkipNullification
+                ? 'border-[#D99B26] bg-[#D99B26]/20 text-[#FDE68A]'
+                : 'border-[#9A7B4F]/60 bg-[#14100D]/95 text-[#D1D5DB] hover:border-[#D99B26]'
+            }`}
+          >
+            <span className="hidden lg:inline">
+              {autoSkipNullification ? '✓ Tự bỏ qua Vô Giải' : 'Tự bỏ qua Vô Giải'}
+            </span>
+            <span className="lg:hidden">
+              {autoSkipNullification ? '✓ Bỏ Vô Giải' : 'Bỏ Vô Giải'}
+            </span>
+          </button>
+        }
+      >
         <label className="mb-3 flex cursor-pointer items-center gap-2 text-xs font-semibold text-[#EFE6D5]">
           <input type="checkbox" checked={autoSkipNullification} onChange={(event) => handleToggleAutoSkipNullification(event.target.checked)} className="accent-[#D99B26]" />
           Tự bỏ qua Vô Giải
@@ -618,6 +671,7 @@ export function MatchScreen({
             pausedRemainingMs={roomPayload.pausedRemainingMs}
             isTimerPaused={roomPayload.roomState.isTimerPaused}
             selection={selection}
+            actionErrorVi={actionError}
             connectionLost={wsStatus === 'DISCONNECTED'}
             onReconnect={handleReconnect}
             onToggleCard={handleToggleCard}

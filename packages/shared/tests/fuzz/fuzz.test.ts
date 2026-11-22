@@ -38,29 +38,49 @@ function assertViewPrivacyStrict(
   viewerSeat: number,
 ): void {
   const isGameOver = master.turnPhase === 'GAME_OVER';
+  const folding =
+    view.activeInterrupt?.handPick === 'SELECT' &&
+    view.activeInterrupt.targetSeat === viewerSeat;
 
   for (const pub of view.players) {
-    const folding = view.activeInterrupt?.handPick === 'SELECT' &&
-      view.activeInterrupt.targetSeat === viewerSeat;
     if (pub.seatIndex === viewerSeat && !folding) {
-      expect(pub.handCards).not.toBeNull();
+      if (pub.handCards === null) {
+        expect(pub.handCards).not.toBeNull();
+      }
     } else {
-      expect(pub.handCards).toBeNull();
-      const masterPlayer = master.players.find((p) => p.seatIndex === pub.seatIndex)!;
+      if (pub.handCards !== null) {
+        expect(pub.handCards).toBeNull();
+      }
+      const indexedPlayer = master.players[pub.seatIndex];
+      const masterPlayer =
+        indexedPlayer && indexedPlayer.seatIndex === pub.seatIndex
+          ? indexedPlayer
+          : master.players.find((p) => p.seatIndex === pub.seatIndex)!;
       const shouldReveal =
-        pub.seatIndex === viewerSeat || masterPlayer.isIdentityRevealed || !masterPlayer.alive || isGameOver;
-      if (!shouldReveal) {
+        pub.seatIndex === viewerSeat ||
+        masterPlayer.isIdentityRevealed ||
+        !masterPlayer.alive ||
+        isGameOver;
+      if (!shouldReveal && pub.identity !== 'UNKNOWN') {
         expect(pub.identity).toBe('UNKNOWN');
       }
     }
   }
 
   if (view.activeInterrupt) {
-    expect('isSimulatedDelay' in view.activeInterrupt).toBe(false);
-    expect('eligibleSeats' in view.activeInterrupt).toBe(false);
+    if ('isSimulatedDelay' in view.activeInterrupt) {
+      expect('isSimulatedDelay' in view.activeInterrupt).toBe(false);
+    }
+    if ('eligibleSeats' in view.activeInterrupt) {
+      expect('eligibleSeats' in view.activeInterrupt).toBe(false);
+    }
     if (view.activeInterrupt.targetSeat !== viewerSeat) {
-      expect(view.activeInterrupt.guanXingCards).toBeUndefined();
-      expect(view.activeInterrupt.yiJiCards).toBeUndefined();
+      if (view.activeInterrupt.guanXingCards !== undefined) {
+        expect(view.activeInterrupt.guanXingCards).toBeUndefined();
+      }
+      if (view.activeInterrupt.yiJiCards !== undefined) {
+        expect(view.activeInterrupt.yiJiCards).toBeUndefined();
+      }
     }
   }
 }

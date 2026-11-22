@@ -784,6 +784,11 @@ export function applyGameAction(
           action.seatIndex,
           action.seatIndex,
           'Vô Giải Khả Kích',
+          {
+            originalScrollNameVi: top.originalScrollNameVi ?? top.scrollNameVi,
+            originalTargetSeat: top.originalTargetSeat ?? top.targetSeat,
+            nullifyDepth: (top.nullifyDepth ?? 0) + 1,
+          },
         );
         next = {
           ...next,

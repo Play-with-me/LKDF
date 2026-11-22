@@ -58,6 +58,7 @@ export interface MatchArenaLayoutProps {
   readonly isTimerPaused: boolean;
   readonly selection: MatchSelectionState;
   readonly connectionLost: boolean;
+  readonly actionErrorVi?: string | null;
   readonly onReconnect: () => void;
   readonly onToggleCard: (cardId: string) => void;
   readonly onToggleTarget: (seatIndex: number) => void;
@@ -211,6 +212,7 @@ export function MatchArenaLayout({
   isTimerPaused,
   selection,
   connectionLost,
+  actionErrorVi = null,
   onReconnect,
   onToggleCard,
   onToggleTarget,
@@ -260,8 +262,16 @@ export function MatchArenaLayout({
     playerView.currentTurnSeat === playerView.viewerSeatIndex &&
     playerView.activeInterrupt === null;
 
+  const isInterruptTargetSelection =
+    playerView.activeInterrupt !== null &&
+    prompt.isMyTurn &&
+    (playerView.activeInterrupt.kind === 'WAIT_TU_XI' ||
+      playerView.activeInterrupt.kind === 'ASK_LIU_LI');
+
   const isTargetSelectionActive =
-    isPlayPhaseSelf && targetSpec.maxTargets > 0 && targetSpec.eligibleSeats.length > 0;
+    (isPlayPhaseSelf || isInterruptTargetSelection) &&
+    targetSpec.maxTargets > 0 &&
+    targetSpec.eligibleSeats.length > 0;
 
   const isDisconnectedBySeat = new Map(
     roomSeats.map((s) => [s.seatIndex, s.connectionStatus === 'DISCONNECTED']),
@@ -312,7 +322,7 @@ export function MatchArenaLayout({
   const handIsFaceDown = playerView.activeInterrupt?.handPick === 'SELECT' &&
     playerView.activeInterrupt.targetSeat === playerView.viewerSeatIndex;
   const availableSkills = isPlayPhaseSelf
-    ? getAvailablePlaySkills(selfPlayer, playerView.turnFlags)
+    ? getAvailablePlaySkills(selfPlayer, playerView.turnFlags, playerView.players)
     : [];
   const availableConverts =
     isPlayPhaseSelf || (playerView.activeInterrupt !== null && prompt.isMyTurn)
@@ -810,11 +820,6 @@ export function MatchArenaLayout({
         data-arena-surface="1"
         className="lkdf-arena-surface relative flex min-h-0 min-w-0 flex-1 overflow-hidden"
       >
-        {discardRemaining > 0 ? (
-          <div role="alert" className="pointer-events-none absolute left-1/2 top-12 z-40 w-max max-w-[calc(100%-2rem)] -translate-x-1/2 rounded-lg border border-[#C83E37] bg-[#641C1B] px-4 py-2 text-center text-sm font-semibold text-[#FFF1EC] shadow-xl">
-            Cần bỏ {discardRemaining} lá để giữ tối đa {discardLimit} lá. Kéo bài xuống bàn để bỏ.
-          </div>
-        ) : null}
         {campBackdropUrl ? (
           <img
             src={campBackdropUrl}
@@ -873,7 +878,7 @@ export function MatchArenaLayout({
             </div>
           ) : (
             <div className="absolute inset-0 z-30 flex items-center justify-center bg-[#0B0E11]/60 p-3">
-              <div className="h-full max-h-[440px] w-full max-w-[780px] min-h-0">
+              <div className="h-full max-h-[440px] w-full max-w-[min(1040px,calc(100%-1rem))] min-h-0">
                 <HeroSelectPanel
                   playerView={playerView}
                   remainingSeconds={
@@ -889,19 +894,33 @@ export function MatchArenaLayout({
               </div>
             </div>
           )}
+        </div>
+      </div>
 
-          {/* Vùng Quăng Bài Trung Tâm khi kéo lá không cần mục tiêu */}
-          {showTableDropBanner && dragState ? (
+      {/* VÙNG 4: THANH ĐÁY RESPONSIVE (TRÁI: TƯỚNG + 4 Ô TRANG BỊ NGỬA | GIỮA: THANH LỆNH THỐNG NHẤT + BÀI TAY CĂN GIỮA) */}
+      <div
+        className="lkdf-battle-dock flex h-[var(--dock-h,196px)] shrink-0 min-w-0 items-stretch gap-2.5 border-t border-[#94A3B8]/32 bg-[#0D1016] px-2.5 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]"
+      >
+        {/* Ngăn xếp nổi thống nhất phía trên Dock: tối đa 1 thông báo thoáng + 1 thanh lệnh/phản ứng (0px đè lên nhau) */}
+        {(() => {
+          const transientPill = actionErrorVi ? (
+            <div
+              role="alert"
+              className="pointer-events-auto w-max max-w-[min(560px,calc(100vw-24px))] rounded-full border border-[#DC2626]/70 bg-[#2A1211]/96 px-3.5 py-1 text-center text-[11.5px] font-bold text-[#FCA5A5] shadow-lg"
+            >
+              {actionErrorVi}
+            </div>
+          ) : showTableDropBanner && dragState ? (
             <div
               data-drop-table="1"
               className={[
-                'pointer-events-none absolute bottom-3 left-1/2 z-25 w-[min(440px,46cqw)] -translate-x-1/2 rounded-xl border-2 border-dashed px-4 py-2 text-center shadow-2xl transition-colors',
+                'pointer-events-none w-[min(440px,46cqw)] rounded-xl border-2 border-dashed px-4 py-1.5 text-center shadow-2xl transition-colors',
                 dragState.hoverTable
                   ? 'lkdf-drop-pulse border-[#FBBF24] bg-[#5C2816]/94'
                   : 'border-[#D99B26]/70 bg-[#14100C]/90',
               ].join(' ')}
             >
-              <span className="font-serif-title text-[12.5px] font-bold text-[#FDE68A]">
+              <span className="font-serif-title text-[12px] font-bold text-[#FDE68A]">
                 ✨{' '}
                 {dragState.intent.kind === 'table'
                   ? dragState.intent.actionLabelVi
@@ -910,30 +929,26 @@ export function MatchArenaLayout({
                     : ''}
               </span>
             </div>
-          ) : null}
-
-          {dragState && (dragState.intent.kind === 'seat' || dragState.intent.kind === 'seat_pair_step1') ? (
-            <div className="pointer-events-none absolute bottom-3 left-1/2 z-24 -translate-x-1/2 rounded-full border border-[#D99B26]/60 bg-[#120E0B]/92 px-3.5 py-1 text-[11px] font-bold text-[#FDE68A] shadow-lg">
+          ) : dragState && (dragState.intent.kind === 'seat' || dragState.intent.kind === 'seat_pair_step1') ? (
+            <div className="pointer-events-none rounded-full border border-[#D99B26]/60 bg-[#120E0B]/92 px-3.5 py-1 text-[11px] font-bold text-[#FDE68A] shadow-lg">
               🎯{' '}
               {dragState.intent.kind === 'seat'
                 ? `Kéo thả thẳng lên 1 ghế sáng viền vàng để ${dragState.intent.actionVerbVi}`
                 : dragState.intent.actionLabelVi}
             </div>
-          ) : null}
-
-          {dragState && dragState.intent.kind === 'blocked' ? (
-            <div className="pointer-events-none absolute bottom-3 left-1/2 z-24 -translate-x-1/2 rounded-full border border-[#DC2626]/55 bg-[#1B1111]/94 px-3.5 py-1 text-[11px] font-semibold text-[#FCA5A5] shadow-lg">
+          ) : dragState && dragState.intent.kind === 'blocked' ? (
+            <div className="pointer-events-none rounded-full border border-[#DC2626]/55 bg-[#1B1111]/94 px-3.5 py-1 text-[11px] font-semibold text-[#FCA5A5] shadow-lg">
               🔒 {dragState.intent.reasonVi}
             </div>
           ) : !dragState && dragFeedbackVi ? (
-            <div className="pointer-events-none absolute bottom-3 left-1/2 z-24 -translate-x-1/2 rounded-full border border-[#A68042]/50 bg-[#14110D]/92 px-3.5 py-1 text-[11px] font-semibold text-[#E6CFA3] shadow-lg">
+            <div className="pointer-events-none rounded-full border border-[#A68042]/50 bg-[#14110D]/92 px-3.5 py-1 text-[11px] font-semibold text-[#E6CFA3] shadow-lg">
               ℹ️ {dragFeedbackVi}
             </div>
           ) : showOnboardingHint && isPlayPhaseSelf && !hasReaction && discardRemaining === 0 ? (
             <div
               role="status"
               data-onboarding-hint="true"
-              className="pointer-events-auto absolute bottom-[52px] left-1/2 z-24 flex w-max max-w-[min(560px,calc(100%-24px))] -translate-x-1/2 items-center gap-2 rounded-full border border-[#B89352]/65 bg-[#120E0B]/92 px-3 py-1 text-[10.5px] font-medium text-[#F4EBD8] shadow-[0_8px_20px_rgba(0,0,0,0.68)]"
+              className="pointer-events-auto flex w-max max-w-[min(560px,calc(100vw-24px))] items-center gap-2 rounded-full border border-[#B89352]/65 bg-[#120E0B]/92 px-3 py-1 text-[10.5px] font-medium text-[#F4EBD8] shadow-[0_8px_20px_rgba(0,0,0,0.68)]"
             >
               <span className="truncate">
                 Mẹo nhanh: Bấm lá bài (phím 1–9) rồi chọn tướng sáng viền vàng · Nhấn E để kết thúc lượt
@@ -949,51 +964,53 @@ export function MatchArenaLayout({
                 Đã hiểu
               </button>
             </div>
-          ) : null}
-        </div>
-      </div>
+          ) : null;
 
-      {/* VÙNG 4: THANH ĐÁY RESPONSIVE (TRÁI: TƯỚNG + 4 Ô TRANG BỊ NGỬA | GIỮA: THANH LỆNH THỐNG NHẤT + BÀI TAY CĂN GIỮA) */}
-      <div
-        className="lkdf-battle-dock flex h-[var(--dock-h,196px)] shrink-0 min-w-0 items-stretch gap-2.5 border-t border-[#94A3B8]/32 bg-[#0D1016] px-2.5 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]"
-      >
-        {/* Thanh Lệnh & Phản Ứng Thống Nhất — luôn căn giữa an toàn trên đáy bàn */}
-        {showNullification ? (
-          <div className="lkdf-dock-floating-bar lkdf-nullification-actions">
-            {renderActionSidebar()}
-          </div>
-        ) : showLocalReaction ? (
-          <div className="lkdf-dock-floating-bar lkdf-battle-reaction max-h-[32dvh] overflow-y-auto">
-            {!isPlayPhaseSelf && availableConverts.length > 0 ? (
-              <div className="flex flex-wrap items-center justify-center gap-1.5" role="group" aria-label="Kỹ năng phản ứng">
-                {skillControls}
-              </div>
-            ) : null}
-            {renderActionSidebar()}
-          </div>
-        ) : discardRemaining > 0 ? (
-          selectedToDiscard.length > 0 ? (
-            <div className="lkdf-dock-floating-bar lkdf-command-bar">
+          const floatingBar = showNullification ? (
+            <div className="lkdf-dock-floating-bar lkdf-nullification-actions pointer-events-auto">
+              {renderActionSidebar()}
+            </div>
+          ) : showLocalReaction ? (
+            <div className="lkdf-dock-floating-bar lkdf-battle-reaction pointer-events-auto max-h-[32dvh] overflow-y-auto">
+              {!isPlayPhaseSelf && availableConverts.length > 0 ? (
+                <div className="flex flex-wrap items-center justify-center gap-1.5" role="group" aria-label="Kỹ năng phản ứng">
+                  {skillControls}
+                </div>
+              ) : null}
+              {renderActionSidebar()}
+            </div>
+          ) : discardRemaining > 0 ? (
+            <div className="lkdf-dock-floating-bar lkdf-command-bar pointer-events-auto">
               <button
                 type="button"
                 disabled={selectedToDiscard.length !== discardRemaining}
                 onClick={() => submitDiscard([...stagedDiscardIds, ...selectedToDiscard.map((card) => card.id)])}
-                className="min-h-[38px] w-max max-w-full cursor-pointer rounded-lg border border-[#C83E37] bg-[#641C1B] px-4 py-1.5 text-xs font-bold text-[#FFF1EC] shadow-lg disabled:opacity-60"
+                className="min-h-[38px] w-max max-w-full cursor-pointer rounded-lg border border-[#C83E37] bg-[#641C1B] px-4 py-1.5 text-xs font-bold text-[#FFF1EC] shadow-lg disabled:cursor-not-allowed disabled:opacity-75"
               >
-                Bỏ {discardRemaining} lá đã chọn ({selectedToDiscard.length}/{discardRemaining})
+                {selectedToDiscard.length === discardRemaining
+                  ? `Bỏ ${discardRemaining} lá đã chọn (${selectedToDiscard.length}/${discardRemaining})`
+                  : `Chọn ${discardRemaining} lá bài để bỏ (${selectedToDiscard.length}/${discardRemaining})`}
               </button>
             </div>
-          ) : null
-        ) : isPlayPhaseSelf && !hasReaction ? (
-          <div className="lkdf-dock-floating-bar lkdf-command-bar">
-            {(availableSkills.length > 0 || availableConverts.length > 0) ? (
-              <div className="flex flex-wrap items-center justify-center gap-1.5" role="group" aria-label="Kỹ năng chủ động">
-                {skillControls}
-              </div>
-            ) : null}
-            {renderActionSidebar()}
-          </div>
-        ) : null}
+          ) : isPlayPhaseSelf && !hasReaction ? (
+            <div className="lkdf-dock-floating-bar lkdf-command-bar pointer-events-auto">
+              {(availableSkills.length > 0 || availableConverts.length > 0) ? (
+                <div className="flex flex-wrap items-center justify-center gap-1.5" role="group" aria-label="Kỹ năng chủ động">
+                  {skillControls}
+                </div>
+              ) : null}
+              {renderActionSidebar()}
+            </div>
+          ) : null;
+
+          if (!transientPill && !floatingBar) return null;
+          return (
+            <div className="lkdf-dock-floating-stack">
+              {transientPill}
+              {floatingBar}
+            </div>
+          );
+        })()}
 
         {/* Cột Trái: Khung Đôi Mẫu B (Hồ sơ Tướng + Huy hiệu kỹ năng | 4 Ô Trang Bị Ngửa 4 hàng rõ chữ) */}
         <div className="lkdf-battle-player flex w-[var(--left-w,340px)] shrink-0 overflow-hidden rounded-[6px] border border-[#94A3B8]/38 bg-[#12161E] shadow-lg">
@@ -1163,20 +1180,46 @@ export function MatchArenaLayout({
 
                 const artUrl = getCardArtUrl(card.cardKey);
                 const sid = `self:${slotKey}`;
-                const active = inspector?.kind === 'card' && inspector.sourceId === sid;
+                const isSelectedEquip = selection.selectedCardIds.includes(card.id);
+                const canToggleEquip = Boolean(
+                  selfPlayer?.alive &&
+                    (selection.activeConvertMode === 'wu_sheng' ||
+                      selection.activeConvertMode === 'ky_tap' ||
+                      selection.activeConvertMode === 'quoc_sac' ||
+                      selection.activeConvertMode === 'cuu_vien' ||
+                      (isPlayPhaseSelf &&
+                        (selection.activeSkillMode === 'zhi_heng' ||
+                          selection.activeSkillMode === 'li_jian')) ||
+                      (prompt.isMyTurn &&
+                        interrupt &&
+                        (interrupt.kind === 'ASK_LIU_LI' ||
+                          (interrupt.kind === 'ASK_QUAN_THACH_PHU' && slotKey !== 'weapon') ||
+                          (interrupt.kind === 'WAIT_PEACH_RESCUE' &&
+                            !isPlayPhaseSelf &&
+                            selfPlayer.heroId === 'hua_tuo')))),
+                );
+                const active =
+                  isSelectedEquip || (inspector?.kind === 'card' && inspector.sourceId === sid);
                 const red = isCardRed(card);
 
                 return (
                   <button
                     key={slotKey}
                     type="button"
-                    onClick={() => handleInspectCard(card, sid, 'Trang bị của bạn')}
+                    aria-pressed={canToggleEquip ? isSelectedEquip : undefined}
+                    onClick={() =>
+                      canToggleEquip
+                        ? onToggleCard(card.id)
+                        : handleInspectCard(card, sid, 'Trang bị của bạn')
+                    }
                     {...cardHover(card)}
                     className={[
                       'flex min-h-0 w-full flex-1 cursor-pointer items-center gap-1.5 rounded border px-1.5 text-left transition-colors',
                       active
                         ? 'border-[#FDE68A] bg-[#E6BE6C]/22 ring-1 ring-[#FDE68A]/55'
-                        : 'border-[#B89352]/55 bg-[#161B23] hover:border-[#E6BE6C]',
+                        : canToggleEquip
+                          ? 'border-[#E6BE6C]/70 bg-[#1B212C] hover:border-[#FDE68A]'
+                          : 'border-[#B89352]/55 bg-[#161B23] hover:border-[#E6BE6C]',
                     ].join(' ')}
                   >
                     {artUrl ? (

@@ -103,6 +103,9 @@ describe('Bước 1.1 — Bộ lọc bảo mật projectStateForPlayer (Chống 
       targetSeat: opponentSeat,
       sourceSeat: lordSeat,
       scrollNameVi: 'Nam Man Nhập Xâm',
+      originalScrollNameVi: 'Nam Man Nhập Xâm',
+      originalTargetSeat: opponentSeat,
+      nullifyDepth: 0,
       canRespondNullification: true,
     });
     const opponentView = projectStateForPlayer(pollutedMaster, seats[opponentSeat]!.userId);

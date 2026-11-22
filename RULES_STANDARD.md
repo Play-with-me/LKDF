@@ -312,5 +312,8 @@ Phần đối chiếu thực tế giữa [packages/shared/src](./packages/shared
    - `Thanh Long Yển Nguyệt Đao` kích hoạt được trong `Tá Đao Sát Nhân` và tôn trọng `Không Thành`; `Tá Đao Sát Nhân` cấm chỉ định Gia Cát Lượng hết tay làm nạn nhân.
    - `Lữ Mông — Khắc Kỷ` tính cả `Sát` đánh ra khi trả lời `Quyết Đấu` trong pha `PLAY` của mình.
    - `Hạ Hầu Đôn — Cương Liệt` kiểm tra chặt đúng `2` lá khi chọn `DISCARD_TWO`.
-8. **🟡 [Edge Case lưu ý vận hành]:**
+8. **✅ [Đã đồng bộ hiển thị & vận hành bàn đấu 2026-11-22]:**
+   - **`Vô Giải Khả Kích` lồng nhau (`combatCore.ts`, `combat.ts`, `projection/index.ts`):** Mang theo `originalScrollNameVi`, `originalTargetSeat` và `nullifyDepth` (chẵn = *Chặn cẩm nang gốc*, lẻ = *Phản Vô Giải*) mà vẫn giữ kín hoàn toàn `isSimulatedDelay` và `eligibleSeats` khỏi `PlayerViewState`. Giao diện áp dụng **Phương án B**: thanh phản ứng giữ đúng **2 nút** trên 1 hàng (`Đánh Vô Giải Khả Kích` / `Không dùng Vô Giải`) kèm công tắc 1 chạm `[Tự bỏ qua Vô Giải]` đặt ngay góc trên phải cạnh nút `Cài đặt`.
+   - **Đồng bộ 6 cửa sổ thao tác theo đúng người cầm bài (`MatchActionSidebar.tsx`, `MatchArenaLayout.tsx`, `matchTypes.ts`):** Chốt đúng `attackerSeat`/`sourceSeat` cho `Tá Đao Sát Nhân`, `Quán Thạch Phủ` (cấm bỏ chính vũ khí), `Thanh Long Yển Nguyệt Đao`, `Hàn Băng Kiếm` (hiện đủ bài Tay `#1..N` và từng ô Trang bị, trừ tuần tự), `Kỳ Lân Cung` (lọc đúng ngựa đang mặc), `Thiết Kỵ`; mở chọn ghế `Đột Tập` (`WAIT_TU_XI`) & `Lưu Ly` (`ASK_LIU_LI`), nút `Khổ Nhục`/`Kích Tướng`, hỗ trợ trang bị ngửa cho kỹ năng chuyển hóa & cứu `Hoa Đà`, và dịch toàn bộ thông báo lỗi sang tiếng Việt (`formatMatchErrorVi`).
+9. **🟡 [Edge Case lưu ý vận hành]:**
    - **Chiều vòng ghế bàn tròn:** Giữ đồng nhất *chiều kim đồng hồ* trên cả 4 vòng (lượt đánh / AOE / Cầu Đào / khoảng cách) như lựa chọn của Chủ dự án.

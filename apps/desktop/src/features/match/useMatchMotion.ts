@@ -67,85 +67,6 @@ function showTurnHandoff(motion: BoardMotion, previous: PlayerViewState, state: 
   });
 }
 
-const tableEffects = {
-  nam_man_nhap_xam: 'Nam Man Nhập Xâm',
-  van_tien_te_phat: 'Vạn Tiễn Tề Phát',
-  dao_vien_ket_nghia: 'Đào Viên Kết Nghĩa',
-  ngu_coc_phong_dang: 'Ngũ Cốc Phong Đăng',
-} as const;
-
-function tableEffectName(state: PlayerViewState) {
-  const prompt = state.activeInterrupt;
-  const actor = state.players.find(player => player.seatIndex === prompt?.sourceSeat);
-  if (!actor || actor.seatIndex === state.viewerSeatIndex) return undefined;
-  let cardName: string | undefined;
-  switch (prompt?.kind) {
-    case 'WAIT_AOE_SAT': cardName = tableEffects.nam_man_nhap_xam; break;
-    case 'WAIT_AOE_DODGE': cardName = tableEffects.van_tien_te_phat; break;
-    case 'WAIT_HARVEST_PICK': cardName = tableEffects.ngu_coc_phong_dang; break;
-    case 'WAIT_NULLIFICATION': cardName = prompt.scrollNameVi; break;
-  }
-  return cardName ? `${actor.displayName} dùng ${cardName}` : undefined;
-}
-
-function opponentCardNotice(previous: PlayerViewState, state: PlayerViewState, freshDiscard: boolean) {
-  const logs = state.actionLog.slice(previous.actionLog.length);
-  for (const player of state.players) {
-    if (player.seatIndex === state.viewerSeatIndex) continue;
-    const prefix = player.displayName + ' ';
-    for (const line of logs) {
-      if (!line.startsWith(prefix)) continue;
-      const action = line.slice(prefix.length);
-      if (action.startsWith('trang bị ')) return line.replace(/\.$/, '');
-      if (action.startsWith('đánh Vô Giải Khả Kích')) return prefix + 'dùng Vô Giải Khả Kích';
-      if (action.startsWith('dùng Đào ')) return prefix + 'dùng Đào';
-      if (action.startsWith('đánh Sát vào ') || action.startsWith('dùng Trượng Bát Xà Mâu đánh Sát')) {
-        return prefix + 'đánh Sát';
-      }
-    }
-  }
-  const card = freshDiscard ? state.discardPileTop : null;
-  if (card?.cardKey === 'thiem' &&
-      (previous.activeInterrupt?.kind === 'WAIT_DODGE' || previous.activeInterrupt?.kind === 'WAIT_AOE_DODGE')) {
-    const actor = state.players.find(player => player.seatIndex === previous.activeInterrupt?.targetSeat);
-    if (actor && actor.seatIndex !== state.viewerSeatIndex) return `${actor.displayName} dùng Thiểm`;
-  }
-  return undefined;
-}
-
-function showTableEffect(motion: BoardMotion, name: string) {
-  const dock = motion.board.querySelector('.lkdf-battle-dock');
-  const player = dock?.querySelector('.lkdf-battle-player');
-  if (!dock || !player) return;
-  motion.layer.querySelector('.lkdf-motion-table-notice')?.remove();
-  const bounds = relativeBounds(motion, player);
-  const notice = document.createElement('div');
-  notice.className = 'lkdf-motion-table-notice';
-  notice.textContent = name;
-  motion.layer.append(notice);
-  position(notice, bounds.x + bounds.width + 8, relativeBounds(motion, dock).y - 4);
-  if (motion.reduced) return notice;
-
-  const fire = document.createElement('video');
-  fire.src = duelFireUrl;
-  fire.muted = true;
-  fire.autoplay = true;
-  fire.playsInline = true;
-  fire.loop = true;
-  notice.prepend(fire);
-  const anchor = relativeBounds(motion, notice);
-  const dx = motion.layer.clientWidth / 2 - anchor.x - anchor.width / 2;
-  const dy = motion.layer.clientHeight * .42 - anchor.y - anchor.height / 2;
-  const center = `${dx}px ${dy}px`;
-  notice.animate([
-    { translate: center, scale: 1.9, opacity: 0 },
-    { translate: center, scale: 2.1, opacity: 1, offset: .12 },
-    { translate: center, scale: 2.1, opacity: 1, offset: .78 },
-    { translate: '0 0', scale: 1, opacity: 1 },
-  ], { duration: 1500, easing: 'ease-in-out' });
-  return notice;
-}
-
 function showEquipmentReveal(motion: BoardMotion, seat: HTMLElement, card: CardInstance) {
   const url = getCardArtUrl(card.cardKey);
   if (!url) return;
@@ -427,7 +348,6 @@ export function useMatchMotion(
   const baseline = useRef<PlayerViewState | null>(null);
   const pending = useRef(new Set<number>());
   const reactions = useRef(new Set<Animation>());
-  const tableNotice = useRef<{ name: string; element: HTMLElement; startedAt: number } | null>(null);
   const arcSeqRef = useRef(0);
   const impactSeqRef = useRef(0);
   const [activeArcs, setActiveArcs] = useState<readonly CombatActionArc[]>([]);
@@ -445,7 +365,6 @@ export function useMatchMotion(
       motionLayer?.replaceChildren();
       if (motionLayer) delete motionLayer.dataset.duel;
       baseline.current = null;
-      tableNotice.current = null;
       setActiveArcs([]);
       setHpImpacts({});
     };
@@ -474,7 +393,6 @@ export function useMatchMotion(
       reactions.current.forEach((animation) => animation.cancel());
       reactions.current.clear();
       motion.layer.replaceChildren();
-      tableNotice.current = null;
       delete motion.layer.dataset.duel;
       setActiveArcs([]);
       setHpImpacts({});
@@ -502,23 +420,6 @@ export function useMatchMotion(
     const strike = previous.discardPileTop;
     const freshDiscard = state.discardPileCount > previous.discardPileCount &&
       state.discardPileTop?.id !== strike?.id;
-    const currentEffect = tableEffectName(state);
-    const previousEffect = tableEffectName(previous);
-    const name = currentEffect ?? opponentCardNotice(previous, state, freshDiscard);
-    if (name && tableNotice.current?.name !== name && name !== previousEffect) {
-      tableNotice.current?.element.remove();
-      const element = showTableEffect(motion, name);
-      tableNotice.current = element ? { name, element, startedAt: performance.now() } : null;
-    }
-    if (!currentEffect && tableNotice.current) {
-      const notice = tableNotice.current;
-      tableNotice.current = null;
-      const timeout = window.setTimeout(() => {
-        pending.current.delete(timeout);
-        notice.element.remove();
-      }, Math.max(0, (motion.reduced ? 650 : 1650) - (performance.now() - notice.startedAt)));
-      pending.current.add(timeout);
-    }
     showTransfers(motion, previous, state);
     const track = (animation: Animation | null) => {
       if (!animation) return;

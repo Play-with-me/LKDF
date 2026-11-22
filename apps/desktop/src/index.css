@@ -189,7 +189,7 @@
 .lkdf-battle-judgment > div { margin: 0; border: 0; padding: 0; }
 .lkdf-battle-hand { padding-top: 5px; padding-bottom: 4px; }
 .lkdf-battle-center { width: clamp(260px, 34cqw, 450px); }
-.lkdf-battle-center-stack { gap: 10px; }
+.lkdf-battle-center-stack { gap: 6px; }
 .lkdf-battle-center-stack > div > p { color: #c5b6a5; }
 .lkdf-battle-card-line { position: relative; width: min(360px, 100%); }
 .lkdf-battle-reaction .lkdf-action-bar {
@@ -221,11 +221,15 @@ html[data-demo-skill] .lkdf-battle-reaction {
 .lkdf-battle-harvest button .font-serif-title { font-size: 9px; }
 
 @media (max-height: 650px) {
-  .lkdf-battle-center { top: 49%; }
-  .lkdf-battle-card-line .lkdf-card-gwent { height: 80px; width: 57px; }
-  .lkdf-battle-card-line [data-motion-draw-pile] { height: 80px; width: 57px; }
-  .lkdf-battle-card-line > :last-child > :first-child { min-height: 80px; }
+  .lkdf-battle-center { top: 50.5%; }
+  .lkdf-battle-center-stack { gap: 4px; }
+  .lkdf-battle-card-line .lkdf-card-gwent { height: 70px; width: 50px; }
+  .lkdf-battle-card-line [data-motion-draw-pile] { height: 70px; width: 50px; }
+  .lkdf-battle-card-line > :last-child > :first-child { min-height: 70px; }
   .lkdf-battle-harvest button { height: 67px; }
+  .lkdf-dock-floating-bar { padding-top: 3px !important; padding-bottom: 3px !important; }
+  .lkdf-dock-floating-bar button { min-height: 34px !important; padding-top: 4px !important; padding-bottom: 4px !important; }
+  .lkdf-hover-description { padding: 5px 9px !important; font-size: 11px !important; line-height: 1.3 !important; }
   .lkdf-battle-reaction .lkdf-action-bar p { font-size: 11px; }
   .lkdf-battle-profile { padding: 5px 6px !important; }
   .lkdf-battle-equip { padding: 4px 5px !important; gap: 2px !important; }
@@ -513,18 +517,18 @@ dialog[open]::backdrop {
 .lkdf-hover-description {
   position: fixed;
   z-index: 80;
-  width: min(280px, calc(100vw - 16px));
-  padding: 10px 12px;
+  width: min(310px, calc(100vw - 16px));
+  padding: 6px 10px;
   border: 1px solid #b68c5b;
   border-radius: 6px;
   background: #261c18;
   color: #f8e7c4;
-  font-size: 13px;
-  line-height: 1.45;
+  font-size: 11.5px;
+  line-height: 1.32;
   pointer-events: none;
   box-shadow: 0 8px 25px #000a;
 }
-.lkdf-hover-description p { margin: 4px 0 0; }
+.lkdf-hover-description p { margin: 2px 0 0; }
 .lkdf-hero-skill-label {
   padding: 1px 4px;
   border: 1px solid #777d86;
@@ -540,19 +544,29 @@ dialog[open]::backdrop {
   color: #163a2d;
 }
 .lkdf-hand-row { --card-h: clamp(108px, calc(18cqh + 18px), 165px); }
-.lkdf-dock-floating-bar {
+.lkdf-dock-floating-stack {
   position: absolute;
   left: 50%;
   bottom: calc(100% + 8px);
   transform: translateX(-50%);
   z-index: 32;
   display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: max-content;
+  max-width: clamp(320px, calc(100vw - 436px), 700px);
+  pointer-events: none;
+}
+.lkdf-dock-floating-bar {
+  position: relative;
+  display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 6px;
   width: max-content;
-  max-width: calc(100vw - 24px);
+  max-width: 100%;
 }
 .lkdf-nullification-actions button,
 .lkdf-battle-reaction button {
@@ -637,34 +651,6 @@ dialog[open]::backdrop {
   border: 2px solid #e6be6c;
   border-radius: 6px;
   box-shadow: 0 0 14px #c89b4b, inset 0 0 8px #c89b4b88;
-}
-.lkdf-motion-table-notice {
-  z-index: 18;
-  transform: translateY(-100%);
-  margin-top: -52px;
-  isolation: isolate;
-  overflow: hidden;
-  max-width: min(360px, 42vw);
-  padding: 5px 10px;
-  border: 1px solid #e8bf85;
-  border-radius: 5px;
-  background: #21150e;
-  color: #fff2d4;
-  font-size: clamp(11px, 1.05vw, 13px);
-  font-weight: 800;
-  box-shadow: 0 0 16px #e4a05d66;
-}
-.lkdf-motion-table-notice video {
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center bottom;
-  mix-blend-mode: screen;
-  opacity: .42;
-  mask-image: linear-gradient(transparent 12%, #000);
 }
 .lkdf-battle-card-line [data-recent-discard='older']:not(:hover):not(:focus-visible) {
   scale: .86;

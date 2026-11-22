@@ -91,9 +91,10 @@ export function SeatCard({
     setPhotoFailed(false);
   }, [heroPortraitUrl, player.avatarUrl]);
 
-  const distance = player.alive
-    ? calculateDistance(playerView, playerView.viewerSeatIndex, player.seatIndex)
-    : Number.POSITIVE_INFINITY;
+  const distance =
+    playerView.turnPhase !== 'HERO_SELECT' && player.alive
+      ? calculateDistance(playerView, playerView.viewerSeatIndex, player.seatIndex)
+      : Number.POSITIVE_INFINITY;
   const identityLabel = player.isIdentityRevealed
     ? getIdentityLabelVi(player.identity)
     : 'Ẩn';
@@ -157,7 +158,7 @@ export function SeatCard({
   });
   const delayedItems = openCards.filter(item => item.sourceId.includes(':delayed:'));
 
-  const isDying = player.alive && player.hp <= 0;
+  const isDying = playerView.turnPhase !== 'HERO_SELECT' && player.alive && player.hp <= 0;
 
   return (
     <div

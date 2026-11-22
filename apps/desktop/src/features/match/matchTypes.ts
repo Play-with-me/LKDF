@@ -22,7 +22,9 @@ import type {
 
 export type PlaySkillMode =
   | 'ren_de'
+  | 'ji_jiang'
   | 'zhi_heng'
+  | 'ku_rou'
   | 'fan_jian'
   | 'jie_yin'
   | 'qing_nang'
@@ -208,16 +210,29 @@ export function getOrderedSeatsClockwiseFromSelf(
   return [...sorted.slice(idx), ...sorted.slice(0, idx)];
 }
 
+export function getPlayerOwnedCards(
+  player: PublicPlayerView | undefined,
+): CardInstance[] {
+  if (!player) return [];
+  const cards: CardInstance[] = [...(player.handCards ?? [])];
+  if (player.equipments.weapon) cards.push(player.equipments.weapon);
+  if (player.equipments.armor) cards.push(player.equipments.armor);
+  if (player.equipments.plusOneHorse) cards.push(player.equipments.plusOneHorse);
+  if (player.equipments.minusOneHorse) cards.push(player.equipments.minusOneHorse);
+  return cards;
+}
+
 export function getAvailablePlaySkills(
   player: PublicPlayerView | undefined,
   turnFlags?: TurnFlags,
+  players?: readonly PublicPlayerView[],
 ): readonly PlaySkillOption[] {
   if (!player || !player.alive || !player.heroId) {
     return [];
   }
   const skills: PlaySkillOption[] = [];
   switch (player.heroId) {
-    case 'liu_bei':
+    case 'liu_bei': {
       if (player.handCount > 0) {
         skills.push({
           id: 'ren_de',
@@ -225,15 +240,47 @@ export function getAvailablePlaySkills(
           descriptionVi: 'Chọn bài trên tay rồi chọn 1 đồng đội để giao bài (giao từ 2 lá hồi 1 máu).',
         });
       }
+      const hasShuAlly =
+        !players ||
+        players.some(
+          (p) =>
+            p.alive &&
+            p.seatIndex !== player.seatIndex &&
+            p.heroId !== null &&
+            getHeroDefinition(p.heroId).faction === 'SHU',
+        );
+      const canUseSatThisTurn =
+        player.equipments.weapon?.cardKey === 'gia_cat_lien_no' ||
+        (turnFlags?.satUsedThisTurn ?? 0) < 1;
+      if (
+        player.identity === 'LORD' &&
+        canUseSatThisTurn &&
+        !turnFlags?.jiJiangDeclinedThisTurn &&
+        hasShuAlly
+      ) {
+        skills.push({
+          id: 'ji_jiang',
+          nameVi: 'Kích Tướng',
+          descriptionVi: 'Chủ Công xin đồng minh Thục đánh 1 lá Sát vào mục tiêu trong tầm.',
+        });
+      }
       break;
+    }
     case 'sun_quan':
       if (!turnFlags?.zhiHengUsedThisTurn) {
         skills.push({
           id: 'zhi_heng',
           nameVi: 'Chế Hành',
-          descriptionVi: 'Chọn bất kỳ lá bài trên tay để bỏ và rút lại đúng bấy nhiêu lá (1 lần/lượt).',
+          descriptionVi: 'Chọn bất kỳ lá bài trên tay hoặc trang bị để bỏ và rút lại đúng bấy nhiêu lá (1 lần/lượt).',
         });
       }
+      break;
+    case 'huang_gai':
+      skills.push({
+        id: 'ku_rou',
+        nameVi: 'Khổ Nhục',
+        descriptionVi: 'Tự mất 1 máu để rút 2 lá bài (không giới hạn số lần mỗi lượt).',
+      });
       break;
     case 'zhou_yu':
       if (!turnFlags?.fanJianUsedThisTurn && player.handCount > 0) {
@@ -262,8 +309,13 @@ export function getAvailablePlaySkills(
         });
       }
       break;
-    case 'diao_chan':
-      if (!turnFlags?.liJianUsedThisTurn && player.handCount >= 1) {
+    case 'diao_chan': {
+      const hasEquip =
+        player.equipments.weapon !== null ||
+        player.equipments.armor !== null ||
+        player.equipments.plusOneHorse !== null ||
+        player.equipments.minusOneHorse !== null;
+      if (!turnFlags?.liJianUsedThisTurn && (player.handCount >= 1 || hasEquip)) {
         skills.push({
           id: 'li_jian',
           nameVi: 'Ly Gián',
@@ -271,6 +323,7 @@ export function getAvailablePlaySkills(
         });
       }
       break;
+    }
     default:
       break;
   }
@@ -362,7 +415,7 @@ export function getAvailableConvertModes(
 
 export function getEffectivePlayCardKey(
   selection: MatchSelectionState,
-  handCards: readonly CardInstance[],
+  ownedCards: readonly CardInstance[],
 ): string | null {
   if (selection.activeConvertMode) {
     switch (selection.activeConvertMode) {
@@ -382,7 +435,7 @@ export function getEffectivePlayCardKey(
     }
   }
   if (selection.selectedCardIds.length === 1) {
-    const card = handCards.find((c) => c.id === selection.selectedCardIds[0]);
+    const card = ownedCards.find((c) => c.id === selection.selectedCardIds[0]);
     return card?.cardKey ?? null;
   }
   return null;
@@ -415,6 +468,38 @@ export function getRequiredTargetSpec(
     (p) => p.alive && p.seatIndex !== view.viewerSeatIndex,
   );
 
+  if (
+    view.activeInterrupt?.kind === 'WAIT_TU_XI' &&
+    view.activeInterrupt.targetSeat === view.viewerSeatIndex
+  ) {
+    return {
+      minTargets: 1,
+      maxTargets: 2,
+      eligibleSeats: aliveOthers.filter((p) => p.handCount > 0).map((p) => p.seatIndex),
+      promptVi: 'Đột Tập: chọn 1 đến 2 đối thủ còn bài trên tay',
+    };
+  }
+
+  if (
+    view.activeInterrupt?.kind === 'ASK_LIU_LI' &&
+    view.activeInterrupt.targetSeat === view.viewerSeatIndex
+  ) {
+    const sourceSeat = view.activeInterrupt.sourceSeat;
+    return {
+      minTargets: 1,
+      maxTargets: 1,
+      eligibleSeats: aliveOthers
+        .filter(
+          (p) =>
+            p.seatIndex !== sourceSeat &&
+            isInAttackRange(view, view.viewerSeatIndex, p.seatIndex) &&
+            !isKongChengProtected(p),
+        )
+        .map((p) => p.seatIndex),
+      promptVi: 'Lưu Ly: chọn 1 người khác trong tầm đánh để chuyển Sát',
+    };
+  }
+
   if (selection.activeSkillMode) {
     switch (selection.activeSkillMode) {
       case 'ren_de':
@@ -424,7 +509,21 @@ export function getRequiredTargetSpec(
           eligibleSeats: aliveOthers.map((p) => p.seatIndex),
           promptVi: 'Hãy bấm chọn 1 người chơi để giao bài (Nhân Đức)',
         };
+      case 'ji_jiang':
+        return {
+          minTargets: 1,
+          maxTargets: 1,
+          eligibleSeats: aliveOthers
+            .filter(
+              (p) =>
+                isInAttackRange(view, view.viewerSeatIndex, p.seatIndex) &&
+                !isKongChengProtected(p),
+            )
+            .map((p) => p.seatIndex),
+          promptVi: 'Hãy bấm chọn 1 mục tiêu trong tầm đánh để Kích Tướng',
+        };
       case 'zhi_heng':
+      case 'ku_rou':
         return { minTargets: 0, maxTargets: 0, eligibleSeats: [], promptVi: '' };
       case 'fan_jian':
         return {
@@ -464,7 +563,10 @@ export function getRequiredTargetSpec(
             .filter(
               (p) =>
                 p.heroId !== null &&
-                getHeroDefinition(p.heroId).gender === 'MALE',
+                getHeroDefinition(p.heroId).gender === 'MALE' &&
+                (selection.selectedTargets.length === 0 ||
+                  (p.seatIndex !== selection.selectedTargets[0] &&
+                    !isKongChengProtected(p))),
             )
             .map((p) => p.seatIndex),
           promptVi:
@@ -476,7 +578,8 @@ export function getRequiredTargetSpec(
   }
 
   const handCards = viewer.handCards ?? [];
-  const effectiveKey = getEffectivePlayCardKey(selection, handCards);
+  const ownedCards = getPlayerOwnedCards(viewer);
+  const effectiveKey = getEffectivePlayCardKey(selection, ownedCards);
   if (!effectiveKey) {
     return { minTargets: 0, maxTargets: 0, eligibleSeats: [], promptVi: '' };
   }
@@ -674,15 +777,31 @@ export function describePendingActorPrompt(view: PlayerViewState): TurnActorProm
     const attackerName = getPlayerSeatLabel(view.players, interrupt.attackerSeat);
 
     switch (interrupt.kind) {
-      case 'WAIT_NULLIFICATION':
+      case 'WAIT_NULLIFICATION': {
+        const nullifyInterrupt = interrupt as typeof interrupt & {
+          readonly originalScrollNameVi?: string;
+          readonly originalTargetSeat?: number;
+          readonly nullifyDepth?: number;
+        };
+        const origName =
+          nullifyInterrupt.originalScrollNameVi ?? interrupt.scrollNameVi ?? 'Cẩm nang';
+        const origTargetSeat = nullifyInterrupt.originalTargetSeat ?? interrupt.targetSeat;
+        const origTargetName = getPlayerSeatLabel(view.players, origTargetSeat);
+        const depth = nullifyInterrupt.nullifyDepth ?? 0;
+        const isCounter = depth % 2 === 1;
         return {
-          headlineVi: 'Đang chờ phản ứng Vô Giải Khả Kích toàn bàn...',
-          detailVi: `Cẩm nang sắp có hiệu lực: ${interrupt.scrollNameVi ?? 'Cẩm nang'} (Mục tiêu: ${targetName}).`,
+          headlineVi: isCounter
+            ? 'Đang chờ phản Vô Giải Khả Kích...'
+            : 'Đang chờ phản ứng Vô Giải Khả Kích toàn bàn...',
+          detailVi: isCounter
+            ? `${origName} → ${origTargetName}. Phản Vô Giải sẽ giữ cẩm nang gốc tiếp tục hiệu lực.`
+            : `Cẩm nang sắp có hiệu lực: ${origName} (Mục tiêu: ${origTargetName}).`,
           actorSeat: null,
           actorNameVi: null,
           isMyTurn: interrupt.canRespondNullification === true,
           isAllTableWait: true,
         };
+      }
       case 'ASK_TU_HUNG':
         return {
           headlineVi:
@@ -829,8 +948,8 @@ export function describePendingActorPrompt(view: PlayerViewState): TurnActorProm
         return {
           headlineVi:
             interrupt.sourceSeat === viewerSeat
-              ? `Hãy chọn 1 khu bài của ${targetName} để lấy hoặc hủy`
-              : `Đang chờ ${sourceName} chọn bài từ ${targetName}...`,
+              ? `Hãy chọn 1 khu bài của ${targetName} để ${interrupt.stealing ? 'lấy 1 lá về tay' : 'hủy bỏ 1 lá'}`
+              : `Đang chờ ${sourceName} ${interrupt.stealing ? 'lấy' : 'hủy'} bài từ ${targetName}...`,
           detailVi: 'Chọn từ Tay bài, Trang bị hoặc khu Thời gian ở trung tâm bàn.',
           actorSeat: interrupt.sourceSeat ?? null,
           actorNameVi: sourceName,
@@ -1272,10 +1391,10 @@ export function buildCardDragDropIntent(
       return { kind: 'blocked', reasonVi: 'Cần lá Thiểm để né đòn.' };
     }
     if (
-      (interrupt.kind === 'WAIT_AOE_SAT' ||
-        interrupt.kind === 'WAIT_DUEL_SAT' ||
-        interrupt.kind === 'WAIT_COLLATERAL_SAT') &&
-      interrupt.targetSeat === selfSeat
+      interrupt.kind === 'WAIT_COLLATERAL_SAT'
+        ? interrupt.attackerSeat === selfSeat
+        : (interrupt.kind === 'WAIT_AOE_SAT' || interrupt.kind === 'WAIT_DUEL_SAT') &&
+          interrupt.targetSeat === selfSeat
     ) {
       const canWuSheng = selfPlayer.heroId === 'guan_yu' && isRedSuit(card.suit);
       const canLongDan = selfPlayer.heroId === 'zhao_yun' && card.cardKey === 'thiem';
@@ -1467,4 +1586,95 @@ export function buildCardDragDropIntent(
     kind: 'blocked',
     reasonVi: '',
   };
+}
+
+const MATCH_ERROR_VI_MAP: Readonly<Record<string, string>> = {
+  SAT_LIMIT_REACHED: 'Bạn đã dùng Sát trong lượt này rồi.',
+  HP_ALREADY_FULL: 'Máu đang đầy, chưa thể dùng Đào.',
+  TARGET_OUT_OF_RANGE: 'Mục tiêu nằm ngoài tầm đánh.',
+  SNATCH_TARGET_OUT_OF_RANGE: 'Mục tiêu nằm ngoài khoảng cách 1.',
+  TARGET_IMMUNE_TO_CARD: 'Mục tiêu miễn nhiễm với lá bài này.',
+  CANNOT_DISCARD_QUAN_THACH_PHU_SELF:
+    'Không thể bỏ chính Quán Thạch Phủ để kích hoạt Quán Thạch Phủ.',
+  DELAYED_ZONE_NOT_ALLOWED: 'Không thể chọn lá ở khu Thời gian.',
+  SIMULATED_DELAY_CANNOT_BE_ANSWERED_BY_PLAYER:
+    'Đang giữ nhịp chờ Vô Giải (2–3.5s) để tránh lộ bài.',
+  INVALID_LIU_LI_TARGET: 'Mục tiêu Lưu Ly phải là người khác trong tầm đánh.',
+  LIU_LI_REQUIRES_CARD_AND_TARGET: 'Lưu Ly cần chọn 1 lá bài và 1 mục tiêu trong tầm.',
+  JI_JIANG_NOT_AVAILABLE: 'Không thể kích hoạt Kích Tướng lúc này.',
+  NO_SHU_ALLIES_FOR_JI_JIANG: 'Không còn đồng minh Thục để hưởng ứng Kích Tướng.',
+  HU_JIA_NOT_AVAILABLE: 'Không thể kích hoạt Hộ Giá lúc này.',
+  NO_WEI_ALLIES_FOR_HU_JIA: 'Không còn đồng minh Ngụy để hưởng ứng Hộ Giá.',
+  BAGUA_NOT_AVAILABLE: 'Không thể dùng Bát Quái Trận lúc này.',
+  QUAN_THACH_PHU_REQUIRES_2_CARDS: 'Quán Thạch Phủ cần chọn đúng 2 lá bài để bỏ.',
+  HAN_BANG_KIEM_MUST_PICK_1_OR_2_CARDS: 'Hàn Băng Kiếm chỉ hủy 1 hoặc 2 lá của mục tiêu.',
+  INTERRUPT_PENDING: 'Đang có phản ứng khác cần xử lý trước.',
+  NOT_IN_PLAY_PHASE: 'Hiện không phải pha Đánh bài.',
+  NOT_IN_DISCARD_PHASE: 'Hiện không phải pha Bỏ bài.',
+  DEAD_PLAYER_CANNOT_ACT: 'Tướng đã tử trận, không thể thao tác.',
+  INVALID_TWO_CARD_COMBO: 'Cần chọn đúng 2 lá bài trên tay cho Trượng Bát Xà Mâu.',
+  INVALID_STRIKE_TARGET_COUNT: 'Số lượng mục tiêu cho Sát chưa hợp lệ.',
+  MUST_SELECT_ONE_CARD: 'Vui lòng chọn 1 lá bài.',
+  NOT_A_SAT_CARD: 'Lá bài đã chọn không phải lá Sát.',
+  NOT_A_THIEM_CARD: 'Lá bài đã chọn không phải lá Thiểm.',
+  NOT_A_DAO_CARD: 'Lá bài đã chọn không phải lá Đào.',
+  NOT_A_NULLIFICATION_CARD: 'Lá bài đã chọn không phải Vô Giải Khả Kích.',
+  INVALID_DELAYED_TARGET: 'Mục tiêu đặt cẩm nang thời gian không hợp lệ.',
+  TARGET_ALREADY_HAS_LAC: 'Mục tiêu đã có Lạc Bất Tư Thục trước mặt.',
+  ALREADY_HAS_THIEM_DIEN: 'Bạn đã có Thiểm Điện trước mặt rồi.',
+  INVALID_DISMANTLE_TARGET: 'Không thể dùng Quá Hà Sái Cầu lên chính mình.',
+  TARGET_HAS_NO_CARDS: 'Mục tiêu không có lá bài nào.',
+  INVALID_DUEL_TARGET: 'Không thể Quyết Đấu với chính mình.',
+  INVALID_COLLATERAL_TARGETS: 'Mục tiêu Tá Đao Sát Nhân không hợp lệ.',
+  TARGET_NOT_ALIVE: 'Mục tiêu đã tử trận.',
+  NULLIFICATION_ALREADY_PASSED: 'Bạn đã bỏ qua Vô Giải Khả Kích cho lượt này.',
+  NOT_ELIGIBLE_FOR_NULLIFICATION: 'Hiện không thể đánh Vô Giải Khả Kích.',
+  INVALID_TU_XI_TARGETS: 'Mục tiêu Đột Tập không hợp lệ.',
+  MATCH_ALREADY_FINISHED: 'Ván đấu đã kết thúc.',
+  INVALID_SAT_CARD_COUNT: 'Số lượng lá Sát không hợp lệ.',
+  CARD_NOT_IN_HAND: 'Lá bài không còn trên tay.',
+};
+
+/** Chuyển mọi mã lỗi kỹ thuật từ engine/WS thành thông báo tiếng Việt dễ hiểu. */
+export function formatMatchErrorVi(
+  err: unknown,
+  fallback = 'Thao tác chưa hợp lệ.',
+): string {
+  const raw =
+    err instanceof Error ? err.message : typeof err === 'string' ? err : '';
+  const trimmed = raw.trim();
+  if (!trimmed) {
+    return fallback;
+  }
+  const direct = MATCH_ERROR_VI_MAP[trimmed];
+  if (direct) {
+    return direct;
+  }
+  if (trimmed.startsWith('CARD_CANNOT_BE_PLAYED_DIRECTLY:')) {
+    const cardKey = trimmed.slice('CARD_CANNOT_BE_PLAYED_DIRECTLY:'.length);
+    if (cardKey === 'thiem') {
+      return 'Lá Thiểm chỉ dùng khi né Sát hoặc Vạn Tiễn.';
+    }
+    if (cardKey === 'vo_giai_kha_kich') {
+      return 'Vô Giải Khả Kích chỉ dùng khi Cẩm nang sắp có hiệu lực.';
+    }
+    return 'Lá bài này không thể đánh trực tiếp lúc này.';
+  }
+  if (trimmed.startsWith('MUST_DISCARD_EXACTLY:')) {
+    const count = trimmed.slice('MUST_DISCARD_EXACTLY:'.length);
+    return `Cần chọn đúng ${count} lá bài để bỏ.`;
+  }
+  if (trimmed.startsWith('CANNOT_CONVERT_CARD_AS:')) {
+    return 'Lá bài đã chọn không đủ điều kiện chuyển đổi.';
+  }
+  if (trimmed.startsWith('CARD_NOT_IN_HAND:')) {
+    return 'Lá bài không còn trên tay.';
+  }
+  if (trimmed.startsWith('CARD_NOT_OWNED:')) {
+    return 'Bạn không sở hữu lá bài này.';
+  }
+  if (trimmed.startsWith('EXPECTED_INTERRUPT:')) {
+    return 'Trạng thái phản ứng đã thay đổi, vui lòng thử lại.';
+  }
+  return /^[A-Z0-9_:]+$/.test(trimmed) ? fallback : trimmed;
 }

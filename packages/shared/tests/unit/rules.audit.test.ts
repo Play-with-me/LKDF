@@ -3,6 +3,7 @@ import {
   applyGameAction,
   canUseCollateralMurder,
   getPendingPrompt,
+  projectStateForPlayer,
   STANDARD_DECK_TEMPLATES,
   type CardInstance,
   type MasterGameState,
@@ -465,5 +466,109 @@ describe('Kiểm chứng toàn diện chuẩn luật Yoka Standard (1A + 2A)', (
     state = applyGameAction(state, { type: 'END_PLAY_PHASE', seatIndex: 0 });
     expect(state.turnPhase).toBe('DISCARD');
     expect(getPendingPrompt(state)?.kind).toBe('DISCARD');
+  });
+
+  it('Vô Giải Khả Kích lồng nhau (nullifyDepth 0 -> 1 -> 2): giữ nguyên originalScrollNameVi, originalTargetSeat và không rò rỉ isSimulatedDelay/eligibleSeats', () => {
+    const quaHa = card('qua_ha_sai_cau', 'Quá Hà Sách Kiều', 'NORMAL_SCROLL', 'SPADE', 3);
+    const vg1 = card('vo_giai_kha_kich', 'Vô Giải Khả Kích 1', 'NORMAL_SCROLL', 'SPADE', 11);
+    const vg2 = card('vo_giai_kha_kich', 'Vô Giải Khả Kích 2', 'NORMAL_SCROLL', 'CLUB', 12);
+    const targetCard = card('dao', 'Đào mục tiêu', 'BASIC', 'HEART', 5);
+
+    let state: MasterGameState = {
+      ...makeState(4, {
+        0: { heroId: 'cao_cao', handCards: [quaHa] },
+        1: { heroId: 'liu_bei', handCards: [vg1, targetCard] },
+        2: { heroId: 'sun_quan', handCards: [vg2] },
+      }),
+      refereeAuditLog: [],
+      winnerUserIds: [],
+    };
+
+    // Độ sâu 0: Ghế 0 dùng Quá Hà Sách Kiều nhắm vào Ghế 1
+    state = applyGameAction(state, {
+      type: 'PLAY_CARD',
+      seatIndex: 0,
+      cardIds: [quaHa.id],
+      targetSeats: [1],
+    });
+
+    const top0 = state.interruptStack[state.interruptStack.length - 1];
+    expect(top0?.kind).toBe('WAIT_NULLIFICATION');
+    if (top0?.kind === 'WAIT_NULLIFICATION') {
+      expect(top0.scrollNameVi).toBe('Quá Hà Sách Kiều');
+      expect(top0.originalScrollNameVi).toBe('Quá Hà Sách Kiều');
+      expect(top0.originalTargetSeat).toBe(1);
+      expect(top0.nullifyDepth).toBe(0);
+    }
+
+    const view0 = projectStateForPlayer(state, state.players[1]!.userId);
+    expect(view0.activeInterrupt).toMatchObject({
+      kind: 'WAIT_NULLIFICATION',
+      scrollNameVi: 'Quá Hà Sách Kiều',
+      originalScrollNameVi: 'Quá Hà Sách Kiều',
+      originalTargetSeat: 1,
+      nullifyDepth: 0,
+      canRespondNullification: true,
+    });
+    expect('isSimulatedDelay' in (view0.activeInterrupt ?? {})).toBe(false);
+    expect('eligibleSeats' in (view0.activeInterrupt ?? {})).toBe(false);
+
+    // Độ sâu 1: Ghế 1 đánh Vô Giải Khả Kích phản bác Quá Hà Sách Kiều
+    state = applyGameAction(state, {
+      type: 'RESPOND_NULLIFICATION',
+      seatIndex: 1,
+      cardId: vg1.id,
+    });
+
+    const top1 = state.interruptStack[state.interruptStack.length - 1];
+    expect(top1?.kind).toBe('WAIT_NULLIFICATION');
+    if (top1?.kind === 'WAIT_NULLIFICATION') {
+      expect(top1.scrollNameVi).toBe('Vô Giải Khả Kích');
+      expect(top1.targetSeat).toBe(1);
+      expect(top1.originalScrollNameVi).toBe('Quá Hà Sách Kiều');
+      expect(top1.originalTargetSeat).toBe(1);
+      expect(top1.nullifyDepth).toBe(1);
+    }
+
+    const view1 = projectStateForPlayer(state, state.players[2]!.userId);
+    expect(view1.activeInterrupt).toMatchObject({
+      kind: 'WAIT_NULLIFICATION',
+      scrollNameVi: 'Vô Giải Khả Kích',
+      originalScrollNameVi: 'Quá Hà Sách Kiều',
+      originalTargetSeat: 1,
+      nullifyDepth: 1,
+      canRespondNullification: true,
+    });
+    expect('isSimulatedDelay' in (view1.activeInterrupt ?? {})).toBe(false);
+    expect('eligibleSeats' in (view1.activeInterrupt ?? {})).toBe(false);
+
+    // Độ sâu 2: Ghế 2 đánh Vô Giải Khả Kích phản bác lại Vô Giải Khả Kích của Ghế 1
+    state = applyGameAction(state, {
+      type: 'RESPOND_NULLIFICATION',
+      seatIndex: 2,
+      cardId: vg2.id,
+    });
+
+    const top2 = state.interruptStack[state.interruptStack.length - 1];
+    expect(top2?.kind).toBe('WAIT_NULLIFICATION');
+    if (top2?.kind === 'WAIT_NULLIFICATION') {
+      expect(top2.scrollNameVi).toBe('Vô Giải Khả Kích');
+      expect(top2.targetSeat).toBe(2);
+      expect(top2.originalScrollNameVi).toBe('Quá Hà Sách Kiều');
+      expect(top2.originalTargetSeat).toBe(1);
+      expect(top2.nullifyDepth).toBe(2);
+    }
+
+    const view2 = projectStateForPlayer(state, state.players[0]!.userId);
+    expect(view2.activeInterrupt).toMatchObject({
+      kind: 'WAIT_NULLIFICATION',
+      scrollNameVi: 'Vô Giải Khả Kích',
+      originalScrollNameVi: 'Quá Hà Sách Kiều',
+      originalTargetSeat: 1,
+      nullifyDepth: 2,
+      canRespondNullification: false,
+    });
+    expect('isSimulatedDelay' in (view2.activeInterrupt ?? {})).toBe(false);
+    expect('eligibleSeats' in (view2.activeInterrupt ?? {})).toBe(false);
   });
 });

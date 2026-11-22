@@ -33,6 +33,7 @@ import { playMatchActionCues } from './matchSounds.js';
 import {
   EMPTY_MATCH_SELECTION,
   describePendingActorPrompt,
+  formatMatchErrorVi,
   getRequiredTargetSpec,
 } from './matchTypes.js';
 import type {
@@ -153,10 +154,20 @@ export function DevMatchPreview({
     if (!prompt) {
       return undefined;
     }
-    if (prompt.actorSeats.includes(0)) {
+    const isSimulatedNullify =
+      prompt.kind === 'WAIT_NULLIFICATION' && prompt.isSimulatedDelay;
+    const botActorSeat =
+      prompt.kind === 'WAIT_NULLIFICATION' && !isSimulatedNullify
+        ? prompt.actorSeats.find((s) => s !== 0)
+        : prompt.actorSeats.includes(0)
+          ? undefined
+          : prompt.actorSeats[0];
+
+    if (!isSimulatedNullify && botActorSeat === undefined) {
       return undefined;
     }
 
+    const delayMs = isSimulatedNullify ? 80 : 350;
     const timer = window.setTimeout(() => {
       try {
         if (masterState.turnPhase === 'HERO_SELECT') {
@@ -171,16 +182,15 @@ export function DevMatchPreview({
           return;
         }
 
-        if (prompt.kind === 'WAIT_NULLIFICATION' && prompt.isSimulatedDelay) {
+        if (isSimulatedNullify) {
           setMasterState((prev) =>
             applyGameAction(prev, { type: 'RESOLVE_SIMULATED_NULLIFICATION' }),
           );
           return;
         }
 
-        const actorSeat = prompt.actorSeats[0];
-        if (actorSeat === undefined) return;
-        const actorUserId = masterState.players[actorSeat]?.userId;
+        if (botActorSeat === undefined) return;
+        const actorUserId = masterState.players[botActorSeat]?.userId;
         if (!actorUserId) return;
         const view = projectStateForPlayer(masterState, actorUserId);
         const action = decideBotAction(view);
@@ -188,12 +198,24 @@ export function DevMatchPreview({
       } catch {
         // Dừng nhẹ nếu hết trạng thái hợp lệ trong bản xem thử cục bộ
       }
-    }, 350);
+    }, delayMs);
 
     return () => {
       window.clearTimeout(timer);
     };
   }, [isPaused, masterState]);
+
+  useEffect(() => {
+    if (!actionError) {
+      return undefined;
+    }
+    const timer = window.setTimeout(() => {
+      setActionError(null);
+    }, 2800);
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [actionError]);
 
   const playerView = useMemo(() => {
     const view = projectStateForPlayer(masterState, 'dev_user_0');
@@ -229,15 +251,6 @@ export function DevMatchPreview({
     [isPaused, masterState.turnPhase, playerCount],
   );
 
-  const formatPreviewErrorVi = useCallback((err: unknown, fallback: string): string => {
-    const raw = err instanceof Error ? err.message : '';
-    if (!raw) return fallback;
-    if (raw === 'SIMULATED_DELAY_CANNOT_BE_ANSWERED_BY_PLAYER') {
-      return 'Đang giữ nhịp chờ Vô Giải (2–3.5s) để tránh lộ bài.';
-    }
-    return /^[A-Z0-9_]+$/.test(raw) ? fallback : raw;
-  }, []);
-
   const handleSelectHero = useCallback((heroId: HeroId) => {
     setActionError(null);
     setMasterState((prev) => {
@@ -252,11 +265,11 @@ export function DevMatchPreview({
         }
         return next;
       } catch (err: unknown) {
-        setActionError(formatPreviewErrorVi(err, 'Không thể chọn tướng.'));
+        setActionError(formatMatchErrorVi(err, 'Không thể chọn tướng.'));
         return prev;
       }
     });
-  }, [formatPreviewErrorVi]);
+  }, []);
 
   const handleSendAction = useCallback((action: GameAction) => {
     setActionError(null);
@@ -267,11 +280,23 @@ export function DevMatchPreview({
         setSelection(EMPTY_MATCH_SELECTION);
         return next;
       } catch (err: unknown) {
-        setActionError(formatPreviewErrorVi(err, 'Thao tác chưa hợp lệ.'));
+        setActionError(formatMatchErrorVi(err, 'Thao tác chưa hợp lệ.'));
         return prev;
       }
     });
-  }, [formatPreviewErrorVi]);
+  }, []);
+
+  const handleToggleAutoSkipNullify = useCallback(
+    (enabled: boolean) => {
+      setAutoSkipNullify(enabled);
+      handleSendAction({
+        type: 'SET_AUTO_SKIP_NULLIFICATION',
+        seatIndex: 0,
+        enabled,
+      });
+    },
+    [handleSendAction],
+  );
 
   const handleRefereeAction = useCallback(
     (actionType: RefereeActionType) => {
@@ -310,19 +335,38 @@ export function DevMatchPreview({
     [onExitPreview],
   );
 
-  const handleToggleCard = useCallback((cardId: string) => {
-    setSelection((prev) => {
-      const exists = prev.selectedCardIds.includes(cardId);
-      const nextCards = exists
-        ? prev.selectedCardIds.filter((id) => id !== cardId)
-        : [...prev.selectedCardIds, cardId];
-      return {
-        ...prev,
-        selectedCardIds: nextCards,
-        selectedTargets: exists ? [] : prev.selectedTargets,
-      };
-    });
-  }, []);
+  const handleToggleCard = useCallback(
+    (cardId: string) => {
+      const isMultiCardPhase = Boolean(
+        playerView.turnPhase === 'DISCARD' ||
+          playerView.activeInterrupt?.kind === 'ASK_QUAN_THACH_PHU' ||
+          playerView.activeInterrupt?.kind === 'WAIT_GANG_LIE_CHOICE',
+      );
+      setSelection((prev) => {
+        const allowMulti =
+          isMultiCardPhase ||
+          prev.activeSkillMode === 'ren_de' ||
+          prev.activeSkillMode === 'zhi_heng' ||
+          prev.activeSkillMode === 'jie_yin' ||
+          prev.activeConvertMode === 'truong_bat';
+        const exists = prev.selectedCardIds.includes(cardId);
+        if (exists) {
+          const nextCards = prev.selectedCardIds.filter((id) => id !== cardId);
+          return {
+            ...prev,
+            selectedCardIds: nextCards,
+            selectedTargets: nextCards.length === 0 ? [] : prev.selectedTargets,
+          };
+        }
+        return {
+          ...prev,
+          selectedCardIds: allowMulti ? [...prev.selectedCardIds, cardId] : [cardId],
+          selectedTargets: allowMulti ? prev.selectedTargets : [],
+        };
+      });
+    },
+    [playerView.activeInterrupt?.kind, playerView.turnPhase],
+  );
 
   const handleToggleTarget = useCallback(
     (seatIndex: number) => {
@@ -459,11 +503,88 @@ export function DevMatchPreview({
     [decisionKey, decisionSeconds, isPaused],
   );
 
+  // Tự động xử lý khi hết giờ (0s) trong bản xem thử cục bộ để không bị treo
+  useEffect(() => {
+    if (isPaused || !phaseDeadlineAt || masterState.turnPhase === 'GAME_OVER') {
+      return undefined;
+    }
+    const deadlineMs = Date.parse(phaseDeadlineAt);
+    if (Number.isNaN(deadlineMs)) {
+      return undefined;
+    }
+    const delayMs = Math.max(100, deadlineMs - Date.now());
+    const timer = window.setTimeout(() => {
+      setMasterState((prev) => {
+        try {
+          if (prev.turnPhase === 'GAME_OVER') return prev;
+          if (prev.turnPhase === 'HERO_SELECT') {
+            let next = autoSelectTimedOutHeroes(prev);
+            if (next.heroDraft?.stage === 'COMPLETED') {
+              next = startMatchCombat(next);
+            }
+            return next;
+          }
+          const pending = getPendingPrompt(prev);
+          if (!pending) return prev;
+          if (pending.kind === 'WAIT_NULLIFICATION' && pending.isSimulatedDelay) {
+            return applyGameAction(prev, { type: 'RESOLVE_SIMULATED_NULLIFICATION' });
+          }
+          const actorSeat = pending.actorSeats[0];
+          if (actorSeat === undefined) return prev;
+          if (pending.kind === 'WAIT_NULLIFICATION') {
+            return applyGameAction(prev, {
+              type: 'RESPOND_NULLIFICATION',
+              seatIndex: actorSeat,
+              cardId: null,
+            });
+          }
+          const actorUserId = prev.players[actorSeat]?.userId;
+          if (!actorUserId) return prev;
+          const view = projectStateForPlayer(prev, actorUserId);
+          const action = decideBotAction(view);
+          return applyGameAction(prev, action);
+        } catch {
+          return prev;
+        }
+      });
+    }, delayMs);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [isPaused, masterState.turnPhase, phaseDeadlineAt]);
+
   return (
     <section className="relative flex h-screen w-screen min-h-0 min-w-0 flex-col overflow-hidden bg-[#090807] text-[#EFE6D5]">
-      <MatchSettings error={actionError}>
+      <MatchSettings
+        topRightExtra={
+          <button
+            type="button"
+            title="Tự động bỏ qua cơ hội Vô Giải Khả Kích toàn bàn"
+            aria-pressed={autoSkipNullify}
+            onClick={() => handleToggleAutoSkipNullify(!autoSkipNullify)}
+            className={`cursor-pointer rounded-lg border px-2 py-1 text-[11px] leading-tight font-semibold whitespace-nowrap transition-colors ${
+              autoSkipNullify
+                ? 'border-[#D99B26] bg-[#D99B26]/20 text-[#FDE68A]'
+                : 'border-[#9A7B4F]/60 bg-[#14100D]/95 text-[#D1D5DB] hover:border-[#D99B26]'
+            }`}
+          >
+            <span className="hidden lg:inline">
+              {autoSkipNullify ? '✓ Tự bỏ qua Vô Giải' : 'Tự bỏ qua Vô Giải'}
+            </span>
+            <span className="lg:hidden">
+              {autoSkipNullify ? '✓ Bỏ Vô Giải' : 'Bỏ Vô Giải'}
+            </span>
+          </button>
+        }
+      >
         <label className="mb-3 flex cursor-pointer items-center gap-2 text-xs font-semibold text-[#EFE6D5]">
-          <input type="checkbox" checked={autoSkipNullify} onChange={(event) => { const enabled = event.target.checked; setAutoSkipNullify(enabled); handleSendAction({ type: "SET_AUTO_SKIP_NULLIFICATION", seatIndex: 0, enabled }); }} className="accent-[#D99B26]" />
+          <input
+            type="checkbox"
+            checked={autoSkipNullify}
+            onChange={(event) => handleToggleAutoSkipNullify(event.target.checked)}
+            className="accent-[#D99B26]"
+          />
           Tự bỏ qua Vô Giải
         </label>
         <div className="mb-3 flex min-w-0 flex-wrap items-center gap-2 text-xs">
@@ -584,6 +705,7 @@ export function DevMatchPreview({
           pausedRemainingMs={isPaused ? decisionSeconds * 1000 : null}
           isTimerPaused={isPaused}
           selection={selection}
+          actionErrorVi={actionError}
           connectionLost={false}
           onReconnect={() => resetPreview(playerCount, previewStage)}
           onToggleCard={handleToggleCard}

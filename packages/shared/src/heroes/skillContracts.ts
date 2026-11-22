@@ -87,6 +87,11 @@ export interface SkillRuntime {
     targetSeat: number,
     sourceSeat: number,
     scrollNameVi: string,
+    extra?: {
+      readonly originalScrollNameVi?: string;
+      readonly originalTargetSeat?: number;
+      readonly nullifyDepth?: number;
+    },
   ): MasterGameState;
   /** Kiểm tra mục tiêu có miễn nhiễm hiệu ứng lá bài / kỹ năng (như Không Thành, Khiêm Tốn) hay không. */
   canTargetPlayerWithCard(
