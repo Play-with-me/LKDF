@@ -140,13 +140,14 @@ export interface LkdfApiClient {
     signal?: AbortSignal,
   ): Promise<PollAuthStatusResponse>;
   exchangeManualCode(code: string): Promise<ExchangeManualCodeResponse>;
-  getMe(token: string): Promise<UserProfile>;
+  getMe(token: string, signal?: AbortSignal): Promise<UserProfile>;
   updatePreferences(
     token: string,
     prefs: Partial<UserPreferences>,
+    signal?: AbortSignal,
   ): Promise<UserProfile>;
   updateDisplayName(token: string, displayName: string): Promise<UserProfile>;
-  logout(token: string): Promise<void>;
+  logout(token: string, signal?: AbortSignal): Promise<void>;
   getTimerPresets(): Promise<readonly TimerPresetOption[]>;
   getMyRoom(token: string): Promise<RoomViewerPayload | null>;
   createRoom(
@@ -155,6 +156,7 @@ export interface LkdfApiClient {
   ): Promise<RoomViewerPayload>;
   joinRoom(token: string, roomCode: string): Promise<RoomViewerPayload>;
   getRoom(token: string, roomCode: string): Promise<RoomViewerPayload>;
+  setRoomReady(token: string, roomCode: string, isReady: boolean): Promise<RoomViewerPayload>;
   updateTimerPreset(
     token: string,
     roomCode: string,
@@ -295,21 +297,22 @@ export function createApiClient(serverUrl: string): LkdfApiClient {
       });
     },
 
-    async getMe(token) {
+    async getMe(token, signal) {
       const res = await requestJson<{ readonly ok: true; readonly profile: UserProfile }>(
         '/api/auth/me',
-        { token },
+        { token, ...(signal ? { signal } : {}) },
       );
       return res.profile;
     },
 
-    async updatePreferences(token, prefs) {
+    async updatePreferences(token, prefs, signal) {
       const res = await requestJson<{ readonly ok: true; readonly profile: UserProfile }>(
         '/api/profile/preferences',
         {
           method: 'PATCH',
           token,
           body: prefs,
+          ...(signal ? { signal } : {}),
         },
       );
       return res.profile;
@@ -327,10 +330,11 @@ export function createApiClient(serverUrl: string): LkdfApiClient {
       return res.profile;
     },
 
-    async logout(token) {
+    async logout(token, signal) {
       await requestJson<{ readonly ok: true }>('/api/auth/logout', {
         method: 'POST',
         token,
+        ...(signal ? { signal } : {}),
       });
     },
 
@@ -370,6 +374,13 @@ export function createApiClient(serverUrl: string): LkdfApiClient {
       return requestJson<RoomViewerPayload>(
         `/api/rooms/${encodeURIComponent(roomCode.trim().toUpperCase())}`,
         { token },
+      );
+    },
+
+    setRoomReady(token, roomCode, isReady) {
+      return requestJson<RoomViewerPayload>(
+        `/api/rooms/${encodeURIComponent(roomCode.trim().toUpperCase())}/ready`,
+        { method: 'PATCH', token, body: { isReady } },
       );
     },
 
@@ -425,6 +436,7 @@ export function createApiClient(serverUrl: string): LkdfApiClient {
       if (filter.includeMatches !== undefined) {
         params.set('includeMatches', filter.includeMatches ? 'true' : 'false');
       }
+      if (filter.includeMonthly) params.set('includeMonthly', 'true');
       if (filter.matchLimit !== undefined) {
         params.set('matchLimit', String(filter.matchLimit));
       }

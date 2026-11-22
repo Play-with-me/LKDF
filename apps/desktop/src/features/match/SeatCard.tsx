@@ -17,6 +17,7 @@ import {
   getCardGameIcon,
 } from '../../components/icons/index.js';
 import { HeroCardWatermark } from './HeroCardWatermark.js';
+import type { SeatHpImpact } from './useMatchMotion.js';
 import {
   getIdentityBadgeClass,
   getIdentityLabelVi,
@@ -36,6 +37,7 @@ export interface SeatCardProps {
   readonly isDragHovered?: boolean;
   readonly dragHoverLabelVi?: string;
   readonly compact?: boolean;
+  readonly hpImpact?: SeatHpImpact | null;
   readonly onSelectTarget?: (seatIndex: number) => void;
   readonly onInspectHero?: (seatIndex: number) => void;
   readonly onInspectCard?: (
@@ -56,6 +58,13 @@ function getInitials(name: string): string {
   return `${parts[0]?.[0] ?? ''}${parts[parts.length - 1]?.[0] ?? ''}`.toUpperCase();
 }
 
+const EQUIPMENT_SLOTS = [
+  { slot: 'weapon', label: 'Vũ khí', prefix: '' },
+  { slot: 'armor', label: 'Giáp', prefix: '' },
+  { slot: 'plusOne', label: 'Ngựa +1', prefix: '+1' },
+  { slot: 'minusOne', label: 'Ngựa -1', prefix: '-1' },
+] as const;
+
 export function SeatCard({
   player,
   playerView,
@@ -69,6 +78,7 @@ export function SeatCard({
   isDragHovered = false,
   dragHoverLabelVi,
   compact = false,
+  hpImpact = null,
   onSelectTarget,
   onInspectHero,
   onInspectCard,
@@ -141,10 +151,22 @@ export function SeatCard({
     });
   }
 
+  const equippedItems = EQUIPMENT_SLOTS.flatMap(({ slot, label, prefix }) => {
+    const item = openCards.find(card => card.sourceId === `seat:${player.seatIndex}:${slot}`);
+    return item ? [{ slot, label, prefix, item }] : [];
+  });
+  const delayedItems = openCards.filter(item => item.sourceId.includes(':delayed:'));
+
+  const isDying = player.alive && player.hp <= 0;
+
   return (
     <div
       data-drop-seat={player.seatIndex}
       data-seat-name={player.displayName}
+      data-faction={hero?.faction}
+      data-active-turn={isActiveActor ? 'true' : undefined}
+      data-dying={isDying ? 'true' : undefined}
+      data-hp-impact={hpImpact ? (hpImpact.delta < 0 ? 'damage' : 'heal') : undefined}
       data-lkdf-battle-rest={!isDragHovered && !isDragTargetEligible && !isSelectedTarget && !isTargetEligible && !isActiveActor && !isInspectedHero}
       role={canClick ? 'button' : undefined}
       tabIndex={canClick ? 0 : undefined}
@@ -160,8 +182,8 @@ export function SeatCard({
           : undefined
       }
       className={[
-        'lkdf-battle-seat relative flex w-[var(--seat-w,210px)] min-h-[var(--seat-h,86px)] shrink-0 flex-col justify-between gap-1 rounded-[6px] border bg-[#12161E]/96 text-[#F3F4F6] shadow-[inset_0_1px_0_rgba(255,255,255,0.12),0_10px_24px_rgba(0,0,0,0.68)] transition-[transform,border-color,box-shadow,background-color] duration-150',
-        compact ? 'px-2 py-1.5' : 'px-2.5 py-2',
+        'lkdf-battle-seat relative flex w-[var(--seat-w,210px)] min-h-[var(--seat-h,72px)] shrink-0 flex-col justify-between gap-0.5 rounded-[6px] border bg-[#12161E]/96 text-[#F3F4F6] shadow-[inset_0_1px_0_rgba(255,255,255,0.12),0_10px_24px_rgba(0,0,0,0.68)] transition-[transform,border-color,box-shadow,background-color] duration-150',
+        compact ? 'px-1.5 py-1' : 'px-2 py-1.5',
         !player.alive ? 'opacity-50 grayscale' : '',
         isDragHovered
           ? 'border-[#FBBF24] bg-[#3B1812]/95 shadow-[0_0_24px_rgba(251,191,36,0.55)]'
@@ -172,7 +194,7 @@ export function SeatCard({
               : isTargetEligible
                 ? 'cursor-pointer border-[#E6BE6C] hover:bg-[#1A212E] shadow-[0_0_14px_rgba(230,190,108,0.28)]'
                 : isActiveActor
-                  ? 'border-[#C83E37] ring-1 ring-[#C83E37]/75 shadow-[0_0_18px_rgba(200,62,55,0.28)]'
+                  ? 'border-[#E6BE6C] ring-1 ring-[#E6BE6C]/75'
                   : isInspectedHero
                     ? 'border-[#E6BE6C] ring-1 ring-[#E6BE6C]/55'
                     : 'border-[#94A3B8]/38',
@@ -187,6 +209,25 @@ export function SeatCard({
         widthClass="w-[78%]"
         opacityClass="opacity-85"
       />
+
+      {/* Hiệu ứng phản hồi sinh lực (hit-stop / hồi máu) */}
+      {hpImpact ? (
+        <span key={`impact-${hpImpact.id}`} aria-hidden="true" className="pointer-events-none contents">
+          <span
+            className={
+              hpImpact.delta < 0
+                ? 'lkdf-hp-flash-damage pointer-events-none absolute inset-0 z-30 rounded-[inherit]'
+                : 'lkdf-hp-flash-heal pointer-events-none absolute inset-0 z-30 rounded-[inherit]'
+            }
+          />
+          <span
+            data-kind={hpImpact.delta < 0 ? 'damage' : 'heal'}
+            className="lkdf-hp-pop pointer-events-none absolute top-2 left-1/2 z-40"
+          >
+            {hpImpact.delta > 0 ? `+${hpImpact.delta}` : `−${Math.abs(hpImpact.delta)}`}
+          </span>
+        </span>
+      ) : null}
 
       {/* Nhãn chọn mục tiêu hoặc vùng thả khi kéo bài */}
       {isDragHovered ? (
@@ -248,6 +289,16 @@ export function SeatCard({
           </div>
 
           <div className="flex shrink-0 items-center gap-1">
+            {isDying ? (
+              <span
+                role="status"
+                title="Đang hấp hối — cần Đào cứu"
+                className="lkdf-dying-badge inline-flex shrink-0 items-center gap-0.5 rounded border border-[#F87171]/75 bg-[#7F1D1D]/92 px-1.5 py-0 text-[9px] font-extrabold text-[#FEE2E2] shadow-sm"
+              >
+                <GameIcon name="death-skull" size={9.5} />
+                Hấp hối
+              </span>
+            ) : null}
             {player.alive && Number.isFinite(distance) ? (
               <span
                 className="font-mono-num shrink-0 rounded bg-[#0B0E14]/85 px-1.5 py-0 text-[9px] font-bold text-[#E6BE6C] tabular-nums drop-shadow-sm"
@@ -284,7 +335,7 @@ export function SeatCard({
           </div>
         </div>
 
-        {/* Hàng 2: Huy hiệu thế lực + Tên Tướng trọn vẹn */}
+        {/* Hàng 2: Huy hiệu thế lực + Tên Tướng + Thân Phận */}
         <div
           onClick={
             !canClick && canInspectSeatHero
@@ -295,7 +346,7 @@ export function SeatCard({
               : undefined
           }
           className={[
-            'mt-1 flex items-start gap-1 min-w-0',
+            'mt-0.5 flex items-center gap-1 min-w-0',
             !canClick && canInspectSeatHero ? 'cursor-pointer' : '',
           ].join(' ')}
         >
@@ -320,17 +371,20 @@ export function SeatCard({
         </div>
       </div>
 
-      {/* Hàng 3: Ngọc sinh lực + Bài úp + Thân Phận gọn góc dưới-phải */}
+      {/* Hàng 3: Kỹ năng tướng gọn */}
       {hero && (
-        <div className="relative z-10 flex flex-wrap gap-1">
+        <div className="relative z-10 flex flex-wrap gap-0.5">
           {hero.skills.map(skill => (
             <button key={skill.id} type="button" className="lkdf-hero-skill-label"
+              data-passive-skill={/^(pao_xiao|kong_cheng|ma_shu|ji_zhi|qi_cai|jiu_yuan|ying_zi|qian_xun|lian_ying|xiao_ji|wu_shuang|bi_yue)$/.test(skill.id) || undefined}
               data-hover-name={skill.nameVi} data-hover-description={skill.descriptionVi}
               onClick={event => event.stopPropagation()}>{skill.nameVi}</button>
           ))}
         </div>
       )}
-      <div className="lkdf-battle-seat-summary relative z-10 mt-1 flex items-center justify-between gap-1.5">
+
+      {/* Hàng 4: Ngọc sinh lực + Bot/Mất mạng + Số bài úp */}
+      <div className="lkdf-battle-seat-summary relative z-10 mt-0.5 flex items-center justify-between gap-1">
         <HpJadeMeter hp={player.hp} maxHp={player.maxHp} size="sm" />
 
         <div className="flex items-center gap-1 shrink-0">
@@ -365,43 +419,68 @@ export function SeatCard({
         </div>
       </div>
 
-      <div className="lkdf-battle-seat-equipment relative z-10 grid grid-cols-2 gap-1 border-t border-[#94A3B8]/25">
-        {[
-          ['weapon', 'Vũ khí'],
-          ['armor', 'Giáp'],
-          ['plusOne', 'Ngựa +1'],
-          ['minusOne', 'Ngựa -1'],
-        ].map(([slot, label]) => {
-          const item = openCards.find(card => card.sourceId === `seat:${player.seatIndex}:${slot}`);
-          const artUrl = item ? getCardArtUrl(item.card.cardKey) : null;
-          const slotClass = 'flex h-[24px] min-w-0 items-center gap-1 overflow-hidden px-1 rounded border border-[#B89352]/35 bg-[#0B0E14] text-[9px] text-[#D9C4A5]';
-          if (!item) {
-            return <span key={slot} data-equipment-slot={slot} className={slotClass} title={label}>{label}</span>;
-          }
-          return (
-            <button
-              key={slot}
-              type="button"
-              data-equipment-slot={slot}
-              {...cardHover(item.card)}
-              className={slotClass}
-              aria-label={`${label} · ${item.card.nameVi}`}
-              onClick={(event) => {
-                event.stopPropagation();
-                onInspectCard?.(item.card, item.sourceId, item.sourceLabel);
-              }}
-            >
-              {artUrl ? <img src={artUrl} alt="" className="h-[19px] w-[15px] shrink-0 rounded-sm object-cover" /> : null}
-              <span className="shrink-0">{formatRankLabel(item.card.rank)}</span>
-              <SuitGlyph suit={item.card.suit} size={9} tone="darkSurface" className="shrink-0" />
-              <span className="min-w-0 truncate">{item.card.nameVi}</span>
-            </button>
-          );
-        })}
-      </div>
-      {player.delayedScrolls.length > 0 ? (
+      {/* Hàng 5: Trang bị đang mặc — chỉ hiện khi có đồ, mỗi món 1 thanh ngang 100% chiều rộng */}
+      {equippedItems.length > 0 ? (
+        <div className="lkdf-battle-seat-equipment relative z-10 flex flex-col gap-0.5 border-t border-[#94A3B8]/25 pt-0.5">
+          {equippedItems.map(({ slot, label, prefix, item }) => {
+            const artUrl = getCardArtUrl(item.card.cardKey);
+            const active = inspectedCardSourceId === item.sourceId;
+            const red = isCardRed(item.card);
+            return (
+              <button
+                key={slot}
+                type="button"
+                data-equipment-slot={slot}
+                {...cardHover(item.card)}
+                aria-label={`${label} · ${item.card.nameVi}`}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onInspectCard?.(item.card, item.sourceId, item.sourceLabel);
+                }}
+                className={[
+                  'flex h-[21px] w-full min-w-0 cursor-pointer items-center gap-1 overflow-hidden rounded border px-1 text-left text-[10px] leading-none transition-colors',
+                  active
+                    ? 'border-[#FDE68A] bg-[#E6BE6C]/22 ring-1 ring-[#FDE68A]/55'
+                    : 'border-[#B89352]/40 bg-[#0B0E14]/92 hover:border-[#E6BE6C]',
+                ].join(' ')}
+              >
+                {artUrl ? (
+                  <img
+                    src={artUrl}
+                    alt=""
+                    draggable={false}
+                    className="h-[16px] w-[13px] shrink-0 rounded-[2px] object-cover"
+                  />
+                ) : (
+                  <GameIcon name={getCardGameIcon(item.card.cardKey)} size={11} className="shrink-0 text-[#E6BE6C]" />
+                )}
+                <span
+                  className={`font-mono-num inline-flex shrink-0 items-center gap-0.5 text-[9.5px] font-extrabold leading-none ${
+                    red ? 'text-[#FCA5A5]' : 'text-[#F1F5F9]'
+                  }`}
+                >
+                  <span className="shrink-0">{formatRankLabel(item.card.rank)}</span>
+                  <SuitGlyph suit={item.card.suit} size={9} tone="darkSurface" className="shrink-0" />
+                  <span className="sr-only">{formatSuitSymbol(item.card.suit)}</span>
+                </span>
+                {prefix ? (
+                  <span className="shrink-0 rounded bg-[#B89352]/25 px-1 py-px text-[8.5px] font-extrabold text-[#FDE68A]">
+                    {prefix}
+                  </span>
+                ) : null}
+                <span className="min-w-0 flex-1 truncate font-semibold text-[#F5EBD6]">
+                  {item.card.nameVi}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
+
+      {/* Hàng 6: Phán xét (chỉ hiện khi có bài phán xét) */}
+      {delayedItems.length > 0 ? (
         <div className="relative z-10 grid grid-cols-2 gap-1">
-          {openCards.filter(item => item.sourceId.includes(':delayed:')).map((item) => {
+          {delayedItems.map((item) => {
             const artUrl = getCardArtUrl(item.card.cardKey);
             const active = inspectedCardSourceId === item.sourceId;
             const red = isCardRed(item.card);
@@ -415,10 +494,10 @@ export function SeatCard({
                   onInspectCard?.(item.card, item.sourceId, item.sourceLabel);
                 }}
                 className={[
-                  'inline-flex w-full min-w-0 cursor-pointer items-center gap-1.5 rounded border px-1.5 py-0.5 text-left transition-colors',
+                  'inline-flex h-[21px] w-full min-w-0 cursor-pointer items-center gap-1 rounded border px-1.5 text-left transition-colors',
                   active
-                    ? 'border-[#FDE68A] bg-[#E6BE6C]/22 ring-1 ring-[#FDE68A]/55'
-                    : 'border-[#B89352]/45 bg-[#0B0E14]/92 hover:border-[#E6BE6C]',
+                    ? 'border-[#FDE68A] bg-[#E6BE6C]/25 ring-1 ring-[#FDE68A]/55'
+                    : 'border-[#D99B26]/55 bg-[#2A1B0C]/90 hover:border-[#FBBF24]',
                 ].join(' ')}
               >
                 {artUrl ? (
@@ -426,21 +505,21 @@ export function SeatCard({
                     src={artUrl}
                     alt=""
                     draggable={false}
-                    className="h-[clamp(16px,2.5cqh,20px)] w-[clamp(13px,1.35cqw,16px)] shrink-0 rounded-[2px] border border-[#94A3B8]/40 object-cover"
+                    className="h-[15px] w-[12px] shrink-0 rounded-[2px] border border-[#94A3B8]/40 object-cover"
                   />
                 ) : (
-                  <GameIcon name={getCardGameIcon(item.card.cardKey)} size={12} className="shrink-0 text-[#E6BE6C]" />
+                  <GameIcon name={getCardGameIcon(item.card.cardKey)} size={11} className="shrink-0 text-[#FBBF24]" />
                 )}
                 <span
-                  className={`font-mono-num inline-flex shrink-0 items-center gap-0.5 text-[clamp(9.5px,0.85cqw,11px)] font-extrabold leading-none ${
+                  className={`font-mono-num inline-flex shrink-0 items-center gap-0.5 text-[9.5px] font-extrabold leading-none ${
                     red ? 'text-[#FCA5A5]' : 'text-[#F1F5F9]'
                   }`}
                 >
                   <span className="shrink-0">{formatRankLabel(item.card.rank)}</span>
-                  <SuitGlyph suit={item.card.suit} size={10} tone="darkSurface" />
+                  <SuitGlyph suit={item.card.suit} size={9} tone="darkSurface" />
                   <span className="sr-only">{formatSuitSymbol(item.card.suit)}</span>
                 </span>
-                <span className="min-w-0 flex-1 truncate text-[clamp(9.5px,0.88cqw,11px)] font-bold leading-tight text-[#F3D38C]">
+                <span className="min-w-0 flex-1 truncate text-[10px] font-bold leading-tight text-[#FDE68A]">
                   {item.shortLabel}
                 </span>
               </button>

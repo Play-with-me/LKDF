@@ -1,5 +1,8 @@
 import { useGameAmbience } from './lib/useGameAmbience.js';
 import { useInterfaceSounds } from './lib/useInterfaceSounds.js';
+import { useBackNavigation } from './lib/useBackNavigation.js';
+import { prefersReducedMotion } from './lib/devicePreferences.js';
+import './features/lobby/lobby-online.css';
 import type { PlayerCount } from '@lkdf/shared';
 import {
   Suspense,
@@ -14,6 +17,7 @@ import { FirstTimeNicknameCard } from './features/auth/FirstTimeNicknameCard.js'
 import { LoginScreen } from './features/auth/LoginScreen.js';
 import { GameIcon } from './components/icons/index.js';
 import { ServerWakeScreen } from './features/auth/ServerWakeScreen.js';
+import { LOBBY_PREVIEW_PROFILE } from './features/lobby/lobbyPreviewProfile.js';
 import { HomeLobbyHub } from './features/lobby/HomeLobbyHub.js';
 import { WaitingRoomScreen } from './features/lobby/WaitingRoomScreen.js';
 import { MatchScreen } from './features/match/MatchScreen.js';
@@ -72,28 +76,17 @@ function readDevPreviewSeatsFromUrl(): PlayerCount | null {
   return null;
 }
 
-function readDevPreviewModeFromUrl(): 'nickname' | 'wake' | null {
+function readDevPreviewModeFromUrl(): 'nickname' | 'wake' | 'home' | null {
   if (!import.meta.env.DEV) {
     return null;
   }
   const raw = new URLSearchParams(window.location.search).get('devPreview');
-  if (raw === 'nickname' || raw === 'wake') {
+  if (raw === 'nickname' || raw === 'wake' || raw === 'home') {
     return raw;
   }
   return null;
 }
 
-const DEV_PREVIEW_NICKNAME_PROFILE: UserProfile = {
-  userId: 'dev_preview_user',
-  googleSub: 'dev_preview_sub',
-  email: 'tuongquan.preview@gmail.com',
-  displayName: 'Nguyễn Minh Quân',
-  avatarUrl: '',
-  preferences: { soundEnabled: true, volume: 0.8 },
-  activeRoomCode: null,
-  createdAt: '2026-11-18T00:00:00.000Z',
-  lastLoginAt: '2026-11-18T00:00:00.000Z',
-};
 
 type AppScreen =
   | 'BOOT'
@@ -109,6 +102,7 @@ type AppScreen =
 export function App() {
   const initialDevSeats = readDevPreviewSeatsFromUrl();
   const initialDevPreviewMode = readDevPreviewModeFromUrl();
+  const isLobbyPreview = initialDevPreviewMode === 'home';
   const [appVersion, setAppVersion] = useState<string>('0.1.0');
   const [screen, setScreen] = useState<AppScreen>(
     initialDevSeats !== null
@@ -117,22 +111,26 @@ export function App() {
         ? 'NICKNAME_SETUP'
         : initialDevPreviewMode === 'wake'
           ? 'WAKE'
-          : 'BOOT',
+          : isLobbyPreview ? 'HOME' : 'BOOT',
   );
   const [devPreviewSeats, setDevPreviewSeats] = useState<PlayerCount>(
     initialDevSeats ?? 8,
   );
+  const lobbyRef = useRef<HTMLDivElement>(null);
+  const restoreProfileFocus = useRef(false);
   const [statsReturnScreen, setStatsReturnScreen] = useState<'LOGIN' | 'HOME'>('LOGIN');
 
   const [serverUrl, setServerUrl] = useState<string>(DEFAULT_SERVER_URL);
   const [sessionToken, setSessionToken] = useState<string | null>(null);
   const [health, setHealth] = useState<HealthCheckResponse | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(
-    initialDevPreviewMode === 'nickname' ? DEV_PREVIEW_NICKNAME_PROFILE : null,
+    initialDevPreviewMode === 'nickname' || isLobbyPreview ? LOBBY_PREVIEW_PROFILE : null,
   );
+  const [showMatchCrossing, setShowMatchCrossing] = useState(false);
   const effectsEnabled = profile?.preferences.soundEnabled ?? false;
   const musicEnabled = profile?.preferences.musicEnabled ?? effectsEnabled;
-  const lobbyMusicActive = musicEnabled && (screen === 'HOME' || screen === 'WAITING_ROOM');
+  const lobbyMusicActive = musicEnabled &&
+    (screen === 'HOME' || screen === 'WAITING_ROOM');
   useInterfaceSounds(
     effectsEnabled && screen !== 'DEV_PREVIEW',
     lobbyMusicActive || (musicEnabled && screen === 'MATCH'),
@@ -413,13 +411,13 @@ export function App() {
     setScreen('LOGIN');
   }, []);
 
-  const handleLoggedOut = useCallback(() => {
+  const handleLoggedOut = useCallback((notice?: string) => {
     void saveClientStatePatch({ sessionToken: null }).catch(() => undefined);
     setSessionToken(null);
     setProfile(null);
     setActiveRoom(null);
     setJustLoggedIn(false);
-    setLoginNotice(null);
+    setLoginNotice(notice ?? null);
     setScreen('LOGIN');
   }, []);
 
@@ -441,6 +439,7 @@ export function App() {
   }, []);
 
   const handleMatchStarted = useCallback((roomPayload: RoomViewerPayload) => {
+    setShowMatchCrossing(!prefersReducedMotion());
     setActiveRoom(roomPayload);
     setScreen('MATCH');
   }, []);
@@ -458,6 +457,17 @@ export function App() {
   const lobbyBannerUrl = getUiAssetUrl('lobby-banner');
   const campBackdropUrl = getUiAssetUrl('camp-zhanhuo');
   const headerBgUrl = getUiAssetUrl('tex-header-black');
+  const isHomeLobby = screen === 'HOME';
+  const backFromStats = useCallback(() => {
+    restoreProfileFocus.current = statsReturnScreen === 'HOME';
+    setScreen(statsReturnScreen);
+  }, [statsReturnScreen]);
+  useBackNavigation(screen === 'STATS' && !isUpdateModalOpen, backFromStats);
+  useEffect(() => {
+    if (!isHomeLobby || !restoreProfileFocus.current) return;
+    restoreProfileFocus.current = false;
+    lobbyRef.current?.querySelector<HTMLButtonElement>('[data-profile-stats-trigger]')?.focus();
+  }, [isHomeLobby]);
   const isLobbySurface = screen !== 'MATCH' && screen !== 'DEV_PREVIEW';
   const isAuthPortalScreen =
     !isRestoringSession &&
@@ -466,7 +476,7 @@ export function App() {
 
   return (
     <main className="relative flex h-screen w-screen min-h-0 min-w-0 flex-col overflow-hidden bg-[#090807] text-[#EFE6D5]">
-      {isLobbySurface && !isAuthPortalScreen ? (
+      {isLobbySurface && !isAuthPortalScreen && !isHomeLobby ? (
         <div
           aria-hidden="true"
           className="pointer-events-none absolute inset-0 overflow-hidden"
@@ -493,7 +503,7 @@ export function App() {
         </div>
       ) : null}
 
-      {isLobbySurface && !isAuthPortalScreen ? (
+      {isLobbySurface && !isAuthPortalScreen && !(isHomeLobby && isLobbyPreview) ? (
         <header
           style={
             headerBgUrl
@@ -503,7 +513,7 @@ export function App() {
                 }
               : undefined
           }
-          className="relative z-10 flex h-11 shrink-0 items-center justify-between border-b border-[#94A3B8]/28 bg-[#10141B] px-5"
+          className={`z-10 flex h-11 shrink-0 items-center justify-between bg-[#10141B] px-5 ${isHomeLobby ? 'absolute inset-x-0 bottom-0 border-t border-[#94A3B8]/28' : 'relative border-b border-[#94A3B8]/28'}`}
         >
         <div className="flex items-center gap-3 min-w-0">
           <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-[5px] border border-[#D4A451]/75 bg-gradient-to-b from-[#B8332C] to-[#7D1A16] font-serif-title text-[13px] font-bold text-[#F8EFDF] shadow-inner">
@@ -644,19 +654,22 @@ export function App() {
         />
       ) : null}
 
-      {screen === 'HOME' && sessionToken && profile ? (
-        <HomeLobbyHub
-          api={api}
-          sessionToken={sessionToken}
-          profile={profile}
-          justLoggedIn={justLoggedIn}
-          onDismissWelcomeToast={() => setJustLoggedIn(false)}
-          onProfileUpdated={setProfile}
-          onEnterRoom={handleEnterRoom}
-          onOpenStats={() => handleOpenStatsFrom('HOME')}
-          onLoggedOut={handleLoggedOut}
-          onSessionInvalid={handleSessionInvalid}
-        />
+      {(isHomeLobby || (screen === 'STATS' && statsReturnScreen === 'HOME')) && (sessionToken || isLobbyPreview) && profile ? (
+        <div ref={lobbyRef} className={isHomeLobby ? "flex min-h-0 min-w-0 flex-1" : "hidden"}>
+          <HomeLobbyHub
+            navigationActive={isHomeLobby && !isUpdateModalOpen}
+            api={api}
+            sessionToken={isLobbyPreview ? null : sessionToken}
+            profile={profile}
+            justLoggedIn={justLoggedIn}
+            onDismissWelcomeToast={() => setJustLoggedIn(false)}
+            onProfileUpdated={setProfile}
+            onEnterRoom={handleEnterRoom}
+            onOpenStats={() => handleOpenStatsFrom('HOME')}
+            onLoggedOut={handleLoggedOut}
+            onSessionInvalid={handleSessionInvalid}
+          />
+        </div>
       ) : null}
 
       {screen === 'WAITING_ROOM' && sessionToken && profile && activeRoom ? (
@@ -686,6 +699,10 @@ export function App() {
         />
       ) : null}
 
+      {screen === 'MATCH' && showMatchCrossing ? (
+        <div className="lkdf-online-fog" aria-hidden="true" onAnimationEnd={() => setShowMatchCrossing(false)} />
+      ) : null}
+
       {import.meta.env.DEV && screen === 'DEV_PREVIEW' ? (
         <Suspense
           fallback={
@@ -708,7 +725,8 @@ export function App() {
         <StatsPage
           api={api}
           currentUserId={profile?.userId ?? null}
-          onBack={() => setScreen(statsReturnScreen)}
+          startWithCurrentUser={statsReturnScreen === 'HOME'}
+          onBack={backFromStats}
         />
       ) : null}
 

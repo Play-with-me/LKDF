@@ -1,3 +1,4 @@
+import { applyMotionPreference } from './lib/devicePreferences.js';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './App';
@@ -8,6 +9,7 @@ if (!rootElement) {
   throw new Error('Không tìm thấy phần tử #root để khởi chạy giao diện.');
 }
 
+applyMotionPreference();
 createRoot(rootElement).render(
   <StrictMode>
     <App />

@@ -7,7 +7,7 @@ import type {
 import { useCallback, useEffect, useEffectEvent, useRef, useState } from 'react';
 import { ApiError } from '../../lib/api.js';
 import type { LkdfApiClient } from '../../lib/api.js';
-import { playMatchCue } from '../../lib/soundFx.js';
+import { playMatchCue, setMatchSoundEnabled } from '../../lib/soundFx.js';
 import { useGameAmbience } from '../../lib/useGameAmbience.js';
 import type { RoomViewerPayload, UserProfile } from '../../lib/types.js';
 import { createRoomWsClient } from '../../lib/wsClient.js';
@@ -82,7 +82,19 @@ export function MatchScreen({
   const isMatchActive =
     roomPayload.roomState.status === 'IN_GAME' && !isGameOver;
   const musicEnabled = currentUser.preferences.musicEnabled ?? currentUser.preferences.soundEnabled;
-  useGameAmbience(isMatchActive && musicEnabled ? 0.16 : 0, 'battle');
+  const aliveCount = playerView ? playerView.players.filter((p) => p.alive).length : 0;
+  const selfPlayer = playerView?.players.find((p) => p.seatIndex === playerView.viewerSeatIndex) ?? null;
+  const isClimax = Boolean(
+    isMatchActive &&
+    playerView &&
+    playerView.turnPhase !== 'HERO_SELECT' &&
+    (aliveCount <= 3 || (selfPlayer?.alive && selfPlayer.hp <= 1)),
+  );
+  useGameAmbience(isMatchActive && musicEnabled ? 0.16 : 0, isClimax ? 'climax' : 'battle');
+
+  useEffect(() => {
+    setMatchSoundEnabled(currentUser.preferences.soundEnabled);
+  }, [currentUser.preferences.soundEnabled]);
 
   const playRoomUpdateCues = useEffectEvent((view: RoomViewerPayload['playerView'], reason?: string) => {
     const previous = lastSoundView.current;
@@ -168,10 +180,53 @@ export function MatchScreen({
     prevAttentionRef.current = needsMyAttention;
 
     if (isGameOver && !prevGameOverRef.current) {
-      playMatchCue('VICTORY', currentUser.preferences.soundEnabled, undefined, cueDelay);
+      const isWinner = playerView.winnerUserIds.includes(currentUser.userId);
+      playMatchCue(
+        isWinner ? 'VICTORY' : 'DEFEAT',
+        currentUser.preferences.soundEnabled,
+        undefined,
+        cueDelay,
+      );
     }
     prevGameOverRef.current = isGameOver;
-  }, [currentUser.preferences.soundEnabled, isGameOver, playerView]);
+  }, [currentUser.preferences.soundEnabled, currentUser.userId, isGameOver, playerView]);
+
+  // Tiếng gõ mõ cảnh báo mỗi giây trong 5 giây cuối của lượt/phản ứng bản thân
+  const lastTickedSecondRef = useRef<number | null>(null);
+  const myTimedPromptActive = Boolean(
+    isMatchActive &&
+    playerView &&
+    describePendingActorPrompt(playerView).isMyTurn &&
+    !roomPayload.roomState.isTimerPaused &&
+    roomPayload.phaseDeadlineAt &&
+    currentUser.preferences.soundEnabled,
+  );
+  const phaseDeadlineAt = roomPayload.phaseDeadlineAt;
+
+  useEffect(() => {
+    lastTickedSecondRef.current = null;
+    if (!myTimedPromptActive || !phaseDeadlineAt) {
+      return undefined;
+    }
+    const deadlineMs = Date.parse(phaseDeadlineAt);
+    if (Number.isNaN(deadlineMs)) {
+      return undefined;
+    }
+
+    const checkTick = () => {
+      const remaining = Math.ceil((deadlineMs - Date.now()) / 1000);
+      if (remaining >= 1 && remaining <= 5 && lastTickedSecondRef.current !== remaining) {
+        lastTickedSecondRef.current = remaining;
+        playMatchCue('TIMER_TICK', true);
+      }
+    };
+
+    checkTick();
+    const interval = window.setInterval(checkTick, 250);
+    return () => {
+      window.clearInterval(interval);
+    };
+  }, [myTimedPromptActive, phaseDeadlineAt]);
 
   const handleManualSync = useCallback(async () => {
     setIsSyncing(true);
@@ -447,6 +502,10 @@ export function MatchScreen({
   return (
     <section className="relative flex h-screen w-screen min-h-0 min-w-0 flex-col overflow-hidden bg-[#090807] text-[#EFE6D5]">
       <MatchSettings error={actionError}>
+        <label className="mb-3 flex cursor-pointer items-center gap-2 text-xs font-semibold text-[#EFE6D5]">
+          <input type="checkbox" checked={autoSkipNullification} onChange={(event) => handleToggleAutoSkipNullification(event.target.checked)} className="accent-[#D99B26]" />
+          Tự bỏ qua Vô Giải
+        </label>
         <div className="mb-3 flex min-w-0 flex-wrap items-center gap-2 text-xs">
           <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded border border-[#CA9A48]/60 bg-[#9E2B25] font-serif-title text-[12px] font-bold text-[#F5EBDC] shadow-inner">
             殺
@@ -559,14 +618,12 @@ export function MatchScreen({
             pausedRemainingMs={roomPayload.pausedRemainingMs}
             isTimerPaused={roomPayload.roomState.isTimerPaused}
             selection={selection}
-            autoSkipNullification={autoSkipNullification}
             connectionLost={wsStatus === 'DISCONNECTED'}
             onReconnect={handleReconnect}
             onToggleCard={handleToggleCard}
             onToggleTarget={handleToggleTarget}
             onToggleSkillMode={handleToggleSkillMode}
             onToggleConvertMode={handleToggleConvertMode}
-            onToggleAutoSkipNullification={handleToggleAutoSkipNullification}
             onSendAction={handleSendAction}
             onSelectHero={handleSelectHero}
             onClearSelection={handleClearSelection}

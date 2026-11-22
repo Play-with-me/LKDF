@@ -63,7 +63,11 @@ describe('Bước 1.1 — Bộ lọc bảo mật projectStateForPlayer (Chống 
           id: 'int-1',
           kind: 'WAIT_NULLIFICATION',
           targetSeat: opponentSeat,
-          isSimulatedDelay: true,
+          sourceSeat: lordSeat,
+          scrollNameVi: 'Nam Man Nhập Xâm',
+          isSimulatedDelay: false,
+          eligibleSeats: [viewerSeat, opponentSeat],
+          passedSeats: [opponentSeat],
         },
       ],
       players: master.players.map((p) => {
@@ -91,11 +95,18 @@ describe('Bước 1.1 — Bộ lọc bảo mật projectStateForPlayer (Chống 
 
     // Tuyệt đối không lộ cờ isSimulatedDelay trong dữ liệu gửi xuống máy khách
     expect(serialized).not.toContain('isSimulatedDelay');
+    expect(serialized).not.toContain('eligibleSeats');
+    expect(serialized).not.toContain('passedSeats');
     expect(view.activeInterrupt).toEqual({
       id: 'int-1',
       kind: 'WAIT_NULLIFICATION',
       targetSeat: opponentSeat,
+      sourceSeat: lordSeat,
+      scrollNameVi: 'Nam Man Nhập Xâm',
+      canRespondNullification: true,
     });
+    const opponentView = projectStateForPlayer(pollutedMaster, seats[opponentSeat]!.userId);
+    expect(opponentView.activeInterrupt?.canRespondNullification).toBe(false);
 
     // Vẫn thấy chính xác số lượng bài rút & bài trên tay đối thủ
     expect(view.drawPileCount).toBe(2);

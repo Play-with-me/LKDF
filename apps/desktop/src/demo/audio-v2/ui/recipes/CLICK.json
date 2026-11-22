@@ -1,0 +1,21 @@
+{
+  "name": "tqs_click",
+  "says": "a crisp wooden game piece tap on an ebony table",
+  "space": "dry",
+  "layers": [
+    {
+      "sound": "tick/wood",
+      "pitch": -2,
+      "gain": 0
+    },
+    {
+      "sound": "knock/soft",
+      "cut": [
+        0,
+        0.08
+      ],
+      "lowpass": 1800,
+      "gain": -6
+    }
+  ]
+}

@@ -451,14 +451,21 @@ export function DevMatchPreview({
     playerView.activeInterrupt?.id,
     prompt.actorSeat,
   ].join(':');
+  const timerConfig = { ...TIMER_PRESETS.STANDARD, reactionSeconds: 20 };
+  const decisionSeconds = playerView.activeInterrupt ? timerConfig.reactionSeconds :
+    playerView.turnPhase === 'DISCARD' ? timerConfig.discardSeconds : timerConfig.mainTurnSeconds;
   const phaseDeadlineAt = useMemo(
-    () => decisionKey === null ? null : new Date(Date.now() + 20_000).toISOString(),
-    [decisionKey, isPaused],
+    () => decisionKey === null ? null : new Date(Date.now() + decisionSeconds * 1000).toISOString(),
+    [decisionKey, decisionSeconds, isPaused],
   );
 
   return (
     <section className="relative flex h-screen w-screen min-h-0 min-w-0 flex-col overflow-hidden bg-[#090807] text-[#EFE6D5]">
       <MatchSettings error={actionError}>
+        <label className="mb-3 flex cursor-pointer items-center gap-2 text-xs font-semibold text-[#EFE6D5]">
+          <input type="checkbox" checked={autoSkipNullify} onChange={(event) => { const enabled = event.target.checked; setAutoSkipNullify(enabled); handleSendAction({ type: "SET_AUTO_SKIP_NULLIFICATION", seatIndex: 0, enabled }); }} className="accent-[#D99B26]" />
+          Tự bỏ qua Vô Giải
+        </label>
         <div className="mb-3 flex min-w-0 flex-wrap items-center gap-2 text-xs">
           <span className="shrink-0 rounded border border-[#D99B26]/60 bg-[#9E2B25]/85 px-2 py-0.5 font-semibold text-[#FDE68A]">
             DEV · {playerCount}P
@@ -572,26 +579,17 @@ export function DevMatchPreview({
         <MatchArenaLayout
           playerView={playerView}
           roomSeats={roomState.seats}
-          timerConfig={phaseDeadlineAt ? { ...TIMER_PRESETS.STANDARD, mainTurnSeconds: 20, reactionSeconds: 20 } : TIMER_PRESETS.STANDARD}
+          timerConfig={timerConfig}
           phaseDeadlineAt={phaseDeadlineAt}
-          pausedRemainingMs={isPaused ? 20_000 : null}
+          pausedRemainingMs={isPaused ? decisionSeconds * 1000 : null}
           isTimerPaused={isPaused}
           selection={selection}
-          autoSkipNullification={autoSkipNullify}
           connectionLost={false}
           onReconnect={() => resetPreview(playerCount, previewStage)}
           onToggleCard={handleToggleCard}
           onToggleTarget={handleToggleTarget}
           onToggleSkillMode={handleToggleSkillMode}
           onToggleConvertMode={handleToggleConvertMode}
-          onToggleAutoSkipNullification={(enabled) => {
-            setAutoSkipNullify(enabled);
-            handleSendAction({
-              type: 'SET_AUTO_SKIP_NULLIFICATION',
-              seatIndex: 0,
-              enabled,
-            });
-          }}
           onSendAction={handleSendAction}
           onSelectHero={handleSelectHero}
           onClearSelection={() => setSelection(EMPTY_MATCH_SELECTION)}

@@ -1,0 +1,28 @@
+{
+  "name": "tqs_weapon",
+  "says": "forged steel sword drawn cleanly from wooden scabbard",
+  "space": "room",
+  "dur": 0.7,
+  "layers": [
+    {
+      "sound": "sword/draw",
+      "cut": [
+        0.0,
+        0.65
+      ],
+      "lowpass": 7800,
+      "gain": 0
+    },
+    {
+      "sound": "shine/blade",
+      "at": 0.12,
+      "lowpass": 7400,
+      "gain": -4
+    },
+    {
+      "sound": "knock/wood",
+      "at": 0.02,
+      "gain": -8
+    }
+  ]
+}

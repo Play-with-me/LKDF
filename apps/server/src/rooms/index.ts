@@ -91,6 +91,7 @@ export interface RoomManager {
     profile: UserProfile,
     roomCode: string,
   ): Promise<RoomOperationResult<RoomViewerPayload>>;
+  setReady(userId: string, roomCode: string, isReady: boolean): Promise<RoomOperationResult<RoomViewerPayload>>;
   updateTimerPreset(
     userId: string,
     roomCode: string,
@@ -177,9 +178,13 @@ function computePhaseDeadlineIso(
   isTimerPaused: boolean,
   nowMs: number,
   timerScale: number,
+  nullificationWindowMs: number,
 ): string | null {
   if (!masterState || isTimerPaused || masterState.turnPhase === 'GAME_OVER') {
     return null;
+  }
+  if (masterState.interruptStack.at(-1)?.kind === 'WAIT_NULLIFICATION') {
+    return new Date(nowMs + nullificationWindowMs).toISOString();
   }
   const config = TIMER_PRESETS[timerPreset];
   let seconds = config.mainTurnSeconds;
@@ -187,6 +192,8 @@ function computePhaseDeadlineIso(
     seconds = config.heroSelectSeconds;
   } else if (masterState.interruptStack.length > 0) {
     seconds = config.reactionSeconds;
+  } else if (masterState.turnPhase === 'DISCARD') {
+    seconds = config.discardSeconds;
   }
   const durationMs = Math.max(20, Math.round(seconds * 1000 * timerScale));
   return new Date(nowMs + durationMs).toISOString();
@@ -243,6 +250,7 @@ function syncTakeoverOnState(
     return {
       ...seat,
       connectionStatus: nextConn,
+      ...(nextConn === 'DISCONNECTED' && record.roomState.status === 'LOBBY' ? { isReady: false } : {}),
       isBotTakeover: nextTakeover,
     };
   });
@@ -335,7 +343,7 @@ function advanceSkippedPhaseState(
     const remainingEligible = top.eligibleSeats.filter(
       (s) => !top.passedSeats.includes(s),
     );
-    for (const seatIndex of remainingEligible) {
+    for (const seatIndex of remainingEligible.length ? remainingEligible : top.eligibleSeats.slice(0, 1)) {
       const currentTop =
         nextState.interruptStack[nextState.interruptStack.length - 1];
       if (!currentTop || currentTop.id !== top.id) {
@@ -418,6 +426,7 @@ export function createRoomManager(deps: {
   readonly authService: AuthService;
   readonly nowFn?: () => number;
   readonly timerScale?: number;
+  readonly nullificationWindowMs?: number;
   readonly hostFailoverDelayMs?: number;
   readonly defaultRng?: () => number;
 }): RoomManager {
@@ -428,6 +437,7 @@ export function createRoomManager(deps: {
   let globalOpQueue: Promise<unknown> = Promise.resolve();
   const getNowMs = deps.nowFn ?? (() => Date.now());
   const timerScale = deps.timerScale ?? 1;
+  const nullificationWindowMs = deps.nullificationWindowMs ?? 3500;
   const hostFailoverDelayMs =
     deps.hostFailoverDelayMs ?? DEFAULT_HOST_FAILOVER_DELAY_MS;
   const fallbackRng = deps.defaultRng ?? Math.random;
@@ -510,6 +520,9 @@ export function createRoomManager(deps: {
       ].slice(-MAX_UNDO_HISTORY);
     }
 
+    const oldPrompt = record.masterGameState?.interruptStack.at(-1);
+    const keepNullificationDeadline = oldPrompt?.kind === 'WAIT_NULLIFICATION' &&
+      oldPrompt.id === nextMasterState.interruptStack.at(-1)?.id;
     record.masterGameState = nextMasterState;
     if (nextMasterState.turnPhase === 'GAME_OVER') {
       record.roomState = { ...record.roomState, status: 'FINISHED' };
@@ -520,12 +533,13 @@ export function createRoomManager(deps: {
       await deps.persistence.saveRoomSnapshot(toSnapshotRecord(record));
       await archiveFinishedMatch(record, nextMasterState, nowMs);
     } else {
-      record.phaseDeadlineAt = computePhaseDeadlineIso(
+      record.phaseDeadlineAt = (keepNullificationDeadline ? record.phaseDeadlineAt : null) ?? computePhaseDeadlineIso(
         nextMasterState,
         record.roomState.timerPreset,
         record.roomState.isTimerPaused,
         nowMs,
         timerScale,
+        nullificationWindowMs,
       );
       record.updatedAt = new Date(nowMs).toISOString();
       await deps.persistence.saveRoomSnapshot(toSnapshotRecord(record));
@@ -565,6 +579,7 @@ export function createRoomManager(deps: {
             false,
             nowMs,
             timerScale,
+            nullificationWindowMs,
           );
         }
 
@@ -764,6 +779,33 @@ export function createRoomManager(deps: {
       });
     },
 
+    async setReady(userId, roomCodeRaw, isReady) {
+      const roomCode = normalizeRoomCode(roomCodeRaw);
+      return runWithRoomLock(roomCode, async () => {
+        const record = roomsByCode.get(roomCode);
+        const seat = record?.roomState.seats.find(member => member.userId === userId);
+        if (!record || !seat) {
+          return { ok: false, statusCode: 404, code: 'ROOM_NOT_FOUND', messageVi: 'Không tìm thấy phòng của bạn.' };
+        }
+        if (record.roomState.status !== 'LOBBY' || seat.connectionStatus !== 'ONLINE' ||
+          record.roomState.actingHostUserId === userId) {
+          return { ok: false, statusCode: 409, code: 'READY_UNAVAILABLE', messageVi: 'Hiện không thể đổi trạng thái sẵn sàng.' };
+        }
+        if (Boolean(seat.isReady) !== isReady) {
+          const roomState = {
+            ...record.roomState,
+            seats: record.roomState.seats.map(member => member === seat ? { ...seat, isReady } : member),
+          };
+          const updatedAt = new Date(getNowMs()).toISOString();
+          await deps.persistence.saveRoomSnapshot(toSnapshotRecord({ ...record, roomState, updatedAt }));
+          record.roomState = roomState;
+          record.updatedAt = updatedAt;
+          emitRoomUpdated(roomCode, 'READY_UPDATED');
+        }
+        return { ok: true, data: buildViewerPayload(record, userId) };
+      });
+    },
+
     async updateTimerPreset(
       userId: string,
       roomCodeRaw: string,
@@ -912,8 +954,7 @@ export function createRoomManager(deps: {
         }
 
         if (
-          record.roomState.actingHostUserId !== userId &&
-          record.roomState.ownerUserId !== userId
+          record.roomState.actingHostUserId !== userId
         ) {
           return {
             ok: false,
@@ -949,6 +990,13 @@ export function createRoomManager(deps: {
             code: 'TOO_MANY_PLAYERS',
             messageVi: 'Mỗi bàn tối đa chỉ hỗ trợ 8 người chơi thật.',
           };
+        }
+
+        const pending = record.roomState.seats.filter(seat => seat.userId !== userId &&
+          (!seat.isReady || seat.connectionStatus !== 'ONLINE'));
+        if (pending.length) {
+          return { ok: false, statusCode: 409, code: 'GUESTS_NOT_READY',
+            messageVi: `Chờ ${pending.length} khách sẵn sàng.` };
         }
 
         const matchId = `match_${randomUUID().replace(/-/g, '').slice(0, 16)}`;
@@ -1162,6 +1210,17 @@ export function createRoomManager(deps: {
             record.masterGameState.interruptStack.length - 1
           ];
 
+        if (action.type === 'RESPOND_NULLIFICATION' && action.cardId !== null &&
+            topInterrupt?.kind === 'WAIT_NULLIFICATION' && record.phaseDeadlineAt &&
+            getNowMs() >= Date.parse(record.phaseDeadlineAt)) {
+          return {
+            ok: false,
+            statusCode: 409,
+            code: 'NULLIFICATION_WINDOW_CLOSED',
+            messageVi: 'Đã hết thời gian dùng Vô Giải Khả Kích.',
+          };
+        }
+
         if (
           action.type === 'RESPOND_NULLIFICATION' &&
           action.cardId === null &&
@@ -1185,7 +1244,7 @@ export function createRoomManager(deps: {
         const rng = options?.rng ?? fallbackRng;
         let nextState: MasterGameState;
         try {
-          nextState = applyGameAction(record.masterGameState, action, rng);
+          nextState = applyGameAction(record.masterGameState, action, rng, { deferNullificationPass: true });
 
           if (
             action.type === 'SET_AUTO_SKIP_NULLIFICATION' &&
@@ -1203,6 +1262,7 @@ export function createRoomManager(deps: {
                 cardId: null,
               },
               rng,
+              { deferNullificationPass: true },
             );
           }
         } catch (err) {
@@ -1212,10 +1272,14 @@ export function createRoomManager(deps: {
           };
         }
 
-        const shouldPushUndo = action.type !== 'SET_AUTO_SKIP_NULLIFICATION';
+        const shouldPushUndo = action.type !== 'SET_AUTO_SKIP_NULLIFICATION' &&
+          !(action.type === 'RESPOND_NULLIFICATION' && action.cardId === null);
         await persistAfterMasterTransition(record, nextState, getNowMs(), {
           pushUndo: shouldPushUndo,
-          event: `ACTION:${action.type}`,
+          event: topInterrupt?.kind === 'WAIT_NULLIFICATION' &&
+            topInterrupt.id === nextState.interruptStack.at(-1)?.id &&
+            (action.type === 'RESPOND_NULLIFICATION' || action.type === 'SET_AUTO_SKIP_NULLIFICATION')
+            ? `NULLIFICATION_PRIVATE:${userId}` : `ACTION:${action.type}`,
         });
 
         return {
@@ -1406,7 +1470,8 @@ export function createRoomManager(deps: {
         ) {
           if (
             !record.phaseDeadlineAt ||
-            Date.parse(record.phaseDeadlineAt) <= nowMs + 1000
+            (record.masterGameState.interruptStack.at(-1)?.kind !== 'WAIT_NULLIFICATION' &&
+              Date.parse(record.phaseDeadlineAt) <= nowMs + 1000)
           ) {
             record.phaseDeadlineAt = computePhaseDeadlineIso(
               record.masterGameState,
@@ -1414,6 +1479,7 @@ export function createRoomManager(deps: {
               false,
               nowMs,
               timerScale,
+              nullificationWindowMs,
             );
           }
         }
@@ -1484,12 +1550,14 @@ export function createRoomManager(deps: {
           }
         } else {
           const botAction = decideBotAction(botView, rng);
-          nextState = applyGameAction(master, botAction, rng);
+          nextState = applyGameAction(master, botAction, rng, { deferNullificationPass: true });
         }
 
         await persistAfterMasterTransition(record, nextState, getNowMs(), {
           pushUndo: true,
-          event: 'BOT_ACTION',
+          event: master.interruptStack.at(-1)?.kind === 'WAIT_NULLIFICATION' &&
+            master.interruptStack.at(-1)?.id === nextState.interruptStack.at(-1)?.id
+            ? `NULLIFICATION_PRIVATE:${actor.userId}` : 'BOT_ACTION',
         });
         return { acted: true, roomCode };
       });
@@ -1543,52 +1611,14 @@ export function createRoomManager(deps: {
           return { handled: true, roomCode };
         }
 
-        const top = master.interruptStack[master.interruptStack.length - 1];
-        if (top?.kind === 'WAIT_NULLIFICATION') {
-          if (top.isSimulatedDelay) {
-            const nextState = applyGameAction(
-              master,
-              { type: 'RESOLVE_SIMULATED_NULLIFICATION' },
-              rng,
-            );
-            await persistAfterMasterTransition(record, nextState, nowMs, {
-              event: 'SIMULATED_NULLIFICATION_RESOLVED',
-            });
-            return { handled: true, roomCode };
-          }
-
-          let nextState = master;
-          for (const timedOutSeat of prompt.actorSeats) {
-            const actor = nextState.players.find(
-              (p) => p.seatIndex === timedOutSeat,
-            );
-            if (!actor) {
-              continue;
-            }
-            syncTakeoverOnState(record, actor.userId, {
-              isBotTakeover: true,
-              logMessageVi: `${actor.displayName} hết giờ phản ứng Vô Giải — Máy tạm thời đánh hộ.`,
-            });
-            nextState = record.masterGameState!;
-            nextState = applyGameAction(
-              nextState,
-              {
-                type: 'RESPOND_NULLIFICATION',
-                seatIndex: timedOutSeat,
-                cardId: null,
-              },
-              rng,
-            );
-            record.masterGameState = nextState;
-          }
-
+        if (master.interruptStack.at(-1)?.kind === 'WAIT_NULLIFICATION') {
+          const nextState = advanceSkippedPhaseState(master, rng);
           await persistAfterMasterTransition(record, nextState, nowMs, {
             pushUndo: true,
-            event: 'NULLIFICATION_TIMEOUT',
+            event: 'NULLIFICATION_WINDOW_CLOSED',
           });
           return { handled: true, roomCode };
         }
-
         const timedOutSeat = prompt.actorSeats[0];
         if (timedOutSeat === undefined) {
           return { handled: false, roomCode };
@@ -1686,6 +1716,7 @@ export function createRoomManager(deps: {
             isTimerPaused: false,
             seats: record.roomState.seats.map((s) => ({
               ...s,
+              isReady: false,
               isBotTakeover: false,
             })),
           };
@@ -1832,6 +1863,7 @@ export function createRoomManager(deps: {
                   false,
                   nowMs,
                   timerScale,
+                  nullificationWindowMs,
                 );
             record.updatedAt = new Date(nowMs).toISOString();
             await deps.persistence.saveRoomSnapshot(toSnapshotRecord(record));

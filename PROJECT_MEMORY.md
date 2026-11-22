@@ -303,6 +303,68 @@ Lớp hiệu ứng bàn chính đã nối các thay đổi xác nhận được 
 - 2026-11-20 · Bước 4.4 · Dời chồng rút lên góc trên trái của bàn chung. Typecheck, build desktop và 85/85 unit đạt. Bàn thử 8 ghế ở 1864×929 không chạm ghế hay vùng bài trung tâm. Đã thấy phần tử hiệu ứng chuyển lá xuất hiện, chưa đo trọn đường bay hoặc nghiệm thu online.
 - Bước 4.4 · Khay lấy bài tay tích hợp cho Phản Quỷ, Đột Tập và Thuận Thủ. Typecheck, build desktop, 85/85 unit, 24/24 integration và 500/500 ván giả lập đạt. Chờ nghiệm thu nhiều máy.
 
+- Sảnh bản chính: dùng chung giao diện Chơi online và phòng chờ với demo. Khách xác nhận qua PATCH /api/rooms/:roomCode/ready, đồng bộ qua WebSocket. RoomManager tuần tự hóa xác nhận với Bắt đầu, kiểm tra khách đang kết nối và đã sẵn sàng. Chủ đang điều hành được miễn xác nhận. Chuyển qua Chọn tướng thật khi máy chủ chốt bắt đầu. Typecheck desktop đạt, 24/24 test tích hợp máy chủ đạt, đã xem màn Chơi online trong tab bản chính. Bàn giao: chơi thử từ nhiều phiên đăng nhập thật và đối chiếu hiệu ứng trực tiếp ở các vai.
+
+- Bản chính tăng thời gian đánh bài chính lên 90/150/180 giây cho Nhanh/Chuẩn/Thong thả. Xác nhận cả ba mốc ở màn Tạo phòng, typecheck và build desktop đạt, 85/85 unit và 24/24 integration đạt. Bàn giao: máy chủ dùng cấu hình mới khi cấp hạn giờ mới.
+
+- Hồ sơ sảnh demo: HomeLobbyHub nhận ProfilePreview, DemoProfile dùng hồ sơ mẫu để đổi biệt danh, bật/tắt tiếng, chỉnh âm lượng và nghe âm đánh bài. Đã kiểm tra tên sai/hợp lệ, thanh âm lượng, phát mẫu, phím Esc và typecheck desktop. Chờ duyệt trước khi áp dụng ở bản chính.
+
+- Hồ sơ demo sau duyệt: DemoProfile chuyển sang thẻ nhận diện, dùng Segoe UI cho tiêu đề và biệt danh, mở form theo yêu cầu, Esc hủy chỉnh và trả tiêu điểm, gom điều khiển âm thanh. Đã thử tên sai, Esc, lưu tên nhiều dấu, âm thanh và typecheck. Electron 960×602 hiện đủ nút quay về, lưu và nghe thử kể cả khi form báo lỗi. Bàn giao: xem lại bản demo trước khi đưa sang hồ sơ tài khoản thật.
+
+- Hồ sơ demo vòng hoàn thiện: thêm nền gỗ và nét khắc ô ấn, neo tiêu đề khi chỉnh tên, đưa xác nhận lưu cạnh biệt danh, bổ sung phản hồi Đang phát/Dừng nghe và thanh âm lượng đồng bộ bảng màu. Kiểm trực tiếp ở tab demo, typecheck đạt. Electron kiểm không tràn và trả tiêu điểm ở 960×599, 1280×719, 1920×1079 với giảm chuyển động. Bàn giao: chờ duyệt thiết kế trước khi áp dụng bản chính.
+
+- Hồ sơ demo hiển thị sẵn tổng hợp, tướng thắng nhiều nhất và đủ bốn ván mẫu khi mở Hồ sơ. DemoBattleRecord tính số liệu từ cùng một danh sách. Đã xem tab demo và chạy typecheck. Chờ duyệt để kết nối thống kê thật ở bản chính.
+
+- Hồ sơ demo đã làm nổi tỷ lệ thắng, thêm ảnh tướng, ngày và thời lượng vào lịch sử. Các biến thể record=empty/long/error dùng để rà trạng thái, chưa kết nối tài khoản thật. Typecheck đạt. Codex đã xác nhận hồ sơ trống, thử lại và cuộn 20 ván bằng phím, Electron 960×602 không tràn ngang.
+
+- Hồ sơ demo thu gọn nhận diện, ghép tỷ lệ với số thắng/tổng, hiện đồng hạng và thêm lọc kết quả cho lịch sử. DemoBattleRecord đo tràn để đặt tiêu điểm và chuyển tiêu điểm sau Thử lại. Typecheck đạt, Codex kiểm 5 ván thua trong 20 ván, lọc rỗng, đồng hạng, tên dài; Electron 960×602 thấy ván đầu, không tràn ngang. Chờ duyệt trước khi áp dụng bản chính.
+
+- Đồ thị tháng Hồ sơ demo chọn mặc định tháng mới nhất, điều khiển bằng chuột/bàn phím, hiện rõ thắng/thua của mốc chọn. Hai đường luôn hiện; chỉ nét khắc đồng chạy hiệu ứng. Đã kiểm tháng đồng điểm, 0 ván, 20 ván; Electron 960×602 thấy trọn ván gần nhất, giảm chuyển động tắt hiệu ứng. Typecheck đạt.
+
+- Đồ thị Hồ sơ demo: tách xem nhanh khi rê chuột khỏi chọn tháng, viền bàn phím chỉ quanh nhãn, thêm ký hiệu thắng/thua và nhấn vạch đồng khi đổi mốc. Electron 960×602: nhãn 12,3 px, ván gần nhất hiện đủ, giảm chuyển động tắt hiệu ứng. Codex đã thử Tab, Enter và Space. Typecheck đạt.
+
+- Đồ thị tháng Hồ sơ demo lấy tháng hiện tại và hai tháng trước theo giờ Việt Nam, ghi rõ khoảng và phân biệt lỗi với tháng không có ván. Đã kiểm 9–11/2026, hồ sơ trống và thử lại. Bản chính chờ duyệt, cần tính tổng tháng trên toàn bộ ván trong kỳ, độc lập recentMatches mặc định 20/tối đa 100.
+
+- Hồ sơ demo phân biệt tổng quan mọi thời điểm, số ván trong kỳ ba tháng và tối đa 20 ván gần đây. record=scope hiển thị 120/110/20; lọc thua hiện 7/20, giữ nguyên hai tổng. Typecheck, tab demo và Electron 960×602 đạt. Bàn giao: dùng ca này khi nối dữ liệu thật.
+
+- Hồ sơ và Cài đặt bản chính dùng chung giao diện với demo. Nhà cung cấp thống kê lấy tổng mọi thời điểm, ba tháng theo giờ Việt Nam tính từ toàn bộ ván và tối đa 20 ván gần nhất. LiveLobbyProfile tải dữ liệu tài khoản, HomeLobbyHub lưu biệt danh và tùy chọn qua API hiện có, MatchScreen dùng âm lượng đã lưu. Kiểm 120/110/20 và ranh giới tháng, 25/25 integration, 85/85 unit, typecheck đạt. Electron với phiên thử cục bộ xác nhận bảng lịch sử thật, đổi biệt danh và lưu 39%. Bàn giao: triển khai máy chủ có includeMonthly cùng bản desktop, sau đó nghiệm thu Google thật và DPI Windows.
+
+- Bước 4.1: Cài đặt cảnh báo âm lượng chưa lưu khi về menu, cho ở lại, bỏ thay đổi hoặc lưu và rời. Hồ sơ hiển thị phút và giây gốc. Tổng quan, đồ thị và lịch sử chạy chung một batch đọc libSQL. Electron thử ba lựa chọn và thời lượng 30/90 giây. Typecheck và 26/26 integration đạt, gồm ghi trận đồng thời. Bàn giao: kiểm lại với Google và Turso triển khai.
+
+- Bước 4.1: Hồ sơ giữ tháng, bộ lọc và tiêu điểm khi trở về từ thống kê chi tiết, mở chi tiết theo tài khoản hiện tại. Đồ thị thiếu dữ liệu có nút thử lại độc lập; Cài đặt phân biệt lỗi lưu với nghe thử, hỗ trợ lưu/bỏ trước đăng xuất. Typecheck và 26 kiểm thử tích hợp đạt. Bàn giao: nghiệm thu Google/Turso triển khai và DPI Windows thực tế.
+
+- Bước 4.1: Lưu cài đặt giới hạn chờ 8 giây. Sau kết quả chưa xác nhận, HomeLobbyHub đọc lại hồ sơ trước khi ghi lại. LiveLobbyProfile giữ thống kê hiện có và phân biệt lỗi tải lại với thiếu dữ liệu tháng. Electron mô phỏng xác nhận 39% đã ghi, một PATCH và đăng xuất, thử zoom 125%/150% và giảm chuyển động. Typecheck, build, 85 unit và 26 integration đạt. Bàn giao: nghiệm thu Google/Turso và DPI Windows thật.
+
+- Bước 4.1: Cài đặt có Âm thanh, Hiệu ứng, Thông báo Windows và Tài khoản. devicePreferences lưu giảm chuyển động và nháy taskbar theo thiết bị, tương ứng với nền sảnh/chuyển cảnh/chuyển động bài và nhắc lượt. Tài khoản thật hiện nút đăng xuất, bản mẫu có giải thích. Electron cục bộ đã kiểm hai tùy chọn qua tải lại ở khung 960×600; build, typecheck và 26 tích hợp đạt. Bàn giao: thử taskbar Windows khi cửa sổ mất tiêu điểm trong ván nhiều người.
+
+- Bước 4.1: Cài đặt dùng bốn thẻ điều hướng, hiển thị mức lưu và chế độ chuyển động thực tế, ghi rõ phạm vi lưu và hỗ trợ của Windows. Electron 960×600 ở zoom 100/125/150% thấy đủ bốn nhóm; kiểm Home/End/mũi tên, giữ bản nháp và bảo vệ Esc. Bàn giao: thử tài khoản thật, DPI hệ điều hành và nháy thanh tác vụ trong ván Windows.
+
+- Bước 4.1: Thẻ Âm thanh hiện Chưa lưu khi có bản nháp. Đăng xuất chờ tối đa 8 giây, xóa phiên thiết bị và báo nếu chưa xác nhận đóng phiên máy chủ. Electron mô phỏng Lưu và đăng xuất: nhãn vẫn hiện ở Tài khoản, ghi một lần, về đăng nhập sau 8,1 giây và xóa mã phiên. Build, typecheck và 26 tích hợp đạt. Bàn giao: nghiệm thu Google và taskbar trong ván Windows thật.
+
+- Bước 4.1: thẻ Âm thanh chỉ còn bật/tắt tiếng, giao âm lượng cho Windows. Bàn đấu dùng mức phát mặc định thay vì mức cũ từ hồ sơ. Electron xác nhận hai luồng bật/tắt ở bản chính xem thử và demo, typecheck đạt.
+
+- Cài đặt một màn chỉ bật trong lobby-demo qua compactSettingsPreview. Bốn hàng hiện cùng nhau, công tắc tiếng giữ tiêu điểm, chính vẫn bốn thẻ. Electron 960×600: cả khung nằm trọn ở zoom 100/125/150%; kiểm thứ tự điều khiển và công tắc. Bàn giao: chờ duyệt bố cục; kiểm tài khoản thật và ván Windows khi áp dụng.
+
+- Bước 4.1: Đã áp dụng bố cục Cài đặt một màn sang bản chính. LobbySettings dùng chung với demo và đã bỏ nhánh bốn thẻ. Electron với phiên mô phỏng ở 960×600 kiểm bốn hàng vừa khung tại zoom 100/125/150%, hiện email, đăng xuất gửi một yêu cầu và xóa phiên cục bộ. Bàn giao: xác nhận với tài khoản Google và ứng dụng Windows thật.
+
+- Bước 4.1: Esc và nút Back bên hông chuột dùng chung điều hướng quay lại của sảnh và thống kê. useBackNavigation nhận Esc ở window, để màn con xử lý trước, nhận mouse button 3 và Electron browser-back qua preload. Electron mô phỏng trên bản chính xem thử và demo xác nhận Esc khi không có tiêu điểm, hủy sửa biệt danh trước khi về menu, trả tiêu điểm và IPC. Build/typecheck đạt. Bàn giao: thử nút bên hông chuột vật lý trên bản Windows.
+
+- Bước 4.1: Tạo bộ âm Xích Bích gốc gồm hover, click, đến lượt, phản ứng và chiến thắng. useInterfaceSounds nối nút ở bản chính và demo, ngăn lặp hover nhanh và dùng công tắc Tiếng game. Mức âm tệp cue trong ván mặc định tăng 0,55 lên 0,85. Electron xác nhận phát đủ 5 tệp và tắt tiếng giao diện. Bàn giao: nghe cân bằng âm trên loa Windows trong ván thật.
+
+- Bước 4.1: Âm Xích Bích được tải và giải mã trước qua Web Audio, phát AudioBuffer ngay khi hover, nhấn chuột và nhận tín hiệu trận. Chuột phát lúc pointerdown, click bàn phím vẫn phát, không lặp click chuột. Electron đo thời gian từ sự kiện đến gọi start: nhấn 0,4 ms, hover 0,2 ms, xác nhận âm lượt và tắt tiếng. Đây là thời gian phần mềm; chưa đo loa Windows.
+
+- Âm nền Xích Bích: vòng gió và nước 16 giây ghép điểm đầu/cuối, chạy ở sảnh/phòng chờ và nhỏ hơn trong ván, tắt qua Tiếng game. Electron xác nhận tắt/dừng và bật chỉ tạo một vòng, Typecheck/build. Bàn giao: nghe cân bằng với báo lượt trên loa thật.
+
+- Thay âm gió/nước bằng nhạc chờ Xích Bích không lời ở sảnh/phòng chờ; dừng khi vào bàn đấu. Sau yêu cầu dịu hơn, hạ từ 96 xuống 84 BPM, giảm tiếng trống và dải gảy sáng, giảm mức nền 0,30 xuống 0,23. Vòng 45,7 giây. Typecheck, build và bật/tắt vòng nhạc trong Electron đạt.
+
+- Bước 4.1: Cài đặt tách Nhạc nền và Hiệu ứng âm thanh. Máy chủ lưu music_enabled riêng; hồ sơ cũ lấy trạng thái cũ khi chưa thiết lập. Electron thử 4 tổ hợp bật/tắt, tích hợp xác nhận lưu sau khởi động lại. Bàn giao: triển khai máy chủ và desktop cùng bản.
+
+- Bước 4.4 (2026-11-21): Bàn online và bàn xem thử dùng chung âm đánh bài, trang bị, mất máu và hồi máu. Vòng nhạc trong ván dài 32 giây, dừng khi kết thúc và dùng công tắc Nhạc nền độc lập. Typecheck, build desktop, 85 unit, 26 tích hợp và 10 tình huống mô phỏng âm thanh trong Electron đạt. Còn nghe cân bằng âm lượng trong ván online thật.
+
+- Bước 4.4 (2026-11-21): Phối lại bản nhạc chiến đấu ở 108 BPM, vòng 35,56 giây. Electron kiểm luồng mô phỏng sảnh → phòng chờ → bàn đấu → kết thúc và ghi nhận nhạc chờ dừng trước khi nhạc trận bắt đầu. Typecheck và build desktop đạt.
+
+- Bước 4.4 (2026-11-21): Sửa trường hợp mở sảnh và bàn đấu ở các tab trình duyệt cùng lúc. Nhạc nền theo độ hiển thị và tiêu điểm của tab. Typecheck, build desktop, 85 unit và kịch bản chuyển giữa ba trang Electron đạt.
+
 - Bước 4.4 (2026-11-21): Tạo 15 tệp WAV cho âm hiệu ứng bàn đấu. Kỹ năng dùng âm báo ngắn. HP giảm phát tiếng chém, tướng chính thức bị loại phát âm kết liễu, tạm trì hoãn tín hiệu thắng nếu hai sự kiện sát nhau. Electron xác nhận 15 tệp và 28 tình huống mô phỏng. Typecheck, build desktop, 85 unit và 26 tích hợp đạt.
 
 - Bước 4.4 (2026-11-21): Thay các tệp OGG cũ trong nhánh hồi máu và đặt bài bằng WAV tự tổng hợp. Electron xác nhận chính xác buffer ở bốn tình huống hồi thường, Thanh Nang, Đào và Đào Viên. Typecheck, build desktop và 85 unit đạt.

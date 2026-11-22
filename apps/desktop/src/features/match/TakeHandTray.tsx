@@ -1,3 +1,4 @@
+import { prefersReducedMotion } from '../../lib/devicePreferences.js';
 import { useLayoutEffect, useRef, useState } from 'react';
 import type { GameAction, PublicInterruptView, PublicPlayerView } from '@lkdf/shared';
 import { CardBack } from '../../components/icons/index.js';
@@ -23,24 +24,42 @@ export function TakeHandTray({ interrupt, owner, viewerSeat, onSendAction }: Pro
   const moving = useRef<Animation[]>([]);
 
   useLayoutEffect(() => {
-    if (canPrepare || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    if (canPrepare || prefersReducedMotion()) return;
     const row = cards.current;
     if (!row) return;
     const tray = row.getBoundingClientRect();
+    const arena = row.closest('.lkdf-arena-stage');
+    const source = arena?.querySelector(owner.seatIndex === viewerSeat
+      ? '.lkdf-battle-hand'
+      : `[data-drop-seat="${owner.seatIndex}"] [data-motion-hand-count]`);
+    const origin = source?.getBoundingClientRect();
+    if (origin) row.style.overflow = 'visible';
     // All public motion is based on anonymous positions, never on the owner's final order.
     const animations = Array.from(row.children, (card, index) => {
       const rect = card.getBoundingClientRect();
       const dx = (tray.left + tray.width / 2 - rect.left - rect.width / 2) * .65;
       const lane = index % 2 ? 1 : -1;
       return card.animate([
-        { translate: '0 0' },
-        { translate: `${dx}px ${lane * 8}px`, rotate: `${lane * 6}deg`, offset: .43 },
+        {
+          translate: origin
+            ? `${origin.left + (origin.width - rect.width) / 2 - rect.left}px ${origin.top + (origin.height - rect.height) / 2 - rect.top}px`
+            : '0 0',
+          opacity: origin ? 0 : 1,
+        },
+        { translate: '0 0', opacity: 1, offset: .4 },
+        { translate: `${dx}px ${lane * 8}px`, rotate: `${lane * 6}deg`, offset: .55 },
         { translate: `${dx + lane * 8}px ${-lane * 6}px`, rotate: `${-lane * 5}deg`, offset: .65 },
         { translate: '0 0' },
-      ], { duration: 420, delay: Math.min(index, 6) * 12, easing: 'ease-in-out' });
+      ], { duration: 620, delay: Math.min(index, 6) * 12, easing: 'ease-in-out', fill: 'backwards' });
     });
-    return () => animations.forEach(animation => animation.cancel());
-  }, [canPrepare]);
+    void Promise.allSettled(animations.map(animation => animation.finished)).then(() => {
+      if (animations.every(animation => animation.playState === 'finished')) row.style.overflow = '';
+    });
+    return () => {
+      animations.forEach(animation => animation.cancel());
+      row.style.overflow = '';
+    };
+  }, [canPrepare, owner.seatIndex, viewerSeat]);
   useLayoutEffect(() => () => moving.current.forEach(animation => animation.cancel()), []);
 
   function swap(first: number, second: number) {
@@ -52,7 +71,7 @@ export function TakeHandTray({ interrupt, owner, viewerSeat, onSendAction }: Pro
       return next;
     });
     const elements = cards.current?.children;
-    if (!elements || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    if (!elements || prefersReducedMotion()) return;
     moving.current.forEach(animation => animation.cancel());
     const dx = elements[second]!.getBoundingClientRect().left - elements[first]!.getBoundingClientRect().left;
     moving.current = [[first, dx], [second, -dx]].map(([index, offset]) =>

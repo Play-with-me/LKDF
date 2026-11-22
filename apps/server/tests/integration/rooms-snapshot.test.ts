@@ -121,7 +121,8 @@ describe('Bước 2.2 — Phòng chờ 4–8 người thật, 3 mức Đồng h�
     expect(created.roomState.timerPreset).toBe('STANDARD');
     expect(created.timerConfig).toEqual({
       heroSelectSeconds: 30,
-      mainTurnSeconds: 45,
+      mainTurnSeconds: 150,
+      discardSeconds: 45,
       reactionSeconds: 15,
     });
 
@@ -171,7 +172,8 @@ describe('Bước 2.2 — Phòng chờ 4–8 người thật, 3 mức Đồng h�
     expect(fastTimerRes.statusCode).toBe(200);
     expect(fastTimerRes.json<RoomViewerPayload>().timerConfig).toEqual({
       heroSelectSeconds: 20,
-      mainTurnSeconds: 30,
+      mainTurnSeconds: 90,
+      discardSeconds: 30,
       reactionSeconds: 10,
     });
 
@@ -284,12 +286,46 @@ describe('Bước 2.2 — Phòng chờ 4–8 người thật, 3 mức Đồng h�
     expect(ninthJoinRes.statusCode).toBe(409);
     expect(ninthJoinRes.json<{ code: string }>().code).toBe('ROOM_FULL');
 
+    const prematureStart = await srv.app.inject({
+      method: 'POST',
+      url: `/api/rooms/${roomCode}/start`,
+      headers: { authorization: `Bearer ${players[0]!.token}` },
+    });
+    expect(prematureStart.statusCode).toBe(409);
+    expect(prematureStart.json<{ code: string }>().code).toBe('GUESTS_NOT_READY');
+
+    for (const guest of players.slice(1, 8)) {
+      const response = await srv.app.inject({
+        method: 'PATCH',
+        url: `/api/rooms/${roomCode}/ready`,
+        headers: { authorization: `Bearer ${guest.token}` },
+        payload: { isReady: true },
+      });
+      expect(response.statusCode).toBe(200);
+    }
+
+    const updateGuestReady = (isReady: boolean) => srv.app.inject({
+      method: 'PATCH',
+      url: `/api/rooms/${roomCode}/ready`,
+      headers: { authorization: `Bearer ${players[1]!.token}` },
+      payload: { isReady },
+    });
+    expect((await updateGuestReady(false)).statusCode).toBe(200);
+    const cancelledStart = await srv.app.inject({
+      method: 'POST',
+      url: `/api/rooms/${roomCode}/start`,
+      headers: { authorization: `Bearer ${players[0]!.token}` },
+    });
+    expect(cancelledStart.json<{ code: string }>().code).toBe('GUESTS_NOT_READY');
+    expect((await updateGuestReady(true)).statusCode).toBe(200);
+
     const startRes = await srv.app.inject({
       method: 'POST',
       url: `/api/rooms/${roomCode}/start`,
       headers: { authorization: `Bearer ${players[0]!.token}` },
     });
     expect(startRes.statusCode).toBe(200);
+    expect((await updateGuestReady(false)).statusCode).toBe(409);
     const started = startRes.json<RoomViewerPayload>();
     expect(started.roomState.status).toBe('IN_GAME');
     expect(started.roomState.seats).toHaveLength(8);
@@ -339,6 +375,16 @@ describe('Bước 2.2 — Phòng chờ 4–8 người thật, 3 mức Đồng h�
         headers: { authorization: `Bearer ${joiner.token}` },
         payload: { roomCode },
       });
+    }
+
+    for (const guest of [p2, p3, p4]) {
+      const response = await srv1.app.inject({
+        method: 'PATCH',
+        url: `/api/rooms/${roomCode}/ready`,
+        headers: { authorization: `Bearer ${guest.token}` },
+        payload: { isReady: true },
+      });
+      expect(response.statusCode).toBe(200);
     }
 
     const startRes = await srv1.app.inject({

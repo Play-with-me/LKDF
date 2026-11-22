@@ -10,6 +10,7 @@ export const SCHEMA_STATEMENTS: readonly string[] = [
     has_custom_name INTEGER NOT NULL DEFAULT 0,
     avatar_url TEXT NOT NULL,
     sound_enabled INTEGER NOT NULL DEFAULT 1,
+    music_enabled INTEGER NULL,
     volume REAL NOT NULL DEFAULT 0.8,
     active_room_code TEXT NULL,
     active_session_id TEXT NULL,
@@ -71,6 +72,9 @@ export async function initializeSchema(client: Client): Promise<void> {
     await client.execute(sql);
   }
   const userCols = await client.execute('PRAGMA table_info(users)');
+  if (!userCols.rows.some(row => row['name'] === 'music_enabled')) {
+    await client.execute('ALTER TABLE users ADD COLUMN music_enabled INTEGER NULL');
+  }
   const hasActiveSessionCol = userCols.rows.some(
     (row) => row['name'] === 'active_session_id',
   );

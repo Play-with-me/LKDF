@@ -1,0 +1,29 @@
+{
+  "name": "tqs_judge",
+  "says": "judgement scroll flipped with wood gavel seal and bronze resonance",
+  "space": "room",
+  "dur": 0.78,
+  "layers": [
+    {
+      "sound": "paper/page",
+      "cut": [
+        0.0,
+        0.25
+      ],
+      "gain": -2
+    },
+    {
+      "sound": "gavel/strike",
+      "at": 0.08,
+      "pitch": -2,
+      "gain": 0
+    },
+    {
+      "sound": "note/singing_bowl",
+      "at": 0.09,
+      "pitch": 5,
+      "dur": 0.6,
+      "gain": -6
+    }
+  ]
+}

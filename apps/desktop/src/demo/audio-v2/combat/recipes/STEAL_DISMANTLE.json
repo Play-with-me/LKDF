@@ -1,0 +1,34 @@
+{
+  "name": "tqs_steal_dismantle",
+  "says": "quick parchment snatch and crisp air swipe",
+  "space": "dry",
+  "dur": 0.45,
+  "layers": [
+    {
+      "sound": "flick/paper",
+      "cut": [
+        0.0,
+        0.3
+      ],
+      "lowpass": 6200,
+      "gain": 0
+    },
+    {
+      "sound": "whoosh/fast",
+      "pitch": 4,
+      "at": 0.03,
+      "lowpass": 6200,
+      "gain": -3
+    },
+    {
+      "sound": "paper/rip",
+      "cut": [
+        0.0,
+        0.22
+      ],
+      "at": 0.1,
+      "lowpass": 5200,
+      "gain": -6
+    }
+  ]
+}

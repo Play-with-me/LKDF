@@ -1,0 +1,23 @@
+{
+  "name": "tqs_panel_open",
+  "says": "opening an ancient bamboo and parchment scroll dossier",
+  "space": "room",
+  "layers": [
+    {
+      "sound": "book/open",
+      "cut": [
+        0.46,
+        0.88
+      ],
+      "gain": 0,
+      "fade_out": 0.08
+    },
+    {
+      "sound": "slide/paper",
+      "at": 0.01,
+      "highpass": 400,
+      "lowpass": 5500,
+      "gain": -4
+    }
+  ]
+}

@@ -1,5 +1,12 @@
+import { useBackNavigation } from '../../lib/useBackNavigation.js';
+import { Settings } from 'lucide-react';
+import { LiveLobbyProfile } from './LiveLobbyProfile.js';
+import { LobbySettings } from './LobbyProfile.js';
+import { LobbyReference } from './LobbyReference.js';
+import './lobby-camp.css';
+import { RedCliffsScene } from './red-cliffs/RedCliffsScene.js';
 import { TIMER_PRESETS } from '@lkdf/shared';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState, type ComponentType } from 'react';
 import { GameIcon } from '../../components/icons/index.js';
 import { ApiError } from '../../lib/api.js';
 import type { LkdfApiClient } from '../../lib/api.js';
@@ -7,57 +14,55 @@ import type {
   RoomViewerPayload,
   TimerPreset,
   UserProfile,
+  UserPreferences,
 } from '../../lib/types.js';
 
 export interface HomeLobbyHubProps {
+  readonly ProfilePreview?: ComponentType<{ readonly profile: UserProfile; readonly onProfileUpdated: (profile: UserProfile) => void }>;
+  readonly navigationActive?: boolean;
+  readonly OnlinePreview?: ComponentType<{ readonly control: string; readonly playerName: string }>;
   readonly api: LkdfApiClient;
-  readonly sessionToken: string;
+  readonly sessionToken: string | null;
   readonly profile: UserProfile;
   readonly justLoggedIn: boolean;
   readonly onDismissWelcomeToast: () => void;
   readonly onProfileUpdated: (profile: UserProfile) => void;
   readonly onEnterRoom: (roomPayload: RoomViewerPayload) => void;
-  readonly onOpenStats: () => void;
-  readonly onLoggedOut: () => void;
+  readonly onOpenStats?: () => void;
+  readonly onLoggedOut: (notice?: string) => void;
   readonly onSessionInvalid: (messageVi: string) => void;
 }
 
 const PRESET_CARDS: readonly {
   readonly id: TimerPreset;
   readonly label: string;
-  readonly desc: string;
 }[] = [
   {
     id: 'FAST',
     label: 'Nhanh',
-    desc: `${TIMER_PRESETS.FAST.heroSelectSeconds}/${TIMER_PRESETS.FAST.mainTurnSeconds}/${TIMER_PRESETS.FAST.reactionSeconds}s`,
   },
   {
     id: 'STANDARD',
     label: 'Chuẩn',
-    desc: `${TIMER_PRESETS.STANDARD.heroSelectSeconds}/${TIMER_PRESETS.STANDARD.mainTurnSeconds}/${TIMER_PRESETS.STANDARD.reactionSeconds}s`,
   },
   {
     id: 'RELAXED',
     label: 'Thong thả',
-    desc: `${TIMER_PRESETS.RELAXED.heroSelectSeconds}/${TIMER_PRESETS.RELAXED.mainTurnSeconds}/${TIMER_PRESETS.RELAXED.reactionSeconds}s`,
   },
 ];
 
-function getInitials(displayName: string): string {
-  const parts = displayName.trim().split(/\s+/);
-  if (parts.length === 0 || !parts[0]) {
-    return 'LK';
-  }
-  if (parts.length === 1) {
-    return parts[0].slice(0, 2).toUpperCase();
-  }
-  const first = parts[0]?.[0] ?? '';
-  const last = parts[parts.length - 1]?.[0] ?? '';
-  return `${first}${last}`.toUpperCase();
-}
+
+
+const LOBBY_SECTIONS = [
+  ['online', 'Chơi online', 'Phòng riêng 4–8 người'],
+  ['reference', 'Tra cứu', 'Tướng, lá bài và thân phận'],
+  ['profile', 'Hồ sơ', 'Biệt danh và chiến tích'],
+] as const;
 
 export function HomeLobbyHub({
+  OnlinePreview,
+  navigationActive = true,
+  ProfilePreview,
   api,
   sessionToken,
   profile,
@@ -74,21 +79,11 @@ export function HomeLobbyHub({
   const [isCheckingActiveRoom, setIsCheckingActiveRoom] = useState<boolean>(true);
   const [isCreatingRoom, setIsCreatingRoom] = useState<boolean>(false);
   const [isJoiningRoom, setIsJoiningRoom] = useState<boolean>(false);
-  const [isUpdatingSound, setIsUpdatingSound] = useState<boolean>(false);
-  const [isLoggingOut, setIsLoggingOut] = useState<boolean>(false);
-  const [avatarFailed, setAvatarFailed] = useState<boolean>(false);
 
   const [createError, setCreateError] = useState<string | null>(null);
   const [joinError, setJoinError] = useState<string | null>(null);
-  const [isEditingName, setIsEditingName] = useState<boolean>(false);
-  const [nameDraft, setNameDraft] = useState<string>(profile.displayName);
-  const [isSavingName, setIsSavingName] = useState<boolean>(false);
-  const [nameError, setNameError] = useState<string | null>(null);
 
-  useEffect(() => {
-    setAvatarFailed(false);
-    setNameDraft(profile.displayName);
-  }, [profile.avatarUrl, profile.displayName]);
+
 
   useEffect(() => {
     if (!justLoggedIn) {
@@ -103,6 +98,10 @@ export function HomeLobbyHub({
   }, [justLoggedIn, onDismissWelcomeToast]);
 
   useEffect(() => {
+    if (!sessionToken) {
+      setIsCheckingActiveRoom(false);
+      return;
+    }
     let active = true;
     setIsCheckingActiveRoom(true);
 
@@ -136,64 +135,76 @@ export function HomeLobbyHub({
     };
   }, [api, onEnterRoom, onSessionInvalid, sessionToken]);
 
-  async function handleToggleSound(): Promise<void> {
-    setIsUpdatingSound(true);
+  const preferencesOutcomeUncertain = useRef(false);
+
+  async function savePreferences(preferences: Partial<UserPreferences>) {
+    if (!sessionToken) {
+      onProfileUpdated({ ...profile, preferences: { ...profile.preferences, ...preferences } });
+      return;
+    }
+
+    const signal = AbortSignal.timeout(8000);
     try {
-      const updated = await api.updatePreferences(sessionToken, {
-        soundEnabled: !profile.preferences.soundEnabled,
-      });
-      onProfileUpdated(updated);
-    } catch (err: unknown) {
-      if (err instanceof ApiError && err.statusCode === 401) {
-        onSessionInvalid(err.message);
+      if (preferencesOutcomeUncertain.current) {
+        const confirmed = await api.getMe(sessionToken, signal);
+        onProfileUpdated(confirmed);
+        if (Object.entries(preferences).every(([key, value]) =>
+          confirmed.preferences[key as keyof UserPreferences] === value)) {
+          preferencesOutcomeUncertain.current = false;
+          return;
+        }
       }
-    } finally {
-      setIsUpdatingSound(false);
+
+      const updated = await api.updatePreferences(sessionToken, preferences, signal);
+      preferencesOutcomeUncertain.current = false;
+      onProfileUpdated(updated);
+    } catch (error) {
+      if (signal.aborted) {
+        preferencesOutcomeUncertain.current = true;
+        throw new Error('Chưa xác nhận được cài đặt đã lưu. Hãy thử lại để kiểm tra với máy chủ.');
+      }
+      if (error instanceof ApiError && error.statusCode === 401) onSessionInvalid(error.message);
+      throw error;
+    }
+  }
+
+  async function saveDisplayName(displayName: string) {
+    if (!sessionToken) {
+      onProfileUpdated({ ...profile, displayName });
+      return;
+    }
+    try {
+      onProfileUpdated(await api.updateDisplayName(sessionToken, displayName));
+    } catch (error) {
+      if (error instanceof ApiError && error.statusCode === 401) onSessionInvalid(error.message);
+      throw error;
     }
   }
 
   async function handleLogout(): Promise<void> {
-    setIsLoggingOut(true);
-    try {
-      await api.logout(sessionToken);
-    } catch {
-      // Kể cả khi phiên đã hết hạn trên server vẫn xóa phiên ở máy khách
-    } finally {
-      setIsLoggingOut(false);
-      onLoggedOut();
-    }
-  }
-
-  async function handleSaveDisplayName(event: React.FormEvent): Promise<void> {
-    event.preventDefault();
-    const trimmed = nameDraft.trim();
-    if (trimmed.length < 2 || trimmed.length > 20) {
-      setNameError('Biệt danh cần từ 2 đến 20 ký tự.');
+    if (!sessionToken) {
+      window.location.assign(window.location.pathname);
       return;
     }
-
-    setNameError(null);
-    setIsSavingName(true);
+    let notice: string | undefined;
     try {
-      const updated = await api.updateDisplayName(sessionToken, trimmed);
-      onProfileUpdated(updated);
-      setIsEditingName(false);
-    } catch (err: unknown) {
-      if (err instanceof ApiError && err.statusCode === 401) {
-        onSessionInvalid(err.message);
-        return;
+      await api.logout(sessionToken, AbortSignal.timeout(8000));
+    } catch (error) {
+      if (!(error instanceof ApiError && error.code === 'INVALID_SESSION')) {
+        notice = 'Đã đăng xuất trên thiết bị này. Máy chủ chưa xác nhận đóng phiên.';
       }
-      setNameError(
-        err instanceof Error ? err.message : 'Không thể đổi biệt danh.',
-      );
     } finally {
-      setIsSavingName(false);
+      onLoggedOut(notice);
     }
   }
 
   async function handleCreateRoom(): Promise<void> {
     setCreateError(null);
     setJoinError(null);
+    if (!sessionToken) {
+      setCreateError('Hãy đăng nhập để tạo phòng chơi.');
+      return;
+    }
     setIsCreatingRoom(true);
     try {
       const payload = await api.createRoom(sessionToken, selectedPreset);
@@ -213,12 +224,16 @@ export function HomeLobbyHub({
 
   async function handleJoinRoom(event: React.FormEvent): Promise<void> {
     event.preventDefault();
+    if (isJoiningRoom || isCreatingRoom || isCheckingActiveRoom) return;
     setJoinError(null);
     setCreateError(null);
-
     const normalized = roomCodeInput.trim().toUpperCase();
     if (!/^[A-Z0-9]{6}$/.test(normalized)) {
       setJoinError('Mã phòng phải gồm đúng 6 ký tự chữ hoặc số (VD: K9M2P4).');
+      return;
+    }
+    if (!sessionToken) {
+      setJoinError('Hãy đăng nhập để vào phòng chơi.');
       return;
     }
 
@@ -239,273 +254,140 @@ export function HomeLobbyHub({
     }
   }
 
-  const displayCodeTarget =
-    roomCodeInput.trim().length > 0
-      ? roomCodeInput.trim().toUpperCase()
-      : 'K9M2P4';
+  const [lobbyScreen, setLobbyScreen] = useState<'menu' | 'settings' | typeof LOBBY_SECTIONS[number][0]>('menu');
+  const menuRef = useRef<HTMLElement>(null);
+  const roomInputRef = useRef<HTMLInputElement>(null);
+  const backRef = useRef<HTMLButtonElement>(null);
+  const lastMenuItem = useRef<'settings' | typeof LOBBY_SECTIONS[number][0] | null>(null);
+
+  useEffect(() => {
+    if (!lastMenuItem.current) return;
+    if (lobbyScreen === 'menu') {
+      menuRef.current?.querySelector<HTMLButtonElement>(`[data-lobby-item="${lastMenuItem.current}"]`)?.focus();
+    } else {
+      if (lobbyScreen === 'online' && !OnlinePreview) roomInputRef.current?.focus();
+      else if (lobbyScreen !== 'online') backRef.current?.focus();
+    }
+  }, [lobbyScreen, OnlinePreview]);
+
+  const control = 'min-h-10 rounded border border-[#806345] bg-[#211913] px-3 text-sm text-[#F5EBD6] hover:border-[#C89B4B] focus-visible:outline-2 focus-visible:outline-[#E6BE6C]';
+  const settingsRef = useRef<{ requestBack: () => void }>(null);
+  const backToMenu = () => {
+    setCreateError(null);
+    setJoinError(null);
+    setLobbyScreen('menu');
+  };
+  const requestBack = () => {
+    if (lobbyScreen === 'settings' && settingsRef.current) settingsRef.current.requestBack();
+    else backToMenu();
+  };
+  useBackNavigation(navigationActive && lobbyScreen !== 'menu', requestBack);
 
   return (
-    <section className="lkdf-scroll flex flex-1 min-h-0 min-w-0 flex-col items-center overflow-y-auto p-6 animate-lkdf-fade">
-      <div className="my-auto w-full max-w-4xl space-y-5">
+    <section data-live-session={sessionToken ? true : undefined}
+      className="lkdf-lobby-camp relative isolate flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto">
+      <div aria-hidden="true" className="lkdf-lobby-camp-art">
+        <RedCliffsScene />
+      </div>
       {justLoggedIn ? (
-        <div className="flex w-full items-center justify-between rounded-lg border border-[#16A34A]/50 bg-[#16A34A]/15 px-4 py-2.5 text-sm text-[#86EFAC] animate-lkdf-slide">
-          <span className="inline-flex items-center gap-2">
-            <GameIcon name="ui:check-circle" size={15} />
-            Đã đăng nhập: {profile.displayName}
-          </span>
-          <button
-            type="button"
-            onClick={onDismissWelcomeToast}
-            className="text-xs text-[#BBF7D0] hover:underline"
-          >
-            Ẩn thông báo
-          </button>
+        <div role="status" className="lkdf-lobby-camp-welcome">
+          <span>Đã đăng nhập với biệt danh {profile.displayName}</span>
+          <button type="button" onClick={onDismissWelcomeToast}>Ẩn thông báo</button>
         </div>
       ) : null}
-        {/* Thanh hồ sơ người chơi */}
-        <div className="flex flex-wrap items-center justify-between gap-4 rounded-[8px] border border-[#94A3B8]/32 bg-[#11151D]/95 px-5 py-4 shadow-2xl backdrop-blur-md">
-          <div className="flex items-center gap-3.5 min-w-0">
-            {profile.avatarUrl && !avatarFailed ? (
-              <img
-                src={profile.avatarUrl}
-                alt={profile.displayName}
-                onError={() => setAvatarFailed(true)}
-                className="h-11 w-11 shrink-0 rounded-full border border-[#CA9A48]/65 object-cover"
-              />
+      <div className={`lkdf-lobby-camp-content ${lobbyScreen === 'reference' ? 'lkdf-lobby-reference-layout' : ''}`}>
+        <div className="lkdf-lobby-camp-panel">
+          <div className="w-full">
+            {lobbyScreen !== 'menu' ? (
+              <button ref={backRef} type="button" onClick={requestBack}
+                className="mb-4 inline-flex min-h-9 cursor-pointer items-center gap-2 rounded-sm text-sm text-[#DFCAA9] hover:text-[#FFF0DA] focus-visible:outline-2 focus-visible:outline-[#E6BE6C]">
+                <span aria-hidden="true">‹</span> Về menu chính <kbd className="rounded border border-[#806345] px-1 text-xs">Esc</kbd>
+              </button>
+            ) : null}
+            {lobbyScreen === 'menu' ? (
+              <>
+                <span className="lkdf-lobby-camp-seal font-serif-title" aria-hidden="true">殺</span>
+                <h1 className="lkdf-lobby-camp-title font-serif-title">Tam Quốc Sát</h1>
+                <nav ref={menuRef} aria-label="Menu chính" className="lkdf-lobby-camp-menu"
+                  onKeyDown={event => {
+                    const direction = event.key === 'ArrowDown' ? 1 : event.key === 'ArrowUp' ? -1 : 0;
+                    if (!direction) return;
+                    const buttons = Array.from(event.currentTarget.querySelectorAll('button'));
+                    const index = buttons.findIndex(button => button === event.target);
+                    if (index < 0) return;
+                    event.preventDefault();
+                    buttons[(index + direction + buttons.length) % buttons.length]?.focus();
+                  }}>
+                  {LOBBY_SECTIONS.map(([view, label, detail]) => (
+                    <button key={view} type="button" data-lobby-item={view} onClick={() => {
+                      lastMenuItem.current = view;
+                      setLobbyScreen(view);
+                    }}
+                      data-primary={view === 'online' || undefined}
+                      className="lkdf-lobby-camp-command">
+                      <span className="lkdf-lobby-camp-copy"><strong>{label}</strong><small>{detail}</small></span>
+                    </button>
+                  ))}
+                  <button type="button" data-lobby-item="settings" className="lkdf-lobby-settings-entry"
+                      onClick={() => {
+                        lastMenuItem.current = 'settings';
+                        setLobbyScreen('settings');
+                      }}>
+                      <Settings size={20} aria-hidden="true" />
+                      Cài đặt
+                  </button>
+                </nav>
+              </>
+            ) : lobbyScreen === 'online' ? OnlinePreview ? (
+              <OnlinePreview control={control} playerName={profile.displayName} />
             ) : (
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[#CA9A48]/65 bg-[#9E2B25] font-serif-title text-sm font-bold text-[#F4EFE6]">
-                {getInitials(profile.displayName)}
-              </div>
-            )}
-
-            <div className="min-w-0">
-              {isEditingName ? (
-                <form
-                  onSubmit={(e) => {
-                    void handleSaveDisplayName(e);
-                  }}
-                  className="flex flex-wrap items-center gap-1.5"
-                >
-                  <input
-                    type="text"
-                    maxLength={20}
-                    value={nameDraft}
-                    onChange={(e) => {
-                      setNameDraft(e.target.value);
-                      setNameError(null);
-                    }}
-                    aria-label="Biệt danh hiển thị mới"
-                    className="w-40 rounded-lg border border-[#D99B26]/70 bg-[#101216] px-2.5 py-1 text-xs font-semibold text-[#EFE6D5] focus:outline-none"
-                  />
-                  <button
-                    type="submit"
-                    disabled={isSavingName}
-                    className="cursor-pointer rounded-lg bg-[#9E2B25] px-2.5 py-1 text-xs font-semibold text-[#F4EFE6] hover:bg-[#C83E37] disabled:opacity-50"
-                  >
-                    {isSavingName ? 'Đang lưu...' : 'Lưu tên'}
-                  </button>
-                  <button
-                    type="button"
-                    disabled={isSavingName}
-                    onClick={() => {
-                      setIsEditingName(false);
-                      setNameDraft(profile.displayName);
-                      setNameError(null);
-                    }}
-                    className="cursor-pointer rounded-lg border border-[#3A424C] bg-[#121418] px-2 py-1 text-xs text-[#B5A792] hover:text-[#EFE6D5]"
-                  >
-                    Hủy
-                  </button>
+              <div className="lkdf-online-entry">
+                <h2 className="font-serif-title text-[clamp(24px,3vw,42px)] font-bold leading-tight text-[#F5EBD6]">Chơi online</h2>
+                {isCheckingActiveRoom ? <p role="status" className="mt-2 text-sm">Đang kiểm tra phòng đang chơi…</p> : null}
+                <form onSubmit={handleJoinRoom} className="lkdf-online-panel" data-pending={isJoiningRoom}>
+                  <h3 className="font-serif-title">Vào phòng bằng mã</h3>
+                  <label htmlFor="lobby-room-code" className="lkdf-online-hint">Dán mã 6 ký tự bạn nhận được.</label>
+                  <div className="lkdf-online-code-row">
+                    <input ref={roomInputRef} id="lobby-room-code" value={roomCodeInput} autoComplete="off" readOnly={isJoiningRoom} aria-invalid={Boolean(joinError && !/^[A-Z0-9]{6}$/.test(roomCodeInput))} aria-describedby={joinError ? 'lobby-join-error' : undefined}
+                      placeholder="K9M2P4" onChange={event => {
+                        setRoomCodeInput(event.target.value.replace(/\s+/g, '').toUpperCase());
+                        setJoinError(null);
+                      }} className={`${control} lkdf-online-code font-mono-num`} />
+                    <button disabled={isJoiningRoom || isCreatingRoom || isCheckingActiveRoom} className="lkdf-online-join">{isJoiningRoom ? 'Đang vào…' : 'Vào phòng'}</button>
+                  </div>
+                  {joinError ? <p id="lobby-join-error" role="alert" className="lkdf-online-error">{joinError}</p> : null}
                 </form>
-              ) : (
-                <div className="flex items-center gap-2 min-w-0">
-                  <p className="truncate font-serif-title text-base font-bold text-[#EFE6D5]">
-                    {profile.displayName}
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setNameDraft(profile.displayName);
-                      setNameError(null);
-                      setIsEditingName(true);
-                    }}
-                    className="shrink-0 cursor-pointer rounded border border-[#A68042]/35 bg-[#121418] px-2 py-0.5 text-[11px] font-medium text-[#D4A451] transition-colors hover:border-[#D99B26]"
-                  >
-                    Đổi biệt danh
-                  </button>
-                </div>
-              )}
-              {nameError ? (
-                <p className="mt-1 text-xs text-[#FCA5A5]">{nameError}</p>
-              ) : (
-                <p className="truncate text-xs text-[#9CA3AF]">{profile.email}</p>
-              )}
-            </div>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2.5">
-            <button
-              type="button"
-              disabled={isUpdatingSound}
-              onClick={() => {
-                void handleToggleSound();
-              }}
-              className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[#A68042]/35 bg-[#121418] px-3 py-2 text-xs font-medium text-[#EFE6D5] transition-colors hover:border-[#D99B26] disabled:opacity-50"
-            >
-              <GameIcon
-                name={profile.preferences.soundEnabled ? 'ui:volume-on' : 'ui:volume-off'}
-                size={13}
-              />
-              {profile.preferences.soundEnabled ? 'Âm thanh: Bật' : 'Âm thanh: Tắt'}
-            </button>
-
-            <button
-              type="button"
-              onClick={onOpenStats}
-              className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[#A68042]/35 bg-[#121418] px-3.5 py-2 text-xs font-medium text-[#EFE6D5] transition-colors hover:border-[#D99B26]"
-            >
-              <GameIcon name="ui:chart" size={13} className="text-[#D4A451]" />
-              Thống Kê &amp; Lịch Sử
-            </button>
-
-            <button
-              type="button"
-              disabled={isLoggingOut}
-              onClick={() => {
-                void handleLogout();
-              }}
-              className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[#A68042]/35 bg-[#121418] px-3.5 py-2 text-xs font-medium text-[#FCA5A5] transition-colors hover:border-[#DC2626] disabled:opacity-50"
-            >
-              <GameIcon name="ui:door-open" size={13} />
-              {isLoggingOut ? 'Đang thoát...' : 'Đăng xuất'}
-            </button>
+                <details className="lkdf-online-create">
+                  <summary className="cursor-pointer rounded-sm text-sm text-[#DFCAA9] focus-visible:outline-2 focus-visible:outline-[#E6BE6C]">
+                    Tạo phòng
+                  </summary>
+                  <div className="lkdf-online-presets">
+                    {PRESET_CARDS.map(preset => (
+                      <button key={preset.id} type="button" aria-pressed={preset.id === selectedPreset}
+                        onClick={() => setSelectedPreset(preset.id)} className={`${control} px-1.5 aria-pressed:border-[#E6BE6C]`}>
+                        {preset.label}<small>{TIMER_PRESETS[preset.id].mainTurnSeconds} giây/lượt</small>
+                      </button>
+                    ))}
+                  </div>
+                <button type="button" onClick={handleCreateRoom} disabled={isCreatingRoom || isJoiningRoom || isCheckingActiveRoom}
+                  className="mt-6 flex min-h-12 w-full items-center justify-center gap-2 rounded border border-[#BE9360] bg-[#9E2B25] px-4 text-sm font-bold text-[#FFF0DA] hover:bg-[#B7372E] focus-visible:outline-2 focus-visible:outline-[#E6BE6C]">
+                  <GameIcon name="castle" size={16} /> {isCreatingRoom ? 'Đang mở phòng…' : 'Tạo phòng 4–8 người'}
+                </button>
+                {createError ? <p role="alert" className="mt-2 text-sm text-[#FFB4A8]">{createError}</p> : null}
+                </details>
+              </div>
+            ) : lobbyScreen === 'reference' ? (
+              <LobbyReference control={control} />
+            ) : lobbyScreen === 'settings' ? (
+              <LobbySettings ref={settingsRef} profile={profile} onBack={backToMenu} onSavePreferences={savePreferences}
+                onLogout={sessionToken ? handleLogout : undefined} />
+            ) : ProfilePreview ? (
+              <ProfilePreview profile={profile} onProfileUpdated={onProfileUpdated} />
+            ) : (
+              <LiveLobbyProfile key={profile.userId} api={api} profile={profile} hasSession={Boolean(sessionToken)} onOpenStats={onOpenStats} onSaveName={saveDisplayName} />
+            )}
           </div>
         </div>
-
-        {isCheckingActiveRoom ? (
-          <div className="flex items-center justify-center gap-2 rounded-[8px] border border-[#94A3B8]/32 bg-[#11151D]/95 p-6 text-sm text-[#EFE6D5]">
-            <GameIcon name="ui:loader" size={15} className="animate-spin text-[#E6BE6C]" />
-            Đang kiểm tra phòng chơi hiện tại của tài khoản...
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-            {/* Cột 1: Tạo phòng mới */}
-            <div className="flex flex-col justify-between rounded-[8px] border border-[#94A3B8]/32 bg-[#11151D]/95 p-6 shadow-2xl backdrop-blur-md">
-              <div>
-                <p className="text-[11px] font-bold tracking-wider text-[#D4A451] uppercase">
-                  Lập bàn đấu mới
-                </p>
-                <h2 className="mt-1 font-serif-title text-lg font-bold text-[#F5EBD6]">
-                  Tạo phòng cho hội bạn (4–8 người)
-                </h2>
-                <p className="mt-1 text-xs leading-relaxed text-[#94A3B8]">
-                  Chọn tốc độ đồng hồ đếm ngược cho từng lượt:
-                </p>
-
-                <div className="mt-4 grid grid-cols-3 gap-2">
-                  {PRESET_CARDS.map((preset) => {
-                    const active = selectedPreset === preset.id;
-                    return (
-                      <button
-                        key={preset.id}
-                        type="button"
-                        onClick={() => setSelectedPreset(preset.id)}
-                        className={`rounded-[6px] border p-2.5 text-left transition-colors focus:outline-none focus:ring-2 focus:ring-[#E6BE6C] ${
-                          active
-                            ? 'border-[#E6BE6C] bg-[#1B212C] text-[#F5EBD6]'
-                            : 'border-[#94A3B8]/25 bg-[#0B0E14] text-[#CBD5E1] hover:border-[#B89352]/70'
-                        }`}
-                      >
-                        <div className="text-xs font-semibold">{preset.label}</div>
-                        <div className="mt-0.5 font-mono-num text-[11px] text-[#94A3B8]">
-                          {preset.desc}
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {createError ? (
-                  <p className="mt-3 text-xs text-[#FCA5A5]">{createError}</p>
-                ) : null}
-              </div>
-
-              <button
-                type="button"
-                disabled={isCreatingRoom}
-                onClick={() => {
-                  void handleCreateRoom();
-                }}
-                className="mt-5 inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-[6px] border border-[#D4A451]/75 bg-gradient-to-b from-[#B8332C] to-[#831C18] px-4 py-3 text-sm font-bold text-[#FDF6E9] shadow-lg transition-transform duration-150 hover:from-[#C83E37] hover:to-[#95221D] focus:outline-none focus:ring-2 focus:ring-[#E6BE6C] disabled:opacity-50"
-              >
-                <GameIcon name="castle" size={15} />
-                {isCreatingRoom
-                  ? 'Đang mở phòng...'
-                  : 'Tạo phòng mới (4–8 người)'}
-              </button>
-            </div>
-
-            {/* Cột 2: Vào phòng bằng mã 6 ký tự */}
-            <form
-              onSubmit={(e) => {
-                void handleJoinRoom(e);
-              }}
-              className="flex flex-col justify-between rounded-[8px] border border-[#94A3B8]/32 bg-[#11151D]/95 p-6 shadow-2xl backdrop-blur-md"
-            >
-              <div>
-                <p className="text-[11px] font-bold tracking-wider text-[#D4A451] uppercase">
-                  Gia nhập bàn có sẵn
-                </p>
-                <h2 className="mt-1 font-serif-title text-lg font-bold text-[#F5EBD6]">
-                  Nhập mã Hổ Phù (6 ký tự)
-                </h2>
-                <p className="mt-1 text-xs leading-relaxed text-[#94A3B8]">
-                  Nhập mã phòng bạn bè vừa chia sẻ (hoặc quay lại đúng ghế nếu vừa rớt mạng giữa ván).
-                </p>
-
-                <div className="mt-4">
-                  <label
-                    htmlFor="lkdf-join-room-code"
-                    className="mb-1.5 block text-xs font-medium text-[#CBD5E1]"
-                  >
-                    Mã phòng
-                  </label>
-                  <input
-                    id="lkdf-join-room-code"
-                    type="text"
-                    maxLength={6}
-                    value={roomCodeInput}
-                    onChange={(e) => {
-                      setRoomCodeInput(
-                        e.target.value.replace(/[^A-Za-z0-9]/g, '').toUpperCase(),
-                      );
-                      setJoinError(null);
-                    }}
-                    placeholder="K9M2P4"
-                    className="w-full rounded-[6px] border border-[#B89352]/45 bg-[#0B0E14] px-3.5 py-2.5 text-center font-mono-num text-xl font-bold uppercase tracking-[0.25em] text-[#F3CD7A] placeholder-[#475569] focus:border-[#E6BE6C] focus:outline-none"
-                  />
-                </div>
-
-                {joinError ? (
-                  <p className="mt-3 rounded-[6px] border border-[#DC2626]/40 bg-[#DC2626]/10 px-3 py-2 text-xs text-[#FCA5A5]">
-                    {joinError}
-                  </p>
-                ) : null}
-              </div>
-
-              <button
-                type="submit"
-                disabled={isJoiningRoom}
-                className="mt-5 inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-[6px] border border-[#B89352]/70 bg-[#161B23] px-4 py-3 text-sm font-bold text-[#F3CD7A] transition-colors hover:border-[#E6BE6C] hover:bg-[#1E2532] focus:outline-none focus:ring-2 focus:ring-[#E6BE6C] disabled:opacity-50"
-              >
-                <GameIcon name="ui:door-open" size={15} className="text-[#E6BE6C]" />
-                {isJoiningRoom
-                  ? 'Đang vào phòng...'
-                  : `Vào phòng ${displayCodeTarget}`}
-              </button>
-            </form>
-          </div>
-        )}
       </div>
     </section>
   );

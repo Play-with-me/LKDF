@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { getHeroDefinition } from '@lkdf/shared';
 import type { HeroId, PlayerViewState } from '@lkdf/shared';
 import { getHeroPortraitUrl, getUiAssetUrl } from '../../lib/assetCatalog.js';
+import { isMatchSoundEnabled, playMatchCue } from '../../lib/soundFx.js';
 import { FactionSeal, GameIcon } from '../../components/icons/index.js';
 import { HeroCardWatermark } from './HeroCardWatermark.js';
 import { getFactionStyle, getPlayerSeatLabel } from './matchTypes.js';
@@ -267,7 +268,10 @@ export function HeroSelectPanel({
 
                   <button
                     type="button"
-                    onClick={() => onSelectHero(hero.id)}
+                    onClick={() => {
+                      playMatchCue('HERO_LOCK', isMatchSoundEnabled());
+                      onSelectHero(hero.id);
+                    }}
                     className="relative z-10 inline-flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-md bg-[#C83E37] px-3 py-2 text-[12px] font-bold text-[#F4EFE6] transition-colors hover:bg-[#B2342E] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#D99B26]"
                   >
                     <GameIcon name="crown" size={13} />

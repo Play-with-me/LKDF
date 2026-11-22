@@ -1,0 +1,24 @@
+{
+  "name": "tqs_room_leave",
+  "says": "two gentle descending bronze singing bowl tones as a player leaves",
+  "space": "room",
+  "layers": [
+    {
+      "sound": "note/singing_bowl",
+      "pitch": 7,
+      "at": 0.0,
+      "dur": 0.32,
+      "gain": -4,
+      "fade_out": 0.14
+    },
+    {
+      "sound": "note/singing_bowl",
+      "pitch": 5,
+      "at": 0.11,
+      "dur": 0.48,
+      "gain": -1,
+      "lowpass": 3200,
+      "fade_out": 0.22
+    }
+  ]
+}

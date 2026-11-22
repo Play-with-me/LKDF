@@ -34,9 +34,24 @@ export function MatchHoverTooltip() {
       description.textContent = info.dataset.hoverDescription ?? '';
       panel.hidden = false;
       const rect = next.getBoundingClientRect();
-      const left = rect.right + 8 + panel.offsetWidth <= innerWidth ? rect.right + 8 : rect.left - 8 - panel.offsetWidth;
-      panel.style.left = Math.max(8, left) + 'px';
-      panel.style.top = Math.max(8, Math.min(rect.top, innerHeight - panel.offsetHeight - 8)) + 'px';
+      const dock = next.closest('.lkdf-battle-dock');
+      if (dock) {
+        const dockRect = dock.getBoundingClientRect();
+        const centeredLeft = rect.left + rect.width / 2 - panel.offsetWidth / 2;
+        const clampedLeft = Math.max(8, Math.min(centeredLeft, innerWidth - panel.offsetWidth - 8));
+        const aboveDockTop = Math.max(8, dockRect.top - panel.offsetHeight - 10);
+        panel.style.left = `${clampedLeft}px`;
+        panel.style.top = `${aboveDockTop}px`;
+      } else {
+        const preferredLeft =
+          rect.right + 8 + panel.offsetWidth <= innerWidth
+            ? rect.right + 8
+            : rect.left - 8 - panel.offsetWidth;
+        const clampedLeft = Math.max(8, Math.min(preferredLeft, innerWidth - panel.offsetWidth - 8));
+        const clampedTop = Math.max(8, Math.min(rect.top, innerHeight - panel.offsetHeight - 8));
+        panel.style.left = `${clampedLeft}px`;
+        panel.style.top = `${clampedTop}px`;
+      }
     };
     const leave = (event: MouseEvent | FocusEvent) => {
       if (anchor && find(event.target) === anchor && find(event.relatedTarget) !== anchor) hide();

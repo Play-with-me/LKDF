@@ -178,6 +178,19 @@ export function registerRoomRoutes(
     };
   });
 
+  app.patch('/api/rooms/:roomCode/ready', async (request, reply) => {
+    const auth = await authService.verifyAuthorizationHeader(request.headers.authorization);
+    if (!auth.ok) return reply.status(auth.statusCode).send(auth);
+    const code = RoomCodeParamSchema.safeParse((request.params as { roomCode?: string }).roomCode);
+    const body = z.object({ isReady: z.boolean() }).safeParse(request.body);
+    if (!code.success || !body.success) {
+      return reply.status(400).send({ ok: false, code: 'INVALID_READY_REQUEST', messageVi: 'Yêu cầu sẵn sàng không hợp lệ.' });
+    }
+    const updated = await roomManager.setReady(auth.profile.userId, code.data, body.data.isReady);
+    if (!updated.ok) return reply.status(updated.statusCode).send(updated);
+    return { ok: true, ...updated.data };
+  });
+
   app.patch('/api/rooms/:roomCode/timer', async (request, reply) => {
     const auth = await authService.verifyAuthorizationHeader(
       request.headers.authorization,

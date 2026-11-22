@@ -30,6 +30,10 @@ interface DesktopUpdateStatePayload {
 }
 
 const desktopBridge = {
+  onNavigateBack: (listener: () => void): (() => void) => {
+    ipcRenderer.on('window:navigate-back', listener);
+    return () => { ipcRenderer.removeListener('window:navigate-back', listener); };
+  },
   getAppVersion: (): Promise<string> => ipcRenderer.invoke('app:getVersion'),
   flashTaskbarFrame: (flash: boolean): Promise<void> =>
     ipcRenderer.invoke('window:flashTaskbarFrame', flash),

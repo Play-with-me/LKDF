@@ -1,0 +1,24 @@
+{
+  "name": "tqs_sat",
+  "says": "forged steel broadsword slashing sharply through the air",
+  "space": "room",
+  "dur": 0.48,
+  "layers": [
+    {
+      "sound": "sword/swing",
+      "pitch": -1,
+      "gain": 0
+    },
+    {
+      "sound": "whoosh/blade",
+      "at": 0.02,
+      "gain": -3
+    },
+    {
+      "sound": "shine/blade",
+      "at": 0.04,
+      "lowpass": 7200,
+      "gain": -6
+    }
+  ]
+}

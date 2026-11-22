@@ -1,15 +1,21 @@
 import { useEffect, useRef } from 'react';
-import { createAmbientLoop, type AmbientTrack } from './soundFx.js';
+import { createAmbientLoop, type AmbientLoopHandle, type AmbientTrack } from './soundFx.js';
 
 export function useGameAmbience(level: number, track: AmbientTrack = 'lobby'): void {
   const enabled = level > 0;
-  const loop = useRef<Awaited<ReturnType<typeof createAmbientLoop>>>(null);
+  const loop = useRef<AmbientLoopHandle | null>(null);
   const levelRef = useRef(level);
+  const trackRef = useRef(track);
 
   useEffect(() => {
     levelRef.current = level;
     loop.current?.setLevel(level);
   }, [level]);
+
+  useEffect(() => {
+    trackRef.current = track;
+    loop.current?.setTrack(track);
+  }, [track]);
 
   useEffect(() => {
     if (!enabled) return;
@@ -32,7 +38,7 @@ export function useGameAmbience(level: number, track: AmbientTrack = 'lobby'): v
 
       const request = new AbortController();
       pending = request;
-      void createAmbientLoop(track, request.signal).then(ambient => {
+      void createAmbientLoop(trackRef.current, request.signal).then(ambient => {
         if (request.signal.aborted) {
           ambient?.stop();
           return;
@@ -40,6 +46,7 @@ export function useGameAmbience(level: number, track: AmbientTrack = 'lobby'): v
         pending = null;
         loop.current = ambient;
         ambient?.setLevel(levelRef.current);
+        ambient?.setTrack(trackRef.current);
       });
     }
 
@@ -62,5 +69,5 @@ export function useGameAmbience(level: number, track: AmbientTrack = 'lobby'): v
       }
       stop();
     };
-  }, [enabled, track]);
+  }, [enabled]);
 }

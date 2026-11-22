@@ -206,6 +206,20 @@ describe('Bước 1.2 — Máy trạng thái lượt, 108 lá bài (gồm 4 lá 
     expect(getPendingPrompt(s2)!.isSimulatedDelay).toBe(false);
     expect(getPendingPrompt(s2)!.actorSeats).toEqual([1, 2]);
 
+    const firstPass = applyGameAction(s2, {
+      type: 'RESPOND_NULLIFICATION', seatIndex: 1, cardId: null,
+    }, undefined, { deferNullificationPass: true });
+    const lastPass = applyGameAction(firstPass, {
+      type: 'RESPOND_NULLIFICATION', seatIndex: 2, cardId: null,
+    }, undefined, { deferNullificationPass: true });
+    expect(getPendingPrompt(lastPass)?.actorSeats).toEqual([]);
+    expect(lastPass.players[0]?.handCards).toHaveLength(0);
+    expect(projectStateForPlayer(lastPass, 'u-2').activeInterrupt?.canRespondNullification).toBe(false);
+    const expired = applyGameAction(lastPass, {
+      type: 'RESPOND_NULLIFICATION', seatIndex: 2, cardId: null,
+    });
+    expect(expired.players[0]?.handCards).toHaveLength(2);
+
     // Ghế 1 đánh Vô Giải 1
     s2 = applyGameAction(s2, {
       type: 'RESPOND_NULLIFICATION',

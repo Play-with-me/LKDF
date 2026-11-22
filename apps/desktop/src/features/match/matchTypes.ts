@@ -680,7 +680,7 @@ export function describePendingActorPrompt(view: PlayerViewState): TurnActorProm
           detailVi: `Cẩm nang sắp có hiệu lực: ${interrupt.scrollNameVi ?? 'Cẩm nang'} (Mục tiêu: ${targetName}).`,
           actorSeat: null,
           actorNameVi: null,
-          isMyTurn: Boolean(viewer && viewer.alive),
+          isMyTurn: interrupt.canRespondNullification === true,
           isAllTableWait: true,
         };
       case 'ASK_TU_HUNG':
@@ -1239,6 +1239,9 @@ export function buildCardDragDropIntent(
   const interrupt = view.activeInterrupt;
   if (interrupt) {
     if (interrupt.kind === 'WAIT_NULLIFICATION') {
+      if (!interrupt.canRespondNullification) {
+        return { kind: 'blocked', reasonVi: 'Đang chờ phản ứng Vô Giải Khả Kích.' };
+      }
       if (card.cardKey === 'vo_giai_kha_kich') {
         return {
           kind: 'table',
@@ -1462,6 +1465,6 @@ export function buildCardDragDropIntent(
 
   return {
     kind: 'blocked',
-    reasonVi: 'Ngoài lượt — chỉ xem chi tiết bài, chưa thể quăng đánh.',
+    reasonVi: '',
   };
 }

@@ -62,6 +62,7 @@ export interface StatsFilterQuery {
   readonly heroId?: HeroId;
   readonly includeMatches?: boolean;
   readonly matchLimit?: number;
+  readonly includeMonthly?: boolean;
 }
 
 export interface FilteredStatsSummary {
@@ -83,6 +84,7 @@ export interface FilteredStatsResult {
   readonly summary: FilteredStatsSummary;
   readonly players: readonly PlayerFilteredStatRow[];
   readonly recentMatches?: readonly MatchHistoryRecord[];
+  readonly monthlyResults?: readonly { readonly month: string; readonly wins: number; readonly losses: number }[];
 }
 
 export interface RecordMatchResultOutcome {
@@ -198,6 +200,7 @@ function mapUserRow(row: Row): UserProfile {
     avatarUrl: rowToString(row, 'avatar_url'),
     preferences: {
       soundEnabled: rowToNumber(row, 'sound_enabled', 1) === 1,
+      musicEnabled: rowToNumber(row, 'music_enabled', rowToNumber(row, 'sound_enabled', 1)) === 1,
       volume: rowToNumber(row, 'volume', 0.8),
     },
     activeRoomCode: rowToNullableString(row, 'active_room_code'),
@@ -406,19 +409,18 @@ export class LibsqlPersistenceStore implements PersistenceStore {
     prefs: Partial<UserPreferences>,
   ): Promise<UserProfile | null> {
     await this.init();
-    const existing = await this.getUserById(userId);
-    if (!existing) {
-      return null;
-    }
-
-    const nextSoundEnabled =
-      prefs.soundEnabled ?? existing.preferences.soundEnabled;
-    const rawVolume = prefs.volume ?? existing.preferences.volume;
-    const nextVolume = Math.max(0, Math.min(1, rawVolume));
-
     await this.client.execute({
-      sql: 'UPDATE users SET sound_enabled = ?, volume = ? WHERE user_id = ?',
-      args: [nextSoundEnabled ? 1 : 0, nextVolume, userId],
+      sql: `UPDATE users SET
+        music_enabled = COALESCE(?, music_enabled, sound_enabled),
+        sound_enabled = COALESCE(?, sound_enabled),
+        volume = COALESCE(?, volume)
+        WHERE user_id = ?`,
+      args: [
+        prefs.musicEnabled === undefined ? null : Number(prefs.musicEnabled),
+        prefs.soundEnabled === undefined ? null : Number(prefs.soundEnabled),
+        prefs.volume === undefined ? null : Math.max(0, Math.min(1, prefs.volume)),
+        userId,
+      ],
     });
 
     return this.getUserById(userId);
@@ -632,7 +634,7 @@ export class LibsqlPersistenceStore implements PersistenceStore {
       heroIdFilter,
     ];
 
-    const groupedResult = await this.client.execute({
+    const groupedQuery = {
       sql: `SELECT
               mp.user_id,
               COALESCE(u.display_name, mp.display_name) AS display_name,
@@ -648,16 +650,57 @@ export class LibsqlPersistenceStore implements PersistenceStore {
               AND (? IS NULL OR mp.hero_id = ?)
             GROUP BY mp.user_id, mp.identity, mp.hero_id`,
       args: filterArgs,
-    });
+    };
 
-    const distinctMatchResult = await this.client.execute({
+    const distinctQuery = {
       sql: `SELECT COUNT(DISTINCT mp.match_id) AS distinct_matches
             FROM match_participants mp
             WHERE (? IS NULL OR mp.user_id = ?)
               AND (? IS NULL OR mp.identity = ?)
               AND (? IS NULL OR mp.hero_id = ?)`,
       args: filterArgs,
-    });
+    };
+
+
+    const queries: InStatement[] = [groupedQuery, distinctQuery];
+    const currentInVietnam = new Date(Date.now() + 7 * 3600_000);
+    const year = currentInVietnam.getUTCFullYear();
+    const month = currentInVietnam.getUTCMonth();
+    if (filter.includeMonthly) {
+      const monthStart = (offset: number) => new Date(Date.UTC(year, month + offset, 1) - 7 * 3600_000).toISOString();
+      queries.push({
+        sql: `SELECT strftime('%Y-%m', m.finished_at, '+7 hours') AS month,
+                     SUM(mp.is_winner) AS wins, COUNT(*) - SUM(mp.is_winner) AS losses
+              FROM matches m JOIN match_participants mp ON mp.match_id = m.match_id
+              WHERE (? IS NULL OR mp.user_id = ?)
+                AND (? IS NULL OR mp.identity = ?)
+                AND (? IS NULL OR mp.hero_id = ?)
+                AND m.finished_at >= ? AND m.finished_at < ?
+              GROUP BY 1 ORDER BY 1`,
+        args: [...filterArgs, monthStart(-2), monthStart(1)],
+      });
+    }
+    const recentIndex = queries.length;
+    if (filter.includeMatches) {
+      const limit = Math.max(1, Math.min(100, filter.matchLimit ?? 20));
+      const recentSql = `SELECT DISTINCT m.match_id, m.room_code, m.player_count, m.winning_faction, m.duration_seconds, m.finished_at
+                         FROM matches m JOIN match_participants mp ON mp.match_id = m.match_id
+                         WHERE (? IS NULL OR mp.user_id = ?)
+                           AND (? IS NULL OR mp.identity = ?)
+                           AND (? IS NULL OR mp.hero_id = ?)
+                         ORDER BY m.finished_at DESC, m.match_id DESC LIMIT ?`;
+      const args = [...filterArgs, limit];
+      queries.push({ sql: recentSql, args }, {
+        sql: `SELECT match_id, user_id, display_name, seat_index, identity, hero_id, is_winner, survived
+              FROM match_participants
+              WHERE match_id IN (SELECT match_id FROM (${recentSql}))
+              ORDER BY match_id, seat_index`,
+        args,
+      });
+    }
+    const results = await this.client.batch(queries, 'read');
+    const groupedResult = results[0]!;
+    const distinctMatchResult = results[1]!;
 
     const firstDistinctRow = distinctMatchResult.rows[0];
     const distinctMatches = firstDistinctRow
@@ -773,23 +816,19 @@ export class LibsqlPersistenceStore implements PersistenceStore {
         return a.displayName.localeCompare(b.displayName, 'vi');
       });
 
-    let recentMatches: MatchHistoryRecord[] | undefined;
-    if (filter.includeMatches) {
-      const limit = Math.max(1, Math.min(100, filter.matchLimit ?? 20));
-      const matchIdResult = await this.client.execute({
-        sql: `SELECT DISTINCT m.match_id, m.room_code, m.player_count, m.winning_faction, m.duration_seconds, m.finished_at
-              FROM matches m
-              INNER JOIN match_participants mp ON mp.match_id = m.match_id
-              WHERE (? IS NULL OR mp.user_id = ?)
-                AND (? IS NULL OR mp.identity = ?)
-                AND (? IS NULL OR mp.hero_id = ?)
-              ORDER BY m.finished_at DESC
-              LIMIT ?`,
-        args: [...filterArgs, limit],
+    let monthlyResults: FilteredStatsResult['monthlyResults'];
+    if (filter.includeMonthly) {
+      const result = results[2]!;
+      monthlyResults = [-2, -1, 0].map(offset => {
+        const monthKey = new Date(Date.UTC(year, month + offset, 1)).toISOString().slice(0, 7);
+        const row = result.rows.find(item => rowToString(item, 'month') === monthKey);
+        return { month: monthKey, wins: row ? rowToNumber(row, 'wins') : 0, losses: row ? rowToNumber(row, 'losses') : 0 };
       });
-
-      recentMatches = await this.hydrateMatchRecords(matchIdResult.rows);
     }
+
+    const recentMatches = filter.includeMatches
+      ? this.hydrateMatchRecords(results[recentIndex]!.rows, results[recentIndex + 1]!.rows)
+      : undefined;
 
     return {
       filter: {
@@ -808,26 +847,13 @@ export class LibsqlPersistenceStore implements PersistenceStore {
       },
       players,
       ...(recentMatches ? { recentMatches } : {}),
+      ...(monthlyResults ? { monthlyResults } : {}),
     };
   }
 
-  private async hydrateMatchRecords(matchRows: readonly Row[]): Promise<MatchHistoryRecord[]> {
-    if (matchRows.length === 0) {
-      return [];
-    }
-
-    const matchIds = matchRows.map((r) => rowToString(r, 'match_id'));
-    const placeholders = matchIds.map(() => '?').join(', ');
-    const participantsResult = await this.client.execute({
-      sql: `SELECT match_id, user_id, display_name, seat_index, identity, hero_id, is_winner, survived
-            FROM match_participants
-            WHERE match_id IN (${placeholders})
-            ORDER BY match_id ASC, seat_index ASC`,
-      args: matchIds,
-    });
-
+  private hydrateMatchRecords(matchRows: readonly Row[], participantRows: readonly Row[]): MatchHistoryRecord[] {
     const participantsByMatch = new Map<string, MatchParticipantSummary[]>();
-    for (const pRow of participantsResult.rows) {
+    for (const pRow of participantRows) {
       const mId = rowToString(pRow, 'match_id');
       const identity = IdentityRoleSchema.parse(rowToString(pRow, 'identity'));
       const heroId = HeroIdSchema.parse(rowToString(pRow, 'hero_id'));

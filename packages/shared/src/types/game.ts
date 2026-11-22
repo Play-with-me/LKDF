@@ -417,6 +417,7 @@ export interface PublicInterruptView {
   readonly responderSeat?: number;
   readonly attackerSeat?: number;
   readonly scrollNameVi?: string;
+  readonly canRespondNullification?: boolean;
   readonly handPick?: 'PREPARE' | 'SELECT';
   readonly stealing?: boolean;
   readonly guanXingCards?: readonly CardInstance[];
@@ -598,6 +599,7 @@ export interface PlayerViewState {
 }
 
 export interface RoomSeat {
+  readonly isReady?: boolean;
   readonly seatIndex: number;
   readonly userId: string;
   readonly displayName: string;

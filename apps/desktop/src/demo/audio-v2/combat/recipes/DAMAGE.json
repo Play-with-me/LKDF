@@ -1,0 +1,36 @@
+{
+  "name": "tqs_damage",
+  "says": "steel blade strike landing with heavy punch and armor clank",
+  "space": "room",
+  "dur": 0.52,
+  "layers": [
+    {
+      "sound": "sword/cut",
+      "cut": [
+        0.0,
+        0.45
+      ],
+      "gain": 0
+    },
+    {
+      "sound": "hit/punch",
+      "at": 0.02,
+      "gain": -1
+    },
+    {
+      "sound": "boom/short",
+      "at": 0.02,
+      "gain": -4
+    },
+    {
+      "sound": "hit/metal",
+      "at": 0.03,
+      "cut": [
+        0.0,
+        0.35
+      ],
+      "lowpass": 4500,
+      "gain": -6
+    }
+  ]
+}

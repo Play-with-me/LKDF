@@ -66,6 +66,10 @@ export async function createServer(
   const roomManager = createRoomManager({
     persistence,
     authService,
+    nullificationWindowMs: Math.max(
+      options?.runtime?.simulatedNullificationMinMs ?? 0,
+      options?.runtime?.simulatedNullificationMaxMs ?? 3500,
+    ),
     ...(options?.runtime?.timerScale !== undefined
       ? { timerScale: options.runtime.timerScale }
       : {}),
@@ -90,7 +94,7 @@ export async function createServer(
   });
 
   const app = Fastify({ logger: false });
-  await app.register(cors, { origin: true });
+  await app.register(cors, { origin: true, methods: ['GET', 'HEAD', 'POST', 'PATCH'] });
 
   app.get('/api/health', async () => {
     return {

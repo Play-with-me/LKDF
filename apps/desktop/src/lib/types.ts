@@ -131,6 +131,7 @@ export interface StatsFilterInput {
   readonly heroId?: HeroId;
   readonly includeMatches?: boolean;
   readonly matchLimit?: number;
+  readonly includeMonthly?: boolean;
 }
 
 export interface FilteredStatsResponse {
@@ -143,6 +144,7 @@ export interface FilteredStatsResponse {
   readonly summary: FilteredStatsSummary;
   readonly players: readonly PlayerFilteredStatRow[];
   readonly recentMatches?: readonly MatchHistoryRecord[];
+  readonly monthlyResults?: readonly { readonly month: string; readonly wins: number; readonly losses: number }[];
 }
 
 export interface StatsMetaIdentityOption {

@@ -1,3 +1,4 @@
+import { prefersReducedMotion } from '../../lib/devicePreferences.js';
 import { formatRankLabel, isRedSuit } from '@lkdf/shared';
 import type {
   CardInstance,
@@ -317,7 +318,7 @@ function TablePlayedCard({
   useLayoutEffect(() => {
     const face = faceRef.current;
     const origin = takeThrowOrigin?.(card.id);
-    if (!face || !origin || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    if (!face || !origin || prefersReducedMotion()) return;
 
     const bounds = face.getBoundingClientRect();
     const dx = origin.x - bounds.left - bounds.width / 2;
@@ -334,6 +335,7 @@ function TablePlayedCard({
   return (
     <button
       ref={faceRef}
+      data-recent-discard={isLatest ? 'latest' : 'older'}
       type="button"
       onClick={onInspect ? () => onInspect(card, 'Bài ngửa giữa bàn') : undefined}
       title={`Bấm xem kỹ năng ${rankLabel} ${card.nameVi}`}
@@ -423,6 +425,10 @@ export function MatchCenterBoard({
       (interrupt.kind === 'WAIT_YI_JI' && Boolean(interrupt.yiJiCards)));
 
   const topDiscard = recentDiscards[recentDiscards.length - 1] ?? null;
+  const latestActionEntry =
+    playerView.actionLog.length > 0
+      ? playerView.actionLog[playerView.actionLog.length - 1]
+      : null;
   const cloudBorderUrl = getUiAssetUrl('tex-cloud-border');
   const inkBaseUrl = getUiAssetUrl('tex-ink-base');
   const plaqueStyle = cloudBorderUrl
@@ -436,9 +442,21 @@ export function MatchCenterBoard({
     : undefined;
 
   return (
-    <div className="lkdf-battle-center-stack flex max-h-full min-h-0 min-w-0 w-full flex-col items-center gap-2">
-      {/* Thanh trạng thái lượt nhỏ gọn khảm viền mây cổ Doanh Trại A */}
-      <div className="flex max-w-[min(460px,54cqw)] flex-col items-center gap-0.5">
+    <div className="lkdf-battle-center-stack flex max-h-full min-h-0 min-w-0 w-full flex-col items-center gap-3">
+      {/* Tier 3: Khung thông báo hành động gần nhất (tách biệt hoàn toàn khỏi thanh trạng thái) */}
+      {latestActionEntry ? (
+        <div className="lkdf-center-tier-banner flex min-h-[24px] w-full max-w-[min(460px,54cqw)] items-center justify-center px-2">
+          <span
+            title={latestActionEntry}
+            className="max-w-full truncate rounded-full border border-[#D99B26]/35 bg-[#17120E]/92 px-3 py-0.5 text-[11px] font-semibold text-[#FDE68A] shadow-sm"
+          >
+            {latestActionEntry}
+          </span>
+        </div>
+      ) : null}
+
+      {/* Tier 1: Thanh trạng thái lượt + 1 dòng hướng dẫn gọn (luôn cách xa tụ bài) */}
+      <div className="mb-1 flex max-w-[min(460px,54cqw)] flex-col items-center gap-1">
         <div
           style={plaqueStyle}
           className={
@@ -485,13 +503,23 @@ export function MatchCenterBoard({
         </p>
       </div>
 
-      {/* Bàn bài trung tâm: Chồng bài rút + Tụ bài đánh ra kiểu Tiến Lên Miền Nam */}
+      {/* Tier 2: Bàn bài trung tâm — Chồng bài rút + Tụ bài đánh ra */}
       {interrupt?.handPick && pickTargetPlayer ? (
         <TakeHandTray key={interrupt.id} interrupt={interrupt} owner={pickTargetPlayer}
           viewerSeat={playerView.viewerSeatIndex} onSendAction={onSendAction} />
       ) : !hasSpecialChoice ? (
-        <div className="lkdf-battle-card-line flex items-end justify-center gap-7 py-1">
+        <div className="lkdf-battle-card-line flex items-end justify-center gap-6 pt-3 pb-2">
           {/* Chồng bài rút dạng xấp bài úp */}
+          <div className="flex flex-col items-center gap-1.5">
+            <div data-motion-draw-pile className="relative flex h-[104px] w-[74px] items-center justify-center">
+              <span aria-hidden="true" className="absolute inset-0 translate-x-1 translate-y-1 rounded-[6px] border border-[#D99B26]/40 bg-[#15253A]" />
+              <span aria-hidden="true" className="absolute inset-0 translate-x-0.5 translate-y-0.5 rounded-[6px] border border-[#D99B26]/55 bg-[#182B44]" />
+              <CardBack size="md" className="relative block h-full w-full shadow-lg" />
+            </div>
+            <span className="font-mono-num inline-flex items-center gap-1 rounded-full border border-[#303740] bg-[#14171A]/85 px-2.5 py-0.5 text-[11px] font-semibold text-[#D1D5DB] tabular-nums">
+              Rút: <strong className="text-[#F3F4F6]">{playerView.drawPileCount}</strong>
+            </span>
+          </div>
           {/* Tụ bài đánh ra kiểu Tiến Lên Miền Nam (xòe ngang đè nhẹ giữa bàn) */}
           <div className="flex flex-col items-center gap-1.5">
             <div className="flex min-h-[104px] min-w-[96px] items-center justify-center px-2">

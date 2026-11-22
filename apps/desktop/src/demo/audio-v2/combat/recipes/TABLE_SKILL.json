@@ -1,0 +1,38 @@
+{
+  "name": "tqs_table_skill",
+  "says": "massive battle table war drum, wind swell, volley of bows, and dark bronze crash",
+  "space": "hall",
+  "dur": 1.18,
+  "layers": [
+    {
+      "sound": "kick/deep",
+      "at": 0.0,
+      "gain": 0
+    },
+    {
+      "sound": "whoosh/deep",
+      "cut": [
+        0.0,
+        0.85
+      ],
+      "gain": -3
+    },
+    {
+      "sound": "bow/shot",
+      "at": 0.12,
+      "events": {
+        "count": 3,
+        "gap": 0.09,
+        "loose": 0.2
+      },
+      "gain": -3
+    },
+    {
+      "sound": "crash/dark",
+      "at": 0.15,
+      "dur": 0.95,
+      "lowpass": 6500,
+      "gain": -7
+    }
+  ]
+}

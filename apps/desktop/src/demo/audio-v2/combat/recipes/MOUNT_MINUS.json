@@ -1,0 +1,30 @@
+{
+  "name": "tqs_mount_minus",
+  "says": "charging warhorse hooves galloping forward with brief spirited neigh",
+  "space": "room",
+  "dur": 0.74,
+  "layers": [
+    {
+      "sound": "horse/trot",
+      "cut": [
+        0.0,
+        0.68
+      ],
+      "pitch": 3,
+      "fade_out": 0.12,
+      "gain": 0
+    },
+    {
+      "sound": "horse/neigh",
+      "cut": [
+        0.0,
+        0.55
+      ],
+      "pitch": 1,
+      "at": 0.05,
+      "lowpass": 5200,
+      "fade_out": 0.15,
+      "gain": -6
+    }
+  ]
+}

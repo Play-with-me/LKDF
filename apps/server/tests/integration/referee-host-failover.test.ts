@@ -239,6 +239,16 @@ describe('Bước 3.2 — Bảng Trọng Tài 4 Nút (Audit Log) & Chuyển Quy�
       sockets.push(ws);
     }
 
+    for (const guest of [p1, p2, p3]) {
+      const response = await srv.app.inject({
+        method: 'PATCH',
+        url: `/api/rooms/${roomCode}/ready`,
+        headers: { authorization: `Bearer ${guest.token}` },
+        payload: { isReady: true },
+      });
+      expect(response.statusCode).toBe(200);
+    }
+
     const startBroadcasts = sockets.map((ws) =>
       ws.waitFor(
         (m) =>

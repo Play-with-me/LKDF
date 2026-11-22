@@ -109,13 +109,13 @@ Người dùng tải bộ cài đặt Windows (`.exe`/`.msi`) 1 lần duy nhất
 
 ### 3.4. Quy tắc Đồng hồ đếm ngược & Chống lộ bài *Vô Giải Khả Kích*
 - **3 mức đồng hồ đếm ngược (Chủ phòng chọn ở phòng chờ):**
-  - **Nhanh:** Chọn tướng `20s` · Lượt đánh chính / Bỏ bài `30s` · Pha phản ứng `10s`.
-  - **Chuẩn (Mặc định):** Chọn tướng `30s` · Lượt đánh chính / Bỏ bài `45s` · Pha phản ứng `15s`.
-  - **Thong thả:** Chọn tướng `45s` · Lượt đánh chính / Bỏ bài `60s` · Pha phản ứng `20s`.
+  - **Nhanh:** Chọn tướng `20s` · Đánh bài `90s` · Bỏ bài `30s` · Pha phản ứng `10s`.
+  - **Chuẩn (Mặc định):** Chọn tướng `30s` · Đánh bài `150s` · Bỏ bài `45s` · Pha phản ứng `15s`.
+  - **Thong thả:** Chọn tướng `45s` · Đánh bài `180s` · Bỏ bài `60s` · Pha phản ứng `20s`.
 - **Quy tắc hỏi *Vô Giải Khả Kích* chống lộ bài:**
   - Khi một lá Cẩm nang chuẩn bị phát huy tác dụng lên 1 mục tiêu, hệ thống **luôn mở nhịp chờ phản ứng *Vô Giải Khả Kích* toàn bàn**:
     - Những người thực sự có *Vô Giải Khả Kích* trên tay (và chưa bật nút `[☑️ Tự bỏ qua Vô Giải lượt này]`) sẽ thấy nút đánh *Vô Giải* hoặc `[⏭️ Bỏ qua]`.
-    - Nếu trên bàn **không có ai cầm *Vô Giải Khả Kích*** (hoặc tất cả người cầm đều đã bật tự động bỏ qua), máy chủ tự động tạo một **nhịp dừng giả lập ngẫu nhiên từ `2.0 đến 3.5 giây`** với cùng thanh thông báo *"Đang chờ phản ứng Vô Giải Khả Kích..."* trước khi giải quyết hiệu ứng Cẩm nang, đảm bảo đối thủ không thể nhìn đồng hồ để đoán ai đang giữ *Vô Giải*.
+    - Mỗi cửa sổ phản ứng trực tuyến dùng cùng hạn chờ `3,5 giây`, kể cả cửa sổ chặn một lá *Vô Giải* vừa được đánh. Bỏ qua được xác nhận riêng cho người bấm và không làm cửa sổ đóng sớm. Khi một lá *Vô Giải* được đánh, lá đó được công khai và mở cửa sổ phản ứng mới.
 
 ---
 
@@ -156,7 +156,7 @@ Người dùng tải bộ cài đặt Windows (`.exe`/`.msi`) 1 lần duy nhất
 - **Hệ thống xử lý và trả kết quả gì:**
   1. Nếu máy chủ Cloud 0 đồng đang ngủ sau thời gian không có người dùng, ứng dụng hiển thị màn hình **`[⏳ Đang đánh thức máy chủ phòng chơi... (~30–60 giây)]`** kèm bộ đếm giây thực tế và nút **`[⏹️ Hủy kết nối]`**.
   2. Tạo phòng với mã 6 ký tự (chữ in hoa và số, không chứa các ký tự dễ nhầm như `0/O`, `1/I`).
-  3. Hiển thị danh sách ghế từ 1 đến 8 kèm Ảnh đại diện và Tên Google của từng người. Nút `[▶️ Bắt đầu ván đấu]` chỉ bật sáng khi có từ **4 đến 8 người chơi thật** đang có mặt trong phòng.
+  3. Hiển thị danh sách ghế từ 1 đến 8 kèm Ảnh đại diện và Tên Google của từng người. Nút `[▶️ Bắt đầu ván đấu]` chỉ mở cho chủ phòng đang điều hành khi có **4–8 người chơi thật** và mọi khách đều đang kết nối, đã xác nhận **Sẵn sàng**. Chủ phòng được miễn xác nhận. Khách mất kết nối hoặc cả phòng trở về từ ván trước phải xác nhận lại.
 - **Trường hợp lỗi hoặc ngoại lệ cần xử lý:**
   - *Nhập mã phòng không tồn tại hoặc phòng đã đủ 8 người / đang trong ván:* Báo lỗi tiếng Việt rõ ràng (*"Mã phòng không tồn tại"*, *"Phòng đã đủ 8 người"*, hoặc *"Phòng đang trong ván đấu"*).
   - *Số người thật giảm xuống dưới 4 người ở phòng chờ:* Tự động khóa lại nút `[▶️ Bắt đầu ván đấu]` kèm dòng chữ *"Cần tối thiểu 4 người chơi thật để bắt đầu"*.
@@ -227,7 +227,7 @@ Phiên bản đầu (v1) chỉ được xác nhận hoàn thành khi đạt **t�
 - [ ] **AC-3 (Đánh thức Cloud 0đ & Phòng 4–8 người thật):** Hiển thị đúng màn hình chờ đánh thức máy chủ (`~30–60s`) khi máy chủ đang ngủ; chặn bắt đầu khi phòng có dưới 4 người thật; bắt đầu ván thành công ở các mốc từ 4 đến 8 người thật.
 - [ ] **AC-4 (Chia Thân Phận, Máu Chủ Công & Chia 25 Tướng):** Chia đúng tỷ lệ Thân Phận cho cả 5 mốc (`4: 1-0-2-1`, `5: 1-1-2-1`, `6: 1-1-3-1`, `7: 1-2-3-1`, `8: 1-2-3-2`), Chủ Công luôn được `+1 máu tối đa` ở mọi mốc 4–8 người; Chủ Công được chọn 1/5 tướng (có đủ *Lưu Bị, Tào Tháo, Tôn Quyền*), những người còn lại được chọn 1/3 tướng từ bộ 25 tướng chuẩn.
 - [ ] **AC-5 (Độ chính xác Luật 108 lá, 25 Tướng & 2 Nội Gián):** Bộ kiểm thử tự động giả lập tối thiểu **100 ván cho mỗi mốc 4, 5, 6, 7, 8 người** vượt qua 100% với **0 lỗi treo lượt**; kiểm tra đúng luật ở bàn 8 người khi Chủ Công chết mà cả 2 Nội Gián còn sống thì xử **Phản Tặc thắng**.
-- [ ] **AC-6 (Chống lộ bài *Vô Giải Khả Kích*):** Khi đánh Cẩm nang mà không ai trên bàn có *Vô Giải Khả Kích*, bàn đấu vẫn hiện nhịp chờ ngắn (`2–3.5s`) giống như khi có người cầm bài.
+- [ ] **AC-6 (Chống lộ bài *Vô Giải Khả Kích*):** Cả bàn thấy cùng hạn chờ `3,5 giây` mỗi cửa sổ. Khi cả bàn bỏ qua, hiệu ứng tiếp tục đúng hạn như trường hợp không có ai được phản ứng.
 - [ ] **AC-7 (Khôi phục rớt mạng, Khởi động lại Server & Trọng Tài 4 nút + Chuyển quyền 30s):**
   - Tắt ngang ứng dụng của 1 người chơi đang trong ván → ghế đó chuyển sang Máy đánh hộ tạm thời → mở lại ứng dụng tự vào đúng ghế và tay bài cũ.
   - Ngắt mạng của Chủ phòng quá 30 giây → quyền Trọng Tài 4 nút tự động chuyển sang người chơi thật đang online kế tiếp → Chủ phòng kết nối lại được trả lại quyền.

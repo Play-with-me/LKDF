@@ -17,6 +17,7 @@ export interface StatsPageProps {
   readonly api: LkdfApiClient;
   readonly currentUserId?: string | null;
   readonly onBack: () => void;
+  readonly startWithCurrentUser?: boolean;
 }
 
 type StatsSectionTab = 'ALL' | 'PLAYERS_HEROES' | 'HISTORY';
@@ -93,11 +94,14 @@ function formatErrorMessageVi(err: unknown): string {
 export function StatsPage({
   api,
   currentUserId,
+  startWithCurrentUser,
   onBack,
 }: StatsPageProps): ReactElement {
   const [meta, setMeta] = useState<StatsMetaResponse | null>(null);
   const [stats, setStats] = useState<FilteredStatsResponse | null>(null);
-  const [filter, setFilter] = useState<StatsFilterState>(EMPTY_FILTER);
+  const [filter, setFilter] = useState<StatsFilterState>(() => ({
+    ...EMPTY_FILTER, userId: startWithCurrentUser ? currentUserId ?? null : null,
+  }));
   const [activeTab, setActiveTab] = useState<StatsSectionTab>('ALL');
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isCancelled, setIsCancelled] = useState<boolean>(false);

@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import type { MatchHistoryRecord, UserStats } from '@lkdf/shared';
 import type {
   FilteredStatsResult,
@@ -377,4 +377,59 @@ describe('Bước 2.1 — Bộ lọc Thống kê theo Người chơi, Thân Ph�
     expect(userStatsRes.body).not.toContain('sub-tu');
     expect(userStatsRes.body).not.toContain('@example.com');
   });
+
+  it('counts 110 of 120 player matches in the Vietnam period while returning only 20 recent matches', async () => {
+    const testUser = await seedUser(srv.persistence, 'sub-monthly', 'Monthly');
+    const source = await srv.persistence.queryStats({ userId: userIds.minh, includeMatches: true, matchLimit: 1 });
+    const template = source.recentMatches![0]!;
+    for (let index = 0; index < 120; index++) {
+      const finishedAt = index < 109 ? '2026-11-20T10:00:00.000Z'
+        : index === 109 ? '2026-08-31T17:00:00.000Z' : '2026-08-31T16:59:59.999Z';
+      await srv.persistence.recordMatchResult({
+        ...template, matchId: `month-test-${index}`, finishedAt,
+        participants: template.participants.map(player =>
+          player.userId === userIds.minh ? { ...player, userId: testUser, isWinner: index % 2 === 0 } : player),
+      });
+    }
+
+    const clock = vi.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-11-21T10:00:00.000Z'));
+    try {
+      const response = await srv.app.inject({
+        method: 'GET',
+        url: `/api/stats?userId=${testUser}&includeMonthly=true&includeMatches=true&matchLimit=20`,
+      });
+      expect(response.statusCode).toBe(200);
+      const result = response.json<FilteredStatsResult>();
+      expect(result.summary).toMatchObject({ totalAppearances: 120, totalWins: 60, totalLosses: 60 });
+      expect(result.monthlyResults).toEqual([
+        { month: '2026-09', wins: 0, losses: 1 },
+        { month: '2026-10', wins: 0, losses: 0 },
+        { month: '2026-11', wins: 55, losses: 54 },
+      ]);
+      expect(result.recentMatches).toHaveLength(20);
+    } finally {
+      clock.mockRestore();
+    }
+  });
+
+
+  it('keeps profile totals, monthly counts and recent matches consistent during a match write', async () => {
+    const testUser = await seedUser(srv.persistence, 'sub-stats-race', 'Snapshot');
+    const source = await srv.persistence.queryStats({ userId: userIds.minh, includeMatches: true, matchLimit: 1 });
+    const template = source.recentMatches![0]!;
+    const filter = { userId: testUser, includeMonthly: true, includeMatches: true, matchLimit: 20 };
+    const write = srv.persistence.recordMatchResult({
+      ...template, matchId: 'stats-concurrent-match', finishedAt: new Date().toISOString(),
+      participants: template.participants.map(player =>
+        player.userId === userIds.minh ? { ...player, userId: testUser, isWinner: true } : player),
+    });
+    const [beforeOrAfter] = await Promise.all([srv.persistence.queryStats(filter), write]);
+    const after = await srv.persistence.queryStats(filter);
+    for (const response of [beforeOrAfter, after]) {
+      expect(response.recentMatches).toHaveLength(response.summary.totalAppearances);
+      expect(response.monthlyResults?.reduce((sum, month) => sum + month.wins, 0)).toBe(response.summary.totalWins);
+    }
+    expect(after.summary.totalWins).toBe(1);
+  });
+
 });

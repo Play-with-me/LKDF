@@ -9,6 +9,7 @@ export interface LocalAuthCallbackPayload {
 }
 
 export interface LkdfDesktopBridge {
+  onNavigateBack: (listener: () => void) => () => void;
   getAppVersion: () => Promise<string>;
   flashTaskbarFrame: (flash: boolean) => Promise<void>;
   setMatchCloseGuard: (active: boolean) => Promise<void>;

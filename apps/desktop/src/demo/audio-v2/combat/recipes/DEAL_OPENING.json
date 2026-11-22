@@ -1,0 +1,30 @@
+{
+  "name": "tqs_deal_opening",
+  "says": "four playing cards dealt quickly onto a wooden table with cloth brush",
+  "space": "room",
+  "dur": 0.82,
+  "layers": [
+    {
+      "sound": "paper/card",
+      "events": {
+        "count": 4,
+        "gap": 0.14,
+        "faster": 0.92,
+        "softer": 1.5,
+        "loose": 0.15
+      },
+      "lowpass": 6800,
+      "gain": 0
+    },
+    {
+      "sound": "swipe/cloth",
+      "at": 0.0,
+      "cut": [
+        0.0,
+        0.35
+      ],
+      "lowpass": 3500,
+      "gain": -9
+    }
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "name": "tqs_dao",
+  "says": "warm ascending koto strings and gentle wind chime for peach healing",
+  "space": "room",
+  "layers": [
+    {
+      "sound": "note/koto",
+      "pitch": 0,
+      "at": 0.0,
+      "dur": 0.45,
+      "gain": -3,
+      "fade_out": 0.15
+    },
+    {
+      "sound": "note/koto",
+      "pitch": 4,
+      "at": 0.11,
+      "dur": 0.45,
+      "gain": -2,
+      "fade_out": 0.15
+    },
+    {
+      "sound": "note/koto",
+      "pitch": 7,
+      "at": 0.22,
+      "dur": 0.7,
+      "gain": 0,
+      "fade_out": 0.25
+    },
+    {
+      "sound": "note/wind_chime",
+      "at": 0.18,
+      "dur": 0.65,
+      "lowpass": 6500,
+      "gain": -11,
+      "fade_out": 0.25
+    }
+  ]
+}

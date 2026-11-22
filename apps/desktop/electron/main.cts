@@ -255,6 +255,10 @@ function createMainWindow(): BrowserWindow {
     },
   });
 
+  win.on('app-command', (_event, command) => {
+    if (command === 'browser-back') win.webContents.send('window:navigate-back');
+  });
+
   win.on('focus', () => {
     win.flashFrame(false);
   });

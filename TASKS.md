@@ -116,6 +116,19 @@
   - **Kết quả bàn giao:**
     - Màn hình chờ đánh thức máy chủ (`~30–60s` có đếm giây + nút `[⏹️ Hủy]`).
     - Màn hình Đăng nhập Google, Sảnh tạo/vào phòng, Phòng chờ 4–8 ghế (hiển thị Avatar + Tên Google), và Trang lọc Thống kê & Lịch sử đấu theo Người dùng / Thân Phận / 25 Tướng.
+    - [x] Gộp Chiến tích vào Hồ sơ, tách Cài đặt và xác minh ba phạm vi thống kê (mọi thời điểm / ba tháng / 20 ván gần nhất).
+    - [x] Bảo vệ âm lượng chưa lưu, hiển thị thời lượng chính xác và kiểm thử thống kê khi ghi trận đồng thời.
+    - [x] Giữ ngữ cảnh khi xem thống kê chi tiết và bổ sung thử lại đồ thị, phản hồi lỗi lưu và lựa chọn trước khi đăng xuất.
+    - [x] Kiểm tra hết hạn khi lưu cài đặt, đối chiếu lại với máy chủ và phục hồi lỗi tải đồ thị.
+    - [x] Bổ sung Hiệu ứng, Thông báo Windows và Tài khoản trong Cài đặt sảnh.
+    - [x] Duyệt bố cục bốn thẻ Cài đặt, bàn phím và bảo vệ âm lượng chưa lưu trên cửa sổ nhỏ.
+    - [x] Hiện dấu âm lượng chưa lưu khi đổi thẻ và kiểm thử đăng xuất khi máy chủ treo.
+    - [x] Rút gọn Âm thanh còn một công tắc; Windows điều chỉnh âm lượng.
+    - [x] Áp dụng Cài đặt một màn và kiểm thử đăng xuất trong Electron.
+    - [x] Thêm Esc và Back chuột cho điều hướng sảnh, kiểm bản chính và demo trong Electron.
+    - [x] Tạo bộ âm Xích Bích và kiểm phát, tắt tiếng trong Electron.
+    - [x] Nạp và giải mã âm trước, kiểm thời gian kích hoạt trong Electron.
+    - [x] Tách công tắc nhạc nền và hiệu ứng âm thanh, lưu độc lập theo tài khoản.
   - **Điều kiện hoàn thành:** Kiểm tra hiển thị đủ 5 trạng thái giao diện (`Đang tải`, `Chưa có dữ liệu`, `Đang chọn dở`, `Thành công`, `Lỗi`) theo đúng [DESIGN.md](./DESIGN.md). *(Đã kiểm chứng thực tế: `npm run typecheck`, `npm run test:unit` **82/82**, `npm run test:integration` **21/21**, `npm run build` đều đạt exit `0`; đã mở ứng dụng Electron kết nối máy chủ cục bộ `http://127.0.0.1:3001` và kiểm tra trực quan `ServerWakeScreen → LoginScreen → StatsPage` không tràn khung, 0 lỗi console, 0 số liệu giả.)*
 
 - [x] **Bước 4.2 — Màn hình Bàn đấu 4–8 ghế (1 khung cố định không cuộn), Bảng Trọng Tài 4 nút & Tiện ích Windows**

@@ -39,6 +39,7 @@ Vì bạn là người mới và không lập trình, bạn **không cần đọ
 > - ✅ **Âm hiệu ứng bàn đấu:** Đã thêm bộ tiếng hành động phân biệt theo loại. Mất máu nghe tiếng chém, tướng bị loại nghe tiếng kết liễu. Kỹ năng chỉ dùng âm báo, tên hiện bằng chữ.
 > - ✅ **Chồng nhạc khi mở nhiều tab:** Nhạc sảnh và nhạc trận phát theo tab game đang dùng. Electron đã kiểm trên ba trang game chạy đồng thời.
 > - ✅ **Nhạc trong ván:** Đã phối lại với dây gảy, sáo và tiếng gõ nhẹ. Electron xác nhận nhạc chờ dừng trước khi nhạc trận bắt đầu và nhạc trận dừng khi hết ván.
+> - ✅ **Âm thanh bàn đấu:** Đã thêm tiếng đánh bài, trang bị, mất máu, hồi máu và nhạc nền riêng trong ván. Electron đã kiểm tra trên bàn xem thử. Còn nghe cân bằng âm trên ván online thật.
 > - ✅ **Đã kiểm chứng chọn bài sáng mục tiêu (2026-11-19):** Sát mặc định 2 ghế, thêm ngựa -1 có 4 ghế, thêm cung tầm 5 có 7 ghế; 85/85 unit đạt. Tính năng đã có, chưa nhập demo.
 > - ✅ **ĐÃ XONG Bước 4.3** — Giao diện bàn đấu đã duyệt đã vào mã nguồn game. Xem [bố trí bàn đấu](./DESIGN.md#32-bố-cục-responsive-trên-máy-tính-windows-960600-tối-thiểu--mở-mặc-định-1280720--co-giãn-mượt-tới-2k).
 > - 👉 **BẠN ĐANG Ở ĐÂY — Bước 4.4.** `Làm bản demo animation đánh bài và hiệu ứng của Sát, Thiểm, Đào và Vô Giải để tôi duyệt.`
@@ -271,3 +272,29 @@ Hãy gọi kèm `/honest-advisor` và `/ultrathinking` như bạn đã dùng r�
 
 - 2026-11-20 · Bước 4.4 · Bàn chính đặt chồng bài rút ở góc trên trái. Mở http://localhost:5174/?devPreviewSeats=8 để xem bố cục. Câu lệnh tiếp nối: “Kiểm tra các nhánh rút bài còn thiếu xác nhận trên bàn chính.”
 - Bước 4.4 · Khi lấy bài tay, chủ bài có thể đổi hai lá rồi xác nhận úp; người lấy chọn một vị trí. Bước tiếp: “Kiểm tra khay lấy bài tay với ba máy trong trận thật.”
+
+- Bước 4.1 · ✅ Đã đưa Hồ sơ và Cài đặt sang bản chính. Mở Hồ sơ để xem thống kê, mở bánh răng để chỉnh và lưu âm lượng. Bước tiếp: đối chiếu cùng một tài khoản trên máy chủ triển khai.
+
+- Bước 4.1: Cài đặt cảnh báo âm lượng chưa lưu khi về menu, cho ở lại, bỏ thay đổi hoặc lưu và rời. Hồ sơ hiển thị phút và giây gốc. Tổng quan, đồ thị và lịch sử chạy chung một batch đọc libSQL. Electron thử ba lựa chọn và thời lượng 30/90 giây. Typecheck và 26/26 integration đạt, gồm ghi trận đồng thời. Bàn giao: kiểm lại với Google và Turso triển khai.
+
+- Bước 4.1: Hồ sơ giữ tháng, bộ lọc và tiêu điểm khi trở về từ thống kê chi tiết, mở chi tiết theo tài khoản hiện tại. Đồ thị thiếu dữ liệu có nút thử lại độc lập; Cài đặt phân biệt lỗi lưu với nghe thử, hỗ trợ lưu/bỏ trước đăng xuất. Typecheck và 26 kiểm thử tích hợp đạt. Bàn giao: nghiệm thu Google/Turso triển khai và DPI Windows thực tế.
+
+- Bước 4.1: Lưu cài đặt giới hạn chờ 8 giây. Sau kết quả chưa xác nhận, HomeLobbyHub đọc lại hồ sơ trước khi ghi lại. LiveLobbyProfile giữ thống kê hiện có và phân biệt lỗi tải lại với thiếu dữ liệu tháng. Electron mô phỏng xác nhận 39% đã ghi, một PATCH và đăng xuất, thử zoom 125%/150% và giảm chuyển động. Typecheck, build, 85 unit và 26 integration đạt. Bàn giao: nghiệm thu Google/Turso và DPI Windows thật.
+
+- Bước 4.1: Cài đặt có Âm thanh, Hiệu ứng, Thông báo Windows và Tài khoản. devicePreferences lưu giảm chuyển động và nháy taskbar theo thiết bị, tương ứng với nền sảnh/chuyển cảnh/chuyển động bài và nhắc lượt. Tài khoản thật hiện nút đăng xuất, bản mẫu có giải thích. Electron cục bộ đã kiểm hai tùy chọn qua tải lại ở khung 960×600; build, typecheck và 26 tích hợp đạt. Bàn giao: thử taskbar Windows khi cửa sổ mất tiêu điểm trong ván nhiều người.
+
+- Bước 4.1: Cài đặt dùng bốn thẻ điều hướng, hiển thị mức lưu và chế độ chuyển động thực tế, ghi rõ phạm vi lưu và hỗ trợ của Windows. Electron 960×600 ở zoom 100/125/150% thấy đủ bốn nhóm; kiểm Home/End/mũi tên, giữ bản nháp và bảo vệ Esc. Bàn giao: thử tài khoản thật, DPI hệ điều hành và nháy thanh tác vụ trong ván Windows.
+
+- Bước 4.1: Thẻ Âm thanh hiện Chưa lưu khi có bản nháp. Đăng xuất chờ tối đa 8 giây, xóa phiên thiết bị và báo nếu chưa xác nhận đóng phiên máy chủ. Electron mô phỏng Lưu và đăng xuất: nhãn vẫn hiện ở Tài khoản, ghi một lần, về đăng nhập sau 8,1 giây và xóa mã phiên. Build, typecheck và 26 tích hợp đạt. Bàn giao: nghiệm thu Google và taskbar trong ván Windows thật.
+
+- Bước 4.1: thẻ Âm thanh chỉ còn bật/tắt tiếng, giao âm lượng cho Windows. Bàn đấu dùng mức phát mặc định thay vì mức cũ từ hồ sơ. Electron xác nhận hai luồng bật/tắt ở bản chính xem thử và demo, typecheck đạt.
+
+- Bước 4.1: Đã áp dụng bố cục Cài đặt một màn sang bản chính. LobbySettings dùng chung với demo và đã bỏ nhánh bốn thẻ. Electron với phiên mô phỏng ở 960×600 kiểm bốn hàng vừa khung tại zoom 100/125/150%, hiện email, đăng xuất gửi một yêu cầu và xóa phiên cục bộ. Bàn giao: xác nhận với tài khoản Google và ứng dụng Windows thật.
+
+- Bước 4.1: Esc và nút Back bên hông chuột dùng chung điều hướng quay lại của sảnh và thống kê. useBackNavigation nhận Esc ở window, để màn con xử lý trước, nhận mouse button 3 và Electron browser-back qua preload. Electron mô phỏng trên bản chính xem thử và demo xác nhận Esc khi không có tiêu điểm, hủy sửa biệt danh trước khi về menu, trả tiêu điểm và IPC. Build/typecheck đạt. Bàn giao: thử nút bên hông chuột vật lý trên bản Windows.
+
+- Bước 4.1: Tạo bộ âm Xích Bích gốc gồm hover, click, đến lượt, phản ứng và chiến thắng. useInterfaceSounds nối nút ở bản chính và demo, ngăn lặp hover nhanh và dùng công tắc Tiếng game. Mức âm tệp cue trong ván mặc định tăng 0,55 lên 0,85. Electron xác nhận phát đủ 5 tệp và tắt tiếng giao diện. Bàn giao: nghe cân bằng âm trên loa Windows trong ván thật.
+
+- Bước 4.1: Âm Xích Bích được tải và giải mã trước qua Web Audio, phát AudioBuffer ngay khi hover, nhấn chuột và nhận tín hiệu trận. Chuột phát lúc pointerdown, click bàn phím vẫn phát, không lặp click chuột. Electron đo thời gian từ sự kiện đến gọi start: nhấn 0,4 ms, hover 0,2 ms, xác nhận âm lượt và tắt tiếng. Đây là thời gian phần mềm; chưa đo loa Windows.
+
+- Bước 4.1: Cài đặt tách Nhạc nền và Hiệu ứng âm thanh. Máy chủ lưu music_enabled riêng; hồ sơ cũ lấy trạng thái cũ khi chưa thiết lập. Electron thử 4 tổ hợp bật/tắt, tích hợp xác nhận lưu sau khởi động lại. Bàn giao: triển khai máy chủ và desktop cùng bản.

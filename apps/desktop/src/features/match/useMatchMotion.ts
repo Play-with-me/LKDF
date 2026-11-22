@@ -1,7 +1,22 @@
-import { useEffect, useRef, type RefObject } from 'react';
+import { prefersReducedMotion } from '../../lib/devicePreferences.js';
+import { useEffect, useRef, useState, type RefObject } from 'react';
 import type { CardInstance, PlayerViewState } from '@lkdf/shared';
 import { getCardArtUrl, getUiAssetUrl } from '../../lib/assetCatalog.js';
 import duelFireUrl from '../../../motion-duel-fire.mp4?url';
+
+export type ActionArcKind = 'attack' | 'scroll' | 'heal';
+
+export interface CombatActionArc {
+  readonly id: string;
+  readonly fromSeat: number;
+  readonly toSeat: number;
+  readonly kind: ActionArcKind;
+}
+
+export interface SeatHpImpact {
+  readonly id: number;
+  readonly delta: number;
+}
 
 type BoardMotion = {
   readonly board: HTMLElement;
@@ -30,42 +45,108 @@ function animateElement(el: HTMLElement, frames: Keyframe[], options: KeyframeAn
   void animation.finished.then(() => el.remove(), () => el.remove());
 }
 
-function showHealth(motion: BoardMotion, seat: HTMLElement, change: number) {
+function showTurnHandoff(motion: BoardMotion, previous: PlayerViewState, state: PlayerViewState) {
+  if (previous.turnPhase === 'HERO_SELECT' || previous.turnPhase === 'GAME_OVER' ||
+      state.turnPhase === 'GAME_OVER' || state.roundNumber < previous.roundNumber ||
+      (previous.currentTurnSeat === state.currentTurnSeat && previous.roundNumber === state.roundNumber)) return;
+
+  const next = state.players.find(player => player.seatIndex === state.currentTurnSeat);
+  if (!next) return;
+  const seat = seatAt(motion, next.seatIndex);
+  if (!seat || motion.reduced) return;
   const bounds = relativeBounds(motion, seat);
-  if (change < 0) {
-    const number = document.createElement('span');
-    number.className = 'lkdf-motion-damage';
-    number.textContent = '−' + Math.abs(change);
-    position(number, bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
-    motion.layer.append(number);
-    animateElement(number, [
-      { opacity: 1, translate: '-50% -50%' },
-      { opacity: 1, translate: motion.reduced ? '-50% -50%' : '-50% -26px', offset: .65 },
-      { opacity: 0, translate: motion.reduced ? '-50% -50%' : '-50% -46px' },
-    ], { duration: 690, easing: 'ease-out' });
-    return;
-  }
   const outline = document.createElement('span');
-  outline.className = 'lkdf-motion-heal';
+  outline.className = 'lkdf-turn-handoff-ring';
   position(outline, bounds.x, bounds.y);
   outline.style.width = bounds.width + 'px';
   outline.style.height = bounds.height + 'px';
   motion.layer.append(outline);
-  animateElement(outline, [{ opacity: .35 }, { opacity: 1, offset: .26 }, { opacity: 0 }], { duration: 720 });
-  for (const [x, y] of [[.15,.4],[.34,.2],[.52,.45],[.72,.2],[.87,.55],[.39,.71]] as const) {
-    const plus = document.createElement('span');
-    plus.className = 'lkdf-motion-plus';
-    plus.textContent = '+';
-    position(plus, bounds.x + x * bounds.width, bounds.y + y * bounds.height);
-    motion.layer.append(plus);
-    animateElement(plus, [
-      { opacity: 0 }, { opacity: 1, offset: .28 },
-      { opacity: 0, translate: motion.reduced ? 'none' : '0 -20px' },
-    ], { duration: 560, delay: x * 150 });
-  }
+  animateElement(outline, [{ opacity: 0 }, { opacity: 1, offset: .22 }, { opacity: 0 }], {
+    duration: 620,
+    easing: 'ease-out',
+  });
 }
 
-function showHorse(motion: BoardMotion, seat: HTMLElement, card: CardInstance) {
+const tableEffects = {
+  nam_man_nhap_xam: 'Nam Man Nhập Xâm',
+  van_tien_te_phat: 'Vạn Tiễn Tề Phát',
+  dao_vien_ket_nghia: 'Đào Viên Kết Nghĩa',
+  ngu_coc_phong_dang: 'Ngũ Cốc Phong Đăng',
+} as const;
+
+function tableEffectName(state: PlayerViewState) {
+  const prompt = state.activeInterrupt;
+  const actor = state.players.find(player => player.seatIndex === prompt?.sourceSeat);
+  if (!actor || actor.seatIndex === state.viewerSeatIndex) return undefined;
+  let cardName: string | undefined;
+  switch (prompt?.kind) {
+    case 'WAIT_AOE_SAT': cardName = tableEffects.nam_man_nhap_xam; break;
+    case 'WAIT_AOE_DODGE': cardName = tableEffects.van_tien_te_phat; break;
+    case 'WAIT_HARVEST_PICK': cardName = tableEffects.ngu_coc_phong_dang; break;
+    case 'WAIT_NULLIFICATION': cardName = prompt.scrollNameVi; break;
+  }
+  return cardName ? `${actor.displayName} dùng ${cardName}` : undefined;
+}
+
+function opponentCardNotice(previous: PlayerViewState, state: PlayerViewState, freshDiscard: boolean) {
+  const logs = state.actionLog.slice(previous.actionLog.length);
+  for (const player of state.players) {
+    if (player.seatIndex === state.viewerSeatIndex) continue;
+    const prefix = player.displayName + ' ';
+    for (const line of logs) {
+      if (!line.startsWith(prefix)) continue;
+      const action = line.slice(prefix.length);
+      if (action.startsWith('trang bị ')) return line.replace(/\.$/, '');
+      if (action.startsWith('đánh Vô Giải Khả Kích')) return prefix + 'dùng Vô Giải Khả Kích';
+      if (action.startsWith('dùng Đào ')) return prefix + 'dùng Đào';
+      if (action.startsWith('đánh Sát vào ') || action.startsWith('dùng Trượng Bát Xà Mâu đánh Sát')) {
+        return prefix + 'đánh Sát';
+      }
+    }
+  }
+  const card = freshDiscard ? state.discardPileTop : null;
+  if (card?.cardKey === 'thiem' &&
+      (previous.activeInterrupt?.kind === 'WAIT_DODGE' || previous.activeInterrupt?.kind === 'WAIT_AOE_DODGE')) {
+    const actor = state.players.find(player => player.seatIndex === previous.activeInterrupt?.targetSeat);
+    if (actor && actor.seatIndex !== state.viewerSeatIndex) return `${actor.displayName} dùng Thiểm`;
+  }
+  return undefined;
+}
+
+function showTableEffect(motion: BoardMotion, name: string) {
+  const dock = motion.board.querySelector('.lkdf-battle-dock');
+  const player = dock?.querySelector('.lkdf-battle-player');
+  if (!dock || !player) return;
+  motion.layer.querySelector('.lkdf-motion-table-notice')?.remove();
+  const bounds = relativeBounds(motion, player);
+  const notice = document.createElement('div');
+  notice.className = 'lkdf-motion-table-notice';
+  notice.textContent = name;
+  motion.layer.append(notice);
+  position(notice, bounds.x + bounds.width + 8, relativeBounds(motion, dock).y - 4);
+  if (motion.reduced) return notice;
+
+  const fire = document.createElement('video');
+  fire.src = duelFireUrl;
+  fire.muted = true;
+  fire.autoplay = true;
+  fire.playsInline = true;
+  fire.loop = true;
+  notice.prepend(fire);
+  const anchor = relativeBounds(motion, notice);
+  const dx = motion.layer.clientWidth / 2 - anchor.x - anchor.width / 2;
+  const dy = motion.layer.clientHeight * .42 - anchor.y - anchor.height / 2;
+  const center = `${dx}px ${dy}px`;
+  notice.animate([
+    { translate: center, scale: 1.9, opacity: 0 },
+    { translate: center, scale: 2.1, opacity: 1, offset: .12 },
+    { translate: center, scale: 2.1, opacity: 1, offset: .78 },
+    { translate: '0 0', scale: 1, opacity: 1 },
+  ], { duration: 1500, easing: 'ease-in-out' });
+  return notice;
+}
+
+function showEquipmentReveal(motion: BoardMotion, seat: HTMLElement, card: CardInstance) {
   const url = getCardArtUrl(card.cardKey);
   if (!url) return;
   const bounds = relativeBounds(motion, seat);
@@ -239,15 +320,118 @@ function syncDuel(motion: BoardMotion, state: PlayerViewState) {
   }
 }
 
+function detectPublicActionArcs(
+  previous: PlayerViewState,
+  state: PlayerViewState,
+): readonly Omit<CombatActionArc, 'id'>[] {
+  const found: Array<Omit<CombatActionArc, 'id'>> = [];
+  const seen = new Set<string>();
+  const pushArc = (fromSeat: number | null | undefined, toSeat: number | null | undefined, kind: ActionArcKind) => {
+    if (fromSeat == null || toSeat == null || fromSeat === toSeat) return;
+    const key = `${fromSeat}:${toSeat}:${kind}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    found.push({ fromSeat, toSeat, kind });
+  };
+
+  const findSeatByName = (name: string) =>
+    state.players.find((player) => player.displayName === name.trim())?.seatIndex;
+
+  // 1. Public actionLog entries (strictly public)
+  const newLogs = state.actionLog.slice(previous.actionLog.length);
+  let hasPeachRescueLog = false;
+  for (const line of newLogs) {
+    for (const actor of state.players) {
+      const prefix = `${actor.displayName} `;
+      if (!line.startsWith(prefix)) continue;
+      const action = line.slice(prefix.length);
+
+      if (action.startsWith('đánh Sát vào ')) {
+        const rawTargets = action.slice('đánh Sát vào '.length).replace(/\.$/, '');
+        for (const name of rawTargets.split(', ')) {
+          pushArc(actor.seatIndex, findSeatByName(name), 'attack');
+        }
+      } else if (action.startsWith('dùng Trượng Bát Xà Mâu đánh Sát vào ')) {
+        const targetName = action.slice('dùng Trượng Bát Xà Mâu đánh Sát vào '.length).replace(/\.$/, '');
+        pushArc(actor.seatIndex, findSeatByName(targetName), 'attack');
+      } else if (action.startsWith('dùng Đào cứu ')) {
+        const rest = action.slice('dùng Đào cứu '.length);
+        const targetName = rest.split(' (')[0]?.replace(/\.$/, '') ?? '';
+        const targetSeat = findSeatByName(targetName);
+        if (targetSeat != null && targetSeat !== actor.seatIndex) {
+          hasPeachRescueLog = true;
+          pushArc(actor.seatIndex, targetSeat, 'heal');
+        }
+      }
+    }
+  }
+
+  // 2. Public interrupt transitions (Quyết Đấu, Thuận Thủ, Quá Hà, Tá Đao, Phản Gián, Sát)
+  const interrupt = state.activeInterrupt;
+  if (interrupt && interrupt.id !== previous.activeInterrupt?.id) {
+    if (interrupt.kind === 'WAIT_NULLIFICATION') {
+      const kind: ActionArcKind = interrupt.scrollNameVi?.includes('Quyết Đấu') ? 'attack' : 'scroll';
+      pushArc(interrupt.sourceSeat, interrupt.targetSeat, kind);
+    } else if (
+      interrupt.kind === 'WAIT_DUEL_SAT' ||
+      interrupt.kind === 'WAIT_COLLATERAL_SAT' ||
+      interrupt.kind === 'WAIT_DODGE'
+    ) {
+      pushArc(interrupt.sourceSeat, interrupt.targetSeat, 'attack');
+    } else if (interrupt.kind === 'WAIT_FAN_JIAN_GUESS') {
+      pushArc(interrupt.sourceSeat, interrupt.targetSeat, 'scroll');
+    }
+  }
+
+  // 3. Lạc Bất Tư Thục placed onto another seat's delayedScrolls during PLAY phase
+  if (state.turnPhase === 'PLAY') {
+    for (const player of state.players) {
+      if (player.seatIndex === state.currentTurnSeat) continue;
+      const oldPlayer = previous.players.find((entry) => entry.seatIndex === player.seatIndex);
+      if (!oldPlayer) continue;
+      const gainedLbt = player.delayedScrolls.some(
+        (card) =>
+          card.cardKey === 'lac_bat_tu_thuc' &&
+          !oldPlayer.delayedScrolls.some((prevCard) => prevCard.id === card.id),
+      );
+      if (gainedLbt) {
+        pushArc(state.currentTurnSeat, player.seatIndex, 'scroll');
+      }
+    }
+  }
+
+  // 4. Single-target heal by current turn player (e.g., Thanh Nang) when not Đào rescue or Đào Viên Kết Nghĩa
+  if (!hasPeachRescueLog && state.turnPhase === 'PLAY') {
+    const healedOthers = state.players.filter((player) => {
+      if (player.seatIndex === state.currentTurnSeat) return false;
+      const oldPlayer = previous.players.find((entry) => entry.seatIndex === player.seatIndex);
+      return Boolean(oldPlayer && player.hp > oldPlayer.hp);
+    });
+    if (healedOthers.length === 1) {
+      pushArc(state.currentTurnSeat, healedOthers[0]!.seatIndex, 'heal');
+    }
+  }
+
+  return found;
+}
+
 export function useMatchMotion(
   board: RefObject<HTMLDivElement | null>,
   layer: RefObject<HTMLDivElement | null>,
   state: PlayerViewState,
   suspended: boolean,
-) {
+): {
+  readonly activeArcs: readonly CombatActionArc[];
+  readonly hpImpacts: Readonly<Record<number, SeatHpImpact>>;
+} {
   const baseline = useRef<PlayerViewState | null>(null);
   const pending = useRef(new Set<number>());
   const reactions = useRef(new Set<Animation>());
+  const tableNotice = useRef<{ name: string; element: HTMLElement; startedAt: number } | null>(null);
+  const arcSeqRef = useRef(0);
+  const impactSeqRef = useRef(0);
+  const [activeArcs, setActiveArcs] = useState<readonly CombatActionArc[]>([]);
+  const [hpImpacts, setHpImpacts] = useState<Readonly<Record<number, SeatHpImpact>>>({});
 
   useEffect(() => {
     const motionLayer = layer.current;
@@ -261,6 +445,9 @@ export function useMatchMotion(
       motionLayer?.replaceChildren();
       if (motionLayer) delete motionLayer.dataset.duel;
       baseline.current = null;
+      tableNotice.current = null;
+      setActiveArcs([]);
+      setHpImpacts({});
     };
   }, [layer, state.matchId, suspended]);
 
@@ -271,7 +458,7 @@ export function useMatchMotion(
     const motion = {
       board: board.current,
       layer: layer.current,
-      reduced: window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+      reduced: prefersReducedMotion(),
     };
     if (!previous) {
       syncDuel(motion, state);
@@ -287,15 +474,51 @@ export function useMatchMotion(
       reactions.current.forEach((animation) => animation.cancel());
       reactions.current.clear();
       motion.layer.replaceChildren();
+      tableNotice.current = null;
       delete motion.layer.dataset.duel;
+      setActiveArcs([]);
+      setHpImpacts({});
       syncDuel(motion, state);
       return;
     }
     syncDuel(motion, state);
+    showTurnHandoff(motion, previous, state);
+
+    const emittedArcs = detectPublicActionArcs(previous, state);
+    if (emittedArcs.length > 0) {
+      const created: CombatActionArc[] = emittedArcs.map((arc) => {
+        arcSeqRef.current += 1;
+        return { ...arc, id: `arc-${arcSeqRef.current}` };
+      });
+      const createdIds = new Set(created.map((arc) => arc.id));
+      setActiveArcs((prev) => [...prev, ...created]);
+      const expireTimeout = window.setTimeout(() => {
+        pending.current.delete(expireTimeout);
+        setActiveArcs((prev) => prev.filter((arc) => !createdIds.has(arc.id)));
+      }, 650);
+      pending.current.add(expireTimeout);
+    }
     const incomingDodge = previous.activeInterrupt;
     const strike = previous.discardPileTop;
     const freshDiscard = state.discardPileCount > previous.discardPileCount &&
       state.discardPileTop?.id !== strike?.id;
+    const currentEffect = tableEffectName(state);
+    const previousEffect = tableEffectName(previous);
+    const name = currentEffect ?? opponentCardNotice(previous, state, freshDiscard);
+    if (name && tableNotice.current?.name !== name && name !== previousEffect) {
+      tableNotice.current?.element.remove();
+      const element = showTableEffect(motion, name);
+      tableNotice.current = element ? { name, element, startedAt: performance.now() } : null;
+    }
+    if (!currentEffect && tableNotice.current) {
+      const notice = tableNotice.current;
+      tableNotice.current = null;
+      const timeout = window.setTimeout(() => {
+        pending.current.delete(timeout);
+        notice.element.remove();
+      }, Math.max(0, (motion.reduced ? 650 : 1650) - (performance.now() - notice.startedAt)));
+      pending.current.add(timeout);
+    }
     showTransfers(motion, previous, state);
     const track = (animation: Animation | null) => {
       if (!animation) return;
@@ -303,6 +526,22 @@ export function useMatchMotion(
       const finish = () => reactions.current.delete(animation);
       void animation.finished.then(finish, finish);
     };
+    const triggerHpImpact = (seatIndex: number, delta: number) => {
+      impactSeqRef.current += 1;
+      const impactId = impactSeqRef.current;
+      setHpImpacts((prev) => ({ ...prev, [seatIndex]: { id: impactId, delta } }));
+      const clearTimeoutId = window.setTimeout(() => {
+        pending.current.delete(clearTimeoutId);
+        setHpImpacts((prev) => {
+          if (prev[seatIndex]?.id !== impactId) return prev;
+          const next = { ...prev };
+          delete next[seatIndex];
+          return next;
+        });
+      }, 760);
+      pending.current.add(clearTimeoutId);
+    };
+
     for (const player of state.players) {
       const old = previous.players.find((entry) => entry.seatIndex === player.seatIndex);
       const seat = seatAt(motion, player.seatIndex);
@@ -317,16 +556,18 @@ export function useMatchMotion(
         track(animateStrike(motion, seat, strike, false));
         const timeout = window.setTimeout(() => {
           pending.current.delete(timeout);
-          if (seat.isConnected) showHealth(motion, seat, delta);
+          if (seat.isConnected) triggerHpImpact(player.seatIndex, delta);
         }, 225);
         pending.current.add(timeout);
       } else if (delta !== 0) {
-        showHealth(motion, seat, delta);
+        triggerHpImpact(player.seatIndex, delta);
       }
-      for (const slot of ['plusOneHorse', 'minusOneHorse'] as const) {
+      for (const slot of ['weapon', 'armor', 'plusOneHorse', 'minusOneHorse'] as const) {
         const equipment = player.equipments[slot];
-        if (equipment && equipment.id !== old.equipments[slot]?.id) showHorse(motion, seat, equipment);
+        if (equipment && equipment.id !== old.equipments[slot]?.id) showEquipmentReveal(motion, seat, equipment);
       }
     }
   }, [board, layer, state, suspended]);
+
+  return { activeArcs, hpImpacts };
 }

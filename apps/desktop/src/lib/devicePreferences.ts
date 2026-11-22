@@ -1,14 +1,16 @@
-export function readDevicePreference(key: 'reduceMotion' | 'taskbarFlash'): boolean {
+export type DevicePreferenceKey = 'reduceMotion' | 'taskbarFlash' | 'onboardingHints';
+
+export function readDevicePreference(key: DevicePreferenceKey): boolean {
   try {
     const value = localStorage.getItem('lkdf.settings.' + key);
     if (value !== null) return value === 'true';
   } catch {
     // Storage can be unavailable in the browser preview.
   }
-  return key === 'taskbarFlash';
+  return key === 'taskbarFlash' || key === 'onboardingHints';
 }
 
-export function writeDevicePreference(key: 'reduceMotion' | 'taskbarFlash', enabled: boolean): boolean {
+export function writeDevicePreference(key: DevicePreferenceKey, enabled: boolean): boolean {
   try {
     localStorage.setItem('lkdf.settings.' + key, String(enabled));
   } catch {

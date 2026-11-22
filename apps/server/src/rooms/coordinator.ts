@@ -4,15 +4,12 @@ import type { MatchCoordinatorConfig } from '../config.js';
 import type { RoomManager, RoomViewerPayload } from './index.js';
 import type { WsClientMessage } from './wsSchemas.js';
 
-const DEFAULT_SIMULATED_NULLIFY_MIN_MS = 2000;
-const DEFAULT_SIMULATED_NULLIFY_MAX_MS = 3500;
 const DEFAULT_BOT_ACTION_DELAY_MS = 450;
 const DEFAULT_NULLIFICATION_BOT_PASS_MIN_MS = 1500;
 const DEFAULT_DISCONNECT_GRACE_MS = 0;
 const DEFAULT_HOST_FAILOVER_DELAY_MS = 30_000;
 
 interface RoomTimerHandles {
-  simulatedTimer?: NodeJS.Timeout;
   botTimer?: NodeJS.Timeout;
   timeoutTimer?: NodeJS.Timeout;
 }
@@ -52,12 +49,6 @@ export function createMatchCoordinator(deps: {
 
   const getNowMs = deps.nowFn ?? (() => Date.now());
   const rng = deps.runtime?.rng ?? Math.random;
-  const simMinMs =
-    deps.runtime?.simulatedNullificationMinMs ?? DEFAULT_SIMULATED_NULLIFY_MIN_MS;
-  const simMaxMs = Math.max(
-    simMinMs,
-    deps.runtime?.simulatedNullificationMaxMs ?? DEFAULT_SIMULATED_NULLIFY_MAX_MS,
-  );
   const botActionDelayMs =
     deps.runtime?.botActionDelayMs ?? DEFAULT_BOT_ACTION_DELAY_MS;
   const nullificationBotPassMinMs =
@@ -80,7 +71,6 @@ export function createMatchCoordinator(deps: {
     if (!handles) {
       return;
     }
-    if (handles.simulatedTimer) clearTimeout(handles.simulatedTimer);
     if (handles.botTimer) clearTimeout(handles.botTimer);
     if (handles.timeoutTimer) clearTimeout(handles.timeoutTimer);
     roomTimersByCode.delete(roomCode);
@@ -196,21 +186,6 @@ export function createMatchCoordinator(deps: {
     roomTimersByCode.set(roomCode, handles);
 
     const topInterrupt = master.interruptStack[master.interruptStack.length - 1];
-    if (topInterrupt?.kind === 'WAIT_NULLIFICATION' && topInterrupt.isSimulatedDelay) {
-      const span = Math.max(0, simMaxMs - simMinMs);
-      const delayMs = simMinMs + Math.floor(rng() * (span + 1));
-      const expectedFrameId = topInterrupt.id;
-      handles.simulatedTimer = setTimeout(() => {
-        if (isShutDown) return;
-        void deps.roomManager.resolveSimulatedNullification(
-          roomCode,
-          expectedFrameId,
-          { rng },
-        );
-      }, delayMs);
-      return;
-    }
-
     const prompt = getPendingPrompt(master);
     if (prompt && !prompt.isSimulatedDelay) {
       const hasBotActor = prompt.actorSeats.some((seatIdx) => {
@@ -245,7 +220,14 @@ export function createMatchCoordinator(deps: {
         clearHostFailoverTimer(roomCode);
         return;
       }
-      broadcastRoomState(roomCode, reason);
+      if (reason.startsWith('NULLIFICATION_PRIVATE:')) {
+        const userId = reason.slice('NULLIFICATION_PRIVATE:'.length);
+        const socket = onlineSocketsByUserId.get(userId);
+        const view = deps.roomManager.getRoomViewForUser(userId, roomCode);
+        if (socket && view.ok) sendRoomView(socket, view.data, 'NULLIFICATION_UPDATED');
+      } else {
+        broadcastRoomState(roomCode, reason);
+      }
       scheduleRoomRuntime(roomCode);
     },
   );

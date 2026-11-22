@@ -644,6 +644,7 @@ export function applyGameAction(
   state: MasterGameState,
   action: GameAction,
   rng: () => number = Math.random,
+  options?: { readonly deferNullificationPass?: boolean },
 ): MasterGameState {
   if (state.turnPhase === 'GAME_OVER') {
     throw new Error('MATCH_ALREADY_FINISHED');
@@ -722,6 +723,9 @@ export function applyGameAction(
       }
 
       if (action.cardId !== null) {
+        if (top.passedSeats.includes(action.seatIndex)) {
+          throw new Error('NULLIFICATION_ALREADY_PASSED');
+        }
         const actor = getPlayerBySeat(state, action.seatIndex);
         const card = actor.handCards.find((c) => c.id === action.cardId);
         if (!card) {
@@ -774,7 +778,7 @@ export function applyGameAction(
       const allPassed = top.eligibleSeats.every((seat) =>
         nextPassed.includes(seat),
       );
-      if (allPassed) {
+      if (allPassed && !options?.deferNullificationPass) {
         return stepEngine(popInterrupt(state).state, rng);
       }
       return replaceTopInterrupt(state, { ...top, passedSeats: nextPassed });

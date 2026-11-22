@@ -1,0 +1,497 @@
+/* Let the moving river show through the title area, then darken the reading area. */
+.lkdf-lobby-camp:has(.lkdf-lobby-reference-layout) .lkdf-lobby-camp-art::after {
+  background:
+    linear-gradient(90deg, #0e0a09b8, transparent 45%, #0e0a0966),
+    linear-gradient(180deg, #09080716 0%, #09080745 15%, #10131a 57%, #10131a 100%);
+}
+.lkdf-lobby-camp:has(.lkdf-lobby-reference-layout) { background: #10131a; }
+
+.lkdf-lobby-camp-content.lkdf-lobby-reference-layout {
+  align-items: flex-start;
+  justify-content: center;
+  padding: 54px clamp(12px, 4vw, 64px) 36px;
+}
+.lkdf-lobby-reference-layout .lkdf-lobby-camp-panel {
+  width: min(100%, 1220px);
+  padding: clamp(12px, 2.6vw, 28px);
+  border: 1px solid #806c4c;
+  border-radius: 5px;
+  background: linear-gradient(180deg, #14151bb8, #14151bf5 250px, #14151b);
+}
+.lkdf-lobby-reference-layout h2 {
+  font-size: clamp(32px, 4vw, 55px);
+  line-height: 1.05;
+  text-shadow: 0 2px 10px #090807;
+}
+.lkdf-lobby-reference-layout .lkdf-lobby-camp-panel > div > button:first-child {
+  margin-bottom: 8px;
+}
+.lkdf-lobby-hero-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 104px), 1fr));
+  gap: 10px;
+}
+
+.lkdf-lobby-reference-layout [aria-label="Danh mục tra cứu"] {
+  border-bottom: 1px solid #77664d;
+  margin-top: 12px;
+}
+.lkdf-lobby-reference-layout [aria-label="Danh mục tra cứu"] button {
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: transparent;
+}
+.lkdf-lobby-reference-layout [aria-label="Danh mục tra cứu"] button[aria-pressed="true"] {
+  border-bottom-color: #e6be6c;
+  color: #f5d99c;
+}
+.lkdf-hero-toolbar {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: end;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border: 1px solid #746246;
+  border-radius: 4px;
+  background: linear-gradient(115deg, #211c1a, #181b20);
+}
+.lkdf-hero-filters { display: flex; flex-wrap: wrap; gap: 6px; }
+.lkdf-hero-filters button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #14161a;
+}
+.lkdf-hero-filters button[aria-pressed="true"] {
+  background: #512622;
+  border-color: #c89b4b;
+  color: #f5ebd6;
+}
+.lkdf-hero-seal { border: 1px solid; padding-inline: 4px; border-radius: 2px; }
+.lkdf-hero-search { position: relative; flex: 1 1 190px; max-width: 310px; min-width: 0; }
+.lkdf-hero-suggestions {
+  position: absolute;
+  z-index: 3;
+  inset: calc(100% + 4px) 0 auto;
+  padding: 4px;
+  border: 1px solid #806345;
+  border-radius: 4px;
+  background: #181b20;
+}
+.lkdf-hero-library {
+  display: grid;
+  align-items: start;
+  grid-template-columns: minmax(0, 1fr) minmax(240px, 31%);
+  gap: clamp(14px, 2vw, 24px);
+}
+.lkdf-hero-card {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  border: 1px solid #6e7889;
+  border-radius: 4px;
+  background: #181b20;
+  cursor: pointer;
+  transition: border-color 150ms, box-shadow 150ms;
+}
+.lkdf-hero-card:hover { border-color: #e6be6c; }
+.lkdf-hero-card[aria-pressed="true"] {
+  border-color: #e6be6c;
+  box-shadow: 0 0 0 1px #e6be6c;
+}
+.lkdf-hero-card:focus-visible { outline: 2px solid #e6be6c; outline-offset: 2px; }
+.lkdf-hero-card-name {
+  position: absolute;
+  inset: auto 0 0;
+  padding: 20px 4px 7px;
+  background: linear-gradient(transparent, #090807 78%);
+  color: #f5ebd6;
+  font-size: clamp(13px, 1.5vw, 16px);
+  font-weight: 700;
+  line-height: 1.15;
+}
+.lkdf-hero-dossier {
+  position: sticky;
+  top: 12px;
+  max-height: calc(100dvh - 42px);
+  margin-top: 20px;
+  overflow: auto;
+  border: 1px solid #77664d;
+  border-radius: 4px;
+  background: #181b20;
+}
+.lkdf-hero-dossier-header {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  border-bottom: 1px solid #77664d;
+  background: linear-gradient(120deg, #392622, #21232b 75%);
+}
+.lkdf-hero-dossier-header img { width: 56px; border: 1px solid #77664d; }
+.lkdf-hero-dossier-header button { padding-inline: 8px; }
+.lkdf-hero-skills { display: grid; gap: 12px; padding: 14px; }
+
+.lkdf-hero-dossier-empty { padding: 16px; color: #dfcaa9; font-size: 14px; }
+@media (max-width: 720px) {
+  .lkdf-hero-library { grid-template-columns: minmax(0, 1fr); }
+  .lkdf-hero-dossier {
+    position: fixed;
+    inset: auto 12px 12px;
+    z-index: 2;
+    max-height: 45dvh;
+    box-shadow: 0 10px 38px #090807;
+  }
+  .lkdf-hero-dossier-empty { display: none; }
+  .lkdf-hero-library[data-selected="true"] { padding-bottom: 45dvh; }
+}
+
+.lkdf-faction-scene {
+  --faction-visible: var(--faction-progress, 1);
+  --faction-remainder: calc(1 - var(--faction-visible));
+  --faction-art-remainder: calc(1 - clamp(0, var(--faction-visible) / .68, 1));
+  --faction-heading-remainder: calc(1 - clamp(0, (var(--faction-visible) - .12) / .68, 1));
+  --faction-grid-remainder: calc(1 - clamp(0, (var(--faction-visible) - .24) / .76, 1));
+  position: relative;
+  isolation: isolate;
+  margin-top: 16px;
+  padding: clamp(10px, 1.7vw, 20px);
+  border: 1px solid #51473b;
+  border-radius: 5px;
+  background: #14161c;
+}
+.lkdf-faction-scene-art {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+}
+.lkdf-faction-scene-art::before {
+  position: absolute;
+  content: '';
+  inset: 0 0 auto;
+  height: 170px;
+  background:
+    linear-gradient(0deg, #14161c 1%, #14161c14 60%, #09080720),
+    linear-gradient(90deg, #14161c 2%, #14161c38 60%, color-mix(in srgb, var(--faction-color) 38%, transparent)),
+    url('../../assets/art/ui/camp-zhanhuo.webp') var(--faction-crop) 58% / cover no-repeat;
+  clip-path: polygon(
+    0 calc(78% * var(--faction-art-remainder)),
+    30% calc(62% * var(--faction-art-remainder)),
+    56% calc(73% * var(--faction-art-remainder)),
+    78% calc(38% * var(--faction-art-remainder)),
+    100% calc(48% * var(--faction-art-remainder)),
+    100% 100%, 0 100%
+  );
+  transform: translateY(calc(25px * var(--faction-art-remainder)));
+}
+.lkdf-faction-scene-art {
+  background:
+    linear-gradient(113deg, color-mix(in srgb, var(--faction-color) 34%, transparent), transparent 55%)
+    0 0 / calc(100% * var(--faction-visible)) 100% no-repeat;
+}
+.lkdf-faction-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 76px;
+  margin-bottom: 10px;
+  padding-inline: 6px;
+}
+.lkdf-faction-banner-seal {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border: 1px solid var(--faction-color);
+  border-radius: 3px;
+  background: #14161cc9;
+  color: #f5ebd6;
+  font-size: 30px;
+  line-height: 1;
+  opacity: calc(1 - .75 * var(--faction-heading-remainder));
+  transform: translateX(calc(36px * var(--faction-heading-remainder))) rotate(calc(9deg * var(--faction-heading-remainder)));
+}
+.lkdf-faction-title {
+  border-inline-start: 3px solid var(--faction-color);
+  padding-inline-start: 10px;
+  color: #f5ebd6;
+  font-size: clamp(21px, 2.4vw, 30px);
+  font-weight: 700;
+  line-height: 1.16;
+  opacity: calc(1 - .34 * var(--faction-heading-remainder));
+  transform: translateY(calc(32px * var(--faction-heading-remainder)));
+}
+.lkdf-faction-scene .lkdf-lobby-hero-grid {
+  opacity: calc(1 - .72 * var(--faction-grid-remainder));
+  transform: translateY(calc(58px * var(--faction-grid-remainder))) scale(calc(1 - .035 * var(--faction-grid-remainder)));
+  transform-origin: top center;
+}
+
+.lkdf-hero-card[aria-pressed="true"] {
+  animation: lkdf-hero-select 220ms ease-out;
+}
+.lkdf-hero-dossier:not(.lkdf-hero-dossier-empty) {
+  animation: lkdf-hero-dossier-in 240ms cubic-bezier(.18, .74, .25, 1);
+}
+
+@keyframes lkdf-hero-select {
+  35% { transform: scale(.95); box-shadow: 0 0 18px #e6be6c; }
+  72% { transform: scale(1.025); }
+}
+@keyframes lkdf-hero-dossier-in {
+  from { opacity: .35; transform: translateY(18px); }
+  to { opacity: 1; transform: none; }
+}
+
+.lkdf-faction-scene:has(:focus-visible) { --faction-visible: 1; }
+@media (prefers-reduced-motion: reduce) {
+  .lkdf-hero-card { transition: none; }
+  .lkdf-hero-card[aria-pressed="true"],
+  .lkdf-hero-dossier:not(.lkdf-hero-dossier-empty) { animation: none; }
+  .lkdf-faction-scene { --faction-visible: 1; }
+}
+
+.lkdf-faction-scene-art::after {
+  position: absolute;
+  inset: 0;
+  content: '';
+  background:
+    radial-gradient(circle at 16% 68%, #ffbf6e 0 1.5px, transparent 3px),
+    radial-gradient(circle at 31% 38%, #f08a53 0 2px, transparent 4px),
+    radial-gradient(circle at 58% 15%, #ffd08a 0 1.5px, transparent 3px),
+    radial-gradient(circle at 78% 27%, #ff9749 0 2px, transparent 4px),
+    radial-gradient(circle at 91% 61%, #ffd08a 0 1.5px, transparent 3px);
+  opacity: calc(.64 - .48 * var(--faction-remainder));
+  transform: translate(calc(-54px * var(--faction-remainder)), calc(65px * var(--faction-remainder)));
+}
+
+.lkdf-hero-card[aria-pressed="true"]::after {
+  position: absolute;
+  inset: 0;
+  content: '';
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 18% 64%, #ffd184 0 2px, transparent 4px),
+    radial-gradient(circle at 36% 72%, #ffa356 0 1.5px, transparent 3px),
+    radial-gradient(circle at 68% 56%, #ffe0a4 0 2px, transparent 4px),
+    radial-gradient(circle at 86% 69%, #ff9a55 0 1.5px, transparent 3px);
+  animation: lkdf-hero-embers 240ms ease-out both;
+}
+
+@keyframes lkdf-hero-embers {
+  from { opacity: 1; transform: translate(-7px, 14px); }
+  to { opacity: 0; transform: translate(15px, -49px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lkdf-faction-scene-art::after,
+  .lkdf-hero-card[aria-pressed="true"]::after { display: none; }
+}
+
+.lkdf-hero-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  box-shadow: 0 6px 20px #090807a8;
+}
+.lkdf-hero-filters button[aria-current="location"] {
+  background: #512622;
+  border-color: #c89b4b;
+  color: #f5ebd6;
+}
+.lkdf-faction-filter { margin-inline: auto 12px; }
+
+.lkdf-faction-scene[data-scene="camp"] .lkdf-faction-scene-art::before {
+  background:
+    linear-gradient(90deg, #14161c 0%, #14161c42 60%, #25263a91),
+    repeating-linear-gradient(90deg, transparent 0 48px, #e6be6c43 49px 51px, transparent 52px 79px),
+    linear-gradient(0deg, #14161c, transparent 72%),
+    url('../../assets/art/ui/lobby-banner.webp') center 48% / cover no-repeat;
+}
+.lkdf-faction-scene[data-scene="river"] .lkdf-faction-scene-art::before {
+  background:
+    linear-gradient(90deg, #14161c 0%, #14161c58 51%, #0e504043),
+    linear-gradient(0deg, #14161c, transparent 72%),
+    url('../../assets/art/ui/camp-zhanhuo.webp') 88% 63% / cover no-repeat;
+  transform: translate(calc(35px * var(--faction-art-remainder)), calc(12px * var(--faction-art-remainder)));
+}
+.lkdf-hero-dossier-header img { animation: lkdf-dossier-ink 230ms ease-out; }
+@keyframes lkdf-dossier-ink {
+  from { clip-path: polygon(0 85%, 100% 46%, 100% 100%, 0 100%); }
+  to { clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%); }
+}
+@media (min-width: 721px) {
+  .lkdf-hero-dossier { top: 128px; max-height: calc(100dvh - 148px); }
+}
+@media (max-width: 460px) {
+  .lkdf-faction-filter { padding-inline: 6px; font-size: 12px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lkdf-hero-dossier-header img { animation: none; }
+}
+
+.lkdf-dossier-health {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  margin-top: 5px;
+  color: #f2b4a8;
+  font-size: 12px;
+}
+.lkdf-dossier-hearts { display: inline-flex; gap: 3px; }
+.lkdf-dossier-hearts svg { fill: #9e2b25; stroke: #f2b4a8; }
+.lkdf-dossier-skills-label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #dfcaa9;
+  font-size: 14px;
+  font-weight: 650;
+}
+.lkdf-dossier-skills-label svg { color: #e6be6c; }
+.lkdf-dossier-skill {
+  padding: 8px 10px 10px;
+  border-inline-start: 2px solid #9e7747;
+  border-radius: 2px;
+  background: linear-gradient(105deg, #302720, #1b1e25);
+}
+
+.lkdf-lobby-camp-content.lkdf-lobby-reference-layout { padding-top: 16px; }
+.lkdf-lobby-reference-layout .lkdf-lobby-camp-panel { padding: clamp(12px, 2vw, 22px); }
+.lkdf-lobby-reference-layout .lkdf-lobby-camp-panel > div {
+  display: grid;
+  grid-template-columns: max-content max-content minmax(0, 1fr);
+  align-items: center;
+  gap: 8px 16px;
+}
+.lkdf-lobby-reference-layout .lkdf-lobby-camp-panel > div > * { grid-column: 1 / -1; }
+.lkdf-lobby-reference-layout .lkdf-lobby-camp-panel > div > button:first-child { margin: 0; grid-column: 1; }
+.lkdf-lobby-reference-layout .lkdf-lobby-camp-panel > div > h2 { grid-column: 2; font-size: clamp(24px, 3.5vw, 34px); }
+.lkdf-lobby-reference-layout .lkdf-lobby-camp-panel > div > [aria-label="Danh mục tra cứu"] {
+  grid-column: 3;
+  justify-self: end;
+  margin: 0;
+}
+.lkdf-hero-toolbar { align-items: center; padding-block: 7px; }
+.lkdf-hero-search { order: -1; }
+.lkdf-hero-search label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+.lkdf-faction-jump-label { align-self: center; font-size: 12px; color: #dfcaa9; }
+.lkdf-hero-search-clear {
+  position: absolute;
+  inset: 4px 4px 4px auto;
+  padding-inline: 6px;
+  border-radius: 3px;
+  color: #f5d99c;
+  cursor: pointer;
+}
+.lkdf-hero-search-clear:hover, .lkdf-hero-search-clear:focus-visible { background: #493221; outline: 1px solid #e6be6c; }
+.lkdf-hero-library { display: block; }
+.lkdf-faction-heading { min-height: 62px; }
+.lkdf-faction-scene .lkdf-lobby-hero-grid { opacity: 1; transform: none; }
+.lkdf-faction-banner-seal { width: 43px; height: 43px; font-size: 26px; }
+
+.lkdf-hero-dossier:not(.lkdf-hero-dossier-empty) { animation: none; }
+@media (min-width: 721px) {
+  .lkdf-hero-dossier {
+    position: fixed;
+    z-index: 4;
+    inset: auto max(18px, calc((100vw - 1190px) / 2)) 20px auto;
+    width: min(340px, 36vw);
+    max-height: 62dvh;
+    margin: 0;
+    box-shadow: 0 12px 30px #090807c9;
+  }
+}
+@media (max-width: 620px) {
+  .lkdf-lobby-reference-layout .lkdf-lobby-camp-panel > div { grid-template-columns: max-content minmax(0, 1fr); }
+  .lkdf-lobby-reference-layout .lkdf-lobby-camp-panel > div > [aria-label="Danh mục tra cứu"] { grid-column: 1 / -1; justify-self: stretch; }
+  .lkdf-hero-search { max-width: none; }
+  .lkdf-faction-jump-label { display: none; }
+}
+
+.lkdf-hero-collection[data-searching="true"] .lkdf-faction-scene { margin-top: 8px; padding: 10px 12px; }
+.lkdf-hero-collection[data-searching="true"] .lkdf-faction-heading { min-height: 0; margin-bottom: 6px; }
+.lkdf-hero-collection[data-searching="true"] .lkdf-faction-title { font-size: 18px; }
+.lkdf-hero-collection[data-searching="true"] .lkdf-lobby-hero-grid { grid-template-columns: repeat(auto-fill, minmax(min(100%, 96px), 112px)); }
+
+.lkdf-faction-foreground {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 125px;
+  pointer-events: none;
+  opacity: calc(var(--faction-art-remainder) * .75);
+}
+[data-scene="camp"] .lkdf-faction-scene-art::before {
+  clip-path: inset(0 calc(46% * var(--faction-art-remainder)));
+  transform: none;
+}
+[data-scene="camp"] .lkdf-faction-foreground {
+  background:
+    linear-gradient(110deg, #12131b 54%, transparent 55%) left / 50% 100% no-repeat,
+    linear-gradient(-110deg, #12131b 54%, transparent 55%) right / 50% 100% no-repeat;
+}
+[data-scene="river"] .lkdf-faction-scene-art::before {
+  transform: translateX(calc(-55px * var(--faction-art-remainder)));
+}
+[data-scene="river"] .lkdf-faction-foreground {
+  background: url('./red-cliffs/red-cliffs-piece-distant-boat.webp') 90% 80% / auto 60px no-repeat;
+  opacity: calc(.8 - .55 * var(--faction-art-remainder));
+  transform: translateX(calc(105px * var(--faction-art-remainder)));
+}
+
+.lkdf-lobby-camp:has(.lkdf-hero-collection) { overflow-anchor: none; }
+
+.lkdf-lobby-reference-extra { min-width: 0; }
+.lkdf-card-chapter, .lkdf-role-entry {
+  padding: 14px;
+  border: 1px solid #51473b;
+  border-radius: 5px;
+  background:
+    linear-gradient(90deg, #14161c 25%, #14161c9c),
+    url('../../assets/art/ui/tex-ink-base.webp') right top / cover;
+}
+.lkdf-card-chapter { margin-top: 12px; }
+.lkdf-card-chapter h3 {
+  margin-bottom: 12px;
+  border-inline-start: 3px solid;
+  padding-inline-start: 9px;
+  font-size: 23px;
+  font-weight: 700;
+}
+.lkdf-card-catalog-grid, .lkdf-role-grid { display: grid; gap: 10px; }
+.lkdf-card-catalog-grid { grid-template-columns: repeat(auto-fill, minmax(min(100%, 112px), 1fr)); }
+.lkdf-card-catalog-item { display: grid; place-items: center; min-height: 148px; }
+.lkdf-card-catalog-item img { width: 100%; height: 148px; object-fit: cover; }
+.lkdf-role-grid { margin-top: 12px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); }
+.lkdf-role-entry header { display: flex; align-items: center; gap: 9px; font-size: 24px; font-weight: 700; }
+.lkdf-role-count { margin: 6px 0; color: #dfcaa9; font-size: 13px; }
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .lkdf-reference-scroll-scene {
+      animation: lkdf-reference-enter linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 85%;
+    }
+    .lkdf-reference-scroll-scene:has(:focus-visible) { animation: none; }
+  }
+}
+@keyframes lkdf-reference-enter {
+  from { opacity: .42; transform: translateY(22px); }
+  to { opacity: 1; transform: none; }
+}
+
+:root[data-lkdf-reduce-motion] .lkdf-hero-card { transition: none; }
+:root[data-lkdf-reduce-motion] .lkdf-hero-card[aria-pressed="true"],
+:root[data-lkdf-reduce-motion] .lkdf-hero-dossier:not(.lkdf-hero-dossier-empty) { animation: none; }
+:root[data-lkdf-reduce-motion] .lkdf-faction-scene { --faction-visible: 1; }
+:root[data-lkdf-reduce-motion] .lkdf-faction-scene-art::after,
+:root[data-lkdf-reduce-motion] .lkdf-hero-card[aria-pressed="true"]::after { display: none; }
+:root[data-lkdf-reduce-motion] .lkdf-hero-dossier-header img { animation: none; }
+:root[data-lkdf-reduce-motion] .lkdf-reference-scroll-scene { animation: none; }

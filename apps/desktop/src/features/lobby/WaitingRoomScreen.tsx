@@ -1,8 +1,12 @@
+import { prefersReducedMotion } from '../../lib/devicePreferences.js';
 import { TIMER_PRESETS } from '@lkdf/shared';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { RedCliffsScene } from './red-cliffs/RedCliffsScene.js';
+import './lobby-camp.css';
 import { GameIcon } from '../../components/icons/index.js';
 import { ApiError } from '../../lib/api.js';
 import type { LkdfApiClient } from '../../lib/api.js';
+import { playMatchCue } from '../../lib/soundFx.js';
 import type {
   RoomViewerPayload,
   TimerPreset,
@@ -74,7 +78,19 @@ export function WaitingRoomScreen({
   const [isLeavingRoom, setIsLeavingRoom] = useState<boolean>(false);
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
 
+  const [isUpdatingReady, setIsUpdatingReady] = useState(false);
+  const [seatNotice, setSeatNotice] = useState('');
+  const seatList = useRef<HTMLOListElement>(null);
+  const previousSeats = useRef(initialRoom.roomState.seats);
+  const startedCuePlayedRef = useRef(false);
   const roomCode = roomPayload.roomState.roomCode;
+  const soundEnabled = currentUser.preferences.soundEnabled;
+
+  function playMatchStartCue() {
+    if (startedCuePlayedRef.current) return;
+    startedCuePlayedRef.current = true;
+    playMatchCue('COUNTDOWN_START', soundEnabled);
+  }
 
   useEffect(() => {
     setRoomPayload(initialRoom);
@@ -92,6 +108,7 @@ export function WaitingRoomScreen({
         setRoomPayload(payload);
         setActionError(null);
         if (payload.roomState.status === 'IN_GAME') {
+          playMatchStartCue();
           onMatchStarted(payload);
         }
       },
@@ -174,6 +191,7 @@ export function WaitingRoomScreen({
       const updated = await api.startMatch(sessionToken, roomCode);
       setRoomPayload(updated);
       if (updated.roomState.status === 'IN_GAME') {
+        playMatchStartCue();
         onMatchStarted(updated);
       }
     } catch (err: unknown) {
@@ -208,366 +226,156 @@ export function WaitingRoomScreen({
     }
   }
 
-  const { roomState, playerView } = roomPayload;
-  const seatCount = roomState.seats.length;
-  const isActingHost = roomState.actingHostUserId === currentUser.userId;
-  const missingPlayers = Math.max(0, 4 - seatCount);
-  const canStart = isActingHost && seatCount >= 4 && seatCount <= 8;
-  const emptySlotCount = Math.max(0, 8 - seatCount);
-
-  if (roomState.status === 'IN_GAME') {
-    return (
-      <section className="flex flex-1 min-h-0 min-w-0 items-center justify-center p-6 animate-lkdf-fade">
-        <div className="w-full max-w-2xl rounded-xl border border-[#D99B26]/50 bg-[#1E2328] p-7 shadow-2xl">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <span className="inline-flex items-center rounded-full border border-[#16A34A]/40 bg-[#16A34A]/15 px-3 py-1 text-xs font-semibold text-[#86EFAC]">
-                Ván đấu đang diễn ra · Phòng #{roomState.roomCode}
-              </span>
-              <h2 className="mt-2 font-serif-title text-xl font-bold text-[#F3F4F6]">
-                Ván đấu đã bắt đầu
-              </h2>
-            </div>
-            <button
-              type="button"
-              disabled={isSyncing}
-              onClick={() => {
-                void handleManualSync();
-              }}
-              className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[#3A424C] bg-[#14171A] px-3.5 py-2 text-xs font-medium text-[#F3F4F6] hover:border-[#D99B26] disabled:opacity-50"
-            >
-              <GameIcon
-                name={isSyncing ? 'ui:loader' : 'ui:refresh'}
-                size={13}
-                className={isSyncing ? 'animate-spin' : ''}
-              />
-              {isSyncing ? 'Đang đồng bộ...' : 'Đồng bộ lại'}
-            </button>
-          </div>
-
-          <p className="mt-3 text-sm leading-relaxed text-[#D1D5DB]">
-            Ván đấu đang diễn ra trên bàn tròn. Hãy bấm Đồng bộ lại để vào bàn ngay lập tức.
-          </p>
-
-          <div className="mt-4 grid grid-cols-2 gap-3 rounded-lg border border-[#2D343C] bg-[#14171A] p-4 text-xs sm:grid-cols-4">
-            <div>
-              <span className="text-[#9CA3AF]">Vòng đấu</span>
-              <p className="mt-1 font-mono-num text-sm font-semibold text-[#F3F4F6]">
-                {playerView ? `Vòng ${playerView.roundNumber}` : 'Đang khởi tạo'}
-              </p>
-            </div>
-            <div>
-              <span className="text-[#9CA3AF]">Pha hiện tại</span>
-              <p className="mt-1 font-mono-num text-sm font-semibold text-[#D99B26]">
-                {playerView ? playerView.turnPhase : 'HERO_SELECT'}
-              </p>
-            </div>
-            <div>
-              <span className="text-[#9CA3AF]">Sĩ số bàn</span>
-              <p className="mt-1 font-mono-num text-sm font-semibold text-[#F3F4F6]">
-                {seatCount} người thật
-              </p>
-            </div>
-            <div>
-              <span className="text-[#9CA3AF]">Trọng Tài</span>
-              <p className="mt-1 truncate text-sm font-semibold text-[#F3F4F6]">
-                {roomState.seats.find((s) => s.userId === roomState.actingHostUserId)
-                  ?.displayName ?? 'Chủ phòng'}
-              </p>
-            </div>
-          </div>
-
-          {actionError ? (
-            <p className="mt-3 text-xs text-[#FCA5A5]">{actionError}</p>
-          ) : null}
-
-          <div className="mt-5 flex justify-end">
-            <button
-              type="button"
-              disabled={isLeavingRoom}
-              onClick={() => {
-                void handleLeaveRoom();
-              }}
-              className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[#3A424C] bg-[#14171A] px-4 py-2 text-xs font-medium text-[#FCA5A5] hover:border-[#DC2626] disabled:opacity-50"
-            >
-              <GameIcon name="ui:door-open" size={13} />
-              {isLeavingRoom ? 'Đang rời...' : 'Rời phòng chờ'}
-            </button>
-          </div>
-        </div>
-      </section>
-    );
+  async function handleReady(isReady: boolean) {
+    setIsUpdatingReady(true);
+    setActionError(null);
+    try {
+      const updated = await api.setRoomReady(sessionToken, roomCode, isReady);
+      setRoomPayload(current => current.roomState.status === 'IN_GAME' ? current : updated);
+    } catch (error) {
+      if (error instanceof ApiError && error.statusCode === 401) onSessionInvalid(error.message);
+      else setActionError(error instanceof Error ? error.message : 'Không thể cập nhật trạng thái sẵn sàng.');
+    } finally {
+      setIsUpdatingReady(false);
+    }
   }
 
+  const { roomState } = roomPayload;
+  const currentSeat = roomState.seats.find(seat => seat.userId === currentUser.userId);
+  const isHost = roomState.actingHostUserId === currentUser.userId;
+  const guests = roomState.seats.filter(seat => seat.userId !== roomState.actingHostUserId);
+  const readyCount = guests.filter(seat => seat.isReady && seat.connectionStatus === 'ONLINE').length;
+  const missing = Math.max(0, 4 - roomState.seats.length);
+  const waiting = guests.length - readyCount;
+  const requirement = missing ? `Cần thêm ${missing} người để bắt đầu` :
+    waiting ? `Chờ ${waiting} khách sẵn sàng` : '';
+  const status = isStartingMatch ? 'Đang bắt đầu…' : requirement ||
+    (isHost ? 'Có thể bắt đầu' : 'Chờ chủ phòng bắt đầu');
+  const control = 'min-h-10 rounded border border-[#806345] bg-[#211913] px-3 text-sm text-[#F5EBD6] focus-visible:outline-2 focus-visible:outline-[#E6BE6C]';
+
+  useEffect(() => {
+    const previous = previousSeats.current;
+    previousSeats.current = roomState.seats;
+    function pulse(index: number, color: string) {
+      if (prefersReducedMotion()) return;
+      seatList.current?.children[index]?.animate(
+        [{ outline: `2px solid ${color}`, outlineOffset: '1px' }, { outline: '2px solid transparent', outlineOffset: '4px' }],
+        { duration: 220, easing: 'ease-out' },
+      );
+    }
+    let joined = false;
+    let readiedOn = false;
+    for (const seat of roomState.seats) {
+      const old = previous.find(item => item.userId === seat.userId);
+      if (!old) {
+        joined = true;
+        setSeatNotice(`${seat.displayName} đã vào ghế ${seat.seatIndex + 1}.`);
+      } else if (old.connectionStatus !== seat.connectionStatus) {
+        setSeatNotice(`${seat.displayName} ${seat.connectionStatus === 'ONLINE' ? 'vừa kết nối lại' : 'mất kết nối'}.`);
+      } else if (Boolean(old.isReady) !== Boolean(seat.isReady)) {
+        if (seat.isReady) readiedOn = true;
+        pulse(seat.seatIndex, seat.isReady ? '#8ac5ae' : '#e6be6c');
+        setSeatNotice(`${seat.displayName} ${seat.isReady ? 'vừa sẵn sàng' : 'vừa hủy sẵn sàng'}.`);
+      }
+    }
+    const departed = previous.find(old => !roomState.seats.some(seat => seat.userId === old.userId));
+    if (departed) pulse(previous.length - 1, '#d5a762');
+    if (departed) setSeatNotice(`${departed.displayName} vừa rời phòng.`);
+    if (joined) playMatchCue('ROOM_JOIN', soundEnabled);
+    else if (departed) playMatchCue('ROOM_LEAVE', soundEnabled);
+    if (readiedOn) playMatchCue('READY_ON', soundEnabled);
+  }, [roomState.seats, soundEnabled]);
+
+  useEffect(() => {
+    if (!seatNotice) return;
+    const timeout = window.setTimeout(() => setSeatNotice(''), 5000);
+    return () => window.clearTimeout(timeout);
+  }, [seatNotice]);
+
   return (
-    <section className="flex flex-1 min-h-0 min-w-0 flex-col gap-4 p-5 animate-lkdf-fade">
-      {/* Đầu phòng chờ: Mã phòng + Trạng thái kết nối WS */}
-      <div className="flex flex-wrap items-center justify-between gap-4 rounded-[8px] border border-[#94A3B8]/32 bg-[#11151D]/94 px-5 py-3.5 shadow-xl backdrop-blur-md">
-        <div className="flex flex-wrap items-center gap-4">
-          <div>
-            <span className="text-xs text-[#9CA3AF]">Mã phòng chơi (4–8 người thật)</span>
-            <div className="mt-0.5 flex items-center gap-3">
-              <span className="font-mono-num text-2xl font-bold tracking-widest text-[#D99B26]">
-                {roomCode}
-              </span>
-              <button
-                type="button"
-                onClick={() => {
-                  void handleCopyRoomCode();
-                }}
-                className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[#3A424C] bg-[#14171A] px-3 py-1.5 text-xs font-medium text-[#F3F4F6] transition-colors hover:border-[#D99B26] focus:outline-none focus:ring-2 focus:ring-[#D99B26]"
-              >
-                <GameIcon
-                  name={copiedCode ? 'ui:check' : 'ui:copy'}
-                  size={13}
-                  className={copiedCode ? 'text-[#86EFAC]' : 'text-[#D99B26]'}
-                />
-                {copiedCode ? 'Đã sao chép!' : 'Sao chép mã phòng'}
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2.5">
-          <span
-            className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium ${
-              wsStatus === 'CONNECTED'
-                ? 'border-[#16A34A]/40 bg-[#16A34A]/15 text-[#86EFAC]'
-                : 'border-[#D97706]/40 bg-[#D97706]/15 text-[#FDE68A]'
-            }`}
-          >
-            <span
-              className={`h-2 w-2 rounded-full ${
-                wsStatus === 'CONNECTED' ? 'bg-[#16A34A]' : 'bg-[#D97706]'
-              }`}
-            />
-            {wsStatus === 'CONNECTED'
-              ? 'Đã kết nối trực tuyến'
-              : 'Đang kết nối lại...'}
-          </span>
-
-          <button
-            type="button"
-            disabled={isSyncing}
-            onClick={() => {
-              void handleManualSync();
-            }}
-            className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[#3A424C] bg-[#14171A] px-3 py-1.5 text-xs font-medium text-[#D1D5DB] hover:border-[#D99B26] disabled:opacity-50"
-          >
-            <GameIcon
-              name={isSyncing ? 'ui:loader' : 'ui:refresh'}
-              size={12}
-              className={isSyncing ? 'animate-spin' : ''}
-            />
-            {isSyncing ? 'Đang đồng bộ...' : 'Đồng bộ'}
-          </button>
-        </div>
-      </div>
-
-      {/* Thân phòng chờ: Danh sách ghế 4–8 người + Tùy chọn đồng hồ */}
-      <div className="grid flex-1 min-h-0 min-w-0 grid-cols-1 gap-4 lg:grid-cols-3">
-        {/* Cột trái (2/3): Danh sách ghế thật */}
-        <div className="flex flex-col min-h-0 min-w-0 rounded-[8px] border border-[#94A3B8]/32 bg-[#11151D]/94 p-5 shadow-xl backdrop-blur-md lg:col-span-2">
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="font-serif-title text-base font-bold text-[#F3F4F6]">
-              Người chơi trong phòng ({seatCount}/8)
-            </h2>
-            <span className="text-xs text-[#9CA3AF]">
-              Tối thiểu 4 người thật để bắt đầu
-            </span>
-          </div>
-
-          <div className="lkdf-scroll grid flex-1 min-h-0 grid-cols-1 gap-3 overflow-y-auto pr-1 sm:grid-cols-2">
-            {roomState.seats.map((seat) => {
-              const isOwner = seat.userId === roomState.ownerUserId;
-              const isTempHost =
-                seat.userId === roomState.actingHostUserId && !isOwner;
-              const isSelf = seat.userId === currentUser.userId;
-
-              return (
-                <div
-                  key={seat.userId}
-                  className={`flex items-center justify-between gap-3 rounded-lg border p-3.5 ${
-                    isSelf
-                      ? 'border-[#D99B26]/70 bg-[#14171A]'
-                      : 'border-[#30363D] bg-[#14171A]'
-                  }`}
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    {seat.avatarUrl ? (
-                      <img
-                        src={seat.avatarUrl}
-                        alt={seat.displayName}
-                        className="h-10 w-10 shrink-0 rounded-full border border-[#3A424C] object-cover"
-                      />
-                    ) : (
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#3A424C] bg-[#C83E37] text-xs font-bold text-[#F4EFE6]">
-                        {getInitials(seat.displayName)}
-                      </div>
-                    )}
-
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        <span className="truncate text-sm font-semibold text-[#F3F4F6]">
-                          {seat.displayName}
-                        </span>
-                        {isSelf ? (
-                          <span className="shrink-0 text-[11px] font-medium text-[#D99B26]">
-                            (Bạn)
-                          </span>
-                        ) : null}
-                      </div>
-
-                      <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                        <span className="font-mono-num text-[11px] text-[#9CA3AF]">
-                          Ghế #{seat.seatIndex + 1}
-                        </span>
-                        {isOwner ? (
-                          <span className="inline-flex items-center gap-1 rounded bg-[#D99B26]/20 px-1.5 py-0.5 text-[11px] font-semibold text-[#FDE68A]">
-                            <GameIcon name="crown" size={11} />
-                            Chủ phòng
-                          </span>
-                        ) : null}
-                        {isTempHost ? (
-                          <span className="inline-flex items-center gap-1 rounded bg-[#3B82F6]/20 px-1.5 py-0.5 text-[11px] font-semibold text-[#93C5FD]">
-                            <GameIcon name="scales" size={11} />
-                            Trọng Tài tạm
-                          </span>
-                        ) : null}
-                      </div>
-                    </div>
-                  </div>
-
-                  <span
-                    className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium ${
-                      seat.connectionStatus === 'ONLINE'
-                        ? 'bg-[#16A34A]/15 text-[#86EFAC]'
-                        : 'bg-[#DC2626]/15 text-[#FCA5A5]'
-                    }`}
-                  >
-                    {seat.connectionStatus === 'ONLINE'
-                      ? 'Trực tuyến'
-                      : 'Mất kết nối'}
-                  </span>
-                </div>
-              );
-            })}
-
-            {Array.from({ length: emptySlotCount }).map((_, idx) => (
-              <div
-                key={`empty-slot-${idx}`}
-                className="flex items-center justify-center rounded-lg border border-dashed border-[#30363D] bg-[#14171A]/40 p-3.5 text-xs text-[#6B7280]"
-              >
-                Ghế trống chờ bạn bè nhập mã...
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Cột phải (1/3): Tốc độ đồng hồ & Nút Bắt đầu / Rời phòng */}
-        <div className="flex flex-col justify-between rounded-[8px] border border-[#94A3B8]/32 bg-[#11151D]/94 p-5 shadow-xl backdrop-blur-md">
-          <div>
-            <h3 className="font-serif-title text-base font-bold text-[#F3F4F6]">
-              Tốc độ đồng hồ đếm ngược
-            </h3>
-            <p className="mt-1 text-xs text-[#9CA3AF]">
-              {isActingHost
-                ? 'Bạn là Chủ phòng — có thể đổi tốc độ trước khi bắt đầu.'
-                : 'Chỉ Chủ phòng được đổi tốc độ đồng hồ.'}
-            </p>
-
-            <div className="mt-3 space-y-2.5">
-              {PRESET_OPTIONS.map((option) => {
-                const isSelected = roomState.timerPreset === option.id;
-                return (
-                  <button
-                    key={option.id}
-                    type="button"
-                    disabled={!isActingHost || isUpdatingPreset}
-                    onClick={() => {
-                      void handleSelectTimerPreset(option.id);
-                    }}
-                    className={`w-full rounded-lg border p-3 text-left transition-colors focus:outline-none focus:ring-2 focus:ring-[#D99B26] ${
-                      isSelected
-                        ? 'border-[#D99B26] bg-[#D99B26]/15 text-[#F3F4F6]'
-                        : 'border-[#30363D] bg-[#14171A] text-[#D1D5DB]'
-                    } ${
-                      isActingHost
-                        ? 'hover:border-[#D99B26]/70 cursor-pointer'
-                        : 'cursor-default opacity-85'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-semibold">{option.title}</span>
-                      {isSelected ? (
-                        <span className="text-xs font-semibold text-[#D99B26]">
-                          Đang chọn
-                        </span>
-                      ) : null}
-                    </div>
-                    <p className="mt-1 font-mono-num text-xs text-[#9CA3AF]">
-                      {option.detail}
-                    </p>
-                  </button>
-                );
-              })}
-            </div>
-
-            {actionError ? (
-              <p className="mt-3 rounded-lg border border-[#DC2626]/40 bg-[#DC2626]/10 px-3 py-2 text-xs text-[#FCA5A5]">
-                {actionError}
-              </p>
-            ) : null}
-          </div>
-
-          <div className="mt-5 space-y-3 border-t border-[#2D343C] pt-4">
-            {seatCount < 4 ? (
+    <section className="lkdf-lobby-camp relative isolate flex min-h-0 min-w-0 flex-1 overflow-y-auto">
+      <div className="lkdf-lobby-camp-art"><RedCliffsScene /></div>
+      <div className="lkdf-lobby-camp-content">
+        <div className="lkdf-lobby-camp-panel">
+          <section className="lkdf-waiting-table lkdf-online-panel lkdf-online-room" aria-label="Phòng chờ">
+            <div className="lkdf-online-fog" aria-hidden="true" />
+            <header className="lkdf-waiting-header">
               <div>
-                <button
-                  type="button"
-                  disabled
-                  className="inline-flex w-full cursor-not-allowed items-center justify-center gap-2 rounded-lg bg-[#C83E37] px-4 py-3 text-sm font-semibold text-[#F4EFE6] opacity-50"
-                >
-                  <GameIcon name="ui:play" size={14} />
-                  Bắt đầu ván đấu
-                </button>
-                <p className="mt-2 text-center text-xs font-medium text-[#FDE68A]">
-                  Cần thêm {missingPlayers} người chơi thật nữa để bắt đầu (Tối thiểu 4 người)
-                </p>
+                <p className="lkdf-online-kicker">{wsStatus === 'CONNECTED' ? 'Đã kết nối' : 'Đang đồng bộ phòng'}</p>
+                <h2 className="font-serif-title">Phòng chờ</h2>
               </div>
-            ) : isActingHost ? (
-              <button
-                type="button"
-                disabled={!canStart || isStartingMatch}
-                onClick={() => {
-                  void handleStartMatch();
-                }}
-                className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-[#C83E37] px-4 py-3 text-sm font-semibold text-[#F4EFE6] shadow transition-colors hover:bg-[#D94A42] focus:outline-none focus:ring-2 focus:ring-[#D99B26] disabled:opacity-50"
-              >
-                <GameIcon name={isStartingMatch ? 'ui:loader' : 'ui:play'} size={14} className={isStartingMatch ? 'animate-spin' : ''} />
-                {isStartingMatch
-                  ? 'Đang chia bài & khởi tạo ván...'
-                  : `Bắt đầu ván đấu (${seatCount} người)`}
-              </button>
-            ) : (
-              <div className="flex items-center justify-center gap-2 rounded-lg border border-[#30363D] bg-[#14171A] px-4 py-3 text-center text-xs text-[#D1D5DB]">
-                <GameIcon name="ui:clock" size={13} className="text-[#D99B26]" />
-                Đang chờ Chủ phòng bấm Bắt đầu ván đấu...
+              <div className="lkdf-waiting-invite">
+                <strong className="font-mono-num">{roomCode}</strong>
+                <button type="button" className={control} onClick={handleCopyRoomCode}>{copiedCode ? 'Đã sao chép' : 'Sao chép mã'}</button>
+                <button type="button" className={control} onClick={handleLeaveRoom} disabled={isLeavingRoom || isStartingMatch}>Rời phòng</button>
               </div>
-            )}
-
-            <button
-              type="button"
-              disabled={isLeavingRoom}
-              onClick={() => {
-                void handleLeaveRoom();
-              }}
-              className="inline-flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-[#3A424C] bg-[#14171A] px-4 py-2.5 text-xs font-medium text-[#FCA5A5] transition-colors hover:border-[#DC2626] disabled:opacity-50"
-            >
-              <GameIcon name="ui:door-open" size={13} />
-              {isLeavingRoom ? 'Đang rời phòng...' : 'Rời phòng chờ'}
-            </button>
-          </div>
+            </header>
+            <div className="lkdf-waiting-board">
+              <div className="lkdf-waiting-surface">
+                <div>
+                  <strong className="font-serif-title">Bàn Xích Bích</strong>
+                  <small>Nhịp {PRESET_OPTIONS.find(option => option.id === roomState.timerPreset)?.title} · {TIMER_PRESETS[roomState.timerPreset].mainTurnSeconds} giây/lượt</small>
+                </div>
+              </div>
+              <ol ref={seatList} className="lkdf-waiting-seats" aria-label="8 ghế phòng chờ">
+                {Array.from({ length: 8 }, (_, index) => {
+                  const seat = roomState.seats.find(member => member.seatIndex === index);
+                  const host = seat?.userId === roomState.actingHostUserId;
+                  const self = seat?.userId === currentUser.userId;
+                  const offline = seat?.connectionStatus === 'DISCONNECTED';
+                  const ready = Boolean(seat?.isReady && !offline && !host);
+                  return (
+                    <li key={index} className="lkdf-waiting-seat" data-occupied={Boolean(seat)} data-self={self}
+                      data-host={host} data-ready={ready} data-offline={offline}>
+                      <span className="lkdf-waiting-seat-number" aria-label={`Ghế ${index + 1}`}>{String(index + 1).padStart(2, '0')}</span>
+                      {!seat ? <span className="lkdf-waiting-empty"><span className="lkdf-waiting-empty-avatar"><GameIcon name="ui:user" size={15} /></span>Ghế trống</span> :
+                        <div className="lkdf-waiting-player" key={seat.userId}>
+                          <span className="lkdf-waiting-avatar">{seat.avatarUrl ? <img src={seat.avatarUrl} alt="" /> : getInitials(seat.displayName)}</span>
+                          <div>
+                            <div className="lkdf-waiting-player-name">
+                              {self ? <span className="lkdf-waiting-self-label">Bạn</span> : null}
+                              <strong title={seat.displayName}>{seat.displayName}</strong>
+                            </div>
+                            <small>{host ? seat.userId === roomState.ownerUserId ? 'Chủ phòng' : 'Chủ phòng tạm thời' : 'Khách'}</small>
+                            {!host || offline ? <span className="lkdf-seat-readiness">
+                              <GameIcon name={offline ? 'ui:wifi-off' : ready ? 'ui:check' : 'ui:clock'} size={12} />
+                              {offline ? 'Mất kết nối' : ready ? 'Sẵn sàng' : 'Chưa sẵn sàng'}
+                            </span> : null}
+                          </div>
+                        </div>}
+                    </li>
+                  );
+                })}
+              </ol>
+            </div>
+            <footer className="lkdf-waiting-footer">
+              <p><strong>{roomState.seats.length}/8 người</strong> · {readyCount}/{guests.length} khách đã sẵn sàng</p>
+              <div className="lkdf-waiting-actions">
+                {wsStatus !== 'CONNECTED' ? <button className={control} type="button" onClick={handleManualSync} disabled={isSyncing}>Đồng bộ lại</button> : null}
+                {isHost ? <>
+                  <label>Nhịp chơi <select className={control} value={roomState.timerPreset} disabled={isUpdatingPreset || isStartingMatch}
+                    onChange={event => {
+                      const option = PRESET_OPTIONS.find(item => item.id === event.target.value);
+                      if (option) void handleSelectTimerPreset(option.id);
+                    }}>
+                    {PRESET_OPTIONS.map(option => <option key={option.id} value={option.id} title={option.detail}>{option.title}</option>)}
+                  </select></label>
+                  <div className="lkdf-waiting-start">
+                    <button className="lkdf-online-join" type="button" disabled={Boolean(requirement) || isStartingMatch}
+                      aria-describedby="live-room-start-status" onClick={handleStartMatch}>Bắt đầu ván đấu</button>
+                    <small id="live-room-start-status" role="status">{status}</small>
+                  </div>
+                </> : <>
+                  <button className={`${control} lkdf-waiting-ready`} type="button" aria-pressed={Boolean(currentSeat?.isReady)}
+                    disabled={isUpdatingReady || currentSeat?.connectionStatus !== 'ONLINE'}
+                    onClick={() => handleReady(!currentSeat?.isReady)}>{currentSeat?.isReady ? 'Hủy sẵn sàng' : 'Sẵn sàng'}</button>
+                  <p className="lkdf-waiting-guest-status" role="status">{currentSeat?.isReady ? status : 'Bấm Sẵn sàng khi bạn đã chuẩn bị xong'}</p>
+                </>}
+              </div>
+              <p className="lkdf-waiting-seat-notice" role="status">{seatNotice}</p>
+              {actionError ? <p className="lkdf-online-error basis-full" role="alert">{actionError}</p> : null}
+            </footer>
+          </section>
         </div>
       </div>
     </section>

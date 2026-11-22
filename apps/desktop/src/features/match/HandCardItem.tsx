@@ -164,6 +164,8 @@ export interface HandCardItemProps {
   readonly disabled?: boolean;
   readonly hotkeyNumber?: number;
   readonly compact?: boolean;
+  readonly fanIndex?: number;
+  readonly fanCount?: number;
   readonly onToggle: (cardId: string) => void;
   readonly onPointerDownCard?: (
     card: CardInstance,
@@ -178,9 +180,25 @@ export function HandCardItem({
   disabled = false,
   hotkeyNumber,
   compact = false,
+  fanIndex,
+  fanCount,
   onToggle,
   onPointerDownCard,
 }: HandCardItemProps) {
+  const isFanned =
+    fanCount !== undefined &&
+    fanCount >= 4 &&
+    fanIndex !== undefined &&
+    !selected &&
+    !dragging;
+  const fanMid = isFanned ? (fanCount - 1) / 2 : 0;
+  const fanNorm = isFanned && fanMid > 0 ? (fanIndex - fanMid) / fanMid : 0;
+  const fanStyle: React.CSSProperties & Record<'--fan-rot' | '--fan-y', string> = {
+    touchAction: 'none',
+    '--fan-rot': isFanned ? `${(fanNorm * 2.2).toFixed(2)}deg` : '0deg',
+    '--fan-y': isFanned ? `${(fanNorm * fanNorm * 5).toFixed(2)}px` : '0px',
+  };
+
   return (
     <button
       type="button"
@@ -192,20 +210,22 @@ export function HandCardItem({
       }
       onClick={() => onToggle(card.id)}
       aria-pressed={selected}
-      style={{ touchAction: 'none' }}
+      data-selected={selected ? 'true' : undefined}
+      data-dragging={dragging ? 'true' : undefined}
+      style={fanStyle}
       className={[
-        'lkdf-card-gwent group relative flex shrink-0 flex-col overflow-hidden rounded-[6px] text-left text-[#F4EBD8] transition-[transform,opacity,box-shadow,border-color] duration-150 ease-out select-none',
+        'lkdf-card-gwent lkdf-hand-card group relative flex shrink-0 flex-col overflow-hidden rounded-[6px] text-left text-[#F4EBD8] select-none',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E6BE6C]',
         compact
           ? 'h-[calc(var(--card-h,114px)*0.94)] w-[calc(var(--card-w,80px)*0.92)]'
           : 'h-[var(--card-h,114px)] w-[var(--card-w,80px)]',
         dragging
-          ? 'scale-95 opacity-25'
+          ? 'opacity-25'
           : selected
-            ? 'z-20 -translate-y-2.5 border-2 border-[#E6BE6C] shadow-[0_14px_28px_rgba(0,0,0,0.82)] ring-2 ring-[#E6BE6C]/55'
-            : 'border-[1.5px] border-[#6E7889]/75 hover:z-15 hover:-translate-y-1.5 hover:border-[#E6BE6C]',
+            ? 'z-20 border-2 border-[#E6BE6C] shadow-[0_14px_28px_rgba(0,0,0,0.82)] ring-2 ring-[#E6BE6C]/55'
+            : 'border-[1.5px] border-[#6E7889]/75 hover:border-[#E6BE6C]',
         disabled
-          ? 'cursor-not-allowed opacity-55 hover:translate-y-0'
+          ? 'cursor-not-allowed'
           : 'cursor-grab active:cursor-grabbing',
       ].join(' ')}
     >

@@ -1,0 +1,39 @@
+{
+  "name": "tqs_heal",
+  "says": "gentle harp and pizzicato pentatonic notes for healing skill",
+  "space": "room",
+  "layers": [
+    {
+      "sound": "note/harp",
+      "pitch": -10,
+      "at": 0.0,
+      "dur": 0.4,
+      "gain": -3,
+      "fade_out": 0.15
+    },
+    {
+      "sound": "note/harp",
+      "pitch": -8,
+      "at": 0.1,
+      "dur": 0.4,
+      "gain": -2,
+      "fade_out": 0.15
+    },
+    {
+      "sound": "note/harp",
+      "pitch": -3,
+      "at": 0.2,
+      "dur": 0.65,
+      "gain": 0,
+      "fade_out": 0.25
+    },
+    {
+      "sound": "note/pizzicato",
+      "pitch": 2,
+      "at": 0.32,
+      "dur": 0.5,
+      "gain": -4,
+      "fade_out": 0.2
+    }
+  ]
+}

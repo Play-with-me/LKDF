@@ -1,0 +1,41 @@
+{
+  "name": "tqs_dying",
+  "says": "urgent heartbeat thumps with two warm bronze warning tones",
+  "space": "room",
+  "layers": [
+    {
+      "sound": "heart/beat",
+      "cut": [
+        0,
+        0.85
+      ],
+      "gain": 1,
+      "lowpass": 380
+    },
+    {
+      "sound": "kick/deep",
+      "at": 0.02,
+      "cut": [
+        0,
+        0.3
+      ],
+      "gain": -3
+    },
+    {
+      "sound": "note/singing_bowl",
+      "pitch": 12,
+      "at": 0.05,
+      "dur": 0.45,
+      "gain": -6,
+      "fade_out": 0.18
+    },
+    {
+      "sound": "note/singing_bowl",
+      "pitch": 10,
+      "at": 0.48,
+      "dur": 0.65,
+      "gain": -5,
+      "fade_out": 0.25
+    }
+  ]
+}

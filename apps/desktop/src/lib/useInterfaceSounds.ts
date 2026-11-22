@@ -4,7 +4,9 @@ import { playInterfaceCue, prepareGameSounds, unlockGameSounds } from './soundFx
 const CONTROLS = 'button, a[href], select, summary, [role="button"], [role="tab"], [role="switch"]';
 
 function controlFor(target: EventTarget | null): Element | null {
-  return target instanceof Element ? target.closest(CONTROLS) : null;
+  if (!(target instanceof Element)) return null;
+  if (target.closest('[data-no-ui-click="true"]')) return null;
+  return target.closest(CONTROLS);
 }
 
 export function useInterfaceSounds(enabled: boolean, musicActive = false): void {

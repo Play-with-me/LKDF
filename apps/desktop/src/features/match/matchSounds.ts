@@ -12,6 +12,12 @@ const ACTION_GAINS = {
   THIEM: 0.66,
   HERO_SKILL: 0.53,
   TABLE_SKILL: 0.70,
+  NULLIFICATION: 0.90,
+  DUEL: 0.92,
+  STEAL_DISMANTLE: 0.78,
+  LIGHTNING: 0.96,
+  CONTROL_SCROLL: 0.82,
+  DYING: 0.92,
   SHUFFLE: 0.63,
   DEAL: 0.49,
   DEAL_OPENING: 0.62,
@@ -38,6 +44,12 @@ const CARD_CUES: Partial<Record<CardInstance['cardKey'], ActionCue>> = {
   van_tien_te_phat: 'TABLE_SKILL',
   dao_vien_ket_nghia: 'TABLE_SKILL',
   ngu_coc_phong_dang: 'TABLE_SKILL',
+  vo_giai_kha_kich: 'NULLIFICATION',
+  quyet_dau: 'DUEL',
+  thuan_thu_khien_duong: 'STEAL_DISMANTLE',
+  qua_ha_sach_kieu: 'STEAL_DISMANTLE',
+  thiem_dien: 'LIGHTNING',
+  lac_bat_tu_thuc: 'CONTROL_SCROLL',
 };
 
 const HERO_SKILLS = HERO_CATALOG.flatMap(hero => hero.skills.map(skill => skill.nameVi));
@@ -93,12 +105,22 @@ export function getMatchActionCues(
   let lostHp = false;
   let gainedHp = false;
   let eliminated = false;
+  let enteredDying =
+    after.activeInterrupt?.kind === 'WAIT_PEACH_RESCUE' &&
+    before.activeInterrupt?.kind !== 'WAIT_PEACH_RESCUE';
 
   for (const player of after.players) {
     const old = before.players.find(entry => entry.seatIndex === player.seatIndex);
     if (!old) continue;
-    placedDelayedCard ||= player.delayedScrolls.some(card => !oldDelayedIds.has(card.id));
+    for (const card of player.delayedScrolls) {
+      if (!oldDelayedIds.has(card.id)) {
+        placedDelayedCard = true;
+        if (card.cardKey === 'thiem_dien') cues.add('LIGHTNING');
+        else if (card.cardKey === 'lac_bat_tu_thuc') cues.add('CONTROL_SCROLL');
+      }
+    }
     eliminated ||= old.alive && !player.alive;
+    enteredDying ||= old.hp > 0 && player.hp <= 0 && player.alive;
     lostHp ||= player.alive && player.hp < old.hp;
     gainedHp ||= player.hp > old.hp;
     for (const slot of ['weapon', 'armor', 'plusOneHorse', 'minusOneHorse'] as const) {
@@ -110,6 +132,10 @@ export function getMatchActionCues(
     }
   }
 
+  if (after.activeInterrupt?.kind === 'WAIT_DUEL_SAT' && before.activeInterrupt?.kind !== 'WAIT_DUEL_SAT') {
+    cues.add('DUEL');
+  }
+
   const satLogged = actions.some(action => /^(?:đánh Sát vào |dùng Trượng Bát Xà Mâu đánh Sát|hưởng ứng Kích Tướng đánh Sát)/u.test(action));
   const daoLogged = actions.some(action => action.startsWith('dùng Đào '));
   const thiemLogged = actions.some(action => action.startsWith('hưởng ứng Hộ Giá đánh Thiểm'));
@@ -119,12 +145,13 @@ export function getMatchActionCues(
   // Defeated players drop their remaining cards. The new top card was not played.
   if (freshDiscard && !equipped && !eliminated) {
     cues.add(CARD_CUES[discard.cardKey] ?? 'CARD_PLAY');
-  } else if (placedDelayedCard) {
+  } else if (placedDelayedCard && !cues.has('LIGHTNING') && !cues.has('CONTROL_SCROLL')) {
     cues.add('CARD_PLAY');
   }
   // Đào and Đào Viên carry their own resolution accent.
   if (gainedHp && !cues.has('DAO') && !(freshDiscard && discard.cardKey === 'dao_vien_ket_nghia')) cues.add('HEAL');
   if (lostHp) cues.add('DAMAGE');
+  if (enteredDying) cues.add('DYING');
   if (eliminated) cues.add('ELIMINATION');
   if (actions.some(action => DRAW_ACTION.test(action)) ||
     after.harvestPool.length > before.harvestPool.length) cues.add('DEAL');

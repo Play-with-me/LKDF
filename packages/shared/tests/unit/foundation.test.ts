@@ -35,17 +35,20 @@ describe('Bước 0.2 — Kiểm thử nền tảng @lkdf/shared', () => {
   it('khớp 3 mức đồng hồ đếm ngược chuẩn', () => {
     expect(TIMER_PRESETS.FAST).toEqual({
       heroSelectSeconds: 20,
-      mainTurnSeconds: 30,
+      mainTurnSeconds: 90,
+      discardSeconds: 30,
       reactionSeconds: 10,
     });
     expect(TIMER_PRESETS.STANDARD).toEqual({
       heroSelectSeconds: 30,
-      mainTurnSeconds: 45,
+      mainTurnSeconds: 150,
+      discardSeconds: 45,
       reactionSeconds: 15,
     });
     expect(TIMER_PRESETS.RELAXED).toEqual({
       heroSelectSeconds: 45,
-      mainTurnSeconds: 60,
+      mainTurnSeconds: 180,
+      discardSeconds: 60,
       reactionSeconds: 20,
     });
   });

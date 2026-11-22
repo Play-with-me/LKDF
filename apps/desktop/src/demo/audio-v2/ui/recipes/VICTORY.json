@@ -1,0 +1,95 @@
+{
+  "name": "tqs_victory_imperial_fanfare",
+  "says": "imperial war timpani march into bright pentatonic harp, tubular bell, and grand chord victory fanfare",
+  "space": "hall",
+  "layers": [
+    {
+      "sound": "tom/high",
+      "at": 0.0,
+      "pitch": 2,
+      "gain": -5
+    },
+    {
+      "sound": "tom/mid",
+      "at": 0.14,
+      "pitch": 0,
+      "gain": -4
+    },
+    {
+      "sound": "timpani/hit",
+      "at": 0.28,
+      "pitch": 0,
+      "dur": 2.0,
+      "gain": -2,
+      "fade_out": 0.75
+    },
+    {
+      "sound": "crash/bright",
+      "at": 0.28,
+      "dur": 1.6,
+      "gain": -10,
+      "lowpass": 8500,
+      "fade_out": 0.8
+    },
+    {
+      "sound": "note/harp",
+      "at": 0.28,
+      "pitch": 0,
+      "dur": 0.75,
+      "gain": -1
+    },
+    {
+      "sound": "note/harp",
+      "at": 0.44,
+      "pitch": 4,
+      "dur": 0.75,
+      "gain": 0
+    },
+    {
+      "sound": "note/harp",
+      "at": 0.60,
+      "pitch": 7,
+      "dur": 0.9,
+      "gain": 0
+    },
+    {
+      "sound": "note/tubular_bell",
+      "at": 0.60,
+      "pitch": 7,
+      "dur": 1.0,
+      "gain": -6
+    },
+    {
+      "sound": "timpani/hit",
+      "at": 0.88,
+      "pitch": 5,
+      "dur": 1.85,
+      "gain": -1,
+      "fade_out": 0.85
+    },
+    {
+      "sound": "note/grand_piano",
+      "at": 0.88,
+      "pitch": -12,
+      "dur": 1.9,
+      "gain": -3,
+      "fade_out": 0.85
+    },
+    {
+      "sound": "note/harp",
+      "at": 0.88,
+      "pitch": 12,
+      "dur": 1.95,
+      "gain": 1,
+      "fade_out": 0.85
+    },
+    {
+      "sound": "note/tubular_bell",
+      "at": 0.88,
+      "pitch": 12,
+      "dur": 1.95,
+      "gain": -4,
+      "fade_out": 0.85
+    }
+  ]
+}

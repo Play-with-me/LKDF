@@ -1,0 +1,22 @@
+{
+  "name": "tqs_panel_close",
+  "says": "rolling and closing a parchment scroll onto wood",
+  "space": "room",
+  "layers": [
+    {
+      "sound": "slide/paper",
+      "pitch": -3,
+      "lowpass": 3800,
+      "gain": -3
+    },
+    {
+      "sound": "book/close",
+      "at": 0.06,
+      "cut": [
+        0,
+        0.25
+      ],
+      "gain": -1
+    }
+  ]
+}

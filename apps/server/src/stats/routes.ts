@@ -23,6 +23,7 @@ const StatsQuerySchema = z.object({
   identity: IdentityRoleSchema.optional(),
   heroId: HeroIdSchema.optional(),
   includeMatches: z.enum(['true', 'false']).optional(),
+  includeMonthly: z.enum(['true', 'false']).optional(),
   matchLimit: z.coerce.number().int().min(1).max(100).optional(),
 });
 
@@ -71,6 +72,7 @@ export function registerStatsRoutes(
       ...(parsed.data.identity ? { identity: parsed.data.identity } : {}),
       ...(parsed.data.heroId ? { heroId: parsed.data.heroId } : {}),
       includeMatches: parsed.data.includeMatches === 'true',
+      includeMonthly: parsed.data.includeMonthly === 'true',
       ...(parsed.data.matchLimit !== undefined
         ? { matchLimit: parsed.data.matchLimit }
         : {}),

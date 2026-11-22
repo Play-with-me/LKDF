@@ -41,14 +41,15 @@ export type TimerPreset = z.infer<typeof TimerPresetSchema>;
 export interface TimerPresetConfig {
   readonly heroSelectSeconds: number;
   readonly mainTurnSeconds: number;
+  readonly discardSeconds: number;
   readonly reactionSeconds: number;
 }
 
 /** Thông số đồng hồ chuẩn theo REQUIREMENTS.md mục 3.4. */
 export const TIMER_PRESETS: Readonly<Record<TimerPreset, TimerPresetConfig>> = {
-  FAST: { heroSelectSeconds: 20, mainTurnSeconds: 30, reactionSeconds: 10 },
-  STANDARD: { heroSelectSeconds: 30, mainTurnSeconds: 45, reactionSeconds: 15 },
-  RELAXED: { heroSelectSeconds: 45, mainTurnSeconds: 60, reactionSeconds: 20 },
+  FAST: { heroSelectSeconds: 20, mainTurnSeconds: 90, discardSeconds: 30, reactionSeconds: 10 },
+  STANDARD: { heroSelectSeconds: 30, mainTurnSeconds: 150, discardSeconds: 45, reactionSeconds: 15 },
+  RELAXED: { heroSelectSeconds: 45, mainTurnSeconds: 180, discardSeconds: 60, reactionSeconds: 20 },
 };
 
 export interface UserPreferences {

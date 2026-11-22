@@ -19,6 +19,7 @@ const ExchangeCodeBodySchema = z.object({
 
 const UpdatePreferencesBodySchema = z.object({
   soundEnabled: z.boolean().optional(),
+  musicEnabled: z.boolean().optional(),
   volume: z.number().min(0).max(1).optional(),
 });
 
@@ -270,13 +271,12 @@ export function registerAuthRoutes(
       });
     }
 
-    const prefsUpdate: { soundEnabled?: boolean; volume?: number } = {};
-    if (parsed.data.soundEnabled !== undefined) {
-      prefsUpdate.soundEnabled = parsed.data.soundEnabled;
-    }
-    if (parsed.data.volume !== undefined) {
-      prefsUpdate.volume = parsed.data.volume;
-    }
+    const { soundEnabled, musicEnabled, volume } = parsed.data;
+    const prefsUpdate = {
+      ...(soundEnabled !== undefined ? { soundEnabled } : {}),
+      ...(musicEnabled !== undefined ? { musicEnabled } : {}),
+      ...(volume !== undefined ? { volume } : {}),
+    };
 
     const updated = await persistence.updateUserPreferences(
       verified.profile.userId,

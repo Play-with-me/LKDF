@@ -220,6 +220,7 @@ describe('Bước 2.1 — Google OAuth 2.0, Lưu Hồ sơ & Chặn 1 Tài khoả
     expect(patchPrefRes.statusCode).toBe(200);
     expect(patchPrefRes.json<{ profile: UserProfile }>().profile.preferences).toEqual({
       soundEnabled: false,
+      musicEnabled: true,
       volume: 0.35,
     });
 
@@ -269,6 +270,7 @@ describe('Bước 2.1 — Google OAuth 2.0, Lưu Hồ sơ & Chặn 1 Tài khoả
     expect(secondLoginBody.profile.avatarUrl).toBe('https://example.com/a2.png');
     expect(secondLoginBody.profile.preferences).toEqual({
       soundEnabled: false,
+      musicEnabled: true,
       volume: 0.35,
     });
 
@@ -471,6 +473,16 @@ describe('Bước 2.1 — Google OAuth 2.0, Lưu Hồ sơ & Chặn 1 Tài khoả
       headers: { authorization: `Bearer ${login.sessionToken}` },
       payload: { soundEnabled: false, volume: 0.5 },
     });
+    const music = await srv1.app.inject({
+      method: 'PATCH',
+      url: '/api/profile/preferences',
+      headers: { authorization: `Bearer ${login.sessionToken}` },
+      payload: { musicEnabled: false },
+    });
+    expect(music.statusCode).toBe(200);
+    expect(music.json<{ profile: UserProfile }>().profile.preferences).toMatchObject({
+      musicEnabled: false, soundEnabled: false, volume: 0.5,
+    });
     await srv1.app.close();
 
     const srv2 = await createServer({
@@ -489,7 +501,7 @@ describe('Bước 2.1 — Google OAuth 2.0, Lưu Hồ sơ & Chặn 1 Tài khoả
       userId: login.profile.userId,
       googleSub: 'google-sub-persist',
       displayName: 'Huy Quân Sư',
-      preferences: { soundEnabled: false, volume: 0.5 },
+      preferences: { soundEnabled: false, musicEnabled: false, volume: 0.5 },
     });
 
     const logoutRes = await srv2.app.inject({

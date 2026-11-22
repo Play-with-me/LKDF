@@ -68,6 +68,9 @@ function projectTopInterrupt(
         targetSeat: topFrame.targetSeat,
         sourceSeat: topFrame.sourceSeat,
         scrollNameVi: topFrame.scrollNameVi,
+        canRespondNullification: !topFrame.isSimulatedDelay &&
+          topFrame.eligibleSeats.includes(viewerSeatIndex) &&
+          !topFrame.passedSeats.includes(viewerSeatIndex),
       };
     case 'WAIT_PEACH_RESCUE':
       return {

@@ -1,0 +1,171 @@
+.lkdf-demo-camp-scene {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  background: #20120c;
+  container-type: size;
+}
+.red-cliffs-frame {
+  --red-cliffs-cycle: 18s;
+  position: absolute;
+  top: 50%;
+  left: 30%;
+  width: max(100%, 177.778cqh);
+  height: max(100%, 56.25cqw);
+  translate: -30% -50%;
+  scale: 1.025;
+  transform-origin: 42% 66%;
+  animation: red-cliffs-camera var(--red-cliffs-cycle) ease-in-out infinite;
+  filter: saturate(.72) sepia(.15);
+}
+.red-cliffs-layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.red-cliffs-piece {
+  position: absolute;
+  display: block;
+  transform-origin: 47% 74%;
+  animation: red-cliffs-piece var(--red-cliffs-cycle) var(--piece-delay) ease-in-out infinite;
+}
+.red-cliffs-piece[data-piece='canvas'],
+.red-cliffs-piece[data-piece='rigging'] {
+  transform-origin: 38% 18%;
+}
+.red-cliffs-wake {
+  position: absolute;
+  inset: 72% 33% 11% 13%;
+  background: repeating-linear-gradient(176deg, #0000 0 8px, #f4bd833b 9px, #0000 11px 19px);
+  mask-image: radial-gradient(ellipse 23% 23% at 22% 28%, #000, transparent 94%),
+    radial-gradient(ellipse 21% 24% at 72% 38%, #000, transparent 96%);
+  opacity: .18;
+  animation: red-cliffs-wake var(--red-cliffs-cycle) .44s ease-in-out infinite;
+}
+.red-cliffs-firelight,
+.red-cliffs-reflection,
+.red-cliffs-smoke,
+.red-cliffs-embers {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.red-cliffs-firelight {
+  background:
+    radial-gradient(ellipse 12% 20% at 55% 55%, #ffad4652, transparent),
+    radial-gradient(ellipse 13% 12% at 25% 65%, #f9944140, transparent),
+    radial-gradient(ellipse 8% 10% at 12% 65%, #ffa24c30, transparent);
+  opacity: .24;
+  animation: red-cliffs-firelight var(--red-cliffs-cycle) ease-in-out infinite;
+}
+.red-cliffs-reflection {
+  inset: 69% 36% 8% 11%;
+  background: repeating-linear-gradient(178deg, transparent 0 7px, #ffb5664a 8px, transparent 10px 16px);
+  mask-image: radial-gradient(ellipse 22% 52% at 30% 25%, #000, transparent),
+    radial-gradient(ellipse 23% 51% at 85% 16%, #000, transparent);
+  opacity: .2;
+  animation: red-cliffs-reflection var(--red-cliffs-cycle) .18s ease-in-out infinite;
+}
+.red-cliffs-flame {
+  position: absolute;
+  left: 24%;
+  bottom: 33.6%;
+  width: 4.1%;
+  aspect-ratio: 72 / 88;
+  background: url('./red-cliffs-flame.webp') 0 0 / 4000% 100% no-repeat;
+  mix-blend-mode: screen;
+  opacity: .79;
+  animation: red-cliffs-flame 2.35s steps(39, end) infinite;
+}
+.red-cliffs-flame-distant {
+  left: 52.4%;
+  bottom: 36.4%;
+  width: 3.4%;
+  opacity: .56;
+  animation-delay: -.74s;
+}
+.red-cliffs-smoke {
+  inset: 31% auto auto -5%;
+  width: 49%;
+  height: 38%;
+  background: url('./red-cliffs-smoke.webp') center / 100% 100% no-repeat;
+  opacity: .26;
+  animation: red-cliffs-smoke 7s -2.4s ease-out infinite;
+}
+.red-cliffs-smoke-distant {
+  inset: 26% auto auto 34%;
+  width: 37%;
+  height: 39%;
+  animation-delay: -5.5s;
+}
+.red-cliffs-embers i {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  width: var(--ember-size);
+  aspect-ratio: 1 / 1.55;
+  border-radius: 50%;
+  background: #ffd18b;
+  box-shadow: 0 0 7px 1px #e96d2c;
+  opacity: 0;
+  animation: red-cliffs-embers 5.3s var(--delay) linear infinite;
+}
+.lkdf-demo-camp-scene[data-paused] * { animation-play-state: paused; }
+
+@keyframes red-cliffs-piece {
+  0%, 100% { transform: none; }
+  17% { transform: translate(calc(var(--piece-x) * -.32), calc(var(--piece-y) * .15)) rotate(calc(var(--piece-tilt) * -.4)); }
+  38% { transform: translate(var(--piece-x), var(--piece-y)) rotate(var(--piece-tilt)); }
+  64% { transform: translate(calc(var(--piece-x) * -.52), calc(var(--piece-y) * -.48)) rotate(calc(var(--piece-tilt) * -.62)); }
+  81% { transform: translate(calc(var(--piece-x) * .24), calc(var(--piece-y) * .28)) rotate(calc(var(--piece-tilt) * .23)); }
+}
+@keyframes red-cliffs-wake {
+  0%, 100% { transform: translate(-1%, -2%); opacity: .18; }
+  34% { transform: translate(4%, 6%) scaleX(1.05); opacity: .55; }
+  55% { opacity: .22; }
+  68% { transform: translate(2%, 3%) scaleX(1.03); opacity: .45; }
+}
+@keyframes red-cliffs-firelight {
+  0%, 100% { opacity: .24; }
+  15% { opacity: .49; }
+  22% { opacity: .32; }
+  34% { opacity: .78; }
+  48% { opacity: .36; }
+  66% { opacity: .69; }
+  84% { opacity: .31; }
+}
+@keyframes red-cliffs-reflection {
+  0%, 100% { transform: translate(-1%, 0); opacity: .2; }
+  15%, 66% { opacity: .42; }
+  34% { opacity: .56; transform: translate(1%, 2%) scaleX(1.08); }
+  49%, 84% { opacity: .19; }
+}
+@keyframes red-cliffs-camera {
+  0%, 100% { transform: scale(1) translateX(0); }
+  15% { transform: scale(1.026) translateX(.64%); }
+  42% { transform: scale(1.055) translateX(1.05%); }
+  74% { transform: scale(1.02) translateX(-.24%); }
+}
+@keyframes red-cliffs-flame { to { background-position-x: 100%; } }
+@keyframes red-cliffs-smoke {
+  0% { transform: translate(-7%, 17%) scale(.77); opacity: 0; }
+  28% { opacity: .69; }
+  62% { opacity: .49; }
+  100% { transform: translate(23%, -36%) scale(1.26); opacity: 0; }
+}
+@keyframes red-cliffs-embers {
+  0% { opacity: 0; transform: translate(0, 7px) scale(.75); }
+  15% { opacity: .88; }
+  53% { opacity: .61; }
+  100% { opacity: 0; transform: translate(var(--drift), calc(-1 * var(--rise))) scale(.4); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lkdf-demo-camp-scene * { animation: none; }
+  .red-cliffs-smoke { opacity: .24; }
+}
+
+:root[data-lkdf-reduce-motion] .lkdf-demo-camp-scene * { animation: none; }
+:root[data-lkdf-reduce-motion] .red-cliffs-smoke { opacity: .24; }
