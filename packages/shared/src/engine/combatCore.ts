@@ -108,12 +108,12 @@ export function hasQuanThachPhuCards(player: PlayerCombatState): boolean {
   if (player.equipments.weapon?.cardKey !== 'quan_thach_phu') {
     return false;
   }
-  const equipCount =
-    (player.equipments.weapon ? 1 : 0) +
+  // Chuẩn Yoka FAQ (1A): không được tự bỏ chính Quán Thạch Phủ — phải bỏ 2 lá bài khác
+  const otherEquipCount =
     (player.equipments.armor ? 1 : 0) +
     (player.equipments.plusOneHorse ? 1 : 0) +
     (player.equipments.minusOneHorse ? 1 : 0);
-  return player.handCards.length + equipCount >= 2;
+  return player.handCards.length + otherEquipCount >= 2;
 }
 
 /** Mở nhịp chờ Vô Giải Khả Kích toàn bàn kèm cờ dừng giả lập nếu không ai có bài. */
@@ -427,25 +427,7 @@ export function resolveStrikeAfterTuHung(
     return state;
   }
 
-  const ignoresArmor =
-    source.equipments.weapon?.cardKey === 'thanh_cong_kiem';
-  const strikeColor = getCardColor(strikeCards);
-
-  if (
-    !ignoresArmor &&
-    target.equipments.armor?.cardKey === 'nhan_vuong_thuan' &&
-    strikeColor === 'BLACK'
-  ) {
-    return {
-      ...state,
-      actionLog: [
-        ...state.actionLog,
-        `Nhân Vương Thuẫn của ${target.displayName} vô hiệu hóa lá Sát màu Đen!`,
-      ],
-    };
-  }
-
-  // Kiểm tra Thiết Kỵ (Mã Siêu)
+  // Kiểm tra Thiết Kỵ (Mã Siêu) khi chỉ định mục tiêu — trước khi Nhân Vương Thuẫn chặn Sát Đen
   const sourceHandler = getHeroSkillHandler(source.heroId);
   if (sourceHandler?.onStrikeTargeting) {
     const nextWithPending = pushPendingEffect(state, {
@@ -497,13 +479,29 @@ export function resolveStrikeAfterTieQi(
     return state;
   }
 
+  const ignoresArmor =
+    source.equipments.weapon?.cardKey === 'thanh_cong_kiem';
+  const strikeColor = getCardColor(strikeCards);
+
+  // Nhân Vương Thuẫn vẫn vô hiệu hóa Sát Đen ngay cả khi Mã Siêu Thiết Kỵ ra Đỏ
+  if (
+    !ignoresArmor &&
+    target.equipments.armor?.cardKey === 'nhan_vuong_thuan' &&
+    strikeColor === 'BLACK'
+  ) {
+    return {
+      ...state,
+      actionLog: [
+        ...state.actionLog,
+        `Nhân Vương Thuẫn của ${target.displayName} vô hiệu hóa lá Sát màu Đen!`,
+      ],
+    };
+  }
+
   if (cannotDodge) {
     return resolveStrikeHit(state, sourceSeat, targetSeat, strikeCards);
   }
 
-  const ignoresArmor =
-    source.equipments.weapon?.cardKey === 'thanh_cong_kiem';
-  const strikeColor = getCardColor(strikeCards);
   const allowBagua =
     !ignoresArmor && target.equipments.armor?.cardKey === 'bat_quai_tran';
   const canBeForced = hasQuanThachPhuCards(source);
@@ -590,10 +588,12 @@ export function completeStrikeDodged(
     sourceEquips.some((c) => canUseCardAs(next, source, c, 'sat', inSourceTurn)) ||
     hasTruongBat(source);
 
+  const targetPlayer = getPlayerBySeat(next, targetSeat);
   if (
-    !isCollateralStrike &&
     !isFangTianMultiTarget &&
     source.equipments.weapon?.cardKey === 'thanh_long_yen_nguyet_dao' &&
+    targetPlayer.alive &&
+    canTargetPlayerWithCard(next, targetPlayer, 'sat') &&
     canFollowStrike
   ) {
     const { state: s1, id } = nextFrameId(next, 'thanhlong');
@@ -857,7 +857,12 @@ function resolveJudgmentEffect(
             `Thiểm Điện phán xét trúng ${judgeCard.rank}♠ trên ${owner.displayName}!`,
           ],
         };
-        next = applyDamage(next, null, ownerSeat, 3, 'Thiểm Điện');
+        // Chuẩn Yoka: Thiên Đố (Quách Gia) lấy lá phán xét TRƯỚC khi trừ 3 máu Thiểm Điện
+        next = pushPendingEffect(next, {
+          kind: 'APPLY_LIGHTNING_STRIKE',
+          targetSeat: ownerSeat,
+          delayedCard,
+        });
         return maybeOfferTianDo(next, ownerSeat, judgeCard);
       }
 
@@ -866,6 +871,16 @@ function resolveJudgmentEffect(
         ...p,
         delayedScrolls: [...p.delayedScrolls, delayedCard],
       }));
+      if (nextSeat === ownerSeat) {
+        const prevJudged = next.turnFlags?.judgedLightningIds ?? [];
+        next = {
+          ...next,
+          turnFlags: {
+            ...(next.turnFlags ?? { satUsedThisTurn: 0, skipPlayPhase: false }),
+            judgedLightningIds: [...prevJudged, delayedCard.id],
+          },
+        };
+      }
       next = {
         ...next,
         actionLog: [
@@ -916,6 +931,40 @@ function resolveJudgmentEffect(
           next = pushInterrupt(next, {
             ...saved,
             baguaTriedThisFrame: true,
+          });
+        }
+      } else if (saved && saved.kind === 'WAIT_HU_JIA') {
+        const parentFrame = saved.savedParentDodgeFrame;
+        if (success) {
+          // Tướng Ngụy phán xét Bát Quái Trận thành công khi hưởng ứng Hộ Giá!
+          if (saved.contextKind === 'DODGE' && parentFrame?.kind === 'WAIT_DODGE') {
+            const nextDodged = parentFrame.dodgedSoFar + 1;
+            if (nextDodged < parentFrame.requiredCount) {
+              next = pushInterrupt(next, {
+                ...parentFrame,
+                dodgedSoFar: nextDodged,
+                baguaTriedThisStrike: false,
+                huJiaTriedThisStrike: false,
+              });
+            } else {
+              next = completeStrikeDodged(
+                next,
+                parentFrame.sourceSeat,
+                parentFrame.targetSeat,
+                parentFrame.isCollateralStrike,
+                parentFrame.isFangTianMultiTarget,
+              );
+            }
+          }
+          // Với AOE_DODGE: parentFrame đã được pop trước khi phán xét nên coi như né xong!
+        } else {
+          if (parentFrame) {
+            next = pushInterrupt(next, parentFrame);
+          }
+          const { savedParentDodgeFrame: _removed, ...restSaved } = saved;
+          next = pushInterrupt(next, {
+            ...restSaved,
+            baguaTriedThisSeat: true,
           });
         }
       }
@@ -1067,6 +1116,16 @@ function executeScrollEffect(
         ...p,
         delayedScrolls: [...p.delayedScrolls, effect.scrollCard],
       }));
+      if (nextSeat === effect.targetSeat) {
+        const prevJudged = next.turnFlags?.judgedLightningIds ?? [];
+        next = {
+          ...next,
+          turnFlags: {
+            ...(next.turnFlags ?? { satUsedThisTurn: 0, skipPlayPhase: false }),
+            judgedLightningIds: [...prevJudged, effect.scrollCard.id],
+          },
+        };
+      }
       return {
         ...next,
         actionLog: [
@@ -1143,6 +1202,7 @@ function executeScrollEffect(
       const casterHandler = getHeroSkillHandler(caster.heroId);
       const requiredCount =
         casterHandler?.duelSatRequiredCount?.(state, caster) ?? 1;
+      const isVirtualLiJian = effect.scrollCard.id.startsWith('li_jian_');
       const { state: s1, id } = nextFrameId(state, 'duel');
       return pushInterrupt(s1, {
         id,
@@ -1152,6 +1212,7 @@ function executeScrollEffect(
         casterSeat: effect.casterSeat,
         requiredCount,
         playedSoFar: 0,
+        ...(isVirtualLiJian ? {} : { scrollCard: effect.scrollCard }),
       });
     }
     case 'ta_dao_sat_nhan': {
@@ -1182,6 +1243,7 @@ function executeScrollEffect(
         kind: 'WAIT_AOE_SAT',
         targetSeat: effect.targetSeat,
         sourceSeat: effect.casterSeat,
+        scrollCard: effect.scrollCard,
       });
     }
     case 'van_tien_te_phat': {
@@ -1196,6 +1258,7 @@ function executeScrollEffect(
         sourceSeat: effect.casterSeat,
         allowBagua,
         baguaTriedThisFrame: false,
+        scrollCard: effect.scrollCard,
       });
     }
     case 'dao_vien_ket_nghia': {
@@ -1424,15 +1487,59 @@ export function stepEngine(
           }
           break;
         }
+        case 'KU_ROU_DRAW': {
+          const p = getPlayerBySeat(state, topEffect.seatIndex);
+          if (p.alive) {
+            const dealt = dealCardsToSeat(state, topEffect.seatIndex, 2, rng);
+            state = {
+              ...dealt.state,
+              actionLog: [
+                ...dealt.state.actionLog,
+                `${p.displayName} kích hoạt Khổ Nhục, rút ${dealt.dealt.length} lá bài.`,
+              ],
+            };
+          }
+          break;
+        }
+        case 'FAN_JIAN_RECEIVE': {
+          const receiver = getPlayerBySeat(state, topEffect.targetSeat);
+          if (receiver.alive) {
+            state = updatePlayer(state, topEffect.targetSeat, (p) => ({
+              ...p,
+              handCards: [...p.handCards, topEffect.card],
+            }));
+          } else {
+            state = appendToDiscardPile(state, [topEffect.card]);
+          }
+          break;
+        }
+        case 'APPLY_LIGHTNING_STRIKE': {
+          const target = getPlayerBySeat(state, topEffect.targetSeat);
+          if (target.alive) {
+            // Chuẩn Yoka (2A): Thiểm Điện truyền [delayedCard] để Tào Tháo sống sót được nhặt qua Gian Hùng
+            state = applyDamage(
+              state,
+              null,
+              topEffect.targetSeat,
+              3,
+              'Thiểm Điện',
+              [topEffect.delayedCard],
+            );
+          }
+          break;
+        }
         case 'CONTINUE_DELAYED_JUDGES': {
           const curPlayer = getPlayerBySeat(state, state.currentTurnSeat);
           if (!curPlayer.alive) {
             state = advanceToNextTurn(state);
             break;
           }
-          if (curPlayer.delayedScrolls.length > 0) {
-            const scrollToJudge =
-              curPlayer.delayedScrolls[curPlayer.delayedScrolls.length - 1]!;
+          const alreadyJudged = new Set(state.turnFlags?.judgedLightningIds ?? []);
+          const remainingScrolls = curPlayer.delayedScrolls.filter(
+            (c) => !alreadyJudged.has(c.id),
+          );
+          if (remainingScrolls.length > 0) {
+            const scrollToJudge = remainingScrolls[remainingScrolls.length - 1]!;
             state = pushPendingEffect(state, { kind: 'CONTINUE_DELAYED_JUDGES' });
             state = pushPendingEffect(state, {
               kind: 'RESOLVE_SCROLL',
@@ -1562,16 +1669,24 @@ export function stepEngine(
           state = { ...state, turnPhase: 'END' };
         } else {
           const discardHandler = getHeroSkillHandler(curPlayer.heroId);
-          if (discardHandler?.onBeforeDiscardPhase) {
+          if (discardHandler?.onBeforeDiscardPhase && !state.turnFlags?.keJiChecked) {
+            const flagged = {
+              ...state,
+              turnFlags: {
+                ...(state.turnFlags ?? { satUsedThisTurn: 0, skipPlayPhase: false }),
+                keJiChecked: true,
+              },
+            };
             const afterKeJi = discardHandler.onBeforeDiscardPhase(
-              state,
+              flagged,
               state.currentTurnSeat,
               SKILL_RUNTIME,
             );
-            if (afterKeJi !== state) {
+            if (afterKeJi !== flagged) {
               state = afterKeJi;
               continue;
             }
+            state = flagged;
           }
           return state;
         }

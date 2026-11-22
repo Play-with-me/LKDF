@@ -41,9 +41,11 @@ import {
   getClockwiseAliveSeats,
   getPlayerBySeat,
   hasAnyCardAnywhere,
+  hasAnyCardInHandOrEquip,
   removeAnyCardFromPlayer,
   removeCardFromTargetZone,
   removeCardsFromHand,
+  restorePhysicalCard,
   updatePlayer,
 } from './deck.js';
 import { handlePlayerDeath } from './winCondition.js';
@@ -317,8 +319,28 @@ function handlePlayCard(
 
   // 3. SÁT
   if (effectiveKey === 'sat') {
+    // Nếu Võ Thánh chuyển lá trang bị Đỏ thành Sát, kiểm tra giới hạn Sát và tầm đánh
+    // trên trạng thái SAU KHI gỡ trang bị đó (tránh dùng tầm/Liên Nỗ của chính lá bị bỏ).
+    const stateForStrikeCheck = !found.isHand
+      ? updatePlayer(state, action.seatIndex, (p) => ({
+          ...p,
+          equipments: {
+            weapon: p.equipments.weapon?.id === cardId ? null : p.equipments.weapon,
+            armor: p.equipments.armor?.id === cardId ? null : p.equipments.armor,
+            plusOneHorse:
+              p.equipments.plusOneHorse?.id === cardId ? null : p.equipments.plusOneHorse,
+            minusOneHorse:
+              p.equipments.minusOneHorse?.id === cardId ? null : p.equipments.minusOneHorse,
+          },
+        }))
+      : state;
+    const actorForStrikeCheck = getPlayerBySeat(stateForStrikeCheck, action.seatIndex);
+    const hasUnlimitedSatEffective =
+      Boolean(actorHandler?.unlimitedSat) ||
+      actorForStrikeCheck.equipments.weapon?.cardKey === 'gia_cat_lien_no';
+
     const satUsed = state.turnFlags?.satUsedThisTurn ?? 0;
-    if (!hasUnlimitedSat && satUsed >= 1) {
+    if (!hasUnlimitedSatEffective && satUsed >= 1) {
       throw new Error('SAT_LIMIT_REACHED');
     }
 
@@ -327,7 +349,7 @@ function handlePlayCard(
       ? actor.handCards.length - 1
       : actor.handCards.length;
     const isFangTianLastCard =
-      actor.equipments.weapon?.cardKey === 'phuong_thien_hoa_kich' &&
+      actorForStrikeCheck.equipments.weapon?.cardKey === 'phuong_thien_hoa_kich' &&
       found.isHand &&
       remainingHandAfter === 0;
     const maxTargets = isFangTianLastCard ? 3 : 1;
@@ -340,11 +362,11 @@ function handlePlayCard(
       throw new Error('INVALID_STRIKE_TARGET_COUNT');
     }
     for (const targetSeat of targets) {
-      const targetPlayer = getPlayerBySeat(state, targetSeat);
-      if (!canTargetPlayerWithCard(state, targetPlayer, 'sat')) {
+      const targetPlayer = getPlayerBySeat(stateForStrikeCheck, targetSeat);
+      if (!canTargetPlayerWithCard(stateForStrikeCheck, targetPlayer, 'sat')) {
         throw new Error('TARGET_IMMUNE_TO_CARD');
       }
-      if (!isInAttackRange(state, action.seatIndex, targetSeat)) {
+      if (!isInAttackRange(stateForStrikeCheck, action.seatIndex, targetSeat)) {
         throw new Error('TARGET_OUT_OF_RANGE');
       }
     }
@@ -404,6 +426,7 @@ function handlePlayCard(
             cardKey: 'lac_bat_tu_thuc',
             nameVi: 'Lạc Bất Tư Thục',
             category: 'DELAYED_SCROLL',
+            physicalCard: removedRes.removed,
           };
     next = updatePlayer(next, targetSeat, (p) => ({
       ...p,
@@ -933,6 +956,14 @@ export function applyGameAction(
         throw new Error('QUAN_THACH_PHU_REQUIRES_2_CARDS');
       }
       const source = getPlayerBySeat(next, top.sourceSeat);
+      const weaponId = source.equipments.weapon?.id;
+      if (
+        weaponId &&
+        (action.discardCardIds[0] === weaponId ||
+          action.discardCardIds[1] === weaponId)
+      ) {
+        throw new Error('CANNOT_DISCARD_QUAN_THACH_PHU_SELF');
+      }
       next = SKILL_RUNTIME.discardAnyCard(
         next,
         top.sourceSeat,
@@ -966,6 +997,10 @@ export function applyGameAction(
         return stepEngine(next, rng);
       }
       const source = getPlayerBySeat(next, top.sourceSeat);
+      const target = getPlayerBySeat(next, top.targetSeat);
+      if (!target.alive || !canTargetPlayerWithCard(next, target, 'sat')) {
+        throw new Error('TARGET_IMMUNE_TO_CARD');
+      }
       const consumed = validateAndConsumeStrikeCards(
         next,
         top.sourceSeat,
@@ -998,13 +1033,25 @@ export function applyGameAction(
         throw new Error('WRONG_ACTOR_FOR_HAN_BANG_KIEM');
       }
       let next = popInterrupt(state).state;
+      const remainingDiscards = top.remainingDiscards ?? 2;
       if (!action.activate) {
+        if (remainingDiscards < 2) {
+          // Đã chọn hủy lá thứ 1 xong và dừng lại
+          return stepEngine(next, rng);
+        }
+        const source = getPlayerBySeat(next, top.sourceSeat);
+        const luoYiBonus =
+          source.heroId === 'xu_chu' &&
+          top.sourceSeat === next.currentTurnSeat &&
+          next.turnFlags?.luoYiActive
+            ? 1
+            : 0;
         next = applyDamage(
           next,
           top.sourceSeat,
           top.targetSeat,
-          1,
-          'Sát',
+          1 + luoYiBonus,
+          luoYiBonus > 0 ? 'Sát (Lỏa Y +1)' : 'Sát',
           top.sourceCards,
         );
         next = maybeOfferKyLanCung(next, top.sourceSeat, top.targetSeat);
@@ -1012,33 +1059,45 @@ export function applyGameAction(
       }
 
       const picks = action.picks ?? [];
-      if (picks.length === 0 || picks.length > 2) {
+      if (picks.length === 0 || picks.length > remainingDiscards) {
         throw new Error('HAN_BANG_KIEM_MUST_PICK_1_OR_2_CARDS');
       }
+      if (picks.some((p) => (p.zone as string) === 'DELAYED')) {
+        throw new Error('DELAYED_ZONE_NOT_ALLOWED');
+      }
 
-      const discarded: CardInstance[] = [];
-      let target = getPlayerBySeat(next, top.targetSeat);
-      const prevHandCount = target.handCards.length;
-      let lostEquipCount = 0;
+      let discardedCount = 0;
       for (const pick of picks) {
-        const res = removeCardFromTargetZone(target, pick.zone, rng, pick.handIndex);
-        target = res.nextPlayer;
-        discarded.push(res.removed);
-        if (pick.zone !== 'HAND') {
-          lostEquipCount += 1;
+        const targetNow = getPlayerBySeat(next, top.targetSeat);
+        const prevHandCount = targetNow.handCards.length;
+        const res = removeCardFromTargetZone(targetNow, pick.zone, rng, pick.handIndex);
+        next = updatePlayer(next, top.targetSeat, () => res.nextPlayer);
+        next = appendToDiscardPile(next, [res.removed]);
+        discardedCount += 1;
+        if (pick.zone === 'HAND') {
+          next = notifyHandCardsLost(next, top.targetSeat, prevHandCount, rng);
+        } else {
+          next = notifyEquipLost(next, top.targetSeat, 1, rng);
         }
       }
-      next = updatePlayer(next, top.targetSeat, () => target);
-      next = appendToDiscardPile(next, discarded);
-      next = notifyHandCardsLost(next, top.targetSeat, prevHandCount, rng);
-      next = notifyEquipLost(next, top.targetSeat, lostEquipCount, rng);
+      const targetAfter = getPlayerBySeat(next, top.targetSeat);
       next = {
         ...next,
         actionLog: [
           ...next.actionLog,
-          `${getPlayerBySeat(next, top.sourceSeat).displayName} dùng Hàn Băng Kiếm hủy ${discarded.length} lá của ${target.displayName} thay cho sát thương.`,
+          `${getPlayerBySeat(next, top.sourceSeat).displayName} dùng Hàn Băng Kiếm hủy ${discardedCount} lá của ${targetAfter.displayName} thay cho sát thương.`,
         ],
       };
+      const leftToDiscard = remainingDiscards - discardedCount;
+      if (leftToDiscard > 0 && targetAfter.alive && hasAnyCardInHandOrEquip(targetAfter)) {
+        const frameSeq = { ...next, nextFrameSeq: (next.nextFrameSeq ?? 0) + 1 };
+        next = pushInterrupt(frameSeq, {
+          ...top,
+          id: `hanbang_${frameSeq.nextFrameSeq}`,
+          remainingDiscards: leftToDiscard,
+        });
+        return next;
+      }
       return stepEngine(next, rng);
     }
 
@@ -1063,6 +1122,36 @@ export function applyGameAction(
       if (action.seatIndex !== top.targetSeat) {
         throw new Error('WRONG_ACTOR_FOR_DUEL');
       }
+      if (action.useJiJiang) {
+        const actor = getPlayerBySeat(state, top.targetSeat);
+        if (
+          actor.heroId !== 'liu_bei' ||
+          actor.identity !== 'LORD' ||
+          top.jiJiangTriedThisFrame
+        ) {
+          throw new Error('JI_JIANG_NOT_AVAILABLE');
+        }
+        const shuAllies = getClockwiseAliveSeats(state, top.targetSeat, false).filter(
+          (seat) => {
+            const p = getPlayerBySeat(state, seat);
+            return p.heroId !== null && SKILL_RUNTIME.getHeroFaction(p.heroId) === 'SHU';
+          },
+        );
+        if (shuAllies.length === 0) {
+          throw new Error('NO_SHU_ALLIES_FOR_JI_JIANG');
+        }
+        const frameSeq = { ...state, nextFrameSeq: (state.nextFrameSeq ?? 0) + 1 };
+        return pushInterrupt(frameSeq, {
+          id: `jijiang_${frameSeq.nextFrameSeq}`,
+          kind: 'WAIT_JI_JIANG',
+          targetSeat: top.targetSeat,
+          lordSeat: top.targetSeat,
+          responderSeat: shuAllies[0]!,
+          askOrder: shuAllies,
+          askCursor: 0,
+          contextKind: 'DUEL',
+        });
+      }
       if (action.cardIds === null || action.cardIds.length === 0) {
         const next = popInterrupt(state).state;
         const winner = getPlayerBySeat(next, top.otherSeat);
@@ -1079,6 +1168,7 @@ export function applyGameAction(
             top.targetSeat,
             1 + luoYiBonus,
             luoYiBonus > 0 ? 'Quyết Đấu (Lỏa Y +1)' : 'Quyết Đấu',
+            top.scrollCard ? [top.scrollCard] : [],
           ),
           rng,
         );
@@ -1091,10 +1181,21 @@ export function applyGameAction(
         true,
         rng,
       );
-      const next = consumed.state;
+      let next = consumed.state;
+      if (action.seatIndex === next.currentTurnSeat && next.turnPhase === 'PLAY') {
+        const prevFlags = next.turnFlags ?? { satUsedThisTurn: 0, skipPlayPhase: false };
+        next = {
+          ...next,
+          turnFlags: { ...prevFlags, satPlayedOrUsedThisTurn: true },
+        };
+      }
       const nextPlayed = top.playedSoFar + 1;
       if (nextPlayed < top.requiredCount) {
-        return replaceTopInterrupt(next, { ...top, playedSoFar: nextPlayed });
+        return replaceTopInterrupt(next, {
+          ...top,
+          playedSoFar: nextPlayed,
+          jiJiangTriedThisFrame: false,
+        });
       }
       const actor = getPlayerBySeat(next, action.seatIndex);
       const actorHandler = getHeroSkillHandler(actor.heroId);
@@ -1106,6 +1207,7 @@ export function applyGameAction(
         otherSeat: top.targetSeat,
         requiredCount: nextRequired,
         playedSoFar: 0,
+        jiJiangTriedThisFrame: false,
       });
     }
 
@@ -1113,6 +1215,41 @@ export function applyGameAction(
       const top = assertTopFrame(state, 'WAIT_COLLATERAL_SAT');
       if (action.seatIndex !== top.attackerSeat) {
         throw new Error('WRONG_ACTOR_FOR_COLLATERAL');
+      }
+      if (action.useJiJiang) {
+        const attacker = getPlayerBySeat(state, top.attackerSeat);
+        if (
+          attacker.heroId !== 'liu_bei' ||
+          attacker.identity !== 'LORD' ||
+          top.jiJiangTriedThisFrame
+        ) {
+          throw new Error('JI_JIANG_NOT_AVAILABLE');
+        }
+        const victim = getPlayerBySeat(state, top.targetSeat);
+        if (!victim.alive || !canTargetPlayerWithCard(state, victim, 'sat')) {
+          throw new Error('TARGET_IMMUNE_TO_CARD');
+        }
+        const shuAllies = getClockwiseAliveSeats(state, top.attackerSeat, false).filter(
+          (seat) => {
+            const p = getPlayerBySeat(state, seat);
+            return p.heroId !== null && SKILL_RUNTIME.getHeroFaction(p.heroId) === 'SHU';
+          },
+        );
+        if (shuAllies.length === 0) {
+          throw new Error('NO_SHU_ALLIES_FOR_JI_JIANG');
+        }
+        const frameSeq = { ...state, nextFrameSeq: (state.nextFrameSeq ?? 0) + 1 };
+        return pushInterrupt(frameSeq, {
+          id: `jijiang_${frameSeq.nextFrameSeq}`,
+          kind: 'WAIT_JI_JIANG',
+          targetSeat: top.attackerSeat,
+          lordSeat: top.attackerSeat,
+          responderSeat: shuAllies[0]!,
+          askOrder: shuAllies,
+          askCursor: 0,
+          contextKind: 'COLLATERAL',
+          strikeTargetSeat: top.targetSeat,
+        });
       }
       let next = popInterrupt(state).state;
       const attacker = getPlayerBySeat(next, top.attackerSeat);
@@ -1138,6 +1275,10 @@ export function applyGameAction(
         return stepEngine(next, rng);
       }
 
+      const victim = getPlayerBySeat(next, top.targetSeat);
+      if (!victim.alive || !canTargetPlayerWithCard(next, victim, 'sat')) {
+        throw new Error('TARGET_IMMUNE_TO_CARD');
+      }
       const consumed = validateAndConsumeStrikeCards(
         next,
         top.attackerSeat,
@@ -1162,10 +1303,47 @@ export function applyGameAction(
       if (action.seatIndex !== top.targetSeat) {
         throw new Error('WRONG_ACTOR_FOR_AOE_SAT');
       }
+      if (action.useJiJiang) {
+        const actor = getPlayerBySeat(state, top.targetSeat);
+        if (
+          actor.heroId !== 'liu_bei' ||
+          actor.identity !== 'LORD' ||
+          top.jiJiangTriedThisFrame
+        ) {
+          throw new Error('JI_JIANG_NOT_AVAILABLE');
+        }
+        const shuAllies = getClockwiseAliveSeats(state, top.targetSeat, false).filter(
+          (seat) => {
+            const p = getPlayerBySeat(state, seat);
+            return p.heroId !== null && SKILL_RUNTIME.getHeroFaction(p.heroId) === 'SHU';
+          },
+        );
+        if (shuAllies.length === 0) {
+          throw new Error('NO_SHU_ALLIES_FOR_JI_JIANG');
+        }
+        const frameSeq = { ...state, nextFrameSeq: (state.nextFrameSeq ?? 0) + 1 };
+        return pushInterrupt(frameSeq, {
+          id: `jijiang_${frameSeq.nextFrameSeq}`,
+          kind: 'WAIT_JI_JIANG',
+          targetSeat: top.targetSeat,
+          lordSeat: top.targetSeat,
+          responderSeat: shuAllies[0]!,
+          askOrder: shuAllies,
+          askCursor: 0,
+          contextKind: 'AOE_SAT',
+        });
+      }
       if (action.cardIds === null || action.cardIds.length === 0) {
         const next = popInterrupt(state).state;
         return stepEngine(
-          applyDamage(next, top.sourceSeat, top.targetSeat, 1, 'Nam Man Nhập Xâm'),
+          applyDamage(
+            next,
+            top.sourceSeat,
+            top.targetSeat,
+            1,
+            'Nam Man Nhập Xâm',
+            top.scrollCard ? [top.scrollCard] : [],
+          ),
           rng,
         );
       }
@@ -1249,7 +1427,14 @@ export function applyGameAction(
 
       next = popInterrupt(next).state;
       return stepEngine(
-        applyDamage(next, top.sourceSeat, top.targetSeat, 1, 'Vạn Tiễn Tề Phát'),
+        applyDamage(
+          next,
+          top.sourceSeat,
+          top.targetSeat,
+          1,
+          'Vạn Tiễn Tề Phát',
+          top.scrollCard ? [top.scrollCard] : [],
+        ),
         rng,
       );
     }
@@ -1299,6 +1484,9 @@ export function applyGameAction(
       if (action.seatIndex !== top.sourceSeat || top.handPick === 'PREPARE') {
         throw new Error('WRONG_ACTOR_FOR_PICK_TARGET');
       }
+      if (top.allowDelayed === false && action.zone === 'DELAYED') {
+        throw new Error('DELAYED_ZONE_NOT_ALLOWED');
+      }
       const target = getPlayerBySeat(state, top.targetSeat);
       const prevHandCount = target.handCards.length;
       if (!top.handPick && top.mode === 'STEAL' && action.zone === 'HAND' && prevHandCount > 0) {
@@ -1321,9 +1509,10 @@ export function applyGameAction(
       );
       let next = updatePlayer(state, top.targetSeat, () => res.nextPlayer);
       if (top.mode === 'STEAL') {
+        const restored = restorePhysicalCard(res.removed);
         next = updatePlayer(next, top.sourceSeat, (p) => ({
           ...p,
-          handCards: [...p.handCards, res.removed],
+          handCards: [...p.handCards, restored],
         }));
       } else {
         next = appendToDiscardPile(next, [res.removed]);
@@ -1621,6 +1810,17 @@ export function applyGameAction(
       ) {
         throw new Error('INVALID_LIU_LI_TARGET');
       }
+      const alreadyQueuedStrikeTargets = new Set<number>();
+      for (const eff of next.pendingEffects ?? []) {
+        if (eff.kind === 'QUEUE_STRIKE_TARGETS' && eff.sourceSeat === top.sourceSeat) {
+          for (const seat of eff.remainingTargets) {
+            alreadyQueuedStrikeTargets.add(seat);
+          }
+        }
+      }
+      if (alreadyQueuedStrikeTargets.has(action.newTargetSeat)) {
+        throw new Error('INVALID_LIU_LI_TARGET');
+      }
       const newTarget = getPlayerBySeat(next, action.newTargetSeat);
       if (!canTargetPlayerWithCard(next, newTarget, 'sat')) {
         throw new Error('TARGET_IMMUNE_TO_CARD');
@@ -1723,24 +1923,25 @@ export function applyGameAction(
         const remainingDiscard: CardInstance[] = [];
         for (const c of next.discardPile) {
           if (cardIds.has(c.id)) {
-            taken.push(c);
+            taken.push(restorePhysicalCard(c));
           } else {
             remainingDiscard.push(c);
           }
         }
-        const toTake = taken.length > 0 ? taken : [...top.damageCards];
-        next = {
-          ...next,
-          discardPile: taken.length > 0 ? remainingDiscard : next.discardPile,
-          actionLog: [
-            ...next.actionLog,
-            `${getPlayerBySeat(next, top.targetSeat).displayName} dùng Gian Hùng thu lấy ${toTake.map((c) => c.nameVi).join(', ')}.`,
-          ],
-        };
-        next = updatePlayer(next, top.targetSeat, (p) => ({
-          ...p,
-          handCards: [...p.handCards, ...toTake],
-        }));
+        if (taken.length > 0) {
+          next = {
+            ...next,
+            discardPile: remainingDiscard,
+            actionLog: [
+              ...next.actionLog,
+              `${getPlayerBySeat(next, top.targetSeat).displayName} dùng Gian Hùng thu lấy ${taken.map((c) => c.nameVi).join(', ')}.`,
+            ],
+          };
+          next = updatePlayer(next, top.targetSeat, (p) => ({
+            ...p,
+            handCards: [...p.handCards, ...taken],
+          }));
+        }
       }
       return stepEngine(next, rng);
     }
@@ -1753,7 +1954,7 @@ export function applyGameAction(
       let next = popInterrupt(state).state;
       if (action.activate) {
         const source = getPlayerBySeat(next, top.sourceSeat);
-        if (source.alive && hasAnyCardAnywhere(source)) {
+        if (source.alive && hasAnyCardInHandOrEquip(source)) {
           const frameSeq = { ...next, nextFrameSeq: (next.nextFrameSeq ?? 0) + 1 };
           next = pushInterrupt(frameSeq, {
             id: `fankui_pick_${frameSeq.nextFrameSeq}`,
@@ -1761,6 +1962,7 @@ export function applyGameAction(
             targetSeat: top.sourceSeat,
             sourceSeat: top.targetSeat,
             mode: 'STEAL',
+            allowDelayed: false,
           });
           return next;
         }
@@ -1794,6 +1996,7 @@ export function applyGameAction(
         action.choice === 'DISCARD_TWO' &&
         victim.handCards.length >= 2 &&
         action.discardCardIds &&
+        action.discardCardIds.length === 2 &&
         action.discardCardIds[0] !== action.discardCardIds[1]
       ) {
         next = SKILL_RUNTIME.discardHandCards(
@@ -1869,10 +2072,6 @@ export function applyGameAction(
       const res = removeCardFromTargetZone(zhouYu, 'HAND', rng);
       const pickedCard = res.removed;
       next = updatePlayer(next, top.sourceSeat, () => res.nextPlayer);
-      next = updatePlayer(next, top.targetSeat, (p) => ({
-        ...p,
-        handCards: [...p.handCards, pickedCard],
-      }));
       next = notifyHandCardsLost(next, top.sourceSeat, prevHandCount, rng);
 
       const target = getPlayerBySeat(next, top.targetSeat);
@@ -1884,8 +2083,19 @@ export function applyGameAction(
             `${target.displayName} đoán sai chất (${action.suit} vs ${pickedCard.suit}) trước Phản Gián, chịu 1 sát thương!`,
           ],
         };
+        // Luật chuẩn Phản Gián: nếu đoán sai chất, chịu 1 sát thương (và xử lý Hấp Hối nếu 0 máu)
+        // TRƯỚC KHI nhận lá bài đã rút về tay (nếu sống sót).
+        next = pushPendingEffect(next, {
+          kind: 'FAN_JIAN_RECEIVE',
+          targetSeat: top.targetSeat,
+          card: pickedCard,
+        });
         next = applyDamage(next, top.sourceSeat, top.targetSeat, 1, 'Phản Gián');
       } else {
+        next = updatePlayer(next, top.targetSeat, (p) => ({
+          ...p,
+          handCards: [...p.handCards, pickedCard],
+        }));
         next = {
           ...next,
           actionLog: [
@@ -1908,7 +2118,7 @@ export function applyGameAction(
           next,
           action.seatIndex,
           action.cardIds,
-          false,
+          true,
           rng,
         );
         next = consumed.state;
@@ -1942,23 +2152,85 @@ export function applyGameAction(
             false,
             false,
           );
+        } else if (top.contextKind === 'DUEL') {
+          const duelTop = next.interruptStack[next.interruptStack.length - 1];
+          if (duelTop?.kind === 'WAIT_DUEL_SAT') {
+            if (top.lordSeat === next.currentTurnSeat && next.turnPhase === 'PLAY') {
+              const prevFlags = next.turnFlags ?? { satUsedThisTurn: 0, skipPlayPhase: false };
+              next = {
+                ...next,
+                turnFlags: { ...prevFlags, satPlayedOrUsedThisTurn: true },
+              };
+            }
+            const nextPlayed = duelTop.playedSoFar + 1;
+            if (nextPlayed < duelTop.requiredCount) {
+              next = replaceTopInterrupt(next, {
+                ...duelTop,
+                playedSoFar: nextPlayed,
+                jiJiangTriedThisFrame: false,
+              });
+            } else {
+              const lordHandler = getHeroSkillHandler(lord.heroId);
+              const nextRequired = lordHandler?.duelSatRequiredCount?.(next, lord) ?? 1;
+              next = replaceTopInterrupt(next, {
+                ...duelTop,
+                targetSeat: duelTop.otherSeat,
+                otherSeat: duelTop.targetSeat,
+                requiredCount: nextRequired,
+                playedSoFar: 0,
+                jiJiangTriedThisFrame: false,
+              });
+            }
+          }
+        } else if (top.contextKind === 'AOE_SAT') {
+          const aoeTop = next.interruptStack[next.interruptStack.length - 1];
+          if (aoeTop?.kind === 'WAIT_AOE_SAT') {
+            next = popInterrupt(next).state;
+          }
+        } else if (top.contextKind === 'COLLATERAL') {
+          const colTop = next.interruptStack[next.interruptStack.length - 1];
+          if (colTop?.kind === 'WAIT_COLLATERAL_SAT') {
+            next = popInterrupt(next).state;
+            next = beginStrikeAgainstTarget(
+              next,
+              colTop.attackerSeat,
+              colTop.targetSeat,
+              consumed.usedCards,
+              true,
+              false,
+            );
+          }
         }
         return stepEngine(next, rng);
       }
 
       const nextCursor = top.askCursor + 1;
       if (nextCursor >= top.askOrder.length) {
-        const prevFlags = next.turnFlags ?? {
-          satUsedThisTurn: 0,
-          skipPlayPhase: false,
-        };
-        next = {
-          ...next,
-          turnFlags: {
-            ...prevFlags,
-            jiJiangDeclinedThisTurn: true,
-          },
-        };
+        if (top.contextKind === 'PLAY') {
+          const prevFlags = next.turnFlags ?? {
+            satUsedThisTurn: 0,
+            skipPlayPhase: false,
+          };
+          next = {
+            ...next,
+            turnFlags: {
+              ...prevFlags,
+              jiJiangDeclinedThisTurn: true,
+            },
+          };
+        } else {
+          const parentTop = next.interruptStack[next.interruptStack.length - 1];
+          if (
+            parentTop?.kind === 'WAIT_DUEL_SAT' ||
+            parentTop?.kind === 'WAIT_AOE_SAT' ||
+            parentTop?.kind === 'WAIT_COLLATERAL_SAT'
+          ) {
+            next = replaceTopInterrupt(next, {
+              ...parentTop,
+              jiJiangTriedThisFrame: true,
+            });
+          }
+        }
         return stepEngine(next, rng);
       }
       const nextResponder = top.askOrder[nextCursor]!;
@@ -1975,6 +2247,33 @@ export function applyGameAction(
         throw new Error('WRONG_RESPONDER_FOR_HU_JIA');
       }
       let next = popInterrupt(state).state;
+      if (action.useBagua) {
+        const ally = getPlayerBySeat(next, action.seatIndex);
+        if (
+          ally.equipments.armor?.cardKey !== 'bat_quai_tran' ||
+          top.baguaTriedThisSeat
+        ) {
+          throw new Error('BAGUA_NOT_AVAILABLE');
+        }
+        const parentTop = next.interruptStack[next.interruptStack.length - 1];
+        let savedParentDodgeFrame:
+          | Extract<InterruptFrame, { readonly kind: 'WAIT_DODGE' | 'WAIT_AOE_DODGE' }>
+          | undefined;
+        if (
+          parentTop?.kind === 'WAIT_DODGE' ||
+          parentTop?.kind === 'WAIT_AOE_DODGE'
+        ) {
+          savedParentDodgeFrame = parentTop;
+          next = popInterrupt(next).state;
+        }
+        next = startJudgment(next, action.seatIndex, 'BAT_QUAI_TRAN', rng, {
+          savedDodgeFrame: {
+            ...top,
+            ...(savedParentDodgeFrame ? { savedParentDodgeFrame } : {}),
+          },
+        });
+        return stepEngine(next, rng);
+      }
       if (action.cardId !== null) {
         const ally = getPlayerBySeat(next, action.seatIndex);
         const card = ally.handCards.find((c) => c.id === action.cardId);
@@ -2042,6 +2341,7 @@ export function applyGameAction(
         ...top,
         askCursor: nextCursor,
         responderSeat: nextResponder,
+        baguaTriedThisSeat: false,
       });
     }
   }

@@ -72,7 +72,7 @@ export function drawFromPile(
       if (discardPile.length === 0) {
         break;
       }
-      drawPile = shuffleArray(discardPile.map(clearDiscardFace), rng);
+      drawPile = shuffleArray(discardPile.map(restorePhysicalCard), rng);
       discardPile = [];
       logMessages = [
         ...logMessages,
@@ -113,9 +113,10 @@ export function dealCardsToSeat(
   return { state: nextState, dealt: drawn };
 }
 
-function clearDiscardFace(card: CardInstance): CardInstance {
-  if (!card.discardDisplayAs) return card;
-  const { discardDisplayAs: _, ...physicalCard } = card;
+export function restorePhysicalCard(card: CardInstance): CardInstance {
+  const base = card.physicalCard ? restorePhysicalCard(card.physicalCard) : card;
+  if (!base.discardDisplayAs && !base.physicalCard) return base;
+  const { discardDisplayAs: _d, physicalCard: _p, ...physicalCard } = base;
   return physicalCard;
 }
 
@@ -128,7 +129,7 @@ export function appendToDiscardPile(
   }
   return {
     ...state,
-    discardPile: [...state.discardPile, ...cards.map(clearDiscardFace)],
+    discardPile: [...state.discardPile, ...cards.map(restorePhysicalCard)],
   };
 }
 

@@ -87,6 +87,7 @@ function projectTopInterrupt(
         targetSeat: topFrame.targetSeat,
         sourceSeat: topFrame.casterSeat,
         attackerSeat: topFrame.attackerSeat,
+        jiJiangTried: Boolean(topFrame.jiJiangTriedThisFrame),
       };
     case 'WAIT_DUEL_SAT':
       return {
@@ -94,6 +95,25 @@ function projectTopInterrupt(
         kind: topFrame.kind,
         targetSeat: topFrame.targetSeat,
         sourceSeat: topFrame.otherSeat,
+        requiredCount: topFrame.requiredCount,
+        dodgedSoFar: topFrame.playedSoFar,
+        jiJiangTried: Boolean(topFrame.jiJiangTriedThisFrame),
+      };
+    case 'WAIT_AOE_SAT':
+      return {
+        id: topFrame.id,
+        kind: topFrame.kind,
+        targetSeat: topFrame.targetSeat,
+        sourceSeat: topFrame.sourceSeat,
+        jiJiangTried: Boolean(topFrame.jiJiangTriedThisFrame),
+      };
+    case 'ASK_HAN_BANG_KIEM':
+      return {
+        id: topFrame.id,
+        kind: topFrame.kind,
+        targetSeat: topFrame.targetSeat,
+        sourceSeat: topFrame.sourceSeat,
+        remainingDiscards: topFrame.remainingDiscards ?? 2,
       };
     case 'PICK_TARGET_CARD':
       return {
@@ -101,6 +121,7 @@ function projectTopInterrupt(
         kind: topFrame.kind,
         targetSeat: topFrame.targetSeat,
         sourceSeat: topFrame.sourceSeat,
+        ...(topFrame.allowDelayed === false ? { allowDelayed: false } : {}),
         ...(topFrame.handPick ? { handPick: topFrame.handPick } : {}),
         stealing: topFrame.mode === 'STEAL',
       };
@@ -141,6 +162,13 @@ function projectTopInterrupt(
         judgeCard: { ...topFrame.judgeCard },
       };
     case 'WAIT_JI_JIANG':
+      return {
+        id: topFrame.id,
+        kind: topFrame.kind,
+        targetSeat: topFrame.targetSeat,
+        sourceSeat: topFrame.lordSeat,
+        responderSeat: topFrame.responderSeat,
+      };
     case 'WAIT_HU_JIA':
       return {
         id: topFrame.id,
@@ -148,6 +176,7 @@ function projectTopInterrupt(
         targetSeat: topFrame.targetSeat,
         sourceSeat: topFrame.lordSeat,
         responderSeat: topFrame.responderSeat,
+        baguaTried: Boolean(topFrame.baguaTriedThisSeat),
       };
     case 'ASK_LUO_SHEN':
     case 'WAIT_TU_XI':

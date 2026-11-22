@@ -174,3 +174,4 @@
 
 - 2026-11-20 · Bước 4.4 · Đã dời chồng rút khỏi vùng bài giữa bàn và gắn điểm xuất phát của hiệu ứng rút đã xác nhận. Giữ Bước 4.4 mở để duyệt các nhánh còn lại.
 - Bước 4.4 · Khay lấy bài tay đã nối vào bàn chính cho Phản Quỷ, Đột Tập và Thuận Thủ. Giữ bước mở để nghiệm thu toàn bộ hiệu ứng.
+- 2026-11-22 · Kiểm toán & vá chuẩn luật Yoka Standard (`1A + 2A`): Đã vá đủ 18 lỗi luật lõi trong `packages/shared/src/` + đồng bộ Bot AI & giao diện `MatchActionSidebar`/`MatchCenterBoard` + cập nhật `RULES_STANDARD.md`. Bằng chứng: `typecheck` 0 lỗi, `test:unit` **98/98**, `test:fuzz` **500/500 ván** (0 deadlock, 0 rò rỉ), `test:integration` **26/26**, `build` 3 workspace exit 0.

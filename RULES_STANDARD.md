@@ -286,15 +286,31 @@ Phần đối chiếu thực tế giữa [packages/shared/src](./packages/shared
    - `Quan Tinh / Lạc Thần` chạy ở `TURN_START` **trước** *Lạc Bất Tư Thục / Thiểm Điện* (`JUDGE`).
    - *Cầu Đào Hấp Hối (`WAIT_PEACH_RESCUE`)* ưu tiên giải quyết trên `interruptStack` **trước** các kỹ năng bán máu *Gian Hùng / Phản Quỷ / Cương Liệt / Di Kế* (nếu chết luôn thì không kích hoạt bán máu).
    - *Hàn Băng Kiếm* ngăn sát thương -> không kích hoạt *Gian Hùng / Phản Quỷ / Cương Liệt / Di Kế*.
-3. **Bộ bài 108 lá khớp chính xác (`53 Cơ bản + 31 Cẩm nang thường + 5 Thời gian + 19 Trang bị`):** Bao gồm đúng 4 lá EX chuẩn (*Vô Giải `Q♦`, Thiểm Điện `A♠`, Hàn Băng Kiếm `2♠`, Nhân Vương Thuẫn `2♣`*).
+3. **Bộ bài 108 lá khớp chính xác (`53 Cơ bản + 31 Cẩm nang thường + 5 Thời gian + 19 Trang bị`):** Bao gồm đúng 4 lá EX chuẩn (*Vô Giải `Q♦`, Thiểm Điện `Q♥`, Hàn Băng Kiếm `2♠`, Nhân Vương Thuẫn `2♣`*; `Thiểm Điện A♠` thuộc bản gốc 104 lá).
 
-### 5.2. Lịch sử Các Lỗi Đã Vá Chuẩn Yoka & Lưu Ý Biên Còn Lại (Đã kiểm chứng 2026-11-18)
-1. **✅ [Đã vá chuẩn] `Điêu Thuyền — Ly Gián` (`wuQun.ts`):** Đã gắn kiểm tra `Không Thành` (Gia Cát Lượng hết bài không thể làm mục tiêu thứ 2) và mở cửa sổ `Vô Giải Khả Kích` (`openNullificationWindow`) đúng quy chuẩn Yoka *Quyết Đấu*.
-2. **✅ [Đã vá chuẩn] `Bát Quái Trận` gặp `Lữ Bố — Vô Song` & `Tào Tháo — Hộ Giá` (`combatCore.ts`, `combat.ts`):** Mục tiêu được phán xét Bát Quái và kêu gọi *Hộ Giá* cho từng lá *Thiểm* còn thiếu (tối đa 2 lần trước *Lữ Bố*), và gom chung hậu xử lý né xong (`Quán Thạch Phủ` / `Thanh Long Đao`) qua `completeStrikeDodged`.
-3. **✅ [Đã vá chuẩn] `Quán Thạch Phủ` tự bỏ chính mình (`combatCore.ts`, `combat.ts`):** Đã cho phép tính cả lá *Quán Thạch Phủ* vào tổng `>= 2` lá có thể bỏ để ép trúng *Sát* theo Yoka Official FAQ.
-4. **✅ [Đã vá chuẩn] `Hoàng Nguyệt Anh — Tập Trí` & `Lục Tốn — Liên Doanh` (`combat.ts`):** Đã kích hoạt *Tập Trí* khi Hoàng Nguyệt Anh đánh *Vô Giải Khả Kích* (`NORMAL_SCROLL`) và chuẩn hóa qua `SKILL_RUNTIME.discardHandCards` ở `RESPOND_NULLIFICATION` & `RESPOND_TU_HUNG` để Lục Tốn luôn rút `1` lá khi mất lá tay cuối.
-5. **✅ [Đã đồng bộ tài liệu] `REQUIREMENTS.md` mục 3.3:** Đã chỉnh lại đúng số lượng `31` Cẩm nang thường, `5` Cẩm nang thời gian, `10` Vũ khí khớp `cards/catalog.ts`.
-6. **🟡 [Edge Case lưu ý giao diện & vận hành]:**
-   - **Đại Kiều (*Lưu Ly*) bỏ chính Vũ khí:** Trong `combat.ts` kiểm tra tầm đánh **trước** khi bỏ lá (tuyên bố mục tiêu hợp lệ trước khi trả chi phí bỏ lá theo Yoka FAQ).
-   - **Khổ Nhục (`Hoàng Cái`) + Cầu Đào khi máu về `0`:** Đã xử lý mở Cầu Đào trước -> nếu sống lại mới rút `2` lá.
+### 5.2. Lịch sử Các Lỗi Đã Vá Chuẩn Yoka & Quy Ước Đã Khóa (Cập nhật 2026-11-22)
+1. **✅ [Đã vá chuẩn — Khóa 1A] `Quán Thạch Phủ` (`combatCore.ts`, `combat.ts`):** KHÔNG được bỏ chính lá `Quán Thạch Phủ` đang trang bị; phải bỏ **2 lá khác** (trên tay hoặc ô trang bị khác) để ép trúng `Sát`.
+2. **✅ [Đã vá chuẩn — Khóa 2A] `Tào Tháo — Gian Hùng` & `Điêu Thuyền — Ly Gián` (`combatCore.ts`, `combat.ts`):**
+   - `Gian Hùng` thu được lá vật lý gây sát thương của `Sát`, `Quyết Đấu`, `Nam Man Nhập Xâm`, `Vạn Tiễn Tề Phát` **và `Thiểm Điện`** (khi Tào Tháo sống sót sau 3 sát thương Lôi); không nhân bản bài ảo (*Ly Gián* không có lá vật lý; nếu lá đã bị lấy khỏi chồng bài bỏ thì không tạo bản sao).
+   - `Điêu Thuyền — Ly Gián` giữ chuẩn Yoka OL hiện đại: kiểm tra *Không Thành* mục tiêu thứ 2 và **có thể bị `Vô Giải Khả Kích` chặn**.
+3. **✅ [Đã vá chuẩn] Vòng lặp `Thiểm Điện` & Thứ tự `Thiên Đố` (`combatCore.ts`):** Khi `Thiểm Điện` truyền xoay vòng quay lại đúng chủ cũ (trường hợp mọi người khác đã có `Thiểm Điện` hoặc bị chết), ghi nhận `judgedLightningIds` để không lặp vô hạn trong cùng pha `JUDGE`. Khi `Thiểm Điện` nổ trên Quách Gia, *Thiên Đố* lấy lá phán xét trước rồi mới nhận 3 sát thương Lôi.
+4. **✅ [Đã vá chuẩn] `Hoàng Cái — Khổ Nhục` & `Chu Du — Phản Gián` (`wuQun.ts`, `combat.ts`, `combatCore.ts`):**
+   - `Khổ Nhục` đưa `KU_ROU_DRAW` vào hàng đợi trước `applyDamage`: nếu Hoàng Cái tự hạ về `0` máu rồi được cứu Đào vẫn rút đủ 2 lá.
+   - `Phản Gián` đoán sai chất sẽ chịu 1 sát thương (và mở Cầu Đào nếu `0` máu) **trước khi** nhận lá bài rút về tay (`FAN_JIAN_RECEIVE`).
+5. **✅ [Đã vá chuẩn] `Tư Mã Ý — Phản Quỷ`, `Đại Kiều — Quốc Sắc / Lưu Ly`, `Tôn Thượng Hương — Kiêu Cơ` & `Lục Tốn — Liên Doanh` (`combat.ts`, `deck.ts`, `winCondition.ts`):**
+   - `Phản Quỷ` chỉ được lấy từ tay hoặc trang bị (`allowDelayed: false`), cấm lấy vùng Phán Xét (`DELAYED`).
+   - `Quốc Sắc` lưu `physicalCard` để khi bị *Thuận Thủ / Quá Hà* lấy về tay hoặc đưa ra chồng bài bỏ sẽ khôi phục nguyên lá bài gốc (không biến thành `Lạc Bất Tư Thục` thật).
+   - `Lưu Ly` cấm chuyển `Sát` sang người đã nằm trong danh sách mục tiêu của *Phương Thiên Họa Kích*.
+   - Chủ Công giết nhầm Trung Thần mất sạch tay + trang bị vẫn kích hoạt `Liên Doanh` (Lục Tốn) và `Kiêu Cơ` (Tôn Thượng Hương).
+6. **✅ [Đã vá chuẩn] Chủ Công `Kích Tướng` (Lưu Bị) & `Hộ Giá` (Tào Tháo) (`combat.ts`, `combatCore.ts`):**
+   - `Kích Tướng` dùng được cả khi cần đánh `Sát` trong `Quyết Đấu`, `Nam Man Nhập Xâm`, `Tá Đao Sát Nhân`, và đồng đội Thục cầm *Trượng Bát Xà Mâu* được dùng 2 lá tay hưởng ứng.
+   - `Hộ Giá` cho phép đồng đội Ngụy mặc `Bát Quái Trận` phán xét Bát Quái thay cho Chủ Công.
+7. **✅ [Đã vá chuẩn] Vũ khí, Giáp & Tương tác chéo (`combat.ts`, `combatCore.ts`, `distance/index.ts`):**
+   - `Mã Siêu — Thiết Kỵ` kích hoạt trước `Nhân Vương Thuẫn`, nhưng `Nhân Vương Thuẫn` vẫn vô hiệu hóa `Sát` Đen kể cả khi `Thiết Kỵ` ra Đỏ.
+   - `Quan Vũ — Võ Thánh` chuyển vũ khí Đỏ / ngựa `-1` Đỏ thành `Sát` kiểm tra tầm đánh & giới hạn `Sát` sau khi gỡ trang bị đó.
+   - `Hàn Băng Kiếm` giữ nguyên `+1` sát thương `Lỏa Y` khi từ chối kích hoạt, cấm chọn vùng `DELAYED`, và hủy từng lá tuần tự (`Liên Doanh` / `Kiêu Cơ` nổ ngay sau lá thứ 1).
+   - `Thanh Long Yển Nguyệt Đao` kích hoạt được trong `Tá Đao Sát Nhân` và tôn trọng `Không Thành`; `Tá Đao Sát Nhân` cấm chỉ định Gia Cát Lượng hết tay làm nạn nhân.
+   - `Lữ Mông — Khắc Kỷ` tính cả `Sát` đánh ra khi trả lời `Quyết Đấu` trong pha `PLAY` của mình.
+   - `Hạ Hầu Đôn — Cương Liệt` kiểm tra chặt đúng `2` lá khi chọn `DISCARD_TWO`.
+8. **🟡 [Edge Case lưu ý vận hành]:**
    - **Chiều vòng ghế bàn tròn:** Giữ đồng nhất *chiều kim đồng hồ* trên cả 4 vòng (lượt đánh / AOE / Cầu Đào / khoảng cách) như lựa chọn của Chủ dự án.

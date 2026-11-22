@@ -97,16 +97,19 @@ export type GameAction =
       readonly type: 'RESPOND_DUEL_SAT';
       readonly seatIndex: number;
       readonly cardIds: readonly string[] | null;
+      readonly useJiJiang?: boolean;
     }
   | {
       readonly type: 'RESPOND_COLLATERAL_SAT';
       readonly seatIndex: number;
       readonly cardIds: readonly string[] | null;
+      readonly useJiJiang?: boolean;
     }
   | {
       readonly type: 'RESPOND_AOE_SAT';
       readonly seatIndex: number;
       readonly cardIds: readonly string[] | null;
+      readonly useJiJiang?: boolean;
     }
   | {
       readonly type: 'RESPOND_AOE_DODGE';
@@ -228,6 +231,7 @@ export type GameAction =
       readonly type: 'RESPOND_HU_JIA';
       readonly seatIndex: number;
       readonly cardId: string | null;
+      readonly useBagua?: boolean;
     };
 
 export interface PendingPrompt {

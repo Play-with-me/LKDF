@@ -272,8 +272,8 @@ export const STANDARD_DECK_TEMPLATES: readonly CardTemplate[] = [
     'DELAYED_SCROLL',
     'Phán xét ra Bích từ 2 đến 9 chịu 3 sát thương Lôi; không trúng thì chuyển sang người kế tiếp.',
     [
-      { suit: 'SPADE', rank: 1, isEx: true },
-      { suit: 'HEART', rank: 12 },
+      { suit: 'SPADE', rank: 1 },
+      { suit: 'HEART', rank: 12, isEx: true },
     ],
   ),
 

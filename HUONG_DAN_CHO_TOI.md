@@ -34,6 +34,7 @@ Vì bạn là người mới và không lập trình, bạn **không cần đọ
 ## 2. Lộ Trình Từ Đầu Đến Cuối & Các Câu Lệnh "Copy – Dán" Cho Bạn
 
 > **📌 Trạng thái hiện tại của bạn (AI tự động cập nhật sau mỗi bước):**
+> - ✅ **Kiểm toán & chuẩn hóa toàn diện Luật Chơi Yoka Standard 108 lá / 25 Tướng (`1A + 2A` — 2026-11-22):** Vá xong toàn bộ 18 lỗi luật lõi (`Gian Hùng` thu được `Nam Man`/`Vạn Tiễn`/`Quyết Đấu`/`Thiểm Điện` không nhân bản bài ảo, `Quán Thạch Phủ` 1A cấm tự bỏ chính mình, `Thiểm Điện` chống lặp vô hạn + `Thiên Đố` trước nổ 3 máu, `Khổ Nhục` cứu 0 máu vẫn rút 2, `Phản Gián` sát thương trước nhận bài, `Phản Quỷ` cấm lấy vùng Phán Xét, `Quốc Sắc` giữ nguyên mặt bài vật lý, `Thiết Kỵ` + `Nhân Vương Thuẫn`, `Kích Tướng` phản ứng & `Hộ Giá` Bát Quái Trận, `Hàn Băng Kiếm` tuần tự + `Lỏa Y`, `Tá Đao` + `Thanh Long` tôn trọng `Không Thành`, `Khắc Kỷ` tính `Sát` Quyết Đấu, `Liên Doanh`/`Kiêu Cơ` khi Chủ Công phạt Trung Thần, cờ EX `Thiểm Điện Q♥`). Kiểm chứng **98/98 unit tests, 500/500 fuzz matches (0 deadlock), 26/26 integration tests, 0 lỗi `typecheck`/`build`**.
 > - ✅ **Tiếng trúng đòn và kết liễu:** Đã thay bản phối, tách khỏi âm báo lượt và sửa nhận nhầm bài của tướng tử trận. Electron đã kiểm bằng diễn tiến ván do lõi trận tạo.
 > - ✅ **Tiếng hồi máu:** Đã thay âm đọc tên bằng hai nốt nhẹ, kiểm hồi thường, Thanh Nang, Đào và Đào Viên trong Electron.
 > - ✅ **Âm hiệu ứng bàn đấu:** Đã thêm bộ tiếng hành động phân biệt theo loại. Mất máu nghe tiếng chém, tướng bị loại nghe tiếng kết liễu. Kỹ năng chỉ dùng âm báo, tên hiện bằng chữ.

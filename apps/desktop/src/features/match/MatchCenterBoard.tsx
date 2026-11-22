@@ -629,6 +629,7 @@ export function MatchCenterBoard({
                     ));
                   }
                   if (zone === 'DELAYED') {
+                    if (interrupt.allowDelayed === false) return null;
                     return pickTargetPlayer.delayedScrolls.map((scroll) => (
                       <button
                         key={scroll.id}

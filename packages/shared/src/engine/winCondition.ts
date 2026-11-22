@@ -156,6 +156,13 @@ export function handlePlayerDeath(
         victim.identity === 'LOYALIST' &&
         killer.identity === 'LORD'
       ) {
+        const lostHandCount = killer.handCards.length;
+        const lostEquipCount = [
+          killer.equipments.weapon,
+          killer.equipments.armor,
+          killer.equipments.plusOneHorse,
+          killer.equipments.minusOneHorse,
+        ].filter(Boolean).length;
         const penaltyCards: CardInstance[] = [
           ...killer.handCards,
           ...(killer.equipments.weapon ? [killer.equipments.weapon] : []),
@@ -181,6 +188,27 @@ export function handlePlayerDeath(
             `Chủ Công ${killer.displayName} kết liễu Trung Thần, bị phạt hủy toàn bộ bài trên tay và trang bị!`,
           ],
         };
+        // Lục Tốn (Liên Doanh) & Tôn Thượng Hương (Kiêu Cơ) vẫn kích hoạt khi Chủ Công chịu phạt mất bài
+        if (killer.heroId === 'lu_xun' && lostHandCount > 0) {
+          const dealt = dealCardsToSeat(next, killerSeat, 1, rng);
+          next = {
+            ...dealt.state,
+            actionLog: [
+              ...dealt.state.actionLog,
+              `${killer.displayName} kích hoạt Liên Doanh, rút ${dealt.dealt.length} lá bài.`,
+            ],
+          };
+        }
+        if (killer.heroId === 'sun_shang_xiang' && lostEquipCount > 0) {
+          const dealt = dealCardsToSeat(next, killerSeat, 2 * lostEquipCount, rng);
+          next = {
+            ...dealt.state,
+            actionLog: [
+              ...dealt.state.actionLog,
+              `${killer.displayName} kích hoạt Kiêu Cơ, rút ${dealt.dealt.length} lá bài.`,
+            ],
+          };
+        }
       }
     }
   }

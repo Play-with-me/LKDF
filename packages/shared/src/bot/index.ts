@@ -256,7 +256,10 @@ function collectAnyOwnedCards(
   return excludeCardId ? all.filter((c) => c.id !== excludeCardId) : all;
 }
 
-function pickBestTargetZone(target: PublicPlayerView): {
+function pickBestTargetZone(
+  target: PublicPlayerView,
+  allowDelayed = true,
+): {
   readonly zone: TargetCardZone;
   readonly handIndex?: number;
   readonly delayedCardId?: string;
@@ -266,7 +269,7 @@ function pickBestTargetZone(target: PublicPlayerView): {
   if (target.equipments.weapon) return { zone: 'WEAPON' };
   if (target.equipments.minusOneHorse) return { zone: 'MINUS_ONE_HORSE' };
   if (target.handCount > 0) return { zone: 'HAND', handIndex: 0 };
-  if (target.delayedScrolls.length > 0) {
+  if (allowDelayed && target.delayedScrolls.length > 0) {
     return { zone: 'DELAYED', delayedCardId: target.delayedScrolls[0]!.id };
   }
   return { zone: 'HAND', handIndex: 0 };
@@ -801,25 +804,26 @@ export function decideBotAction(
 
       case 'ASK_HAN_BANG_KIEM': {
         const target = getPlayer(view, active.targetSeat);
-        if (!target || target.hp <= 1) {
+        const maxPicks = active.remainingDiscards ?? 2;
+        if (!target || (maxPicks === 2 && target.hp <= 1)) {
           return { type: 'RESPOND_HAN_BANG_KIEM', seatIndex, activate: false };
         }
         const picks: {
           readonly zone: Exclude<TargetCardZone, 'DELAYED'>;
           readonly handIndex?: number;
         }[] = [];
-        if (target.equipments.armor) picks.push({ zone: 'ARMOR' });
-        if (target.equipments.plusOneHorse && picks.length < 2) {
+        if (target.equipments.armor && picks.length < maxPicks) picks.push({ zone: 'ARMOR' });
+        if (target.equipments.plusOneHorse && picks.length < maxPicks) {
           picks.push({ zone: 'PLUS_ONE_HORSE' });
         }
-        if (target.equipments.weapon && picks.length < 2) {
+        if (target.equipments.weapon && picks.length < maxPicks) {
           picks.push({ zone: 'WEAPON' });
         }
-        if (target.equipments.minusOneHorse && picks.length < 2) {
+        if (target.equipments.minusOneHorse && picks.length < maxPicks) {
           picks.push({ zone: 'MINUS_ONE_HORSE' });
         }
         let remHand = target.handCount;
-        while (picks.length < 2 && remHand > 0) {
+        while (picks.length < maxPicks && remHand > 0) {
           picks.push({ zone: 'HAND', handIndex: 0 });
           remHand -= 1;
         }
@@ -903,7 +907,7 @@ export function decideBotAction(
         if (!target) {
           throw new Error(`MISSING_PICK_TARGET:${active.targetSeat}`);
         }
-        const pick = pickBestTargetZone(target);
+        const pick = pickBestTargetZone(target, active.allowDelayed !== false);
         return {
           type: 'RESPOND_PICK_TARGET_CARD',
           seatIndex,
@@ -1081,6 +1085,12 @@ export function decideBotAction(
 
       case 'WAIT_HU_JIA': {
         if (isAllySeat(view, active.sourceSeat ?? seatIndex)) {
+          if (
+            self.equipments.armor?.cardKey === 'bat_quai_tran' &&
+            !active.baguaTried
+          ) {
+            return { type: 'RESPOND_HU_JIA', seatIndex, cardId: null, useBagua: true };
+          }
           const dodge = findCardForDodge(self);
           if (dodge) {
             return { type: 'RESPOND_HU_JIA', seatIndex, cardId: dodge.id };

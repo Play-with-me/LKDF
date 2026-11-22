@@ -170,5 +170,26 @@ export function canUseCollateralMurder(
   if (!attacker || !attacker.alive || attacker.equipments.weapon === null) {
     return false;
   }
+  const victim = findPlayerBySeat(state, victimSeat);
+  if (!victim || !victim.alive) {
+    return false;
+  }
+  // Gia Cát Lượng Không Thành không thể làm mục tiêu Sát của Tá Đao Sát Nhân
+  if (
+    victim.heroId === 'zhuge_liang' &&
+    'handCards' in victim &&
+    Array.isArray((victim as { readonly handCards?: readonly unknown[] }).handCards) &&
+    (victim as { readonly handCards: readonly unknown[] }).handCards.length === 0
+  ) {
+    return false;
+  }
+  if (
+    victim.heroId === 'zhuge_liang' &&
+    'handCount' in victim &&
+    typeof (victim as { readonly handCount?: number }).handCount === 'number' &&
+    (victim as { readonly handCount: number }).handCount === 0
+  ) {
+    return false;
+  }
   return isInAttackRange(state, attackerSeat, victimSeat);
 }

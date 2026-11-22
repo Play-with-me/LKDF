@@ -100,21 +100,16 @@ export const WU_QUN_HERO_SKILLS: Partial<Record<HeroId, HeroSkillHandler>> = {
 
   huang_gai: {
     heroId: 'huang_gai',
-    executePlaySkill(state, action, rng, rt) {
+    executePlaySkill(state, action, _rng, rt) {
       if (action.skillId !== 'ku_rou') {
         throw new Error(`Hoàng Cái không có kỹ năng chủ động ${action.skillId}.`);
       }
-      const player = rt.getPlayerBySeat(state, action.seatIndex);
-      let next = rt.applyDamage(state, null, action.seatIndex, 1, 'Khổ Nhục');
-      const after = rt.getPlayerBySeat(next, action.seatIndex);
-      if (after.alive && after.hp > 0) {
-        next = rt.dealCardsToSeat(next, action.seatIndex, 2, rng).state;
-        next = appendLog(
-          next,
-          `${player.displayName} kích hoạt Khổ Nhục, rút 2 lá bài.`,
-        );
-      }
-      return next;
+      // Xếp hàng rút 2 lá TRƯỚC khi trừ máu để nếu tụt về 0 máu và được cứu Đào sống lại vẫn rút đủ 2 lá
+      const withDrawEffect = rt.pushPendingEffect(state, {
+        kind: 'KU_ROU_DRAW',
+        seatIndex: action.seatIndex,
+      });
+      return rt.applyDamage(withDrawEffect, null, action.seatIndex, 1, 'Khổ Nhục');
     },
   },
 
@@ -176,11 +171,18 @@ export const WU_QUN_HERO_SKILLS: Partial<Record<HeroId, HeroSkillHandler>> = {
       if (!target.alive || !rt.hasAnyCardInHandOrEquip(target)) {
         return state;
       }
+      const queuedTargets = new Set<number>();
+      for (const eff of state.pendingEffects ?? []) {
+        if (eff.kind === 'QUEUE_STRIKE_TARGETS' && eff.sourceSeat === sourceSeat) {
+          for (const s of eff.remainingTargets) queuedTargets.add(s);
+        }
+      }
       const hasValidRedirect = state.players.some(
         (p) =>
           p.alive &&
           p.seatIndex !== targetSeat &&
           p.seatIndex !== sourceSeat &&
+          !queuedTargets.has(p.seatIndex) &&
           !(p.heroId === 'zhuge_liang' && p.handCards.length === 0) &&
           rt.isInAttackRange(state, targetSeat, p.seatIndex),
       );

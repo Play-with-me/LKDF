@@ -114,6 +114,7 @@ export type TargetCardZone =
 
 export interface CardInstance {
   readonly discardDisplayAs?: string;
+  readonly physicalCard?: CardInstance;
   readonly id: string;
   readonly cardKey: string;
   readonly nameVi: string;
@@ -233,6 +234,7 @@ export type InterruptFrame =
       readonly targetSeat: number;
       readonly sourceSeat: number;
       readonly sourceCards: readonly CardInstance[];
+      readonly remainingDiscards?: number;
     }
   | {
       readonly id: string;
@@ -248,6 +250,8 @@ export type InterruptFrame =
       readonly casterSeat: number;
       readonly requiredCount: number;
       readonly playedSoFar: number;
+      readonly scrollCard?: CardInstance;
+      readonly jiJiangTriedThisFrame?: boolean;
     }
   | {
       readonly id: string;
@@ -255,12 +259,15 @@ export type InterruptFrame =
       readonly targetSeat: number;
       readonly attackerSeat: number;
       readonly casterSeat: number;
+      readonly jiJiangTriedThisFrame?: boolean;
     }
   | {
       readonly id: string;
       readonly kind: 'WAIT_AOE_SAT';
       readonly targetSeat: number;
       readonly sourceSeat: number;
+      readonly scrollCard?: CardInstance;
+      readonly jiJiangTriedThisFrame?: boolean;
     }
   | {
       readonly id: string;
@@ -270,6 +277,7 @@ export type InterruptFrame =
       readonly allowBagua: boolean;
       readonly baguaTriedThisFrame: boolean;
       readonly huJiaTriedThisFrame?: boolean;
+      readonly scrollCard?: CardInstance;
     }
   | {
       readonly id: string;
@@ -283,6 +291,7 @@ export type InterruptFrame =
       readonly targetSeat: number;
       readonly sourceSeat: number;
       readonly mode: 'STEAL' | 'DISMANTLE';
+      readonly allowDelayed?: boolean;
       readonly handPick?: 'PREPARE' | 'SELECT';
       readonly handOrder?: readonly string[];
     }
@@ -406,6 +415,11 @@ export type InterruptFrame =
       readonly askOrder: readonly number[];
       readonly askCursor: number;
       readonly contextKind: 'DODGE' | 'AOE_DODGE';
+      readonly baguaTriedThisSeat?: boolean;
+      readonly savedParentDodgeFrame?: Extract<
+        InterruptFrame,
+        { readonly kind: 'WAIT_DODGE' | 'WAIT_AOE_DODGE' }
+      >;
     };
 
 /** Bản sao phản ứng gửi xuống máy khách: tuyệt đối không lộ cờ isSimulatedDelay hay eligibleSeats. */
@@ -418,6 +432,7 @@ export interface PublicInterruptView {
   readonly attackerSeat?: number;
   readonly scrollNameVi?: string;
   readonly canRespondNullification?: boolean;
+  readonly allowDelayed?: boolean;
   readonly handPick?: 'PREPARE' | 'SELECT';
   readonly stealing?: boolean;
   readonly guanXingCards?: readonly CardInstance[];
@@ -427,6 +442,8 @@ export interface PublicInterruptView {
   readonly allowBagua?: boolean;
   readonly baguaTried?: boolean;
   readonly huJiaTried?: boolean;
+  readonly jiJiangTried?: boolean;
+  readonly remainingDiscards?: number;
   readonly requiredCount?: number;
   readonly dodgedSoFar?: number;
 }
@@ -531,6 +548,20 @@ export type PendingEffect =
       readonly targetSeat: number;
       readonly amount: number;
       readonly damageCards: readonly CardInstance[];
+    }
+  | {
+      readonly kind: 'KU_ROU_DRAW';
+      readonly seatIndex: number;
+    }
+  | {
+      readonly kind: 'FAN_JIAN_RECEIVE';
+      readonly targetSeat: number;
+      readonly card: CardInstance;
+    }
+  | {
+      readonly kind: 'APPLY_LIGHTNING_STRIKE';
+      readonly targetSeat: number;
+      readonly delayedCard: CardInstance;
     };
 
 export interface TurnFlags {
@@ -540,6 +571,8 @@ export interface TurnFlags {
   readonly startSkillsChecked?: boolean;
   readonly drawSkillChecked?: boolean;
   readonly endSkillChecked?: boolean;
+  readonly keJiChecked?: boolean;
+  readonly judgedLightningIds?: readonly string[];
   readonly renDeGivenThisTurn?: number;
   readonly renDeHealedThisTurn?: boolean;
   readonly zhiHengUsedThisTurn?: boolean;

@@ -884,17 +884,18 @@ describe('Bước 1.3 — Kiểm chứng Tương tác Khó & Chéo giữa 25 Tư
     expect(baguaState.interruptStack).toHaveLength(0);
     expect(baguaState.players[1]!.hp).toBe(4);
 
-    // 2) Tào Tháo Chủ Công dùng Hộ Giá né xong -> địch cầm Quán Thạch Phủ được bỏ chính Quán Thạch Phủ + 1 lá ép trúng!
+    // 2) Tào Tháo Chủ Công dùng Hộ Giá né xong -> địch cầm Quán Thạch Phủ KHÔNG được tự bỏ chính Quán Thạch Phủ (Chuẩn 1A), phải bỏ 2 lá khác!
     const sat2 = card('sat', 'Sát', 'BASIC', 'SPADE', 9);
     const qtp = card('quan_thach_phu', 'Quán Thạch Phủ', 'WEAPON', 'DIAMOND', 5, 3);
-    const handExtra = card('dao', 'Đào dư', 'BASIC', 'HEART', 9);
+    const handExtra1 = card('dao', 'Đào dư 1', 'BASIC', 'HEART', 9);
+    const handExtra2 = card('thiem', 'Thiểm dư 2', 'BASIC', 'DIAMOND', 3);
     const allyThiem = card('thiem', 'Thiểm', 'BASIC', 'DIAMOND', 2);
 
     let huJiaState = makeControlledState(4, {
       0: {
         heroId: 'zhang_fei',
         identity: 'REBEL',
-        handCards: [sat2, handExtra],
+        handCards: [sat2, handExtra1, handExtra2],
         equipments: { weapon: qtp, armor: null, plusOneHorse: null, minusOneHorse: null },
       },
       1: { heroId: 'cao_cao', identity: 'LORD', hp: 4, maxHp: 5 },
@@ -919,15 +920,24 @@ describe('Bước 1.3 — Kiểm chứng Tương tác Khó & Chéo giữa 25 Tư
       seatIndex: 2,
       cardId: allyThiem.id,
     });
-    // Sau khi Hộ Giá né đủ -> phải hỏi ASK_QUAN_THACH_PHU và cho bỏ chính lá qtp + handExtra
+    // Sau khi Hộ Giá né đủ -> hỏi ASK_QUAN_THACH_PHU, cấm tự bỏ chính lá qtp
     expect(getPendingPrompt(huJiaState)?.kind).toBe('ASK_QUAN_THACH_PHU');
+    expect(() =>
+      applyGameAction(huJiaState, {
+        type: 'RESPOND_QUAN_THACH_PHU',
+        seatIndex: 0,
+        activate: true,
+        discardCardIds: [qtp.id, handExtra1.id],
+      }),
+    ).toThrow('CANNOT_DISCARD_QUAN_THACH_PHU_SELF');
+
     huJiaState = applyGameAction(huJiaState, {
       type: 'RESPOND_QUAN_THACH_PHU',
       seatIndex: 0,
       activate: true,
-      discardCardIds: [qtp.id, handExtra.id],
+      discardCardIds: [handExtra1.id, handExtra2.id],
     });
-    expect(huJiaState.players[0]!.equipments.weapon).toBeNull();
+    expect(huJiaState.players[0]!.equipments.weapon?.id).toBe(qtp.id);
     expect(huJiaState.players[1]!.hp).toBe(3);
   });
 

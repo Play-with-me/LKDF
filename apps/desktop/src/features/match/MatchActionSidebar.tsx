@@ -388,6 +388,19 @@ export function MatchActionSidebar({
           : interrupt.kind === 'WAIT_DUEL_SAT'
             ? 'RESPOND_DUEL_SAT'
             : 'RESPOND_COLLATERAL_SAT';
+      const hasShuAlly = view.players.some(
+        (p) =>
+          p.alive &&
+          p.seatIndex !== selfSeat &&
+          p.heroId !== null &&
+          getHeroDefinition(p.heroId).faction === 'SHU',
+      );
+      const canUseJiJiang = Boolean(
+        selfPlayer.heroId === 'liu_bei' &&
+          selfPlayer.identity === 'LORD' &&
+          !interrupt.jiJiangTried &&
+          hasShuAlly,
+      );
 
       return (
         <aside className={`${sidebarShellClass} border-[#C83E37]/60`}>
@@ -398,7 +411,9 @@ export function MatchActionSidebar({
             <p className="text-xs text-[#D1D5DB]">
               {isCollateral
                 ? 'Tá Đao Sát Nhân: đánh Sát vào mục tiêu hoặc giao Vũ khí.'
-                : 'Chọn 1 lá Sát trên tay để hưởng ứng.'}
+                : interrupt.kind === 'WAIT_DUEL_SAT' && (interrupt.requiredCount ?? 1) > 1
+                  ? `Quyết Đấu cần Sát (${interrupt.dodgedSoFar ?? 0}/${interrupt.requiredCount}).`
+                  : 'Chọn 1 lá Sát trên tay để hưởng ứng.'}
             </p>
           </div>
           <div className={btnGroupClass}>
@@ -420,6 +435,24 @@ export function MatchActionSidebar({
               <GameIcon name="saber-slash" size={14} />
               Đánh Sát để hưởng ứng
             </button>
+            {canUseJiJiang ? (
+              <button
+                type="button"
+                onClick={() => {
+                  onSendAction({
+                    type: actionType,
+                    seatIndex: selfSeat,
+                    cardIds: null,
+                    useJiJiang: true,
+                  });
+                  onClearSelection();
+                }}
+                className={`inline-flex ${reactBtnWidth} cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-[#C83E37]/60 bg-[#C83E37]/15 px-3.5 py-2 text-xs font-semibold text-[#FCA5A5] hover:bg-[#C83E37]/25`}
+              >
+                <GameIcon name="saber-slash" size={13} />
+                Xin Thục Kích Tướng
+              </button>
+            ) : null}
             <button
               type="button"
               onClick={() => {
@@ -1027,6 +1060,9 @@ export function MatchActionSidebar({
 
     if (interrupt.kind === 'WAIT_HU_JIA' && interrupt.responderSeat === selfSeat) {
       const dodgeCardId = findMatchingCardId(handCards, selection, 'thiem');
+      const canUseBagua = Boolean(
+        selfPlayer.equipments.armor?.cardKey === 'bat_quai_tran' && !interrupt.baguaTried,
+      );
       return (
         <aside className={`${sidebarShellClass} border-[#3B82F6]/60`}>
           <div className="space-y-1">
@@ -1053,6 +1089,24 @@ export function MatchActionSidebar({
               <GameIcon name="sprint" size={14} />
               Đánh Thiểm hộ Chủ Công
             </button>
+            {canUseBagua ? (
+              <button
+                type="button"
+                onClick={() => {
+                  onSendAction({
+                    type: 'RESPOND_HU_JIA',
+                    seatIndex: selfSeat,
+                    cardId: null,
+                    useBagua: true,
+                  });
+                  onClearSelection();
+                }}
+                className="inline-flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-[#D99B26]/60 bg-[#D99B26]/15 px-3 py-2 text-xs font-semibold text-[#FDE68A] hover:bg-[#D99B26]/25"
+              >
+                <GameIcon name="yin-yang" size={13} />
+                Phán xét Bát Quái Trận hộ
+              </button>
+            ) : null}
             <button
               type="button"
               onClick={() => {
