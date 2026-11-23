@@ -1,57 +1,50 @@
 <div align="center">
-  <img src="apps/desktop/assets/icon.png" width="88" alt="Tam Quốc Sát seal" />
-  <h1>Tam Quốc Sát</h1>
-  <p><strong>Battle of Red Cliffs</strong></p>
-  <p>An online strategy card game of hidden loyalties for 4–8 players.</p>
-  <a href="https://github.com/Play-with-me/LKDF/releases/download/v1.0.0/TamQuocSat-Setup-1.0.0.exe"><img src="https://img.shields.io/badge/Download%20for%20Windows-T%E1%BA%A3i%20game%20ngay-9E2B25?style=for-the-badge&amp;logo=github&amp;logoColor=white&amp;labelColor=271A13" alt="Download Tam Quốc Sát for Windows now" /></a>
-  <p>Windows x64 · Version 1.0.0 · 122 MB</p>
-  <p><a href="#download-and-install">Install the game</a> · <a href="#gameplay">Watch gameplay</a> · <a href="#develop">Build from source</a></p>
-  <img src="apps/desktop/src/assets/art/ui/lobby-banner.webp" width="900" alt="Warships on the river at Red Cliffs" />
+  <img src="docs/media/red-cliffs-cover.webp" width="900" alt="Tam Quốc Sát — Battle of Red Cliffs, an online strategy card game for 4–8 players" />
+  <p>
+    <a href="https://github.com/Play-with-me/LKDF/releases/download/v1.0.0/TamQuocSat-Setup-1.0.0.exe"><img src="https://img.shields.io/badge/T%E1%BA%A3i%20game%20ngay-Windows%20x64-A73028?style=for-the-badge&amp;logo=github&amp;logoColor=white&amp;labelColor=291914" alt="Download the Windows installer from GitHub" /></a>
+    <a href="https://lkdf-tam-quoc-sat-server.onrender.com/api/update/download/TamQuocSat-Setup-1.0.0.exe"><img src="https://img.shields.io/badge/Alternative%20download-735125?style=for-the-badge" alt="Download the same Windows installer via the alternate link" /></a>
+  </p>
+  <p><strong>Windows x64</strong> · v1.0.0 · 122 MB</p>
+  <p><a href="#install-and-play">Install &amp; play</a> · <a href="#gameplay">Gameplay</a> · <a href="#develop">Build from source</a></p>
 </div>
 
-## Download and install
+## Install and play
 
-Both options download the same Windows installer, **TamQuocSat-Setup-1.0.0.exe**. You can play without installing any developer tools.
+**① GitHub** — Click **Tải game ngay** above, or open [GitHub Releases](https://github.com/Play-with-me/LKDF/releases/tag/v1.0.0) and select **TamQuocSat-Setup-1.0.0.exe** under **Assets**.
 
-| Download option | What to do |
-| --- | --- |
-| **1. GitHub Releases** | Click the download button above to start immediately. You can also open the release page and select the installer under **Assets**. [Open GitHub Releases](https://github.com/Play-with-me/LKDF/releases/tag/v1.0.0) |
-| **2. Game download link** | Click the alternate link. It redirects to GitHub’s file CDN. [Download the installer](https://lkdf-tam-quoc-sat-server.onrender.com/api/update/download/TamQuocSat-Setup-1.0.0.exe) |
+**② Alternate link** — Click **Alternative download** above to get the same installer.
 
-1. Open the downloaded **.exe** from your browser’s Downloads list or your **Downloads** folder.
-2. After installation, open **Tam Quoc Sat** from your Desktop or Start menu.
-3. Choose **Chơi online** (Play online) and sign in with Google. Create a private room and share its six-character code, or enter a code from a friend.
-4. Start when 4–8 players are ready. After the match, you can return to the same room for a rematch.
+1. **Install.** Open the downloaded **.exe** from your **Downloads** folder.
+2. **Sign in.** Open **Tam Quoc Sat** from your Desktop or Start menu. Select **Chơi online** and sign in with Google.
+3. **Play with friends.** Create a room and share its six-character code, or join with a friend’s code. Start when 4–8 players are ready.
 
 The game interface is in Vietnamese. Online play requires an internet connection and a Google account.
 
 <details>
-<summary>Hướng dẫn cài nhanh bằng tiếng Việt</summary>
+<summary><strong>Cài nhanh bằng tiếng Việt</strong></summary>
 
-1. Bấm **Tải game ngay** ở đầu trang. Nếu tải lỗi, dùng đường tải dự phòng ở hàng số 2.
-2. Mở tệp **TamQuocSat-Setup-1.0.0.exe** trong thư mục **Downloads** để cài.
-3. Mở **Tam Quoc Sat** trên Desktop, bấm **Chơi online** và đăng nhập Google.
-4. Tạo phòng để gửi mã cho bạn bè, hoặc nhập mã phòng được gửi. Cần 4–8 người để bắt đầu.
+Bấm **Tải game ngay** hoặc **Alternative download**. Mở tệp **TamQuocSat-Setup-1.0.0.exe** trong thư mục **Downloads**. Sau đó mở game ở Desktop, chọn **Chơi online**, đăng nhập Google rồi tạo phòng hoặc nhập mã bạn bè gửi.
 
 </details>
 
 ## Gameplay
 
 <div align="center">
-  <img src="docs/media/gameplay-preview.gif" width="900" alt="Animated preview of the lobby, eight-player battle table, a hero skill, and the match results" />
-  <p><em>Captured in-game using the local eight-seat preview.</em></p>
+  <img src="docs/media/gameplay-preview.gif" width="832" alt="In-game footage of the lobby, eight-player battle table, hero skill, and match results" />
 </div>
 
-The Lord is visible from the start. Loyalists protect the Lord, Rebels try to bring the Lord down, and each Spy aims to win alone. Your role shapes your objective, while your hero’s skills shape how you play.
+The Lord plays in the open. Loyalists protect the throne, Rebels aim to topple it, and every Spy wants to win alone. Choose from **25 heroes** and make the most of a **108-card deck**.
 
-- **25 heroes and 108 cards.** Use hero skills, equipment, and tactics drawn from the Standard ruleset.
-- **A peaceful opening round.** Start with four cards. The first round skips the draw phase and prevents players from initiating a Strike.
-- **Mouse and keyboard controls.** Drag cards onto the table or a highlighted target. Double-click legal cards that can be played without a target.
-- **Private rooms and rematches.** Rejoin after a disconnect or return to the same room after a match.
+<div align="center">
+  <img src="docs/media/battle-scenes.webp" width="900" alt="Three in-game screenshots showing the battle table, the Quan Tinh hero skill, and the match results" />
+</div>
 
-[Read the full game rules (Vietnamese)](RULES_STANDARD.md)
+[Read the full rules (Vietnamese)](RULES_STANDARD.md)
 
 ## Develop
+
+<details>
+<summary><strong>Developer setup, repository layout, and Windows builds</strong></summary>
 
 The Windows full-screen startup fix is available in the source. The published v1.0.0 installer predates that fix.
 
@@ -107,3 +100,5 @@ npm run package:win
 The Windows packaging command writes an NSIS installer to **apps/desktop/release/**. Set **VITE_LKDF_SERVER_URL** before building the renderer to target a remote API. For a release, follow the [Windows release workflow](.github/workflows/release-windows.yml), which also sets the Electron server default and installer version.
 
 For in-depth project documentation, see the [architecture](ARCHITECTURE.md), [game rules](RULES_STANDARD.md), [interface design](DESIGN.md), and [test guide](TESTING.md).
+
+</details>

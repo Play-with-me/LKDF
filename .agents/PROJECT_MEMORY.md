@@ -341,3 +341,4 @@ Handoff Notes — apps/desktop/motion-scenes.js cung cấp playSkill, được m
 
 - Trang GitHub đặt nút tải Windows lên đầu, hướng dẫn hai đường tải và có mục cài nhanh bằng tiếng Việt. GIF quay từ bản xem thử cục bộ, lưu tại `docs/media/gameplay-preview.gif`.
 - Đã kiểm tra hai đường tải trả HTTP 200, 23 liên kết và 11 khung GIF. Bàn giao: bộ cài đang phát hành vẫn là v1.0.0.
+- Làm mới phần nhìn README bằng bìa từ tranh game, dải ba ảnh chụp và hai nút tải ngay đầu trang. Tài liệu kỹ thuật thu gọn. Đã kiểm tra 24 tham chiếu, tệp ảnh và hai đường tải.
