@@ -1,49 +1,59 @@
 <div align="center">
-  <img src="apps/desktop/assets/icon.png" alt="Tam Quốc Sát seal" width="88" />
+  <img src="apps/desktop/assets/icon.png" width="88" alt="Tam Quốc Sát seal" />
+  <h1>Tam Quốc Sát</h1>
+  <p><strong>Battle of Red Cliffs</strong></p>
+  <p>An online strategy card game of hidden loyalties for 4–8 players.</p>
+  <a href="https://github.com/Play-with-me/LKDF/releases/download/v1.0.0/TamQuocSat-Setup-1.0.0.exe"><img src="https://img.shields.io/badge/Download%20for%20Windows-T%E1%BA%A3i%20game%20ngay-9E2B25?style=for-the-badge&amp;logo=github&amp;logoColor=white&amp;labelColor=271A13" alt="Download Tam Quốc Sát for Windows now" /></a>
+  <p>Windows x64 · Version 1.0.0 · 122 MB</p>
+  <p><a href="#download-and-install">Install the game</a> · <a href="#gameplay">Watch gameplay</a> · <a href="#develop">Build from source</a></p>
+  <img src="apps/desktop/src/assets/art/ui/lobby-banner.webp" width="900" alt="Warships on the river at Red Cliffs" />
 </div>
 
-# Tam Quốc Sát: Battle of Red Cliffs
+## Download and install
 
-Tam Quốc Sát is an online tactical card game for **4–8 players** on Windows. Choose a hero from the Three Kingdoms era, play cards to support your side, and work out who is on your side before the Lord falls. The game interface is in Vietnamese.
+Both options download the same Windows installer, **TamQuocSat-Setup-1.0.0.exe**. You can play without installing any developer tools.
 
-[Download for Windows](https://github.com/Play-with-me/LKDF/releases/download/v1.0.0/TamQuocSat-Setup-1.0.0.exe) · [Release notes](https://github.com/Play-with-me/LKDF/releases/tag/v1.0.0) · [Rules reference (Vietnamese)](RULES_STANDARD.md)
-
-![The Battle of Red Cliffs lobby artwork](apps/desktop/src/assets/art/ui/lobby-banner.webp)
-
-## Play
-
-1. Download and run the Windows x64 installer from GitHub Releases. The installer download is hosted by GitHub.
-2. Open **Tam Quoc Sat**, select **Chơi online** (Play online), and sign in with Google.
-3. Create a room and share its six-character code, or enter a code to join.
-4. Once 4–8 players are ready, the host can start the game. Check your assigned role, choose a hero, and play. After the match, return to the same room for a rematch.
-
-Online play requires an internet connection and a Google account. The published Windows installer is **v1.0.0**. The full-screen startup fix is in the source and will be included in a future installer built from it.
-
-### Gameplay
-
-- **Hidden roles.** The Lord is visible from the start. Loyalists protect the Lord, Rebels try to defeat the Lord, and each Spy tries to be the last survivor by defeating the Lord in a duel.
-- **25 heroes and 108 cards.** Heroes have distinct skills. The deck combines basic cards, tactics, and equipment from the Standard ruleset.
-- **Peaceful first round.** Players start with four cards, skip the draw phase in round one, and cannot initiate a Strike (*Sát*) during the play phase. Strikes can still be played in response when a rule calls for one.
-- **Reconnect and rematch.** The server can temporarily have a bot act for a disconnected player. Players can return to the lobby using the same room code after a match.
-
-| Players | Lord | Loyalists | Rebels | Spies |
-| --- | ---: | ---: | ---: | ---: |
-| 4 | 1 | 0 | 2 | 1 |
-| 5 | 1 | 1 | 2 | 1 |
-| 6 | 1 | 1 | 3 | 1 |
-| 7 | 1 | 2 | 3 | 1 |
-| 8 | 1 | 2 | 3 | 2 |
-
-Click a card to select it or drag it onto the table or a valid target. Double-click an equipment card or a card that requires no target to play it when legal.
-
-| Key | In-match action |
+| Download option | What to do |
 | --- | --- |
-| 1–9 | Select or clear one of the first nine cards in hand |
-| Enter / Space | Confirm the available primary action |
-| Esc | Clear the current selection |
-| E | End the play phase when available |
+| **1. GitHub Releases** | Click the download button above to start immediately. You can also open the release page and select the installer under **Assets**. [Open GitHub Releases](https://github.com/Play-with-me/LKDF/releases/tag/v1.0.0) |
+| **2. Game download link** | Click the alternate link. It redirects to GitHub’s file CDN. [Download the installer](https://lkdf-tam-quoc-sat-server.onrender.com/api/update/download/TamQuocSat-Setup-1.0.0.exe) |
+
+1. Open the downloaded **.exe** from your browser’s Downloads list or your **Downloads** folder.
+2. After installation, open **Tam Quoc Sat** from your Desktop or Start menu.
+3. Choose **Chơi online** (Play online) and sign in with Google. Create a private room and share its six-character code, or enter a code from a friend.
+4. Start when 4–8 players are ready. After the match, you can return to the same room for a rematch.
+
+The game interface is in Vietnamese. Online play requires an internet connection and a Google account.
+
+<details>
+<summary>Hướng dẫn cài nhanh bằng tiếng Việt</summary>
+
+1. Bấm **Tải game ngay** ở đầu trang. Nếu tải lỗi, dùng đường tải dự phòng ở hàng số 2.
+2. Mở tệp **TamQuocSat-Setup-1.0.0.exe** trong thư mục **Downloads** để cài.
+3. Mở **Tam Quoc Sat** trên Desktop, bấm **Chơi online** và đăng nhập Google.
+4. Tạo phòng để gửi mã cho bạn bè, hoặc nhập mã phòng được gửi. Cần 4–8 người để bắt đầu.
+
+</details>
+
+## Gameplay
+
+<div align="center">
+  <img src="docs/media/gameplay-preview.gif" width="900" alt="Animated preview of the lobby, eight-player battle table, a hero skill, and the match results" />
+  <p><em>Captured in-game using the local eight-seat preview.</em></p>
+</div>
+
+The Lord is visible from the start. Loyalists protect the Lord, Rebels try to bring the Lord down, and each Spy aims to win alone. Your role shapes your objective, while your hero’s skills shape how you play.
+
+- **25 heroes and 108 cards.** Use hero skills, equipment, and tactics drawn from the Standard ruleset.
+- **A peaceful opening round.** Start with four cards. The first round skips the draw phase and prevents players from initiating a Strike.
+- **Mouse and keyboard controls.** Drag cards onto the table or a highlighted target. Double-click legal cards that can be played without a target.
+- **Private rooms and rematches.** Rejoin after a disconnect or return to the same room after a match.
+
+[Read the full game rules (Vietnamese)](RULES_STANDARD.md)
 
 ## Develop
+
+The Windows full-screen startup fix is available in the source. The published v1.0.0 installer predates that fix.
 
 Use **Node.js 22 or later** and npm. Use Windows to run or package the Electron desktop app.
 

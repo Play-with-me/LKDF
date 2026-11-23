@@ -336,3 +336,8 @@ Handoff Notes — apps/desktop/motion-scenes.js cung cấp playSkill, được m
 - Bản phát hành v1.0.0 mở vùng cửa sổ 1218×911 tại góc trên trái trên màn hình 2560×1600. `createMainWindow` giữ cửa sổ ẩn đến `ready-to-show`, chuyển toàn màn hình rồi mới hiển thị.
 - Typecheck đạt, 101/101 unit test đạt. Đóng gói và cài bản vá cục bộ với cấu hình máy chủ chính thức, đo vùng hiển thị bản cài đạt 2560×1600.
 - Bàn giao: bản vá còn ở workspace, chưa phát hành. Bước 5.2 vẫn mở.
+
+## 2026-11-23 — README dành cho người chơi
+
+- Trang GitHub đặt nút tải Windows lên đầu, hướng dẫn hai đường tải và có mục cài nhanh bằng tiếng Việt. GIF quay từ bản xem thử cục bộ, lưu tại `docs/media/gameplay-preview.gif`.
+- Đã kiểm tra hai đường tải trả HTTP 200, 23 liên kết và 11 khung GIF. Bàn giao: bộ cài đang phát hành vẫn là v1.0.0.
