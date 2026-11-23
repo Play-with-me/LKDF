@@ -43,6 +43,7 @@ const CLIENT_STATE_FILENAME = 'lkdf-client-state.json';
 let mainWindow: BrowserWindow | null = null;
 let authCallbackServer: http.Server | null = null;
 let matchCloseGuardActive = false;
+let offlineMatchCloseGuard = false;
 let allowForceClose = false;
 
 function getClientStatePath(): string {
@@ -274,8 +275,9 @@ function createMainWindow(): BrowserWindow {
       .showMessageBox(win, {
         type: 'warning',
         title: 'Xác nhận thoát ván đấu Tam Quốc Sát',
-        message:
-          'Bạn đang trong ván đấu. Nếu thoát bây giờ, Máy sẽ đánh hộ tạm thời cho đến khi bạn mở lại ứng dụng. Bạn có chắc muốn đóng cửa sổ?',
+        message: offlineMatchCloseGuard
+          ? 'Ván tập sẽ kết thúc nếu bạn đóng ứng dụng. Bạn muốn thoát ván?'
+          : 'Bạn đang trong ván đấu. Nếu thoát bây giờ, Máy sẽ đánh hộ tạm thời cho đến khi bạn mở lại ứng dụng. Bạn có chắc muốn đóng cửa sổ?',
         buttons: ['Ở lại ván đấu', 'Đóng ứng dụng'],
         defaultId: 0,
         cancelId: 0,
@@ -325,8 +327,9 @@ ipcMain.handle('window:flashTaskbarFrame', (_event, flash: boolean) => {
   mainWindow.flashFrame(false);
 });
 
-ipcMain.handle('window:setMatchCloseGuard', (_event, active: boolean) => {
+ipcMain.handle('window:setMatchCloseGuard', (_event, active: boolean, offline = false) => {
   matchCloseGuardActive = Boolean(active);
+  offlineMatchCloseGuard = matchCloseGuardActive && Boolean(offline);
   if (!matchCloseGuardActive) {
     allowForceClose = false;
   }

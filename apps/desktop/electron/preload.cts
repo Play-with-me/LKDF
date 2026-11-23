@@ -37,8 +37,8 @@ const desktopBridge = {
   getAppVersion: (): Promise<string> => ipcRenderer.invoke('app:getVersion'),
   flashTaskbarFrame: (flash: boolean): Promise<void> =>
     ipcRenderer.invoke('window:flashTaskbarFrame', flash),
-  setMatchCloseGuard: (active: boolean): Promise<void> =>
-    ipcRenderer.invoke('window:setMatchCloseGuard', active),
+  setMatchCloseGuard: (active: boolean, offline?: boolean): Promise<void> =>
+    ipcRenderer.invoke('window:setMatchCloseGuard', active, offline),
   openExternalUrl: (url: string): Promise<void> =>
     ipcRenderer.invoke('shell:openExternalUrl', url),
   startLocalAuthCallback: (): Promise<{ readonly port: number }> =>

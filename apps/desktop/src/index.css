@@ -1171,7 +1171,7 @@ dialog[open]::backdrop {
 }
 
 .lkdf-skill-stamp {
-  animation: lkdf-skill-stamp 420ms var(--ease-out) forwards;
+  animation: lkdf-skill-stamp 1050ms var(--ease-out) forwards;
 }
 
 @keyframes lkdf-skill-stamp {

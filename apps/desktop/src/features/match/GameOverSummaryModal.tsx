@@ -10,6 +10,7 @@ export interface GameOverSummaryModalProps {
   readonly playerView: PlayerViewState;
   readonly onReturnToLobby: () => void;
   readonly onLeaveRoom: () => void;
+  readonly offline?: boolean;
 }
 
 const IDENTITY_META: Record<
@@ -47,6 +48,7 @@ export function GameOverSummaryModal({
   playerView,
   onReturnToLobby,
   onLeaveRoom,
+  offline = false,
 }: GameOverSummaryModalProps) {
   const dialogRef = useRef<HTMLDialogElement | null>(null);
 
@@ -253,7 +255,7 @@ export function GameOverSummaryModal({
             className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[#3A424C] bg-[#1E2328] px-4 py-2 text-xs font-semibold text-[#D1D5DB] hover:border-[#D99B26]"
           >
             <GameIcon name="ui:door-open" size={13} />
-            Rời phòng về Sảnh chính
+            {offline ? 'Về menu' : 'Rời phòng về Sảnh chính'}
           </button>
           <button
             type="button"
@@ -262,7 +264,7 @@ export function GameOverSummaryModal({
             className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg bg-[#C83E37] px-4 py-2 text-xs font-bold text-[#F3F4F6] hover:bg-[#D84B43] focus-visible:outline-2 focus-visible:outline-[#D99B26]"
           >
             <GameIcon name="ui:refresh" size={13} />
-            Quay về phòng chờ chơi ván mới
+            {offline ? 'Chơi lại' : 'Quay về phòng chờ chơi ván mới'}
           </button>
         </div>
       </div>

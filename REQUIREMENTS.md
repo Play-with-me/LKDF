@@ -50,6 +50,7 @@ Người dùng tải bộ cài đặt Windows (`.exe`/`.msi`) 1 lần duy nhất
 - Không làm ứng dụng Điện thoại (iOS/Android), không hỗ trợ macOS hay Linux.
 - Không làm chế độ 3 người (*Đấu Địa Chủ*), không làm chế độ *2v2*.
 - Không cho phép thêm Máy (Bot) vào ghế trống ở phòng chờ để bắt đầu ván khi chưa đủ 4 người thật.
+- Chế độ **Chơi với Máy** là ván tập cục bộ riêng, gồm một người chơi và 3–7 Máy, mặc định 4 ghế. Có thể vào từ lần mở đầu tiên khi mất mạng, không cần tài khoản Google. Ván tập không ghi thống kê online.
 - Không làm nút cộng/trừ máu hay rút/hủy bài thủ công trong Bảng Trọng Tài.
 - Không làm đăng nhập bằng mật khẩu tự tạo hay Discord (chỉ dùng duy nhất Đăng nhập bằng Google).
 - Chưa đưa bộ bài mở rộng *Quân Tranh* (*Tửu, Sát Lôi, Sát Hỏa, Thiết Tác Liên Hoàn, Đằng Giáp, Hỏa Công, Binh Lương Thốn Đoạn*) vào v1.

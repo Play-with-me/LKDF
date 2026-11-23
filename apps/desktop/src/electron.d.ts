@@ -12,7 +12,7 @@ export interface LkdfDesktopBridge {
   onNavigateBack: (listener: () => void) => () => void;
   getAppVersion: () => Promise<string>;
   flashTaskbarFrame: (flash: boolean) => Promise<void>;
-  setMatchCloseGuard: (active: boolean) => Promise<void>;
+  setMatchCloseGuard: (active: boolean, offline?: boolean) => Promise<void>;
   openExternalUrl: (url: string) => Promise<void>;
   startLocalAuthCallback: () => Promise<{ readonly port: number }>;
   stopLocalAuthCallback: () => Promise<void>;

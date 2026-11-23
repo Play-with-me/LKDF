@@ -390,3 +390,19 @@ Lớp hiệu ứng bàn chính đã nối các thay đổi xác nhận được 
 - **Vá 8 điểm Luật & UX từ Playtest Thực Tế Đấu Trường 8 Người (`2026-11-22`):**
   - **Lõi luật & CSPRNG (`packages/shared`):** Thêm `peacefulFirstRound: true` (`game.ts`, `projection/index.ts`, `setup.ts`, `combat.ts`, `shu.ts`, `combatCore.ts`, `bot/index.ts`) — neo xoay vòng `roundNumber` theo ghế `LORD`, **Vòng 1 không rút 2 lá ở pha `DRAW` (giữ 4 lá đầu)** và cấm đánh/chuyển/Kích Tướng `Sát` chủ động trong Vòng 1 `PLAY` (`FIRST_ROUND_SAT_FORBIDDEN`), mở lại từ Vòng 2; cho phép **chồng nhiều `Lạc Bất Tư Thục` & `Thiểm Điện`** (giữ `Lạc` dư sang vòng sau nếu đã mất pha `PLAY`, chuyền `Thiểm Điện` tiếp dù ghế kế đã có sẵn); nâng cấp `shuffleArray` khi `rng === Math.random` sang `crypto.getRandomValues` 3 lượt (Fisher-Yates → Riffle+Cut → Fisher-Yates ngược).
   - **Server & Giao diện (`apps/server`, `apps/desktop`):** Thêm `POST /api/rooms/:roomCode/return-lobby` (`resetRoomToLobby`) và cho phép `startMatch` tự reset phòng `'FINISHED'` về `'LOBBY'` kèm sẵn sàng lại khách `ONLINE`, nối nút *Quay về phòng chờ chơi ván mới* qua `api.returnRoomToLobby` (`MatchScreen.tsx`); thêm Nghi thức Khai trận 3 chặng (`3-2-1` → Lật 3D Thân Phận → Gacha Tướng, an toàn React StrictMode qua `completedCeremonyMatchIdRef` kèm nút `[Bỏ qua hiệu ứng ⏭]`); tách `🚩 Lượt` / `🚩 Chờ` / `⚡ Phản ứng` & `#1..#8` (`SeatCard.tsx`), làm dịu thông báo `WAIT_NULLIFICATION` khi không thể chặn, bỏ xếp chồng bài giữa bàn (`slice(-3)` thẳng hàng `6px`), thêm hộp spotlight `📣` + cảnh báo nhắm `🎯`, và chừa lề phải thanh rớt mạng/Máy đánh hộ; đã gỡ móc `dev-arena` trong `App.tsx` để giữ sạch luồng production trước khi commit.
+
+## 2026-11-23 — Chơi với Máy (BOT-01–BOT-06)
+
+- Chế độ offline riêng chạy trên Desktop và dùng bàn đấu, luật, bot hiện có. Không ghi thống kê online.
+- Typecheck đạt, 101 bài unit lõi, 4 bài riêng offline gồm 24 ván theo seed, 500 ván fuzz và 26 bài integration. Electron chặn mạng xác nhận vào và kết thúc ván 4/8 ghế bằng thao tác tự động, chơi lại và về menu. Đã tạo bộ cài thử NSIS.
+- Bàn giao: thử cảm giác chờ bàn 8 ghế ở tốc độ thật trước khi phát hành.
+
+## 2026-11-23 — Kiểm thử nhịp khai trận
+
+- Đã sửa đếm ngược 3–2–1 từ 360 ms xuống đúng một lần đổi số mỗi 1000 ms; thời gian lật thân phận sau đếm được giữ theo thiết kế cũ. Đo gói Windows 1092/994/1017 ms và xác nhận bản cài cục bộ khớp gói kiểm thử.
+- Kịch bản Nhân Đức trong Electron cho kết quả tay bài 4/4 → 3/5, có spotlight chữ, không có chuyển động chuyển bài hoặc dấu kỹ năng. Hai ván WebSocket localhost 4/8 ghế hoàn tất và mở được ván mới, với tài khoản và thao tác mô phỏng.
+
+## 2026-11-23 — Kiểm thử 40 kỹ năng
+
+- Hoàn tất ma trận [40 kỹ năng](docs/SKILL_QA.md): 68/68 bài luật khi trích xuất, 480 lượt phát Electron, không phát hiện bài riêng bị đưa sang ghế khác hoặc tràn ở cấp trang. Kỹ năng được kiểm tra bằng ca đại diện, chưa bao phủ thao tác trực tiếp và mọi nhánh.
+- Ưu tiên sửa cảnh báo sai tên Phản Quỷ/Đột Tập và phản hồi chuyển bài Nhân Đức/Di Kế. Bước này bổ sung công cụ kiểm thử và tài liệu.

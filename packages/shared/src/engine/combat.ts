@@ -2053,6 +2053,8 @@ export function applyGameAction(
       }
       const byId = new Map(top.cards.map((c) => [c.id, c]));
       let next = popInterrupt(state).state;
+      const giver = getPlayerBySeat(state, top.targetSeat);
+      const distributionLog: string[] = [];
       for (const dist of action.distributions) {
         if (dist.cardIds.length === 0) continue;
         const cardsToAdd = dist.cardIds.map((id) => byId.get(id)!);
@@ -2060,8 +2062,13 @@ export function applyGameAction(
           ...p,
           handCards: [...p.handCards, ...cardsToAdd],
         }));
+        const receiver = getPlayerBySeat(next, dist.targetSeat);
+        distributionLog.push(
+          `${giver.displayName} dùng Di Kế giao ${cardsToAdd.length} lá bài cho ${receiver.displayName}.`,
+        );
       }
-      return stepEngine(next, rng);
+      next = stepEngine(next, rng);
+      return { ...next, actionLog: [...next.actionLog, ...distributionLog] };
     }
 
     case 'RESPOND_FAN_JIAN_GUESS': {

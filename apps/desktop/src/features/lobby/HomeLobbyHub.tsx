@@ -1,3 +1,4 @@
+import { Fragment } from 'react';
 import { useBackNavigation } from '../../lib/useBackNavigation.js';
 import { Settings } from 'lucide-react';
 import { LiveLobbyProfile } from './LiveLobbyProfile.js';
@@ -29,6 +30,7 @@ export interface HomeLobbyHubProps {
   readonly onProfileUpdated: (profile: UserProfile) => void;
   readonly onEnterRoom: (roomPayload: RoomViewerPayload) => void;
   readonly onOpenStats?: () => void;
+  readonly onPlayOffline?: () => void;
   readonly onLoggedOut: (notice?: string) => void;
   readonly onSessionInvalid: (messageVi: string) => void;
 }
@@ -71,6 +73,7 @@ export function HomeLobbyHub({
   onProfileUpdated,
   onEnterRoom,
   onOpenStats,
+  onPlayOffline,
   onLoggedOut,
   onSessionInvalid,
 }: HomeLobbyHubProps) {
@@ -319,7 +322,8 @@ export function HomeLobbyHub({
                     buttons[(index + direction + buttons.length) % buttons.length]?.focus();
                   }}>
                   {LOBBY_SECTIONS.map(([view, label, detail]) => (
-                    <button key={view} type="button" data-lobby-item={view} onClick={() => {
+                    <Fragment key={view}>
+                    <button type="button" data-lobby-item={view} onClick={() => {
                       lastMenuItem.current = view;
                       setLobbyScreen(view);
                     }}
@@ -327,6 +331,12 @@ export function HomeLobbyHub({
                       className="lkdf-lobby-camp-command">
                       <span className="lkdf-lobby-camp-copy"><strong>{label}</strong><small>{detail}</small></span>
                     </button>
+                    {view === 'online' && onPlayOffline ? (
+                      <button type="button" data-lobby-item="offline" onClick={onPlayOffline} className="lkdf-lobby-camp-command">
+                        <span className="lkdf-lobby-camp-copy"><strong>Chơi với Máy</strong><small>Ván tập offline 4–8 ghế</small></span>
+                      </button>
+                    ) : null}
+                    </Fragment>
                   ))}
                   <button type="button" data-lobby-item="settings" className="lkdf-lobby-settings-entry"
                       onClick={() => {

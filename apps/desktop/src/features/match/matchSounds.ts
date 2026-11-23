@@ -53,6 +53,13 @@ const CARD_CUES: Partial<Record<CardInstance['cardKey'], ActionCue>> = {
 };
 
 const HERO_SKILLS = HERO_CATALOG.flatMap(hero => hero.skills.map(skill => skill.nameVi));
+const DISCARD_COST_SKILLS = new Set(['Lưu Ly', 'Kết Hôn', 'Ly Gián', 'Chế Hành', 'Thanh Nang']);
+
+export function getLoggedHeroSkill(action: string): string | undefined {
+  const activation = /^(?:dùng|kích hoạt|phát động|hưởng ứng) (.+)/u.exec(action)?.[1];
+  return activation ? HERO_SKILLS.find(name => activation === name ||
+    /^[\s,.!:(]/u.test(activation.slice(name.length)) && activation.startsWith(name)) : undefined;
+}
 const DRAW_ACTION = /^(?:rút \d+ lá|bỏ qua Đột Tập, rút \d+ lá|kích hoạt .+, rút \d+ lá|kích hoạt Chế Hành, bỏ \d+ lá và rút lại \d+ lá|dùng Vô Trung Sinh Hữu rút \d+ lá|tiêu diệt Phản Tặc, được rút thưởng \d+ lá)/u;
 
 export function getMatchActionCues(
@@ -85,14 +92,11 @@ export function getMatchActionCues(
   const judged = actions.some(action => /^(?:lật lá phán xét \(|phán xét Bát Quái Trận ra )/u.test(action)) ||
     Boolean(after.activeInterrupt?.judgeCard &&
       after.activeInterrupt.judgeCard.id !== before.activeInterrupt?.judgeCard?.id);
-  const heroSkill = actions.some(action => {
-    const activation = /^(?:dùng|kích hoạt|phát động|hưởng ứng) (.+)/u.exec(action)?.[1];
-    return activation && HERO_SKILLS.some(name => activation === name ||
-      [' ', ',', '.', '!', ':'].some(separator => activation.startsWith(name + separator)));
-  });
+  const heroSkills = actions.map(getLoggedHeroSkill);
+  const paidDiscardCost = heroSkills.some(skill => skill !== undefined && DISCARD_COST_SKILLS.has(skill));
   if (shuffled) cues.add('SHUFFLE');
   if (judged) cues.add('JUDGE');
-  if (heroSkill) cues.add('HERO_SKILL');
+  if (heroSkills.some(Boolean)) cues.add('HERO_SKILL');
 
   const oldDelayedIds = new Set(before.players.flatMap(player => player.delayedScrolls.map(card => card.id)));
   const discard = after.discardPileTop;
@@ -143,13 +147,14 @@ export function getMatchActionCues(
   if (daoLogged) cues.add('DAO');
   if (thiemLogged) cues.add('THIEM');
   // Defeated players drop their remaining cards. The new top card was not played.
-  if (freshDiscard && !equipped && !eliminated) {
+  if (freshDiscard && !equipped && !eliminated && !paidDiscardCost) {
     cues.add(CARD_CUES[discard.cardKey] ?? 'CARD_PLAY');
   } else if (placedDelayedCard && !cues.has('LIGHTNING') && !cues.has('CONTROL_SCROLL')) {
     cues.add('CARD_PLAY');
   }
   // Đào and Đào Viên carry their own resolution accent.
-  if (gainedHp && !cues.has('DAO') && !(freshDiscard && discard.cardKey === 'dao_vien_ket_nghia')) cues.add('HEAL');
+  if (gainedHp && !cues.has('DAO') &&
+    !(freshDiscard && !paidDiscardCost && discard.cardKey === 'dao_vien_ket_nghia')) cues.add('HEAL');
   if (lostHp) cues.add('DAMAGE');
   if (enteredDying) cues.add('DYING');
   if (eliminated) cues.add('ELIMINATION');

@@ -436,7 +436,12 @@ function buildTargetedSelfAlertVi(view: PlayerViewState): string | null {
     interrupt.sourceSeat !== undefined &&
     interrupt.sourceSeat !== viewer
   ) {
-    return `🎯 ${getName(interrupt.sourceSeat)} đang ${interrupt.stealing ? 'Thuận Thủ Khiên Dương' : 'Quá Hà Sái Cầu'} bài của BẠN!`;
+    const action = interrupt.id.startsWith('fankui_pick_')
+      ? 'Phản Quỷ'
+      : interrupt.id.startsWith('tu_xi_take')
+        ? 'Đột Tập'
+        : interrupt.stealing ? 'Thuận Thủ Khiên Dương' : 'Quá Hà Sái Cầu';
+    return `🎯 ${getName(interrupt.sourceSeat)} dùng ${action} nhắm bài của BẠN!`;
   }
   if (
     interrupt.kind === 'WAIT_COLLATERAL_SAT' &&
@@ -541,7 +546,16 @@ export function MatchCenterBoard({
       playerView.turnPhase !== 'HERO_SELECT' &&
       playerView.turnPhase !== 'GAME_OVER',
   );
-  const spotlightText = latestActionEntry ?? prompt.detailVi;
+  const distributionLines: string[] = [];
+  for (let index = playerView.actionLog.length - 1; index >= 0; index--) {
+    const line = playerView.actionLog[index]!;
+    if (!line.includes(' dùng Di Kế giao ')) break;
+    distributionLines.unshift(line);
+    if (distributionLines.length === 2) break;
+  }
+  const spotlightText = distributionLines.length
+    ? distributionLines.join(' ')
+    : latestActionEntry ?? prompt.detailVi;
   const cloudBorderUrl = getUiAssetUrl('tex-cloud-border');
   const inkBaseUrl = getUiAssetUrl('tex-ink-base');
   const plaqueStyle = cloudBorderUrl
@@ -622,6 +636,7 @@ export function MatchCenterBoard({
         {spotlightText ? (
           <div
             data-action-spotlight={playerView.actionLog.length}
+            role="status"
             title={spotlightText}
             className="w-max max-w-full rounded-lg border border-[#B89352]/45 bg-[#12161F]/92 px-2 py-0.5 text-center text-[10.5px] font-semibold leading-snug text-[#FDE68A] shadow"
           >

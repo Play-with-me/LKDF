@@ -1,0 +1,324 @@
+[
+  {
+    "skill": "Nhân Đức",
+    "test": "Lưu Bị (Nhân Đức): giao bài cho người khác, đạt 2 lá hồi 1 máu (tối đa 1 lần/lượt)",
+    "step": 1,
+    "actor": 0,
+    "affected": 1,
+    "expected": "Giao lá thứ hai và hồi 1 máu; người ngoài chỉ thấy số lá"
+  },
+  {
+    "skill": "Kích Tướng",
+    "test": "Lưu Bị (Kích Tướng): chỉ kích hoạt khi đóng vai Chủ Công và đồng minh Thục đánh Sát thay",
+    "step": 1,
+    "actor": 0,
+    "affected": 3,
+    "expected": "Đồng minh Thục đáp Sát; ghế bị đánh nhận cửa Thiểm"
+  },
+  {
+    "skill": "Võ Thánh",
+    "test": "Quan Vũ (Võ Thánh): dùng bất kỳ lá Đỏ (Cơ/Rô) như Sát, không dùng được lá Đen",
+    "step": 1,
+    "actor": 0,
+    "affected": 1,
+    "expected": "Lá đỏ chuyển thành Sát; ghế mục tiêu được hỏi Thiểm"
+  },
+  {
+    "skill": "Phao Hống",
+    "test": "Trương Phi (Phao Hống): đánh Sát không giới hạn số lần trong pha PLAY",
+    "step": 4,
+    "actor": 0,
+    "affected": 1,
+    "expected": "Sát lần thứ ba cùng lượt vẫn mở phản ứng"
+  },
+  {
+    "skill": "Quan Tinh",
+    "test": "Gia Cát Lượng (Quan Tinh): đầu lượt xem tối đa 5 lá, ẩn với người khác trong projection, xếp đầu/đáy đúng",
+    "step": 0,
+    "actor": 0,
+    "affected": 1,
+    "expected": "Người dùng thấy 5 lá để xếp, mọi ghế khác không thấy mặt bài"
+  },
+  {
+    "skill": "Không Thành",
+    "test": "Gia Cát Lượng (Không Thành): khi 0 bài tay miễn nhiễm Sát và Quyết Đấu; có bài tay thì bị đánh bình thường",
+    "step": 0,
+    "actor": 1,
+    "affected": 0,
+    "expected": "Ghế không bài tay bị loại khỏi mục tiêu Sát"
+  },
+  {
+    "skill": "Long Đảm",
+    "test": "Triệu Vân (Long Đảm): dùng Thiểm như Sát và dùng Sát như Thiểm",
+    "step": 4,
+    "actor": 0,
+    "affected": 1,
+    "expected": "Dùng Sát làm Thiểm, đóng cửa phản ứng và giữ máu"
+  },
+  {
+    "skill": "Mã Thuật",
+    "test": "Mã Siêu (Mã Thuật & Thiết Kỵ): giảm 1 khoảng cách và chặn Thiểm + Bát Quái Trận khi phán xét ra Đỏ",
+    "step": 0,
+    "actor": 0,
+    "affected": 2,
+    "expected": "Khoảng cách tới ghế 2 giảm còn 1, có thể chọn đánh Sát"
+  },
+  {
+    "skill": "Thiết Kỵ",
+    "test": "Mã Siêu (Mã Thuật & Thiết Kỵ): giảm 1 khoảng cách và chặn Thiểm + Bát Quái Trận khi phán xét ra Đỏ",
+    "step": 1,
+    "actor": 0,
+    "affected": 2,
+    "expected": "Phán xét đỏ và sát thương đi thẳng, không mở cửa Thiểm"
+  },
+  {
+    "skill": "Tập Trí",
+    "test": "Hoàng Nguyệt Anh (Tập Trí & Kỳ Tài): rút 1 lá khi dùng Cẩm nang thường và bỏ qua khoảng cách Cẩm nang",
+    "step": 0,
+    "actor": 0,
+    "affected": 2,
+    "expected": "Dùng cẩm nang và rút thêm 1 lá"
+  },
+  {
+    "skill": "Kỳ Tài",
+    "test": "Hoàng Nguyệt Anh (Tập Trí & Kỳ Tài): rút 1 lá khi dùng Cẩm nang thường và bỏ qua khoảng cách Cẩm nang",
+    "step": 0,
+    "actor": 0,
+    "affected": 2,
+    "expected": "Thuận Thủ chọn được ghế ở ngoài khoảng cách thường"
+  },
+  {
+    "skill": "Gian Hùng",
+    "test": "Gian Hùng: thu lấy lá Sát vừa gây sát thương cho Tào Tháo",
+    "step": 2,
+    "actor": 1,
+    "affected": 0,
+    "expected": "Tào Tháo nhận lá gây sát thương"
+  },
+  {
+    "skill": "Hộ Giá",
+    "test": "Hộ Giá (Chủ Công): Tào Tháo Chủ Công nhờ tướng Ngụy khác đánh Thiểm thay",
+    "step": 2,
+    "actor": 0,
+    "affected": 2,
+    "expected": "Chủ Công được đồng minh Ngụy đánh Thiểm thay"
+  },
+  {
+    "skill": "Phản Quỷ",
+    "test": "Phản Quỷ: sau khi chịu sát thương, lấy 1 lá bài từ người gây sát thương",
+    "step": 2,
+    "actor": 1,
+    "affected": 0,
+    "expected": "Chỉ người dùng được chọn vùng bài hợp lệ ở nguồn sát thương"
+  },
+  {
+    "skill": "Quỷ Tài",
+    "test": "Quỷ Tài: đổi lá phán xét của Bát Quái Trận thành Đỏ giúp có Thiểm",
+    "step": 2,
+    "actor": 2,
+    "affected": 1,
+    "expected": "Đổi lá phán xét từ đen sang đỏ giúp Bát Quái tính là Thiểm"
+  },
+  {
+    "skill": "Cương Liệt",
+    "test": "Cương Liệt: phán xét khác Cơ buộc nguồn sát thương bỏ 2 lá hoặc mất 1 máu",
+    "step": 2,
+    "actor": 1,
+    "affected": 0,
+    "expected": "Phán xét khác Cơ, nguồn sát thương được hỏi bỏ bài hoặc mất máu"
+  },
+  {
+    "skill": "Đột Tập",
+    "test": "Đột Tập: bỏ qua pha Rút bài để lấy 1 lá trên tay của tối đa 2 người khác",
+    "step": 1,
+    "actor": 0,
+    "affected": 1,
+    "spectator": 3,
+    "expected": "Bỏ rút bài, chuyển sang cửa lấy bài úp từ mục tiêu"
+  },
+  {
+    "skill": "Lỏa Y",
+    "test": "Lỏa Y: rút ít hơn 1 lá để +1 sát thương Sát và Quyết Đấu trong lượt",
+    "step": 1,
+    "actor": 0,
+    "affected": 1,
+    "expected": "Rút 1 lá và thông báo tăng sát thương Sát/Quyết Đấu"
+  },
+  {
+    "skill": "Thiên Đố",
+    "test": "Thiên Đố: thu lấy lá phán xét sau khi phán xét có hiệu lực",
+    "step": 2,
+    "actor": 0,
+    "affected": 1,
+    "expected": "Người dùng nhận lá phán xét sau khi xử lý"
+  },
+  {
+    "skill": "Di Kế",
+    "test": "Di Kế: rút 2 lá mỗi 1 điểm máu mất (mất 2 máu rút 2 lần x 2 lá) và chia được cho đồng đội",
+    "step": 2,
+    "actor": 1,
+    "affected": 2,
+    "expected": "Chia một lá cho mình và một lá cho ghế nhận; ghế ngoài không thấy mặt bài"
+  },
+  {
+    "skill": "Lạc Thần",
+    "test": "Lạc Thần: phán xét liên tục thu bài chất Đen đến khi gặp chất Đỏ thì dừng",
+    "step": 1,
+    "actor": 0,
+    "affected": 1,
+    "expected": "Phán xét đen thì lấy bài và được hỏi tiếp tục"
+  },
+  {
+    "skill": "Khuynh Quốc",
+    "test": "Khuynh Quốc: dùng lá chất Đen trên tay làm Thiểm né Sát",
+    "step": 1,
+    "actor": 1,
+    "affected": 0,
+    "expected": "Dùng bài đen làm Thiểm và tránh sát thương"
+  },
+  {
+    "skill": "Chế Hành",
+    "test": "Tôn Quyền (Chế Hành): bỏ cả bài tay lẫn trang bị và rút lại đúng số lượng, tối đa 1 lần/lượt",
+    "step": 0,
+    "actor": 0,
+    "affected": 1,
+    "expected": "Bỏ tay và trang bị, rút lại đúng số lá"
+  },
+  {
+    "skill": "Cứu Viện",
+    "test": "Tôn Quyền (Cứu Viện - Chủ Công): đồng minh Ngô dùng Đào cứu Chủ Công hồi thêm +1 máu",
+    "step": 0,
+    "actor": 0,
+    "affected": 1,
+    "expected": "Ngô cứu Chủ Công hồi tổng 2 máu"
+  },
+  {
+    "skill": "Kỳ Tập",
+    "test": "Cam Ninh (Kỳ Tập): dùng bài chất Đen (tay hoặc trang bị) làm Quá Hà Sái Cầu",
+    "step": 0,
+    "actor": 0,
+    "affected": 2,
+    "expected": "Bài đen chuyển thành Quá Hà, xuất hiện cửa phản ứng cẩm nang"
+  },
+  {
+    "skill": "Khắc Kỷ",
+    "test": "Lữ Mông (Khắc Kỷ): không dùng/đánh Sát trong lượt thì được bỏ qua pha Bỏ bài",
+    "step": 1,
+    "actor": 0,
+    "affected": 1,
+    "expected": "Bỏ qua pha Bỏ bài và giữ tay, chuyển lượt"
+  },
+  {
+    "skill": "Khổ Nhục",
+    "test": "Hoàng Cái (Khổ Nhục): tự mất 1 máu để rút 2 lá, không giới hạn số lần mỗi lượt",
+    "step": 0,
+    "actor": 0,
+    "affected": 1,
+    "expected": "Mất 1 máu và rút 2 lá"
+  },
+  {
+    "skill": "Anh Tư",
+    "test": "Chu Du (Anh Tư & Phản Gián): rút 3 lá ở pha Rút bài và Phản Gián đoán sai chịu 1 sát thương",
+    "step": 0,
+    "actor": 0,
+    "affected": 1,
+    "expected": "Rút 3 thay vì 2 lá, người ngoài không thấy mặt bài"
+  },
+  {
+    "skill": "Phản Gián",
+    "test": "Chu Du (Anh Tư & Phản Gián): rút 3 lá ở pha Rút bài và Phản Gián đoán sai chịu 1 sát thương",
+    "step": 1,
+    "actor": 0,
+    "affected": 1,
+    "expected": "Chỉ người đoán được chọn chất, chưa nhìn thấy lá"
+  },
+  {
+    "skill": "Quốc Sắc",
+    "test": "Đại Kiều (Quốc Sắc & Lưu Ly): dùng Rô làm Lạc Bất Tư Thục và Lưu Ly chuyển Sát sang người thứ 3 trong tầm đánh",
+    "step": 3,
+    "actor": 1,
+    "affected": 2,
+    "expected": "Lá Rô trở thành Lạc Bất Tư Thục công khai ở vùng Phán xét"
+  },
+  {
+    "skill": "Lưu Ly",
+    "test": "Đại Kiều (Quốc Sắc & Lưu Ly): dùng Rô làm Lạc Bất Tư Thục và Lưu Ly chuyển Sát sang người thứ 3 trong tầm đánh",
+    "step": 2,
+    "actor": 1,
+    "affected": 2,
+    "expected": "Đổi người bị Sát và mở cửa Thiểm đúng ghế mới"
+  },
+  {
+    "skill": "Khiêm Tốn",
+    "test": "Lục Tốn (Khiêm Tốn & Liên Doanh): miễn nhiễm Thuận Thủ/Lạc Bất và rút 1 lá khi mất lá cuối trên tay",
+    "step": 0,
+    "actor": 1,
+    "affected": 0,
+    "expected": "Ghế này không được chọn bằng Thuận Thủ"
+  },
+  {
+    "skill": "Liên Doanh",
+    "test": "Lục Tốn (Khiêm Tốn & Liên Doanh): miễn nhiễm Thuận Thủ/Lạc Bất và rút 1 lá khi mất lá cuối trên tay",
+    "step": 2,
+    "actor": 1,
+    "affected": 2,
+    "expected": "Đánh lá cuối, rút thêm 1 lá"
+  },
+  {
+    "skill": "Kết Hôn",
+    "test": "Tôn Thượng Hương (Kết Hôn & Kiêu Cơ): Kiêu Cơ rút 2 lá cả khi thay trang bị đè lên cũ lẫn khi bị hủy trang bị",
+    "step": 1,
+    "actor": 0,
+    "affected": 1,
+    "expected": "Hai người hồi 1 máu và người dùng trả 2 lá"
+  },
+  {
+    "skill": "Kiêu Cơ",
+    "test": "Tôn Thượng Hương (Kết Hôn & Kiêu Cơ): Kiêu Cơ rút 2 lá cả khi thay trang bị đè lên cũ lẫn khi bị hủy trang bị",
+    "step": 0,
+    "actor": 0,
+    "affected": 1,
+    "expected": "Thay trang bị cũ, rút 2 lá"
+  },
+  {
+    "skill": "Thanh Nang",
+    "test": "Hoa Đà (Thanh Nang & Cấp Cứu): Thanh Nang hồi 1 máu trong lượt; Cấp Cứu dùng bài Đỏ cứu Đào ngoài lượt",
+    "step": 0,
+    "actor": 0,
+    "affected": 1,
+    "expected": "Bỏ 1 lá và hồi 1 máu cho mục tiêu"
+  },
+  {
+    "skill": "Cấp Cứu",
+    "test": "Hoa Đà (Thanh Nang & Cấp Cứu): Thanh Nang hồi 1 máu trong lượt; Cấp Cứu dùng bài Đỏ cứu Đào ngoài lượt",
+    "step": 1,
+    "actor": 0,
+    "affected": 1,
+    "expected": "Bài đỏ ngoài lượt cứu người Hấp Hối"
+  },
+  {
+    "skill": "Vô Song",
+    "test": "Lữ Bố (Vô Song): Sát cần 2 Thiểm để né và Quyết Đấu cần 2 Sát mỗi lần",
+    "step": 1,
+    "actor": 0,
+    "affected": 1,
+    "expected": "Sau Thiểm thứ nhất, cửa phản ứng vẫn yêu cầu Thiểm thứ hai"
+  },
+  {
+    "skill": "Ly Gián",
+    "test": "Điêu Thuyền (Ly Gián & Bế Nguyệt): Ly Gián buộc 2 nam Quyết Đấu và Bế Nguyệt rút 1 lá cuối lượt",
+    "step": 1,
+    "actor": 0,
+    "affected": 1,
+    "spectator": 3,
+    "expected": "Hai tướng nam bị buộc Quyết Đấu, có cửa Vô Giải"
+  },
+  {
+    "skill": "Bế Nguyệt",
+    "test": "Điêu Thuyền (Ly Gián & Bế Nguyệt): Ly Gián buộc 2 nam Quyết Đấu và Bế Nguyệt rút 1 lá cuối lượt",
+    "step": 4,
+    "actor": 0,
+    "affected": 1,
+    "expected": "Rút thêm 1 lá trước khi sang lượt ghế kế"
+  }
+]

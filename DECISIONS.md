@@ -35,7 +35,7 @@
 
 ### ADR-002: Yêu cầu đủ 4–8 người chơi thật mới bắt đầu ván (Không thêm Máy ở phòng chờ)
 - **Bối cảnh:** Cần quyết định sĩ số tối thiểu và việc có cho thêm Máy (Bot) vào ghế trống ở phòng chờ hay không.
-- **Quyết định:** Bắt buộc có từ **4 đến 8 người chơi thật** trong phòng để xem xét mở nút `[▶️ Bắt đầu ván đấu]`. Điều kiện xác nhận Sẵn sàng áp dụng theo [REQUIREMENTS.md](./REQUIREMENTS.md). Máy (Bot AI) chỉ tự động vào đánh hộ tạm thời khi có người chơi thật bị mất kết nối giữa ván.
+- **Quyết định:** Phòng online vẫn cần **4 đến 8 người chơi thật**, theo điều kiện Sẵn sàng trong [REQUIREMENTS.md](./REQUIREMENTS.md). Chế độ **Chơi với Máy** được duyệt ngày 2026-11-23, chạy cục bộ trên Desktop và không dùng ghế của phòng online.
 - **Lý do:** Đúng mục đích tụ họp chơi thực chất giữa những người bạn thật với nhau; không tốn công làm chế độ phụ 3 người (*Đấu Địa Chủ*).
 - **Đánh đổi:** Cần tối thiểu 4 người bạn online cùng lúc để mở ván mới.
 

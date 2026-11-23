@@ -342,3 +342,28 @@ Handoff Notes — apps/desktop/motion-scenes.js cung cấp playSkill, được m
 - Trang GitHub đặt nút tải Windows lên đầu, hướng dẫn hai đường tải và có mục cài nhanh bằng tiếng Việt. GIF quay từ bản xem thử cục bộ, lưu tại `docs/media/gameplay-preview.gif`.
 - Đã kiểm tra hai đường tải trả HTTP 200, 23 liên kết và 11 khung GIF. Bàn giao: bộ cài đang phát hành vẫn là v1.0.0.
 - Làm mới phần nhìn README bằng bìa từ tranh game, dải ba ảnh chụp và hai nút tải ngay đầu trang. Tài liệu kỹ thuật thu gọn. Đã kiểm tra 24 tham chiếu, tệp ảnh và hai đường tải.
+
+## 2026-11-23 — Bàn giao Chơi với Máy
+
+- App mở `OfflineMatchSetup`, sau đó dùng `DevMatchPreview` ở chế độ offline. `offlineBot.ts` chạy từng quyết định từ PlayerView riêng và giữ hạn Vô Giải chung 3,5 giây. Nhịp đầu lượt / giữa hành động / phản ứng là 1,5–3 / 0,7–1,4 / 0,5–1,2 giây.
+- BOT-01–BOT-06 có bằng chứng trong `PROJECT_MEMORY.md`. Bộ cài thử đã đóng gói. Lượt tiếp theo có thể đo thêm độ dài giữa hai lượt người chơi ở bàn 8 ghế trước khi phát hành.
+
+## 2026-11-23 — Kiểm thử ván đấu và nhịp khai trận
+
+- `MatchArenaLayout` đổi số 3–2–1 theo giây thật. Đo Electron gói Windows: 1092/994/1017 ms. Bộ cài thử được cập nhật trên máy người dùng, chưa phát hành.
+- Bàn giao: Nhân Đức chuyển đúng bài và có spotlight chữ nhưng chưa tạo hiệu ứng chuyển hoặc dấu kỹ năng. Ưu tiên kiểm phản hồi theo sự kiện công khai và lập ma trận kiểm thử kỹ năng trước khi làm hiệu ứng hàng loạt.
+
+## 2026-11-23 — Ma trận kỹ năng
+
+- `apps/desktop/tests/skill-qa/` trích 270 chuyển tiếp từ 68 bài luật, chọn 40 ca đại diện, phát lại mỗi ca ở ba góc nhìn × hai khung × hai chế độ chuyển động. Lệnh và ma trận quan sát ở `docs/SKILL_QA.md`.
+- Bàn giao: ưu tiên Phản Quỷ/Đột Tập bị gắn nhầm Thuận Thủ, và Nhân Đức/Di Kế thiếu hiệu ứng chuyển lá úp. Dữ liệu kết quả nằm ở `apps/desktop/release/skill-qa/`.
+
+## 2026-11-23 — Sửa phản hồi kỹ năng đợt 1
+
+- Đã sửa tên cảnh báo Phản Quỷ/Đột Tập và thêm thông báo công khai cùng hiệu ứng lá úp cho Nhân Đức/Di Kế. 480 lượt phát lại đạt với kiểm tra hồi quy tự động cho bốn ca.
+- Bàn giao: đợt kế tiếp kiểm tra âm trả phí và dấu kỹ năng. Bản sửa ở workspace.
+
+## 2026-11-23 — Phản hồi kỹ năng đợt 2
+
+- Chuẩn hóa dấu từ danh mục và chặn suy diễn âm lá bài khi dùng trả phí cho Lưu Ly, Kết Hôn, Ly Gián, Chế Hành và Thanh Nang. Kiểm tra 480 lượt phát lại đạt.
+- Bàn giao: thử âm trên Windows và giữ bộ hồi quy trong `apps/desktop/tests/skill-qa`. Bản sửa ở workspace.

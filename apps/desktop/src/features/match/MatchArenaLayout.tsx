@@ -61,6 +61,7 @@ export interface MatchArenaLayoutProps {
   readonly selection: MatchSelectionState;
   readonly connectionLost: boolean;
   readonly actionErrorVi?: string | null;
+  readonly thinkingSeat?: number;
   readonly onReconnect: () => void;
   readonly onToggleCard: (cardId: string) => void;
   readonly onToggleTarget: (seatIndex: number) => void;
@@ -212,6 +213,8 @@ function FuseTimer({ deadline, paused, pausedRemainingMs, totalSeconds }: {
 const EMPTY_AIMING_SEATS: readonly number[] = [];
 
 type OpeningCeremonyStage = 'COUNTDOWN' | 'IDENTITY_GACHA' | 'HERO_GACHA';
+const COUNTDOWN_SECOND_MS = 1000;
+const OPENING_COUNTDOWN_MS = 3 * COUNTDOWN_SECOND_MS;
 
 function getIdentityMissionVi(identity: PublicPlayerView['identity']): string {
   switch (identity) {
@@ -238,6 +241,7 @@ export function MatchArenaLayout({
   selection,
   connectionLost,
   actionErrorVi = null,
+  thinkingSeat,
   onReconnect,
   onToggleCard,
   onToggleTarget,
@@ -364,13 +368,13 @@ export function MatchArenaLayout({
         prev.matchId === playerView.matchId ? { ...prev, countdown: 2 } : prev,
       );
       playMatchCue('TIMER_TICK', isMatchSoundEnabled());
-    }, 360);
+    }, COUNTDOWN_SECOND_MS);
     const t2 = window.setTimeout(() => {
       setCeremonyState((prev) =>
         prev.matchId === playerView.matchId ? { ...prev, countdown: 1 } : prev,
       );
       playMatchCue('TIMER_TICK', isMatchSoundEnabled());
-    }, 720);
+    }, 2 * COUNTDOWN_SECOND_MS);
     const t3 = window.setTimeout(() => {
       setCeremonyState((prev) =>
         prev.matchId === playerView.matchId
@@ -378,20 +382,20 @@ export function MatchArenaLayout({
           : prev,
       );
       playMatchCue('SHUFFLE', isMatchSoundEnabled());
-    }, 1080);
+    }, OPENING_COUNTDOWN_MS);
     const t4 = window.setTimeout(() => {
       setCeremonyState((prev) =>
         prev.matchId === playerView.matchId ? { ...prev, identityRevealed: true } : prev,
       );
       playMatchCue('PANEL_OPEN', isMatchSoundEnabled());
-    }, 1240);
+    }, OPENING_COUNTDOWN_MS + 160);
     const t5 = window.setTimeout(() => {
       completedCeremonyMatchIdRef.current = playerView.matchId;
       setCeremonyState((prev) =>
         prev.matchId === playerView.matchId ? { ...prev, stage: 'HERO_GACHA' } : prev,
       );
       playMatchCue('DEAL_OPENING', isMatchSoundEnabled());
-    }, 2350);
+    }, OPENING_COUNTDOWN_MS + 1270);
 
     ceremonyTimersRef.current = [t1, t2, t3, t4, t5];
     return () => {
@@ -922,6 +926,11 @@ export function MatchArenaLayout({
           onInspectHero={handleInspectHero}
           onInspectCard={handleInspectCard}
         />
+        {thinkingSeat === opp.seatIndex ? (
+          <span role="status" className="pointer-events-none absolute right-1 top-full z-10 mt-0.5 whitespace-nowrap rounded border border-[#C89B4B]/70 bg-[#14100D] px-1.5 text-[10px] font-semibold leading-4 text-[#F5EBD6]">
+            Đang suy nghĩ…
+          </span>
+        ) : null}
         {(prompt.actorSeat === opp.seatIndex || (playerView.activeInterrupt === null && isCurrentTurnOwner)) &&
         (phaseDeadlineAt !== null || pausedRemainingMs !== null) ? (
           <div className="lkdf-bot-seat-clock">
@@ -1323,6 +1332,7 @@ export function MatchArenaLayout({
           {/* Nửa Trái: Hồ sơ Tướng bản thân (kèm huy hiệu kỹ năng bấm/rê chuột để xem chi tiết) */}
           {(() => {
             const selfHpImpact = selfPlayer ? hpImpacts[selfPlayer.seatIndex] ?? null : null;
+            const selfSkillStamp = selfPlayer ? skillStampBySeat[selfPlayer.seatIndex] : undefined;
             return (
               <div
                 onClick={() => setInspector(null)}
@@ -1336,6 +1346,11 @@ export function MatchArenaLayout({
                   widthClass="w-[94%]"
                   opacityClass="opacity-90"
                 />
+                {selfSkillStamp ? (
+                  <span key={selfSkillStamp.id} className="lkdf-skill-stamp pointer-events-none absolute bottom-1 right-1.5 z-35 rounded border border-[#E6BE6C]/80 bg-[#14171A]/95 px-1.5 py-0.5 text-[10px] font-bold text-[#FDE68A] shadow-md">
+                    {selfSkillStamp.label}
+                  </span>
+                ) : null}
                 {selfHpImpact ? (
                   <span key={`self-impact-${selfHpImpact.id}`} aria-hidden="true" className="pointer-events-none contents">
                     <span

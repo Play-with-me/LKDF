@@ -25,6 +25,7 @@ import { readDevicePreference, writeDevicePreference } from '../../lib/devicePre
 import { useGameAmbience } from '../../lib/useGameAmbience.js';
 import { useInterfaceSounds } from '../../lib/useInterfaceSounds.js';
 import { playMatchCue } from '../../lib/soundFx.js';
+import { botDelayMs, finishOfflineNullification, getOfflineBotSeat, OFFLINE_NULLIFICATION_MS, runOfflineBotStep, scheduleBotStep } from './offlineBot.js';
 import { MatchSettings } from './MatchSettings.js';
 import { GameIcon } from '../../components/icons/index.js';
 import { ActionLogDialog } from './ActionLogDialog.js';
@@ -59,14 +60,15 @@ const PREVIEW_NAMES = [
 
 export interface DevMatchPreviewProps {
   readonly initialPlayerCount?: PlayerCount;
+  readonly offline?: boolean;
   readonly onExitPreview: () => void;
 }
 
-function buildPreviewSeats(count: PlayerCount): RoomSeat[] {
+function buildPreviewSeats(count: PlayerCount, offline = false): RoomSeat[] {
   return Array.from({ length: count }, (_, idx) => ({
     seatIndex: idx,
     userId: `dev_user_${idx}`,
-    displayName: PREVIEW_NAMES[idx] ?? `Ghế ${idx + 1}`,
+    displayName: offline ? (idx === 0 ? 'Bạn' : `Máy ${idx}`) : PREVIEW_NAMES[idx] ?? `Ghế ${idx + 1}`,
     avatarUrl: '',
     connectionStatus: 'ONLINE',
     isBotTakeover: false,
@@ -160,12 +162,15 @@ function createPreviewMatchState(
 
 export function DevMatchPreview({
   initialPlayerCount = 8,
+  offline = false,
   onExitPreview,
 }: DevMatchPreviewProps) {
   const [playerCount, setPlayerCount] = useState<PlayerCount>(initialPlayerCount);
   const [previewStage, setPreviewStage] = useState<PreviewStage>('IN_PLAY');
   const [masterState, setMasterState] = useState<MasterGameState>(() =>
-    createPreviewMatchState(initialPlayerCount, 'IN_PLAY'),
+    offline
+      ? createInitialMatchSetup({ matchId: crypto.randomUUID(), seats: buildPreviewSeats(initialPlayerCount, true) })
+      : createPreviewMatchState(initialPlayerCount, 'IN_PLAY'),
   );
   const [undoHistory, setUndoHistory] = useState<MasterGameState[]>([]);
   const [auditLog, setAuditLog] = useState<RefereeAuditEntry[]>([]);
@@ -180,6 +185,9 @@ export function DevMatchPreview({
   const [actionError, setActionError] = useState<string | null>(null);
   const [showLogDialog, setShowLogDialog] = useState<boolean>(false);
   const [showRulesDialog, setShowRulesDialog] = useState<boolean>(false);
+  const exitDialog = useRef<HTMLDialogElement>(null);
+  const lastBotTurn = useRef<string | null>(null);
+  const [botFault, setBotFault] = useState(false);
   const [showRefereeDialog, setShowRefereeDialog] = useState<boolean>(false);
 
   const handleToggleReduceMotion = useCallback((enabled: boolean) => {
@@ -191,14 +199,19 @@ export function DevMatchPreview({
     (nextCount: PlayerCount, nextStage: PreviewStage) => {
       setPlayerCount(nextCount);
       setPreviewStage(nextStage);
-      setMasterState(createPreviewMatchState(nextCount, nextStage));
+      setMasterState(offline
+        ? createInitialMatchSetup({ matchId: crypto.randomUUID(), seats: buildPreviewSeats(nextCount, true) })
+        : createPreviewMatchState(nextCount, nextStage));
+      lastBotTurn.current = null;
+      setBotFault(false);
+      setAutoSkipNullify(false);
       setUndoHistory([]);
       setAuditLog([]);
       setIsPaused(false);
       setSelection(EMPTY_MATCH_SELECTION);
       setActionError(null);
     },
-    [],
+    [offline],
   );
 
   // Bật bảo vệ đóng cửa sổ Windows khi đang xem thử bàn đấu
@@ -208,15 +221,15 @@ export function DevMatchPreview({
       return undefined;
     }
     const active = masterState.turnPhase !== 'GAME_OVER';
-    void bridge.setMatchCloseGuard(active).catch(() => undefined);
+    void bridge.setMatchCloseGuard(active, offline).catch(() => undefined);
     return () => {
       void bridge.setMatchCloseGuard(false).catch(() => undefined);
     };
-  }, [masterState.turnPhase]);
+  }, [masterState.turnPhase, offline]);
 
   // Cho các ghế Bot còn lại tự đi mượt khi không phải lượt của Ghế #1 (dev_user_0)
   useEffect(() => {
-    if (isPaused || masterState.turnPhase === 'GAME_OVER') {
+    if (offline || isPaused || masterState.turnPhase === 'GAME_OVER') {
       return undefined;
     }
     const prompt = getPendingPrompt(masterState);
@@ -272,7 +285,39 @@ export function DevMatchPreview({
     return () => {
       window.clearTimeout(timer);
     };
-  }, [isPaused, masterState]);
+  }, [isPaused, masterState, offline]);
+
+  const offlineBotSeat = offline && !botFault ? getOfflineBotSeat(masterState) : undefined;
+  const offlineFrame = offline ? masterState.interruptStack.at(-1) : undefined;
+  const nullificationId = offlineFrame?.kind === 'WAIT_NULLIFICATION' ? offlineFrame.id : null;
+  const nullificationDeadline = useMemo(
+    () => nullificationId === null ? null : Date.now() + OFFLINE_NULLIFICATION_MS,
+    [nullificationId],
+  );
+
+  useEffect(() => {
+    if (!offline || botFault || (offlineBotSeat === undefined && nullificationDeadline === null)) return;
+    const turn = `${masterState.matchId}:${masterState.roundNumber}:${masterState.currentTurnSeat}`;
+    const decision = offlineFrame
+      ? 'reaction'
+      : turn === lastBotTurn.current ? 'action' : 'turn';
+    const remaining = nullificationDeadline === null ? Infinity : nullificationDeadline - Date.now();
+    const delay = offlineBotSeat === undefined
+      ? Math.max(0, remaining)
+      : botDelayMs(decision, Math.random, remaining);
+    return scheduleBotStep(() => {
+      try {
+        const expired = nullificationDeadline !== null && Date.now() >= nullificationDeadline;
+        const next = expired || offlineBotSeat === undefined
+          ? finishOfflineNullification(masterState)
+          : runOfflineBotStep(masterState, offlineBotSeat);
+        if (!offlineFrame && masterState.turnPhase !== 'HERO_SELECT') lastBotTurn.current = turn;
+        setMasterState(current => current === masterState ? next : current);
+      } catch {
+        setBotFault(true);
+      }
+    }, delay);
+  }, [botFault, masterState, nullificationDeadline, offline, offlineBotSeat, offlineFrame]);
 
   useEffect(() => {
     if (!actionError) {
@@ -308,16 +353,16 @@ export function DevMatchPreview({
 
   const roomState: RoomState = useMemo(
     () => ({
-      roomCode: 'DEV42P',
+      roomCode: offline ? 'MÁY' : 'DEV42P',
       status: masterState.turnPhase === 'GAME_OVER' ? 'FINISHED' : 'IN_GAME',
       ownerUserId: 'dev_user_0',
       actingHostUserId: 'dev_user_0',
       hostDisconnectedAt: null,
       timerPreset: 'STANDARD',
       isTimerPaused: isPaused,
-      seats: buildPreviewSeats(playerCount),
+      seats: buildPreviewSeats(playerCount, offline),
     }),
-    [isPaused, masterState.turnPhase, playerCount],
+    [isPaused, masterState.turnPhase, offline, playerCount],
   );
 
   const handleSelectHero = useCallback((heroId: HeroId) => {
@@ -328,7 +373,7 @@ export function DevMatchPreview({
           prev.heroDraft?.stage === 'LORD_SELECTING'
             ? selectLordHero(prev, 0, heroId)
             : selectPlayerHero(prev, 0, heroId);
-        next = autoSelectTimedOutHeroes(next);
+        if (!offline) next = autoSelectTimedOutHeroes(next);
         if (next.heroDraft?.stage === 'COMPLETED') {
           next = startMatchCombat(next);
         }
@@ -338,14 +383,14 @@ export function DevMatchPreview({
         return prev;
       }
     });
-  }, []);
+  }, [offline]);
 
   const handleSendAction = useCallback((action: GameAction) => {
     setActionError(null);
     setMasterState((prev) => {
       try {
-        const next = applyGameAction(prev, action);
-        setUndoHistory((hist) => [...hist.slice(-4), prev]);
+        const next = applyGameAction(prev, action, Math.random, { deferNullificationPass: offline });
+        if (!offline) setUndoHistory((hist) => [...hist.slice(-4), prev]);
         setSelection(EMPTY_MATCH_SELECTION);
         return next;
       } catch (err: unknown) {
@@ -353,7 +398,7 @@ export function DevMatchPreview({
         return prev;
       }
     });
-  }, []);
+  }, [offline]);
 
   const handleToggleAutoSkipNullify = useCallback(
     (enabled: boolean) => {
@@ -564,17 +609,22 @@ export function DevMatchPreview({
     playerView.activeInterrupt?.id,
     prompt.actorSeat,
   ].join(':');
-  const timerConfig = { ...TIMER_PRESETS.STANDARD, reactionSeconds: 20 };
+  const timerConfig = {
+    ...TIMER_PRESETS.STANDARD,
+    reactionSeconds: offline ? OFFLINE_NULLIFICATION_MS / 1000 : 20,
+  };
   const decisionSeconds = playerView.activeInterrupt ? timerConfig.reactionSeconds :
     playerView.turnPhase === 'DISCARD' ? timerConfig.discardSeconds : timerConfig.mainTurnSeconds;
   const phaseDeadlineAt = useMemo(
-    () => decisionKey === null ? null : new Date(Date.now() + decisionSeconds * 1000).toISOString(),
-    [decisionKey, decisionSeconds, isPaused],
+    () => offline
+      ? nullificationDeadline === null ? null : new Date(nullificationDeadline).toISOString()
+      : decisionKey === null ? null : new Date(Date.now() + decisionSeconds * 1000).toISOString(),
+    [decisionKey, decisionSeconds, isPaused, nullificationDeadline, offline],
   );
 
   // Tự động xử lý khi hết giờ (0s) trong bản xem thử cục bộ để không bị treo
   useEffect(() => {
-    if (isPaused || !phaseDeadlineAt || masterState.turnPhase === 'GAME_OVER') {
+    if (offline || isPaused || !phaseDeadlineAt || masterState.turnPhase === 'GAME_OVER') {
       return undefined;
     }
     const deadlineMs = Date.parse(phaseDeadlineAt);
@@ -621,7 +671,7 @@ export function DevMatchPreview({
     return () => {
       window.clearTimeout(timer);
     };
-  }, [isPaused, masterState.turnPhase, phaseDeadlineAt]);
+  }, [isPaused, masterState.turnPhase, offline, phaseDeadlineAt]);
 
   return (
     <section className="relative flex h-screen w-screen min-h-0 min-w-0 flex-col overflow-hidden bg-[#090807] text-[#EFE6D5]">
@@ -667,6 +717,7 @@ export function DevMatchPreview({
             Giảm chuyển động
           </label>
         </div>
+        {!offline ? <>
         <div className="mb-2.5 flex min-w-0 flex-wrap items-center gap-1.5 text-[11px]">
           <span className="shrink-0 text-[#B5A792]">Cảnh thử:</span>
           {(
@@ -740,6 +791,7 @@ export function DevMatchPreview({
           </span>
         </div>
 
+        </> : null}
         <div className="flex flex-wrap items-center gap-1.5">
           <button
             type="button"
@@ -782,21 +834,21 @@ export function DevMatchPreview({
               Luật <span className="hidden xl:inline">&amp; Phím tắt</span>
             </span>
           </button>
-          <button
+          {!offline ? <button
             type="button"
             onClick={() => setShowRefereeDialog(true)}
             className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-[#CA9A48]/50 bg-[#D99B26]/12 px-2 py-1 text-[11px] font-semibold text-[#FDE68A] hover:bg-[#D99B26]/22 xl:px-2.5 xl:text-xs"
           >
             <GameIcon name="scales" size={13} />
             Trọng tài
-          </button>
+          </button> : null}
           <button
             type="button"
-            onClick={onExitPreview}
+            onClick={() => offline ? exitDialog.current?.showModal() : onExitPreview()}
             className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-[#9A7B4F]/40 bg-[#14100D]/90 px-2 py-1 text-[11px] font-medium text-[#FCA5A5] hover:border-[#DC2626] xl:px-2.5 xl:text-xs"
           >
             <GameIcon name="ui:undo" size={13} />
-            Thoát
+            {offline ? 'Về menu' : 'Thoát'}
           </button>
         </div>
       </MatchSettings>
@@ -811,6 +863,7 @@ export function DevMatchPreview({
           isTimerPaused={isPaused}
           selection={selection}
           actionErrorVi={actionError}
+          thinkingSeat={nullificationId === null ? offlineBotSeat : undefined}
           connectionLost={false}
           onReconnect={() => resetPreview(playerCount, previewStage)}
           onToggleCard={handleToggleCard}
@@ -850,14 +903,33 @@ export function DevMatchPreview({
         onClose={() => setShowRulesDialog(false)}
       />
 
-      <RefereePanelDialog
+      {!offline ? <RefereePanelDialog
         open={showRefereeDialog}
         roomState={roomState}
         currentUserId="dev_user_0"
         refereeAuditLog={auditLog}
         onSendRefereeAction={handleRefereeAction}
         onClose={() => setShowRefereeDialog(false)}
-      />
+      /> : null}
+
+      {offline ? (
+        <dialog ref={exitDialog} aria-labelledby="offline-exit-title" className="m-auto w-sm max-w-[calc(100vw-2rem)] rounded-lg border border-[#9A7B4F] bg-[#14100D] p-5 text-[#EFE6D5] backdrop:bg-black/65">
+          <h2 id="offline-exit-title" className="text-lg font-semibold">Rời ván tập?</h2>
+          <p className="my-3 text-sm">Tiến độ ván này sẽ mất khi bạn về menu.</p>
+          <div className="flex justify-end gap-3">
+            <button autoFocus type="button" onClick={() => exitDialog.current?.close()} className="rounded border border-[#9A7B4F] px-3 py-2">Ở lại ván</button>
+            <button type="button" onClick={onExitPreview} className="rounded bg-[#9E2B25] px-3 py-2">Về menu</button>
+          </div>
+        </dialog>
+      ) : null}
+
+      {botFault ? (
+        <div role="alert" className="absolute left-1/2 top-14 z-40 flex w-max max-w-[calc(100%-2rem)] -translate-x-1/2 flex-wrap items-center gap-3 rounded border border-[#CA9A48] bg-[#14100D] p-3 text-sm">
+          Không thể tiếp tục ván này.
+          <button type="button" onClick={() => resetPreview(playerCount, 'HERO_SELECT')} className="rounded bg-[#9E2B25] px-3 py-2">Chơi lại</button>
+          <button type="button" onClick={onExitPreview} className="rounded border border-[#9A7B4F] px-3 py-2">Về menu</button>
+        </div>
+      ) : null}
 
       <GameOverSummaryModal
         open={masterState.turnPhase === 'GAME_OVER'}
@@ -865,6 +937,7 @@ export function DevMatchPreview({
         playerView={playerView}
         onReturnToLobby={() => resetPreview(playerCount, 'IN_PLAY')}
         onLeaveRoom={onExitPreview}
+        offline={offline}
       />
     </section>
   );

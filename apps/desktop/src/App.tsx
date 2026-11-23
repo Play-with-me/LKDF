@@ -20,6 +20,7 @@ import { ServerWakeScreen } from './features/auth/ServerWakeScreen.js';
 import { LOBBY_PREVIEW_PROFILE } from './features/lobby/lobbyPreviewProfile.js';
 import { HomeLobbyHub } from './features/lobby/HomeLobbyHub.js';
 import { WaitingRoomScreen } from './features/lobby/WaitingRoomScreen.js';
+import { OfflineMatchSetup } from './features/match/OfflineMatchSetup.js';
 import { MatchScreen } from './features/match/MatchScreen.js';
 import { StatsPage } from './features/stats/StatsPage.js';
 import { UpdateModal } from './features/update/UpdateModal.js';
@@ -126,13 +127,15 @@ export function App() {
   const [profile, setProfile] = useState<UserProfile | null>(
     initialDevPreviewMode === 'nickname' || isLobbyPreview ? LOBBY_PREVIEW_PROFILE : null,
   );
+  const [offlineMode, setOfflineMode] = useState<PlayerCount | 'setup' | null>(null);
+  const closeOffline = useCallback(() => setOfflineMode(null), []);
   const [showMatchCrossing, setShowMatchCrossing] = useState(false);
   const effectsEnabled = profile?.preferences.soundEnabled ?? false;
   const musicEnabled = profile?.preferences.musicEnabled ?? effectsEnabled;
-  const lobbyMusicActive = musicEnabled &&
+  const lobbyMusicActive = offlineMode === null && musicEnabled &&
     (screen === 'HOME' || screen === 'WAITING_ROOM');
   useInterfaceSounds(
-    effectsEnabled && screen !== 'DEV_PREVIEW',
+    effectsEnabled && offlineMode === null && screen !== 'DEV_PREVIEW',
     lobbyMusicActive || (musicEnabled && screen === 'MATCH'),
   );
   useGameAmbience(lobbyMusicActive ? 0.23 : 0);
@@ -462,7 +465,7 @@ export function App() {
     restoreProfileFocus.current = statsReturnScreen === 'HOME';
     setScreen(statsReturnScreen);
   }, [statsReturnScreen]);
-  useBackNavigation(screen === 'STATS' && !isUpdateModalOpen, backFromStats);
+  useBackNavigation(offlineMode === null && screen === 'STATS' && !isUpdateModalOpen, backFromStats);
   useEffect(() => {
     if (!isHomeLobby || !restoreProfileFocus.current) return;
     restoreProfileFocus.current = false;
@@ -474,8 +477,27 @@ export function App() {
     ((screen === 'LOGIN' && Boolean(health)) ||
       (screen === 'NICKNAME_SETUP' && Boolean(profile)));
 
+  if (offlineMode !== null) {
+    return (
+      <main className="relative flex h-screen w-screen min-h-0 min-w-0 flex-col overflow-hidden bg-[#090807] text-[#EFE6D5]"
+        style={offlineMode === 'setup' ? { backgroundImage: `linear-gradient(#09080799, #090807df), url("${lobbyBannerUrl}")`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}>
+        {offlineMode === 'setup' ? <OfflineMatchSetup onStart={setOfflineMode} onBack={closeOffline} /> : (
+          <Suspense fallback={<div role="status" className="m-auto">Đang chuẩn bị ván tập…</div>}>
+            <DevMatchPreviewLazy offline initialPlayerCount={offlineMode} onExitPreview={closeOffline} />
+          </Suspense>
+        )}
+      </main>
+    );
+  }
+
   return (
     <main className="relative flex h-screen w-screen min-h-0 min-w-0 flex-col overflow-hidden bg-[#090807] text-[#EFE6D5]">
+      {(screen === 'BOOT' || screen === 'WAKE' || screen === 'LOGIN') ? (
+        <button type="button" onClick={() => setOfflineMode('setup')}
+          className="absolute bottom-14 left-5 z-30 cursor-pointer rounded-md border border-[#C89B4B] bg-[#241813] px-4 py-2 text-sm font-semibold text-[#F5EBD6] hover:bg-[#6C2521] focus-visible:outline-2 focus-visible:outline-[#E6BE6C]">
+          Chơi với Máy
+        </button>
+      ) : null}
       {isLobbySurface && !isAuthPortalScreen && !isHomeLobby ? (
         <div
           aria-hidden="true"
@@ -666,6 +688,7 @@ export function App() {
             onProfileUpdated={setProfile}
             onEnterRoom={handleEnterRoom}
             onOpenStats={() => handleOpenStatsFrom('HOME')}
+            onPlayOffline={() => setOfflineMode('setup')}
             onLoggedOut={handleLoggedOut}
             onSessionInvalid={handleSessionInvalid}
           />

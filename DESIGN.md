@@ -54,6 +54,8 @@
 - **Quy định phạm vi v1:** Ứng dụng v1 **chỉ thiết kế và phát hành cho máy tính Windows Desktop**, cố tình **không hỗ trợ màn hình điện thoại** để đảm bảo bàn chơi 8 người hiển thị đầy đủ thông tin trên một mặt phẳng mà không bị chồng chéo chữ.
 
 ### 3.2. Bố cục Responsive trên Máy tính Windows (`960×600` tối thiểu · Mở toàn màn hình)
+
+**Chơi với Máy:** Menu chính và màn trước đăng nhập có lối vào ván tập. Màn chuẩn bị mặc định 4 ghế và hiển thị số Máy trước khi bắt đầu. Trên bàn, ghế Máy hiển thị **Đang suy nghĩ…** trong lúc chờ hành động. Vô Giải dùng hạn chờ chung 3,5 giây để thời gian không bật mí ai cầm bài. Tổng kết có **Chơi lại** và **Về menu**.
 Toàn bộ cửa sổ ứng dụng lúc đánh bài được chia thành **4 vùng cố định** (`height: 100vh; overflow: hidden`), sử dụng CSS Container Queries (`.lkdf-arena-stage`) để tự co giãn theo kích thước cửa sổ (`960×600` chia đôi màn hình đến `1920×1080`/2K, 0 thanh cuộn trang):
 
 ```text

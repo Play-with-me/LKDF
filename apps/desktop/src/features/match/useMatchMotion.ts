@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, type RefObject } from 'react';
 import type { CardInstance, PlayerViewState } from '@lkdf/shared';
 import { getCardArtUrl, getUiAssetUrl } from '../../lib/assetCatalog.js';
 import type { VfxEvent, VfxKind } from './MatchVfxCanvas.js';
+import { getLoggedHeroSkill } from './matchSounds.js';
 
 export type ActionArcKind = 'attack' | 'scroll' | 'heal';
 
@@ -150,6 +151,26 @@ function showDraws(motion: BoardMotion, previous: PlayerViewState, state: Player
 
 function showTransfers(motion: BoardMotion, previous: PlayerViewState, state: PlayerViewState) {
   showDraws(motion, previous, state);
+  const handAt = (seat: number) =>
+    (seat === state.viewerSeatIndex ? motion.board.querySelector('.lkdf-hand-row') : null)
+    ?? seatAt(motion, seat);
+  for (const line of state.actionLog.slice(previous.actionLog.length)) {
+    const gift = /^(.+) dùng (Nhân Đức|Di Kế) giao (\d+) lá bài cho (.+?)(?: và hồi 1 máu)?\.$/u.exec(line);
+    if (!gift) continue;
+    const senders = state.players.filter(player => player.displayName === gift[1]);
+    const recipients = state.players.filter(player => player.displayName === gift[4]);
+    const sender = senders.length === 1 ? senders[0] : undefined;
+    const receiver = recipients.length === 1 ? recipients[0] : undefined;
+    if (!sender || !receiver || sender.seatIndex === receiver.seatIndex) continue;
+    const from = gift[2] === 'Di Kế'
+      ? seatAt(motion, sender.seatIndex)
+      : handAt(sender.seatIndex);
+    const to = handAt(receiver.seatIndex);
+    if (!from || !to) continue;
+    for (let index = 0; index < Math.min(Number(gift[3]), 8); index++) {
+      transferCard(motion, from, to, undefined, index * 70);
+    }
+  }
   const center = motion.board.querySelector('.lkdf-battle-center-stack');
   if (!center) return;
   const take = previous.activeInterrupt;
@@ -491,7 +512,7 @@ export function useMatchMotion(
           delete next[seatIndex];
           return next;
         });
-      }, 450);
+      }, 1100);
       pending.current.add(t);
     };
 
@@ -561,16 +582,13 @@ export function useMatchMotion(
           addTrauma(0.78);
         }
       }
-      // Skill stamp detection ("kích hoạt <SkillName>")
-      for (const actor of state.players) {
-        const prefix = `${actor.displayName} kích hoạt `;
-        if (line.startsWith(prefix)) {
-          const rest = line.slice(prefix.length);
-          const skillName = rest.split(/[,.(]/)[0]?.trim();
-          if (skillName && skillName.length <= 24) {
-            triggerSkillStamp(actor.seatIndex, skillName);
-          }
-        }
+      const actors = state.players
+        .filter(player => line.startsWith(player.displayName + ' '))
+        .sort((first, second) => second.displayName.length - first.displayName.length);
+      const actor = actors[0];
+      if (actor && actor.displayName !== actors[1]?.displayName) {
+        const skillName = getLoggedHeroSkill(line.slice(actor.displayName.length + 1));
+        if (skillName) triggerSkillStamp(actor.seatIndex, skillName);
       }
     }
 
