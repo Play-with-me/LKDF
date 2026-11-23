@@ -239,11 +239,8 @@ function createMainWindow(): BrowserWindow {
   allowForceClose = false;
 
   const win = new BrowserWindow({
-    fullscreen: true,
+    show: false,
     frame: false,
-    resizable: false,
-    minimizable: false,
-    maximizable: false,
     backgroundColor: '#090807',
     title: 'Tam Quốc Sát',
     autoHideMenuBar: true,
@@ -253,6 +250,11 @@ function createMainWindow(): BrowserWindow {
       nodeIntegration: false,
       sandbox: true,
     },
+  });
+
+  win.once('ready-to-show', () => {
+    win.setFullScreen(true);
+    win.show();
   });
 
   win.on('app-command', (_event, command) => {

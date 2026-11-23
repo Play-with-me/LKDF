@@ -53,7 +53,7 @@
 ### 3.1. Bố cục trên Điện thoại
 - **Quy định phạm vi v1:** Ứng dụng v1 **chỉ thiết kế và phát hành cho máy tính Windows Desktop**, cố tình **không hỗ trợ màn hình điện thoại** để đảm bảo bàn chơi 8 người hiển thị đầy đủ thông tin trên một mặt phẳng mà không bị chồng chéo chữ.
 
-### 3.2. Bố cục Responsive trên Máy tính Windows (`960×600` tối thiểu · Mở mặc định `1280×720` · Co giãn mượt tới `2K`)
+### 3.2. Bố cục Responsive trên Máy tính Windows (`960×600` tối thiểu · Mở toàn màn hình)
 Toàn bộ cửa sổ ứng dụng lúc đánh bài được chia thành **4 vùng cố định** (`height: 100vh; overflow: hidden`), sử dụng CSS Container Queries (`.lkdf-arena-stage`) để tự co giãn theo kích thước cửa sổ (`960×600` chia đôi màn hình đến `1920×1080`/2K, 0 thanh cuộn trang):
 
 ```text
