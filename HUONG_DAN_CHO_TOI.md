@@ -33,7 +33,7 @@ Vì bạn là người mới và không lập trình, bạn **không cần đọ
 
 ## 2. Lộ Trình Từ Đầu Đến Cuối & Các Câu Lệnh "Copy – Dán" Cho Bạn
 
-**2026-11-25 · ✅ ĐÃ XONG & Đẩy GitHub (`origin/main`) toàn bộ Nâng cấp Studio 9.4+, Khóa Phán Xét & 6 VFX Quốc Phong.** 👉 BẠN ĐANG Ở ĐÂY · Đồng bộ máy chủ Render và đóng gói bản phát hành `v1.1.0` trên GitHub Actions (*"Đẩy tag v1.1.0 để GitHub Actions tự đóng gói bản phát hành cho tôi"*).
+**2026-11-25 · ✅ ĐÃ XONG & Đẩy GitHub (`origin/main`) + Tag phát hành `v1.1.0` (`Release Windows Installer`).** 👉 BẠN ĐANG Ở ĐÂY · Chờ ~4–6 phút cho GitHub Actions đóng gói xong `TamQuocSat-Setup-1.1.0.exe` (và đồng bộ máy chủ Render), sau đó nhắn *"Kiểm tra giúp tôi xem GitHub Actions đã đóng gói xong bản v1.1.0 chưa và cập nhật README"* để tôi kiểm tra & cập nhật trang tải.
 
 **2026-11-25 · ✅ ĐÃ XONG Chuẩn hóa Luật Hủy/Lấy, Rút bài & Đến Lượt, UX 25 Kỹ năng & 6 Bộ Ảnh Động Quốc Phong (WebP Flipbook + 60fps Canvas).** 👉 Đã kiểm tra, cài đặt cục bộ và đồng bộ lên `origin/main`.
 
