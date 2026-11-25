@@ -33,7 +33,7 @@ Vì bạn là người mới và không lập trình, bạn **không cần đọ
 
 ## 2. Lộ Trình Từ Đầu Đến Cuối & Các Câu Lệnh "Copy – Dán" Cho Bạn
 
-**2026-11-25 · ✅ ĐÃ XONG & Đẩy GitHub (`origin/main`) + Tag phát hành `v1.1.0` (`Release Windows Installer`).** 👉 BẠN ĐANG Ở ĐÂY · Chờ ~4–6 phút cho GitHub Actions đóng gói xong `TamQuocSat-Setup-1.1.0.exe` (và đồng bộ máy chủ Render), sau đó nhắn *"Kiểm tra giúp tôi xem GitHub Actions đã đóng gói xong bản v1.1.0 chưa và cập nhật README"* để tôi kiểm tra & cập nhật trang tải.
+**2026-11-25 · ✅ ĐÃ PHÁT HÀNH `v1.1.0` (`TamQuocSat-Setup-1.1.0.exe` — 133 MB) trên GitHub Releases & Render Update Proxy + Cập nhật `README.md`.** 👉 BẠN ĐANG Ở ĐÂY · Kiểm tra nhanh trên **Render** xem máy chủ trực tuyến đã triển khai commit `b3a234f` chưa, sau đó mở app chơi thử với hội bạn 4–8 người (bản `v1.0.0` cũ mở lên sẽ tự báo cập nhật lên `v1.1.0`!) và chốt nghiệm thu Bước 5.2!
 
 **2026-11-25 · ✅ ĐÃ XONG Chuẩn hóa Luật Hủy/Lấy, Rút bài & Đến Lượt, UX 25 Kỹ năng & 6 Bộ Ảnh Động Quốc Phong (WebP Flipbook + 60fps Canvas).** 👉 Đã kiểm tra, cài đặt cục bộ và đồng bộ lên `origin/main`.
 

@@ -1,21 +1,21 @@
 <div align="center">
   <img src="docs/media/red-cliffs-cover.webp" width="900" alt="Tam Quốc Sát — Battle of Red Cliffs, an online strategy card game for 4–8 players" />
   <p>
-    <a href="https://github.com/Play-with-me/LKDF/releases/download/v1.0.0/TamQuocSat-Setup-1.0.0.exe"><img src="https://img.shields.io/badge/T%E1%BA%A3i%20game%20ngay-Windows%20x64-A73028?style=for-the-badge&amp;logo=github&amp;logoColor=white&amp;labelColor=291914" alt="Download the Windows installer from GitHub" /></a>
-    <a href="https://lkdf-tam-quoc-sat-server.onrender.com/api/update/download/TamQuocSat-Setup-1.0.0.exe"><img src="https://img.shields.io/badge/Alternative%20download-735125?style=for-the-badge" alt="Download the same Windows installer via the alternate link" /></a>
+    <a href="https://github.com/Play-with-me/LKDF/releases/download/v1.1.0/TamQuocSat-Setup-1.1.0.exe"><img src="https://img.shields.io/badge/T%E1%BA%A3i%20game%20ngay-Windows%20x64-A73028?style=for-the-badge&amp;logo=github&amp;logoColor=white&amp;labelColor=291914" alt="Download the Windows installer from GitHub" /></a>
+    <a href="https://lkdf-tam-quoc-sat-server.onrender.com/api/update/download/TamQuocSat-Setup-1.1.0.exe"><img src="https://img.shields.io/badge/Alternative%20download-735125?style=for-the-badge" alt="Download the same Windows installer via the alternate link" /></a>
   </p>
-  <p><strong>Windows x64</strong> · v1.0.0 · 122 MB</p>
+  <p><strong>Windows x64</strong> · v1.1.0 · 133 MB</p>
   <p><a href="#install-and-play">Install &amp; play</a> · <a href="#gameplay">Gameplay</a> · <a href="#develop">Build from source</a></p>
 </div>
 
 ## Install and play
 
-**① GitHub** — Click **Tải game ngay** above, or open [GitHub Releases](https://github.com/Play-with-me/LKDF/releases/tag/v1.0.0) and select **TamQuocSat-Setup-1.0.0.exe** under **Assets**.
+**① GitHub** — Click **Tải game ngay** above, or open [GitHub Releases](https://github.com/Play-with-me/LKDF/releases/tag/v1.1.0) and select **TamQuocSat-Setup-1.1.0.exe** under **Assets**.
 
 **② Alternate link** — Click **Alternative download** above to get the same installer.
 
 1. **Install.** Open the downloaded **.exe** from your **Downloads** folder.
-2. **Sign in.** Open **Tam Quoc Sat** from your Desktop or Start menu. Select **Chơi online** and sign in with Google.
+2. **Sign in.** Open **Tam Quoc Sat** from your Desktop or Start menu. Select **Chơi online** and sign in with Google (or pick **Chơi với Máy** to practice offline with bots).
 3. **Play with friends.** Create a room and share its six-character code, or join with a friend’s code. Start when 4–8 players are ready.
 
 The game interface is in Vietnamese. Online play requires an internet connection and a Google account.
@@ -23,7 +23,7 @@ The game interface is in Vietnamese. Online play requires an internet connection
 <details>
 <summary><strong>Cài nhanh bằng tiếng Việt</strong></summary>
 
-Bấm **Tải game ngay** hoặc **Alternative download**. Mở tệp **TamQuocSat-Setup-1.0.0.exe** trong thư mục **Downloads**. Sau đó mở game ở Desktop, chọn **Chơi online**, đăng nhập Google rồi tạo phòng hoặc nhập mã bạn bè gửi.
+Bấm **Tải game ngay** hoặc **Alternative download**. Mở tệp **TamQuocSat-Setup-1.1.0.exe** trong thư mục **Downloads**. Sau đó mở game ở Desktop, chọn **Chơi online** (đăng nhập Google để tạo phòng hoặc nhập mã bạn bè gửi) hoặc **Chơi với Máy** để đánh với AI 4–8 người.
 
 </details>
 
@@ -45,8 +45,6 @@ The Lord plays in the open. Loyalists protect the throne, Rebels aim to topple i
 
 <details>
 <summary><strong>Developer setup, repository layout, and Windows builds</strong></summary>
-
-The Windows full-screen startup fix is available in the source. The published v1.0.0 installer predates that fix.
 
 Use **Node.js 22 or later** and npm. Use Windows to run or package the Electron desktop app.
 
