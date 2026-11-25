@@ -488,14 +488,25 @@ describe('Bước 1.3 — 7 Tướng phe Thục (Lưu Bị, Quan Vũ, Trương P
     });
     expect(state.players[0]!.handCards.map((c) => c.id)).toContain(targetCard.id);
 
-    // Dùng Cẩm nang thời gian (Lạc Bất Tư Thục) -> KHÔNG kích hoạt Tập Trí (không rút draw2)
+    // Cẩm nang thời gian cũng kích hoạt Tập Trí.
     state = applyGameAction(state, {
       type: 'PLAY_CARD',
       seatIndex: 0,
       cardIds: [delayed.id],
       targetSeats: [2],
     });
-    expect(state.players[0]!.handCards.map((c) => c.id)).not.toContain(draw2.id);
-    expect(state.drawPile).toHaveLength(1);
+    expect(state.players[0]!.handCards.map((c) => c.id)).toContain(draw2.id);
+    expect(state.drawPile).toHaveLength(0);
+  });
+  it('Tập Trí rút 1 lá khi đặt Thiểm Điện nhưng không công khai lá rút', () => {
+    const lightning = card('thiem_dien', 'Thiểm Điện', 'DELAYED_SCROLL', 'SPADE', 1);
+    const drawn = card('dao', 'Đào', 'BASIC', 'HEART', 6);
+    const state = makeControlledState(4, {
+      0: { heroId: 'huang_yue_ying', handCards: [lightning] },
+    }, [drawn]);
+    const next = applyGameAction(state, { type: 'PLAY_CARD', seatIndex: 0, cardIds: [lightning.id] });
+    expect(next.players[0]!.handCards.map(c => c.id)).toEqual([drawn.id]);
+    expect(next.players[0]!.delayedScrolls[0]?.id).toBe(lightning.id);
+    expect(projectStateForPlayer(next, 'u-1').players[0]!.handCards).toBeNull();
   });
 });

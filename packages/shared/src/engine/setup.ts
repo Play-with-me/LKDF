@@ -23,6 +23,7 @@ export interface SetupSeatInput {
 }
 
 export interface CreateMatchSetupOptions {
+  readonly manualDraw?: boolean;
   readonly matchId: string;
   readonly seats: readonly SetupSeatInput[];
   readonly rng?: () => number;
@@ -200,6 +201,7 @@ export function createInitialMatchSetup(
     currentTurnSeat: lordSeatIndex,
     turnPhase: 'HERO_SELECT',
     peacefulFirstRound: true,
+    ...(options.manualDraw ? { manualDraw: true } : {}),
     heroDraft,
     drawPile: [],
     discardPile: [],

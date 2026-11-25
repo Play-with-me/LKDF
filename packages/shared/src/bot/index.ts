@@ -258,7 +258,7 @@ function collectAnyOwnedCards(
 
 function pickBestTargetZone(
   target: PublicPlayerView,
-  allowDelayed = true,
+  allowDelayed = false,
 ): {
   readonly zone: TargetCardZone;
   readonly handIndex?: number;
@@ -513,8 +513,7 @@ function decidePlayPhaseAction(view: PlayerViewState): GameAction {
           p.equipments.weapon !== null ||
           p.equipments.armor !== null ||
           p.equipments.plusOneHorse !== null ||
-          p.equipments.minusOneHorse !== null ||
-          p.delayedScrolls.length > 0),
+          p.equipments.minusOneHorse !== null),
     );
     if (target) {
       return {
@@ -536,8 +535,7 @@ function decidePlayPhaseAction(view: PlayerViewState): GameAction {
         p.equipments.weapon !== null ||
         p.equipments.armor !== null ||
         p.equipments.plusOneHorse !== null ||
-        p.equipments.minusOneHorse !== null ||
-        p.delayedScrolls.length > 0,
+        p.equipments.minusOneHorse !== null,
     );
     if (target) {
       return {
@@ -1105,6 +1103,11 @@ export function decideBotAction(
       default:
         throw new Error(`UNHANDLED_INTERRUPT_FOR_BOT:${active.kind}`);
     }
+  }
+
+  if (view.availableDrawCount !== undefined && (view.turnPhase === 'DRAW' ||
+    !hand.some(card => card.cardKey === 'sat' || card.cardKey === 'quyet_dau'))) {
+    return { type: 'DRAW_CARDS', seatIndex, extra: view.turnPhase === 'PLAY' };
   }
 
   if (view.turnPhase === 'DISCARD') {

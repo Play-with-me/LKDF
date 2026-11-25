@@ -20,7 +20,7 @@ export interface ServerConfig {
 }
 
 export interface MatchCoordinatorConfig {
-  /** Khoảng dừng giả lập Vô Giải Khả Kích khi không ai có bài (mặc định 2000–3500ms). */
+  /** Giới hạn cấu hình cửa sổ Vô Giải chung (mặc định 8000ms). */
   readonly simulatedNullificationMinMs?: number;
   readonly simulatedNullificationMaxMs?: number;
   /** Độ trễ mỗi nước đánh khi Máy đánh hộ tạm thời (mặc định 450ms). */

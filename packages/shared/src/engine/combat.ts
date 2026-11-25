@@ -1,4 +1,4 @@
-import { createStandard108Deck } from '../cards/catalog.js';
+import { createStandard108Deck, isBlackSuit, isRedSuit } from '../cards/catalog.js';
 import {
   canReachForSnatch,
   canUseCollateralMurder,
@@ -10,6 +10,7 @@ import type {
   InterruptFrame,
   MasterGameState,
   PlayerCombatState,
+  Suit,
 } from '../types/game.js';
 import {
   applyDamage,
@@ -30,6 +31,8 @@ import {
   resolveStrikeHit,
   SKILL_RUNTIME,
   startJudgment,
+  revealPublicCard,
+  completeTurnDraw,
   stepEngine,
 } from './combatCore.js';
 import type { GameAction } from './combatTypes.js';
@@ -40,7 +43,6 @@ import {
   drawFromPile,
   getClockwiseAliveSeats,
   getPlayerBySeat,
-  hasAnyCardAnywhere,
   hasAnyCardInHandOrEquip,
   removeAnyCardFromPlayer,
   removeCardFromTargetZone,
@@ -123,6 +125,33 @@ function findCardOnPlayer(
   return eq ? { card: eq, isHand: false } : null;
 }
 
+const SUIT_LABEL_VI: Readonly<Record<Suit, string>> = {
+  SPADE: '♠ Bích',
+  HEART: '♥ Cơ',
+  CLUB: '♣ Chuồn',
+  DIAMOND: '♦ Rô',
+};
+
+function getStrikeConversionSkill(
+  player: PlayerCombatState,
+  card: CardInstance,
+): 'Võ Thánh' | 'Long Đảm' | null {
+  if (card.cardKey === 'sat') return null;
+  if (player.heroId === 'guan_yu' && isRedSuit(card.suit)) return 'Võ Thánh';
+  if (player.heroId === 'zhao_yun' && card.cardKey === 'thiem') return 'Long Đảm';
+  return null;
+}
+
+function getDodgeConversionSkill(
+  player: PlayerCombatState,
+  card: CardInstance,
+): 'Long Đảm' | 'Khuynh Quốc' | null {
+  if (card.cardKey === 'thiem') return null;
+  if (player.heroId === 'zhao_yun' && card.cardKey === 'sat') return 'Long Đảm';
+  if (player.heroId === 'zhen_ji' && isBlackSuit(card.suit)) return 'Khuynh Quốc';
+  return null;
+}
+
 function validateAndConsumeStrikeCards(
   state: MasterGameState,
   seatIndex: number,
@@ -145,7 +174,18 @@ function validateAndConsumeStrikeCards(
       throw new Error('CARD_NOT_IN_HAND');
     }
     const res = SKILL_RUNTIME.discardAnyCard(state, seatIndex, cardId, rng);
-    return { state: showDiscardAs(res.state, res.removed, 'sat'), usedCards: [res.removed] };
+    let nextState = showDiscardAs(res.state, res.removed, 'sat');
+    const strikeSkill = getStrikeConversionSkill(player, res.removed);
+    if (strikeSkill) {
+      nextState = {
+        ...nextState,
+        actionLog: [
+          ...nextState.actionLog,
+          `${player.displayName} dùng ${strikeSkill} đánh Sát.`,
+        ],
+      };
+    }
+    return { state: nextState, usedCards: [res.removed] };
   }
   if (cardIds.length === 2 && allowTruongBat && hasTruongBat(player)) {
     const res = SKILL_RUNTIME.discardHandCards(state, seatIndex, cardIds, rng);
@@ -380,6 +420,15 @@ function handlePlayCard(
 
     const res = SKILL_RUNTIME.discardAnyCard(state, action.seatIndex, cardId, rng);
     let next = showDiscardAs(res.state, res.removed, 'sat');
+    const targetNames = targets.map((s) => getPlayerBySeat(next, s).displayName).join(', ');
+    const strikeSkill = getStrikeConversionSkill(actor, res.removed);
+    const paoXiaoLogs =
+      !strikeSkill && actor.heroId === 'zhang_fei' && satUsed >= 1
+        ? [`${actor.displayName} kích hoạt Phao Hống!`]
+        : [];
+    const strikeLog = strikeSkill
+      ? `${actor.displayName} dùng ${strikeSkill} đánh Sát vào ${targetNames}.`
+      : `${actor.displayName} đánh Sát vào ${targetNames}.`;
     next = {
       ...next,
       turnFlags: {
@@ -389,7 +438,8 @@ function handlePlayCard(
       },
       actionLog: [
         ...next.actionLog,
-        `${actor.displayName} đánh Sát vào ${targets.map((s) => getPlayerBySeat(next, s).displayName).join(', ')}.`,
+        ...paoXiaoLogs,
+        strikeLog,
       ],
     };
 
@@ -405,6 +455,11 @@ function handlePlayCard(
     });
     return stepEngine(next, rng);
   }
+
+  const triggerScrollHook = (s: MasterGameState): MasterGameState => {
+    const p = getPlayerBySeat(s, action.seatIndex);
+    return getHeroSkillHandler(p.heroId)?.onNormalScrollPlayed?.(s, action.seatIndex, rng, SKILL_RUNTIME) ?? s;
+  };
 
   // 4. CẨM NANG THỜI GIAN
   if (effectiveKey === 'lac_bat_tu_thuc') {
@@ -436,12 +491,22 @@ function handlePlayCard(
       ...p,
       delayedScrolls: [...p.delayedScrolls, virtualCard],
     }));
+    const isGuoSe = card.cardKey !== 'lac_bat_tu_thuc';
+    next = {
+      ...next,
+      actionLog: [
+        ...next.actionLog,
+        isGuoSe
+          ? `${actor.displayName} dùng Quốc Sắc đặt Lạc Bất Tư Thục lên ${target.displayName}.`
+          : `${actor.displayName} đặt Lạc Bất Tư Thục lên ${target.displayName}.`,
+      ],
+    };
     if (found.isHand) {
       next = notifyHandCardsLost(next, action.seatIndex, prevHandCount, rng);
     } else {
       next = notifyEquipLost(next, action.seatIndex, 1, rng);
     }
-    return next;
+    return triggerScrollHook(next);
   }
 
   if (effectiveKey === 'thiem_dien') {
@@ -453,18 +518,17 @@ function handlePlayCard(
       ...p,
       delayedScrolls: [...p.delayedScrolls, removed[0]!],
     }));
-    return notifyHandCardsLost(next, action.seatIndex, prevHandCount, rng);
+    next = {
+      ...next,
+      actionLog: [
+        ...next.actionLog,
+        `${selfPlayer.displayName} đặt Thiểm Điện lên khu phán xét.`,
+      ],
+    };
+    return triggerScrollHook(notifyHandCardsLost(next, action.seatIndex, prevHandCount, rng));
   }
 
   // 5. CẨM NANG THƯỜNG (kể cả Kỳ Tập -> Quá Hà Sái Cầu)
-  const triggerNormalScrollHook = (s: MasterGameState): MasterGameState => {
-    const p = getPlayerBySeat(s, action.seatIndex);
-    const handler = getHeroSkillHandler(p.heroId);
-    if (handler?.onNormalScrollPlayed) {
-      return handler.onNormalScrollPlayed(s, action.seatIndex, rng, SKILL_RUNTIME);
-    }
-    return s;
-  };
 
   if (effectiveKey === 'qua_ha_sai_cau') {
     const targetSeat = action.targetSeats?.[0];
@@ -472,11 +536,21 @@ function handlePlayCard(
       throw new Error('INVALID_DISMANTLE_TARGET');
     }
     const target = getPlayerBySeat(state, targetSeat);
-    if (!target.alive || !hasAnyCardAnywhere(target)) {
+    if (!target.alive || !hasAnyCardInHandOrEquip(target)) {
       throw new Error('TARGET_HAS_NO_CARDS');
     }
     const res = SKILL_RUNTIME.discardAnyCard(state, action.seatIndex, cardId, rng);
-    let next = triggerNormalScrollHook(showDiscardAs(res.state, res.removed, effectiveKey));
+    const isQiXi = card.cardKey !== 'qua_ha_sai_cau';
+    const withDiscardFace = showDiscardAs(res.state, res.removed, effectiveKey);
+    let next = triggerScrollHook({
+      ...withDiscardFace,
+      actionLog: [
+        ...withDiscardFace.actionLog,
+        isQiXi
+          ? `${actor.displayName} dùng Kỳ Tập đánh Quá Hà Sái Cầu vào ${target.displayName}.`
+          : `${actor.displayName} dùng Quá Hà Sái Cầu vào ${target.displayName}.`,
+      ],
+    });
     const scrollCard: CardInstance =
       effectiveKey === card.cardKey
         ? res.removed
@@ -505,7 +579,7 @@ function handlePlayCard(
 
   // Các Cẩm nang thường còn lại (chỉ từ tay)
   const res = SKILL_RUNTIME.discardHandCards(state, action.seatIndex, [cardId], rng);
-  let next = triggerNormalScrollHook(res.state);
+  let next = triggerScrollHook(res.state);
   const usedCard = res.removed[0]!;
 
   switch (usedCard.cardKey) {
@@ -539,7 +613,7 @@ function handlePlayCard(
       if (!canTargetPlayerWithCard(next, target, 'thuan_thu_khien_duong')) {
         throw new Error('TARGET_IMMUNE_TO_CARD');
       }
-      if (!hasAnyCardAnywhere(target)) {
+      if (!hasAnyCardInHandOrEquip(target)) {
         throw new Error('TARGET_HAS_NO_CARDS');
       }
       next = pushPendingEffect(next, {
@@ -674,6 +748,17 @@ export function applyGameAction(
     throw new Error('MATCH_ALREADY_FINISHED');
   }
 
+  if ((action.type === 'PLAY_CARD' || action.type === 'ACTIVATE_HERO_SKILL' || action.type === 'END_PLAY_PHASE') &&
+    state.turnFlags?.drawSecondAvailable && state.turnPhase === 'PLAY' &&
+    state.currentTurnSeat === action.seatIndex) {
+    state = {
+      ...state,
+      turnFlags: { ...state.turnFlags, drawSecondAvailable: false, luoYiActive: true },
+      actionLog: [...state.actionLog,
+        `${getPlayerBySeat(state, action.seatIndex).displayName} kích hoạt Lỏa Y, bắt đầu ra bài với 1 lá đã rút (+1 sát thương Sát/Quyết Đấu).`],
+    };
+  }
+
   switch (action.type) {
     case 'SET_AUTO_SKIP_NULLIFICATION': {
       return updatePlayer(state, action.seatIndex, (p) => ({
@@ -684,6 +769,23 @@ export function applyGameAction(
 
     case 'PLAY_CARD':
       return handlePlayCard(state, action, rng);
+
+    case 'DRAW_CARDS': {
+      const extra = state.turnPhase === 'PLAY' && state.turnFlags?.drawSecondAvailable === true;
+      if (!state.manualDraw || (state.turnPhase !== 'DRAW' && !extra) ||
+        Boolean(action.extra) !== extra || state.currentTurnSeat !== action.seatIndex ||
+        state.interruptStack.length > 0) {
+        throw new Error('CANNOT_DRAW_NOW');
+      }
+      let next = completeTurnDraw(state, rng);
+      if (getPlayerBySeat(state, action.seatIndex).heroId === 'xu_chu') {
+        next = { ...next, turnFlags: {
+          ...(next.turnFlags ?? { satUsedThisTurn: 0, skipPlayPhase: false }),
+          drawSecondAvailable: !extra && next.turnPhase === 'PLAY' && (next.drawPile.length > 0 || next.discardPile.length > 0),
+        } };
+      }
+      return stepEngine(next, rng);
+    }
 
     case 'END_PLAY_PHASE': {
       assertNoInterrupt(state);
@@ -877,7 +979,11 @@ export function applyGameAction(
         if (weiAllies.length === 0) {
           throw new Error('NO_WEI_ALLIES_FOR_HU_JIA');
         }
-        const frameSeq = { ...next, nextFrameSeq: (next.nextFrameSeq ?? 0) + 1 };
+        const frameSeq = {
+          ...next,
+          nextFrameSeq: (next.nextFrameSeq ?? 0) + 1,
+          actionLog: [...next.actionLog, `${target.displayName} phát động Hộ Giá!`],
+        };
         return pushInterrupt(frameSeq, {
           id: `hujia_${frameSeq.nextFrameSeq}`,
           kind: 'WAIT_HU_JIA',
@@ -913,7 +1019,17 @@ export function applyGameAction(
           [action.cardId],
           rng,
         );
+        const dodgeSkill = getDodgeConversionSkill(target, card);
         next = showDiscardAs(res.state, card, 'thiem');
+        next = {
+          ...next,
+          actionLog: [
+            ...next.actionLog,
+            dodgeSkill
+              ? `${target.displayName} dùng ${dodgeSkill} đánh Thiểm.`
+              : `${target.displayName} đánh Thiểm.`,
+          ],
+        };
         dodgedIncrement = 1;
       } else {
         // Không né -> Sát trúng mục tiêu!
@@ -923,6 +1039,16 @@ export function applyGameAction(
 
       const nextDodged = top.dodgedSoFar + dodgedIncrement;
       if (nextDodged < top.requiredCount) {
+        if (top.requiredCount >= 2) {
+          const source = getPlayerBySeat(next, top.sourceSeat);
+          next = {
+            ...next,
+            actionLog: [
+              ...next.actionLog,
+              `${source.displayName} phát động Vô Song, mục tiêu cần thêm ${top.requiredCount - nextDodged} lá Thiểm nữa!`,
+            ],
+          };
+        }
         return replaceTopInterrupt(next, {
           ...top,
           dodgedSoFar: nextDodged,
@@ -1146,7 +1272,11 @@ export function applyGameAction(
         if (shuAllies.length === 0) {
           throw new Error('NO_SHU_ALLIES_FOR_JI_JIANG');
         }
-        const frameSeq = { ...state, nextFrameSeq: (state.nextFrameSeq ?? 0) + 1 };
+        const frameSeq = {
+          ...state,
+          nextFrameSeq: (state.nextFrameSeq ?? 0) + 1,
+          actionLog: [...state.actionLog, `${actor.displayName} phát động Kích Tướng!`],
+        };
         return pushInterrupt(frameSeq, {
           id: `jijiang_${frameSeq.nextFrameSeq}`,
           kind: 'WAIT_JI_JIANG',
@@ -1197,6 +1327,16 @@ export function applyGameAction(
       }
       const nextPlayed = top.playedSoFar + 1;
       if (nextPlayed < top.requiredCount) {
+        if (top.requiredCount >= 2) {
+          const challenger = getPlayerBySeat(next, top.otherSeat);
+          next = {
+            ...next,
+            actionLog: [
+              ...next.actionLog,
+              `${challenger.displayName} phát động Vô Song, cần thêm ${top.requiredCount - nextPlayed} lá Sát nữa!`,
+            ],
+          };
+        }
         return replaceTopInterrupt(next, {
           ...top,
           playedSoFar: nextPlayed,
@@ -1207,6 +1347,15 @@ export function applyGameAction(
       const actorHandler = getHeroSkillHandler(actor.heroId);
       const nextRequired =
         actorHandler?.duelSatRequiredCount?.(next, actor) ?? 1;
+      if (nextRequired >= 2) {
+        next = {
+          ...next,
+          actionLog: [
+            ...next.actionLog,
+            `${actor.displayName} phát động Vô Song trong Quyết Đấu (cần ${nextRequired} lá Sát để đáp trả)!`,
+          ],
+        };
+      }
       return replaceTopInterrupt(next, {
         ...top,
         targetSeat: top.otherSeat,
@@ -1244,7 +1393,11 @@ export function applyGameAction(
         if (shuAllies.length === 0) {
           throw new Error('NO_SHU_ALLIES_FOR_JI_JIANG');
         }
-        const frameSeq = { ...state, nextFrameSeq: (state.nextFrameSeq ?? 0) + 1 };
+        const frameSeq = {
+          ...state,
+          nextFrameSeq: (state.nextFrameSeq ?? 0) + 1,
+          actionLog: [...state.actionLog, `${attacker.displayName} phát động Kích Tướng!`],
+        };
         return pushInterrupt(frameSeq, {
           id: `jijiang_${frameSeq.nextFrameSeq}`,
           kind: 'WAIT_JI_JIANG',
@@ -1327,7 +1480,11 @@ export function applyGameAction(
         if (shuAllies.length === 0) {
           throw new Error('NO_SHU_ALLIES_FOR_JI_JIANG');
         }
-        const frameSeq = { ...state, nextFrameSeq: (state.nextFrameSeq ?? 0) + 1 };
+        const frameSeq = {
+          ...state,
+          nextFrameSeq: (state.nextFrameSeq ?? 0) + 1,
+          actionLog: [...state.actionLog, `${actor.displayName} phát động Kích Tướng!`],
+        };
         return pushInterrupt(frameSeq, {
           id: `jijiang_${frameSeq.nextFrameSeq}`,
           kind: 'WAIT_JI_JIANG',
@@ -1389,7 +1546,11 @@ export function applyGameAction(
         if (weiAllies.length === 0) {
           throw new Error('NO_WEI_ALLIES_FOR_HU_JIA');
         }
-        const frameSeq = { ...next, nextFrameSeq: (next.nextFrameSeq ?? 0) + 1 };
+        const frameSeq = {
+          ...next,
+          nextFrameSeq: (next.nextFrameSeq ?? 0) + 1,
+          actionLog: [...next.actionLog, `${target.displayName} phát động Hộ Giá!`],
+        };
         return pushInterrupt(frameSeq, {
           id: `hujia_${frameSeq.nextFrameSeq}`,
           kind: 'WAIT_HU_JIA',
@@ -1427,7 +1588,18 @@ export function applyGameAction(
           [action.cardId],
           rng,
         );
-        next = popInterrupt(showDiscardAs(res.state, card, 'thiem')).state;
+        const dodgeSkill = getDodgeConversionSkill(target, card);
+        next = showDiscardAs(res.state, card, 'thiem');
+        next = {
+          ...next,
+          actionLog: [
+            ...next.actionLog,
+            dodgeSkill
+              ? `${target.displayName} dùng ${dodgeSkill} đánh Thiểm.`
+              : `${target.displayName} đánh Thiểm.`,
+          ],
+        };
+        next = popInterrupt(next).state;
         return stepEngine(next, rng);
       }
 
@@ -1490,7 +1662,7 @@ export function applyGameAction(
       if (action.seatIndex !== top.sourceSeat || top.handPick === 'PREPARE') {
         throw new Error('WRONG_ACTOR_FOR_PICK_TARGET');
       }
-      if (top.allowDelayed === false && action.zone === 'DELAYED') {
+      if (action.zone === 'DELAYED') {
         throw new Error('DELAYED_ZONE_NOT_ALLOWED');
       }
       const target = getPlayerBySeat(state, top.targetSeat);
@@ -1520,20 +1692,33 @@ export function applyGameAction(
           ...p,
           handCards: [...p.handCards, restored],
         }));
-      } else {
-        next = appendToDiscardPile(next, [res.removed]);
-      }
-      next = popInterrupt(next).state;
-      if (top.handPick === 'SELECT') {
         const taker = getPlayerBySeat(next, top.sourceSeat);
         next = {
           ...next,
-          actionLog: [...next.actionLog, `${taker.displayName} nhận 1 lá úp từ ${target.displayName}.`],
+          actionLog: [
+            ...next.actionLog,
+            top.handPick === 'SELECT'
+              ? `${taker.displayName} nhận 1 lá úp từ ${target.displayName}.`
+              : `${taker.displayName} lấy trang bị ${restored.nameVi} từ ${target.displayName}.`,
+          ],
+        };
+      } else {
+        next = appendToDiscardPile(next, [res.removed]);
+        const caster = getPlayerBySeat(next, top.sourceSeat);
+        next = {
+          ...next,
+          actionLog: [
+            ...next.actionLog,
+            action.zone === 'HAND'
+              ? `${caster.displayName} hủy 1 lá bài trên tay của ${target.displayName} (${res.removed.nameVi}).`
+              : `${caster.displayName} hủy trang bị ${res.removed.nameVi} của ${target.displayName}.`,
+          ],
         };
       }
+      next = popInterrupt(next).state;
       if (action.zone === 'HAND') {
         next = notifyHandCardsLost(next, top.targetSeat, prevHandCount, rng);
-      } else if (action.zone !== 'DELAYED') {
+      } else {
         next = notifyEquipLost(next, top.targetSeat, 1, rng);
       }
       return stepEngine(next, rng);
@@ -1582,11 +1767,26 @@ export function applyGameAction(
           ...p,
           hp: healedHp,
         }));
+        const isCapCuu =
+          found.card.cardKey !== 'dao' &&
+          responder.heroId === 'hua_tuo' &&
+          !inTurn;
+        const rescueLogs: string[] = [];
+        if (rescueBonus > 0) {
+          rescueLogs.push(
+            `${target.displayName} kích hoạt Cứu Viện, hồi thêm ${rescueBonus} máu.`,
+          );
+        }
+        rescueLogs.push(
+          isCapCuu
+            ? `${responder.displayName} dùng Cấp Cứu hóa Đào cứu ${target.displayName}${rescueBonus > 0 ? ' (Cứu Viện +1)' : ''} (hiện còn ${healedHp} máu).`
+            : `${responder.displayName} dùng Đào cứu ${target.displayName}${rescueBonus > 0 ? ' (Cứu Viện +1)' : ''} (hiện còn ${healedHp} máu).`,
+        );
         next = {
           ...next,
           actionLog: [
             ...next.actionLog,
-            `${responder.displayName} dùng Đào cứu ${target.displayName}${rescueBonus > 0 ? ' (Cứu Viện +1)' : ''} (hiện còn ${healedHp} máu).`,
+            ...rescueLogs,
           ],
         };
 
@@ -1675,6 +1875,11 @@ export function applyGameAction(
       if (!action.activate) {
         return stepEngine(next, rng);
       }
+      const owner = getPlayerBySeat(next, top.targetSeat);
+      next = {
+        ...next,
+        actionLog: [...next.actionLog, `${owner.displayName} phát động Lạc Thần!`],
+      };
       next = startJudgment(next, top.targetSeat, 'LUO_SHEN', rng);
       return stepEngine(next, rng);
     }
@@ -1694,6 +1899,7 @@ export function applyGameAction(
       }
       let next = popInterrupt(state).state;
       if (targets.length === 0) {
+        if (next.manualDraw) return stepEngine(next, rng);
         const curPlayer = getPlayerBySeat(next, top.targetSeat);
         const dealt = dealCardsToSeat(next, top.targetSeat, 2, rng);
         const skipPlay = dealt.state.turnFlags?.skipPlayPhase ?? false;
@@ -1716,12 +1922,23 @@ export function applyGameAction(
           throw new Error(`TU_XI_TARGET_HAS_NO_HAND:${tSeat}`);
         }
       }
-      next = { ...next, turnPhase: next.turnFlags?.skipPlayPhase ? 'DISCARD' : 'PLAY' };
+      const actor = getPlayerBySeat(next, top.targetSeat);
+      const targetNames = targets
+        .map((s) => getPlayerBySeat(next, s).displayName)
+        .join(', ');
+      next = {
+        ...next,
+        turnPhase: next.turnFlags?.skipPlayPhase ? 'DISCARD' : 'PLAY',
+        actionLog: [
+          ...next.actionLog,
+          `${actor.displayName} phát động Đột Tập lên ${targetNames}.`,
+        ],
+      };
       for (const targetSeat of [...targets].reverse()) {
         const { state: queued, id } = SKILL_RUNTIME.nextFrameId(next, 'tu_xi_take');
         next = pushInterrupt(queued, {
           id, kind: 'PICK_TARGET_CARD', mode: 'STEAL', handPick: 'PREPARE',
-          targetSeat, sourceSeat: top.targetSeat,
+          targetSeat, sourceSeat: top.targetSeat, allowDelayed: false,
         });
       }
       return next;
@@ -1782,6 +1999,11 @@ export function applyGameAction(
       if (!action.activate) {
         return stepEngine(next, rng);
       }
+      const source = getPlayerBySeat(next, top.sourceSeat);
+      next = {
+        ...next,
+        actionLog: [...next.actionLog, `${source.displayName} phát động Thiết Kỵ!`],
+      };
       next = startJudgment(next, top.sourceSeat, 'TIE_QI', rng, {
         sourceSeat: top.sourceSeat,
         targetSeat: top.targetSeat,
@@ -1868,6 +2090,7 @@ export function applyGameAction(
           action.cardId,
         ]);
         const newJudgeCard = removed[0]!;
+        next = revealPublicCard(next, top.judgeOwnerSeat, newJudgeCard, `Quỷ Tài · ${top.judgePurpose}`);
         next = updatePlayer(next, top.targetSeat, () => nextPlayer);
         next = appendToDiscardPile(next, [top.judgeCard]);
         next = notifyHandCardsLost(next, top.targetSeat, prevHandCount, rng);
@@ -1961,7 +2184,15 @@ export function applyGameAction(
       if (action.activate) {
         const source = getPlayerBySeat(next, top.sourceSeat);
         if (source.alive && hasAnyCardInHandOrEquip(source)) {
-          const frameSeq = { ...next, nextFrameSeq: (next.nextFrameSeq ?? 0) + 1 };
+          const actor = getPlayerBySeat(next, top.targetSeat);
+          const frameSeq = {
+            ...next,
+            nextFrameSeq: (next.nextFrameSeq ?? 0) + 1,
+            actionLog: [
+              ...next.actionLog,
+              `${actor.displayName} phát động Phản Quỷ lên ${source.displayName}.`,
+            ],
+          };
           next = pushInterrupt(frameSeq, {
             id: `fankui_pick_${frameSeq.nextFrameSeq}`,
             kind: 'PICK_TARGET_CARD',
@@ -1985,6 +2216,15 @@ export function applyGameAction(
       if (!action.activate) {
         return stepEngine(next, rng);
       }
+      const actor = getPlayerBySeat(next, top.targetSeat);
+      const source = getPlayerBySeat(next, top.sourceSeat);
+      next = {
+        ...next,
+        actionLog: [
+          ...next.actionLog,
+          `${actor.displayName} phát động Cương Liệt lên ${source.displayName}.`,
+        ],
+      };
       next = startJudgment(next, top.targetSeat, 'GANG_LIE', rng, {
         targetSeat: top.sourceSeat,
       });
@@ -2088,12 +2328,16 @@ export function applyGameAction(
       next = notifyHandCardsLost(next, top.sourceSeat, prevHandCount, rng);
 
       const target = getPlayerBySeat(next, top.targetSeat);
+      next = revealPublicCard(next, top.targetSeat, pickedCard,
+        pickedCard.suit === action.suit ? 'Phản Gián · Đoán đúng' : 'Phản Gián · Đoán sai');
+      const guessedSuitLabel = SUIT_LABEL_VI[action.suit];
+      const actualSuitLabel = SUIT_LABEL_VI[pickedCard.suit];
       if (pickedCard.suit !== action.suit) {
         next = {
           ...next,
           actionLog: [
             ...next.actionLog,
-            `${target.displayName} đoán sai chất (${action.suit} vs ${pickedCard.suit}) trước Phản Gián, chịu 1 sát thương!`,
+            `${target.displayName} đoán sai chất (đoán ${guessedSuitLabel}, mở ra ${actualSuitLabel}) trước Phản Gián, chịu 1 sát thương!`,
           ],
         };
         // Luật chuẩn Phản Gián: nếu đoán sai chất, chịu 1 sát thương (và xử lý Hấp Hối nếu 0 máu)
@@ -2113,7 +2357,8 @@ export function applyGameAction(
           ...next,
           actionLog: [
             ...next.actionLog,
-            `${target.displayName} đoán đúng chất ${action.suit} trước Phản Gián!`,
+            `${target.displayName} đoán đúng chất ${guessedSuitLabel} trước Phản Gián!`,
+            `${target.displayName} nhận lá ${pickedCard.nameVi} từ Phản Gián.`,
           ],
         };
       }
@@ -2300,11 +2545,14 @@ export function applyGameAction(
           rng,
         ).state;
         next = showDiscardAs(next, card, 'thiem');
+        const dodgeSkill = getDodgeConversionSkill(ally, card);
+        const lordName = getPlayerBySeat(next, top.lordSeat).displayName;
         next = {
           ...next,
           actionLog: [
             ...next.actionLog,
-            `${ally.displayName} hưởng ứng Hộ Giá đánh Thiểm thay cho ${getPlayerBySeat(next, top.lordSeat).displayName}!`,
+            ...(dodgeSkill ? [`${ally.displayName} dùng ${dodgeSkill} đánh Thiểm.`] : []),
+            `${ally.displayName} hưởng ứng Hộ Giá đánh Thiểm thay cho ${lordName}!`,
           ],
         };
         const dodgeTop = next.interruptStack[next.interruptStack.length - 1];

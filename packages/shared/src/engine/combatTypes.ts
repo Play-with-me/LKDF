@@ -18,6 +18,7 @@ export type VirtualCardKey =
   | 'lac_bat_tu_thuc';
 
 export type GameAction =
+  | { readonly type: 'DRAW_CARDS'; readonly seatIndex: number; readonly extra?: boolean }
   | {
       readonly type: 'PLAY_CARD';
       readonly seatIndex: number;

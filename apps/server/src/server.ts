@@ -68,7 +68,7 @@ export async function createServer(
     authService,
     nullificationWindowMs: Math.max(
       options?.runtime?.simulatedNullificationMinMs ?? 0,
-      options?.runtime?.simulatedNullificationMaxMs ?? 3500,
+      options?.runtime?.simulatedNullificationMaxMs ?? 8000,
     ),
     ...(options?.runtime?.timerScale !== undefined
       ? { timerScale: options.runtime.timerScale }

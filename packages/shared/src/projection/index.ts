@@ -1,3 +1,4 @@
+import { turnDrawCount } from '../engine/combatCore.js';
 import { STANDARD_DECK_TEMPLATES } from '../cards/catalog.js';
 import type {
   HeroDraftState,
@@ -312,7 +313,12 @@ export function projectStateForPlayer(
     players: publicPlayers,
     activeInterrupt,
     ...(masterState.turnFlags ? { turnFlags: { ...masterState.turnFlags } } : {}),
+    ...(masterState.manualDraw && (masterState.turnPhase === 'DRAW' ||
+      masterState.turnPhase === 'PLAY' && masterState.turnFlags?.drawSecondAvailable) &&
+      !masterState.interruptStack.length && masterState.currentTurnSeat === viewerSeatIndex
+      ? { availableDrawCount: turnDrawCount(masterState) } : {}),
     actionLog: [...masterState.actionLog],
+    ...(masterState.publicReveals ? { publicReveals: masterState.publicReveals } : {}),
     refereeAuditLog: [...masterState.refereeAuditLog],
     winningFaction: masterState.winningFaction,
     winnerUserIds: [...masterState.winnerUserIds],

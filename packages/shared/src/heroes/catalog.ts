@@ -127,7 +127,7 @@ export const HERO_CATALOG: readonly HeroDefinition[] = [
       {
         id: 'ji_zhi',
         nameVi: 'Tập Trí',
-        descriptionVi: 'Mỗi khi dùng một lá Cẩm nang thường, rút ngay 1 lá bài.',
+        descriptionVi: 'Mỗi khi dùng một lá Cẩm nang thường hoặc Cẩm nang thời gian, rút ngay 1 lá bài.',
       },
       {
         id: 'qi_cai',

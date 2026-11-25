@@ -47,7 +47,7 @@ export interface TimerPresetConfig {
 
 /** Thông số đồng hồ chuẩn theo REQUIREMENTS.md mục 3.4. */
 export const TIMER_PRESETS: Readonly<Record<TimerPreset, TimerPresetConfig>> = {
-  FAST: { heroSelectSeconds: 20, mainTurnSeconds: 90, discardSeconds: 30, reactionSeconds: 10 },
+  FAST: { heroSelectSeconds: 20, mainTurnSeconds: 90, discardSeconds: 30, reactionSeconds: 15 },
   STANDARD: { heroSelectSeconds: 30, mainTurnSeconds: 150, discardSeconds: 45, reactionSeconds: 15 },
   RELAXED: { heroSelectSeconds: 45, mainTurnSeconds: 180, discardSeconds: 60, reactionSeconds: 20 },
 };

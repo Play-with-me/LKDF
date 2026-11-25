@@ -4,11 +4,13 @@ import {
   canUseCollateralMurder,
   getPendingPrompt,
   projectStateForPlayer,
+  stepEngine,
   STANDARD_DECK_TEMPLATES,
   type CardInstance,
   type MasterGameState,
   type PlayerCombatState,
 } from '../../src/index.js';
+import { restorePhysicalCard } from '../../src/engine/deck.js';
 
 function passNullifications(state: MasterGameState): MasterGameState {
   let cur = state;
@@ -263,13 +265,21 @@ describe('Kiểm chứng toàn diện chuẩn luật Yoka Standard (1A + 2A)', (
     ).toThrow('DELAYED_ZONE_NOT_ALLOWED');
   });
 
-  it('Đại Kiều (Quốc Sắc): lá bị Thuận Thủ / Quá Hà lấy lại về tay giữ nguyên mặt bài vật lý gốc', () => {
+  it('Đại Kiều (Quốc Sắc): phán xét xong đưa về chồng bài bỏ giữ nguyên mặt bài vật lý gốc & restorePhysicalCard hoạt động chuẩn; Thuận Thủ cấm nhắm ghế chỉ có bài Phán xét', () => {
     const diamondSat = card('sat', 'Sát Rô', 'BASIC', 'DIAMOND', 9);
     const snatch = card('thuan_thu_khien_duong', 'Thuận Thủ Khiên Dương', 'NORMAL_SCROLL', 'SPADE', 3);
-    let state = makeState(4, {
-      0: { heroId: 'da_qiao', handCards: [diamondSat, snatch] },
-      1: { heroId: 'zhang_fei', handCards: [] },
-    });
+    let state = makeState(
+      4,
+      {
+        0: { heroId: 'da_qiao', handCards: [diamondSat, snatch] },
+        1: { heroId: 'zhang_fei', handCards: [] },
+      },
+      [
+        card('dao', 'Phán xét Cơ', 'BASIC', 'HEART', 6),
+        card('sat', 'Rút 1', 'BASIC', 'CLUB', 2),
+        card('sat', 'Rút 2', 'BASIC', 'CLUB', 3),
+      ],
+    );
     state = applyGameAction(state, {
       type: 'PLAY_CARD',
       seatIndex: 0,
@@ -277,24 +287,36 @@ describe('Kiểm chứng toàn diện chuẩn luật Yoka Standard (1A + 2A)', (
       asCardKey: 'lac_bat_tu_thuc',
       targetSeats: [1],
     });
-    expect(state.players[1]!.delayedScrolls[0]!.cardKey).toBe('lac_bat_tu_thuc');
-    state = passNullifications(
+    expect(state.actionLog.at(-1)).toBe('Ghế 1 dùng Quốc Sắc đặt Lạc Bất Tư Thục lên Ghế 2.');
+    const placedVirtual = state.players[1]!.delayedScrolls[0]!;
+    expect(placedVirtual.cardKey).toBe('lac_bat_tu_thuc');
+    expect(restorePhysicalCard(placedVirtual)).toMatchObject({
+      id: diamondSat.id,
+      cardKey: 'sat',
+      nameVi: 'Sát Rô',
+      suit: 'DIAMOND',
+      rank: 9,
+    });
+    expect(restorePhysicalCard(placedVirtual).physicalCard).toBeUndefined();
+
+    // Ghế 1 có 0 bài tay và 0 trang bị (chỉ có Lạc Bất Tư Thục ở khu phán xét) -> cấm dùng Thuận Thủ
+    expect(() =>
       applyGameAction(state, {
         type: 'PLAY_CARD',
         seatIndex: 0,
         cardIds: [snatch.id],
         targetSeats: [1],
       }),
+    ).toThrow('TARGET_HAS_NO_CARDS');
+
+    // Khi kết thúc pha phán xét bình thường, lá Quốc Sắc về chồng bài bỏ phải là Sát Rô gốc
+    state = passNullifications(
+      applyGameAction(state, { type: 'END_PLAY_PHASE', seatIndex: 0 }),
     );
-    state = applyGameAction(state, {
-      type: 'RESPOND_PICK_TARGET_CARD',
-      seatIndex: 0,
-      zone: 'DELAYED',
-      delayedCardId: diamondSat.id,
-    });
-    // Về tay phải là Sát Rô gốc, KHÔNG biến thành Lạc Bất Tư Thục thật!
-    expect(state.players[0]!.handCards[0]!.cardKey).toBe('sat');
-    expect(state.players[0]!.handCards[0]!.nameVi).toBe('Sát Rô');
+    expect(state.players[1]!.delayedScrolls).toHaveLength(0);
+    const discardedOriginal = state.discardPile.find((c) => c.id === diamondSat.id);
+    expect(discardedOriginal?.cardKey).toBe('sat');
+    expect(discardedOriginal?.nameVi).toBe('Sát Rô');
   });
 
   it('Mã Siêu (Thiết Kỵ) + Nhân Vương Thuẫn: Thiết Kỵ ra Đỏ vẫn KHÔNG xuyên được Nhân Vương Thuẫn với Sát Đen', () => {
@@ -689,5 +711,247 @@ describe('Kiểm chứng toàn diện chuẩn luật Yoka Standard (1A + 2A)', (
     expect(state.players[0]!.delayedScrolls).toHaveLength(0);
     expect(state.players[1]!.delayedScrolls.some((c) => c.id === set1.id)).toBe(true);
     expect(state.players[1]!.delayedScrolls.some((c) => c.id === set2.id)).toBe(true);
+  });
+  it.each(['Quá Hà', 'Kỳ Tập', 'Thuận Thủ'])('%s cấm nhắm ghế chỉ có bài Phán xét (0 bài tay, 0 trang bị)', (skill) => {
+    const delayed = card('lac_bat_tu_thuc', 'Lạc Bất Tư Thục', 'DELAYED_SCROLL', 'HEART', 6);
+    const paid =
+      skill === 'Kỳ Tập'
+        ? card('sat', 'Sát đen', 'BASIC', 'SPADE', 7)
+        : skill === 'Thuận Thủ'
+          ? card('thuan_thu_khien_duong', 'Thuận Thủ Khiên Dương', 'NORMAL_SCROLL', 'SPADE', 3)
+          : card('qua_ha_sai_cau', 'Quá Hà Sái Cầu', 'NORMAL_SCROLL', 'SPADE', 4);
+    const state = makeState(4, {
+      0: { heroId: 'gan_ning', handCards: [paid] },
+      1: { handCards: [], delayedScrolls: [delayed] },
+    });
+    expect(() =>
+      applyGameAction(state, {
+        type: 'PLAY_CARD',
+        seatIndex: 0,
+        cardIds: [paid.id],
+        targetSeats: [1],
+        ...(skill === 'Kỳ Tập' ? { asCardKey: 'qua_ha_sai_cau' } : {}),
+      }),
+    ).toThrow('TARGET_HAS_NO_CARDS');
+  });
+
+  it.each(['Quá Hà', 'Kỳ Tập', 'Thuận Thủ'])('%s khóa vùng DELAYED và ghi nhật ký lấy/hủy bài tay & trang bị chuẩn tiếng Việt', (skill) => {
+    const delayed = card('lac_bat_tu_thuc', 'Lạc Bất Tư Thục', 'DELAYED_SCROLL', 'HEART', 6);
+    const handCard = card('dao', 'Đào', 'BASIC', 'HEART', 5);
+    const weapon = card('thanh_cong_kiem', 'Thanh Công Kiếm', 'WEAPON', 'SPADE', 6, 2);
+    const paid =
+      skill === 'Kỳ Tập'
+        ? card('sat', 'Sát đen', 'BASIC', 'SPADE', 7)
+        : skill === 'Thuận Thủ'
+          ? card('thuan_thu_khien_duong', 'Thuận Thủ Khiên Dương', 'NORMAL_SCROLL', 'SPADE', 3)
+          : card('qua_ha_sai_cau', 'Quá Hà Sái Cầu', 'NORMAL_SCROLL', 'SPADE', 4);
+    const state = makeState(4, {
+      0: { heroId: 'gan_ning', handCards: [paid] },
+      1: {
+        handCards: [handCard],
+        equipments: { weapon, armor: null, plusOneHorse: null, minusOneHorse: null },
+        delayedScrolls: [delayed],
+      },
+    });
+    const pending = passNullifications(
+      applyGameAction(state, {
+        type: 'PLAY_CARD',
+        seatIndex: 0,
+        cardIds: [paid.id],
+        targetSeats: [1],
+        ...(skill === 'Kỳ Tập' ? { asCardKey: 'qua_ha_sai_cau' } : {}),
+      }),
+    );
+    expect(getPendingPrompt(pending)?.kind).toBe('PICK_TARGET_CARD');
+    const actorView = projectStateForPlayer(
+      { ...pending, refereeAuditLog: [], winnerUserIds: [] },
+      state.players[0]!.userId,
+    );
+    expect(actorView.activeInterrupt?.allowDelayed).toBe(false);
+
+    expect(() =>
+      applyGameAction(pending, {
+        type: 'RESPOND_PICK_TARGET_CARD',
+        seatIndex: 0,
+        zone: 'DELAYED',
+        delayedCardId: delayed.id,
+      }),
+    ).toThrow('DELAYED_ZONE_NOT_ALLOWED');
+
+    const pickedWeapon = applyGameAction(pending, {
+      type: 'RESPOND_PICK_TARGET_CARD',
+      seatIndex: 0,
+      zone: 'WEAPON',
+    });
+    expect(pickedWeapon.players[1]!.equipments.weapon).toBeNull();
+    expect(pickedWeapon.players[1]!.delayedScrolls).toHaveLength(1);
+    if (skill === 'Thuận Thủ') {
+      expect(pickedWeapon.players[0]!.handCards.some((c) => c.id === weapon.id)).toBe(true);
+      expect(pickedWeapon.actionLog.at(-1)).toBe('Ghế 1 lấy trang bị Thanh Công Kiếm từ Ghế 2.');
+    } else {
+      expect(pickedWeapon.discardPile.at(-1)?.id).toBe(weapon.id);
+      expect(pickedWeapon.actionLog.at(-1)).toBe('Ghế 1 hủy trang bị Thanh Công Kiếm của Ghế 2.');
+      const pickedHand = applyGameAction(pending, {
+        type: 'RESPOND_PICK_TARGET_CARD',
+        seatIndex: 0,
+        zone: 'HAND',
+        handIndex: 0,
+      });
+      expect(pickedHand.players[1]!.handCards).toHaveLength(0);
+      expect(pickedHand.actionLog.at(-1)).toBe('Ghế 1 hủy 1 lá bài trên tay của Ghế 2 (Đào).');
+    }
+  });
+
+  it('Nhật ký chiến trận chuẩn tiếng Việt: Phản Gián không lộ tiếng Anh, Anh Tư / Quốc Sắc / Kỳ Tập / Võ Thánh / Long Đảm / Khuynh Quốc / Cấp Cứu / Vô Song', () => {
+    // 1. Phản Gián: chất tiếng Việt ♠ Bích / ♥ Cơ, không chứa SPADE/HEART/CLUB/DIAMOND
+    const zhouHand = card('dao', 'Đào Cơ', 'BASIC', 'HEART', 7);
+    let fjState = makeState(4, {
+      0: { heroId: 'zhou_yu', handCards: [zhouHand] },
+      1: { heroId: 'zhang_fei', hp: 4, handCards: [] },
+    });
+    fjState = applyGameAction(fjState, {
+      type: 'ACTIVATE_HERO_SKILL',
+      seatIndex: 0,
+      skillId: 'fan_jian',
+      targetSeats: [1],
+    });
+    fjState = applyGameAction(fjState, {
+      type: 'RESPOND_FAN_JIAN_GUESS',
+      seatIndex: 1,
+      suit: 'SPADE',
+    });
+    const fjLog = fjState.actionLog.join('\n');
+    expect(fjLog).toContain('♠ Bích');
+    expect(fjLog).toContain('♥ Cơ');
+    expect(fjLog).not.toMatch(/\b(SPADE|HEART|CLUB|DIAMOND)\b/);
+
+    // 2. Anh Tư của Chu Du
+    let yzState = makeState(
+      4,
+      { 0: { heroId: 'zhou_yu', handCards: [] } },
+      [
+        card('sat', 'S1', 'BASIC', 'SPADE', 2),
+        card('sat', 'S2', 'BASIC', 'CLUB', 3),
+        card('sat', 'S3', 'BASIC', 'HEART', 4),
+      ],
+      'JUDGE',
+    );
+    yzState = { ...yzState, turnFlags: { satUsedThisTurn: 0, skipPlayPhase: false, startSkillsChecked: true } };
+    yzState = stepEngine(yzState);
+    expect(yzState.actionLog.some((line) => /phát động Anh Tư, rút 3 lá ở pha Rút bài/u.test(line))).toBe(true);
+
+    // 3. Võ Thánh, Long Đảm, Khuynh Quốc, Vô Song, Cấp Cứu
+    const redCard = card('thiem', 'Thiểm Đỏ', 'BASIC', 'HEART', 5);
+    const blackCard = card('sat', 'Sát Đen', 'BASIC', 'CLUB', 6);
+    const satCard = card('sat', 'Sát', 'BASIC', 'SPADE', 7);
+    let duelLogState = makeState(4, {
+      0: { heroId: 'lu_bu', handCards: [satCard] },
+      1: { heroId: 'zhen_ji', hp: 1, maxHp: 3, handCards: [blackCard] },
+      2: { heroId: 'hua_tuo', hp: 3, handCards: [redCard] },
+    });
+    duelLogState = applyGameAction(duelLogState, {
+      type: 'PLAY_CARD',
+      seatIndex: 0,
+      cardIds: [satCard.id],
+      targetSeats: [1],
+    });
+    expect(duelLogState.actionLog.some((l) => l.includes('phát động Vô Song'))).toBe(true);
+    duelLogState = applyGameAction(duelLogState, {
+      type: 'RESPOND_DODGE',
+      seatIndex: 1,
+      cardId: blackCard.id,
+    });
+    expect(duelLogState.actionLog.some((l) => l.includes('dùng Khuynh Quốc đánh Thiểm'))).toBe(true);
+    duelLogState = applyGameAction(duelLogState, {
+      type: 'RESPOND_DODGE',
+      seatIndex: 1,
+      cardId: null,
+    });
+    duelLogState = applyGameAction(duelLogState, { type: 'RESPOND_PEACH_RESCUE', seatIndex: 0, cardId: null });
+    duelLogState = applyGameAction(duelLogState, { type: 'RESPOND_PEACH_RESCUE', seatIndex: 1, cardId: null });
+    duelLogState = applyGameAction(duelLogState, {
+      type: 'RESPOND_PEACH_RESCUE',
+      seatIndex: 2,
+      cardId: redCard.id,
+    });
+    expect(duelLogState.actionLog.some((l) => l.includes('dùng Cấp Cứu hóa Đào cứu'))).toBe(true);
+
+    // 4. Võ Thánh (Quan Vũ), Long Đảm (Triệu Vân), Kỳ Tập (Cam Ninh)
+    const guanRed = card('dao', 'Đào Đỏ', 'BASIC', 'DIAMOND', 4);
+    const zhaoSat = card('sat', 'Sát', 'BASIC', 'SPADE', 8);
+    let wtState = makeState(4, {
+      0: { heroId: 'guan_yu', handCards: [guanRed] },
+      1: { heroId: 'zhao_yun', handCards: [zhaoSat] },
+    });
+    wtState = applyGameAction(wtState, {
+      type: 'PLAY_CARD',
+      seatIndex: 0,
+      cardIds: [guanRed.id],
+      targetSeats: [1],
+      asCardKey: 'sat',
+    });
+    expect(wtState.actionLog.at(-1)).toBe('Ghế 1 dùng Võ Thánh đánh Sát vào Ghế 2.');
+    wtState = applyGameAction(wtState, {
+      type: 'RESPOND_DODGE',
+      seatIndex: 1,
+      cardId: zhaoSat.id,
+    });
+    expect(wtState.actionLog.at(-1)).toBe('Ghế 2 dùng Long Đảm đánh Thiểm.');
+
+    const blackClub = card('dao', 'Đào Giả Đen', 'BASIC', 'CLUB', 6);
+    const targetHandCard = card('sat', 'Sát Mục Tiêu', 'BASIC', 'SPADE', 5);
+    const ktState = makeState(4, {
+      0: { heroId: 'gan_ning', handCards: [blackClub] },
+      2: { heroId: 'zhang_fei', handCards: [targetHandCard] },
+    });
+    const ktPending = applyGameAction(ktState, {
+      type: 'PLAY_CARD',
+      seatIndex: 0,
+      cardIds: [blackClub.id],
+      targetSeats: [2],
+      asCardKey: 'qua_ha_sai_cau',
+    });
+    expect(ktPending.actionLog.at(-1)).toBe('Ghế 1 dùng Kỳ Tập đánh Quá Hà Sái Cầu vào Ghế 3.');
+  });
+  it.each([['zhang_fei', 2], ['zhou_yu', 3]] as const)(
+    'Bấm rút bài: %s nhận đúng %i lá và vào pha Ra bài',
+    (heroId, count) => {
+      const deck = [2, 3, 4].map(n => card('sat', 'Sát', 'BASIC', 'SPADE', n));
+      const state = stepEngine({
+        ...makeState(4, { 0: { heroId, handCards: [] } }, deck),
+        currentTurnSeat: 0, turnPhase: 'DRAW', manualDraw: true, refereeAuditLog: [], winnerUserIds: [],
+      });
+      expect(state.turnPhase).toBe('DRAW');
+      expect(() => applyGameAction(state, { type: 'DRAW_CARDS', seatIndex: 1 })).toThrow('CANNOT_DRAW_NOW');
+      const next = applyGameAction(state, { type: 'DRAW_CARDS', seatIndex: 0 });
+      expect(next.players[0]!.handCards).toHaveLength(count);
+      expect(next.turnPhase).toBe('PLAY');
+      const owner = next.players[0]!;
+      const observer = next.players[1]!;
+      expect(projectStateForPlayer(state, owner.userId).availableDrawCount).toBe(count);
+      expect(projectStateForPlayer(state, observer.userId).availableDrawCount).toBeUndefined();
+      expect(projectStateForPlayer(next, observer.userId).players[0]!.handCards).toBeNull();
+    },
+  );
+
+  it('Hứa Chử rút từng lá và chốt Lỏa Y bằng hành động ra bài hợp lệ', () => {
+    const strike = card('sat', 'Sát', 'BASIC', 'SPADE', 5);
+    const second = card('thiem', 'Thiểm', 'BASIC', 'HEART', 8);
+    const state = stepEngine({
+      ...makeState(4, { 0: { heroId: 'xu_chu', handCards: [] } }, [strike, second]),
+      currentTurnSeat: 0, turnPhase: 'DRAW', manualDraw: true, refereeAuditLog: [], winnerUserIds: [],
+    });
+    const first = applyGameAction(state, { type: 'DRAW_CARDS', seatIndex: 0 });
+    expect(first.players[0]!.handCards).toHaveLength(1);
+    expect(first.turnFlags?.drawSecondAvailable).toBe(true);
+    expect(() => applyGameAction(first, { type: 'DRAW_CARDS', seatIndex: 0 })).toThrow('CANNOT_DRAW_NOW');
+    const normal = applyGameAction(first, { type: 'DRAW_CARDS', seatIndex: 0, extra: true });
+    expect(normal.players[0]!.handCards).toHaveLength(2);
+    expect(normal.turnFlags?.luoYiActive).toBeFalsy();
+    const attack = applyGameAction(first, {
+      type: 'PLAY_CARD', seatIndex: 0, cardIds: [strike.id], targetSeats: [1],
+    });
+    expect(attack.turnFlags?.luoYiActive).toBe(true);
+    expect(attack.turnFlags?.drawSecondAvailable).toBe(false);
   });
 });

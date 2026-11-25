@@ -531,7 +531,7 @@ describe('Bước 3.1 — Điều phối WebSocket, Nhịp Vô Giải giả lậ
       (m) =>
         m.type === 'ROOM_STATE' &&
         (m.playerView as RoomViewerPayload['playerView'])?.currentTurnSeat === 2 &&
-        (m.playerView as RoomViewerPayload['playerView'])?.turnPhase === 'PLAY',
+        (m.playerView as RoomViewerPayload['playerView'])?.turnPhase === 'DRAW',
       6000,
     );
     sockets[0]!.sendJson({
@@ -540,6 +540,15 @@ describe('Bước 3.1 — Điều phối WebSocket, Nhịp Vô Giải giả lậ
       action: { type: 'END_PLAY_PHASE', seatIndex: 0 },
     });
     await seat2TurnStartedPromise;
+    const seat2CanPlay = sockets[2]!.waitFor((m) =>
+      m.type === 'ROOM_STATE' &&
+      (m.playerView as RoomViewerPayload['playerView'])?.currentTurnSeat === 2 &&
+      (m.playerView as RoomViewerPayload['playerView'])?.turnPhase === 'PLAY',
+    );
+    sockets[2]!.sendJson({
+      type: 'GAME_ACTION', roomCode, action: { type: 'DRAW_CARDS', seatIndex: 2 },
+    });
+    await seat2CanPlay;
 
     // Ghế 1 MỞ LẠI APP & KẾT NỐI LẠI -> phải tự nhận lại đúng ghế 1, hết trạng thái Bot takeover, lấy đúng tay bài còn lại!
     const reconnectedWs1 = await openWsClient(wsUrl);

@@ -91,6 +91,7 @@ export const WEI_HERO_SKILLS: Partial<Record<HeroId, HeroSkillHandler>> = {
   xu_chu: {
     heroId: 'xu_chu',
     onDrawPhase(state, seatIndex, _rng, rt) {
+      if (state.manualDraw) return state;
       const { state: s1, id } = rt.nextFrameId(state, 'luo_yi');
       return rt.pushInterrupt(s1, {
         id,

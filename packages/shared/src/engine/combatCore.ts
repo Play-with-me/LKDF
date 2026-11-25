@@ -18,7 +18,6 @@ import {
   drawFromPile,
   getClockwiseAliveSeats,
   getPlayerBySeat,
-  hasAnyCardAnywhere,
   hasAnyCardInHandOrEquip,
   removeAnyCardFromPlayer,
   removeCardsFromHand,
@@ -524,6 +523,16 @@ export function resolveStrikeAfterTieQi(
     strikeCards,
   });
 
+  if (requiredCount >= 2) {
+    next = {
+      ...next,
+      actionLog: [
+        ...next.actionLog,
+        `${source.displayName} phát động Vô Song, mục tiêu cần ${requiredCount} lá Thiểm để né!`,
+      ],
+    };
+  }
+
   const { state: s1, id } = nextFrameId(next, 'dodge');
   next = pushInterrupt(s1, {
     id,
@@ -746,6 +755,18 @@ const JUDGMENT_PURPOSE_LABEL: Readonly<Record<JudgmentPurpose, string>> = {
  * Khởi tạo một lần Phán xét thống nhất (dùng cho Lạc Bất Tư Thục, Thiểm Điện,
  * Bát Quái Trận, Thiết Kỵ, Cương Liệt, Lạc Thần) để Tư Mã Ý (Quỷ Tài) có thể đổi lá phán xét.
  */
+export function revealPublicCard(
+  state: MasterGameState, seat: number, card: CardInstance, label: string,
+): MasterGameState {
+  const previous = state.publicReveals ?? [];
+  return {
+    ...state,
+    publicReveals: [...previous.slice(-11), {
+      id: (previous.at(-1)?.id ?? 0) + 1, seat, card, label,
+    }],
+  };
+}
+
 export function startJudgment(
   state: MasterGameState,
   ownerSeat: number,
@@ -774,6 +795,7 @@ export function startJudgment(
     ],
   };
 
+  next = revealPublicCard(next, ownerSeat, judgeCard, JUDGMENT_PURPOSE_LABEL[purpose]);
   next = pushPendingEffect(next, {
     kind: 'RESOLVE_JUDGMENT',
     ownerSeat,
@@ -950,6 +972,14 @@ function resolveJudgmentEffect(
         const parentFrame = saved.savedParentDodgeFrame;
         if (success) {
           // Tướng Ngụy phán xét Bát Quái Trận thành công khi hưởng ứng Hộ Giá!
+          const lord = getPlayerBySeat(next, saved.lordSeat);
+          next = {
+            ...next,
+            actionLog: [
+              ...next.actionLog,
+              `${owner.displayName} hưởng ứng Hộ Giá bằng Bát Quái Trận giúp ${lord.displayName} né đòn!`,
+            ],
+          };
           if (saved.contextKind === 'DODGE' && parentFrame?.kind === 'WAIT_DODGE') {
             const nextDodged = parentFrame.dodgedSoFar + 1;
             if (nextDodged < parentFrame.requiredCount) {
@@ -1171,7 +1201,7 @@ function executeScrollEffect(
     case 'thuan_thu_khien_duong': {
       const caster = getPlayerBySeat(state, effect.casterSeat);
       const target = getPlayerBySeat(state, effect.targetSeat);
-      if (!caster.alive || !target.alive || !hasAnyCardAnywhere(target)) {
+      if (!caster.alive || !target.alive || !hasAnyCardInHandOrEquip(target)) {
         return state;
       }
       const { state: s1, id } = nextFrameId(state, 'steal');
@@ -1181,12 +1211,13 @@ function executeScrollEffect(
         targetSeat: effect.targetSeat,
         sourceSeat: effect.casterSeat,
         mode: 'STEAL',
+        allowDelayed: false,
       });
     }
     case 'qua_ha_sai_cau': {
       const caster = getPlayerBySeat(state, effect.casterSeat);
       const target = getPlayerBySeat(state, effect.targetSeat);
-      if (!caster.alive || !target.alive || !hasAnyCardAnywhere(target)) {
+      if (!caster.alive || !target.alive || !hasAnyCardInHandOrEquip(target)) {
         return state;
       }
       const { state: s1, id } = nextFrameId(state, 'dismantle');
@@ -1196,6 +1227,7 @@ function executeScrollEffect(
         targetSeat: effect.targetSeat,
         sourceSeat: effect.casterSeat,
         mode: 'DISMANTLE',
+        allowDelayed: false,
       });
     }
     case 'quyet_dau': {
@@ -1208,7 +1240,17 @@ function executeScrollEffect(
       const requiredCount =
         casterHandler?.duelSatRequiredCount?.(state, caster) ?? 1;
       const isVirtualLiJian = effect.scrollCard.id.startsWith('li_jian_');
-      const { state: s1, id } = nextFrameId(state, 'duel');
+      let next = state;
+      if (requiredCount >= 2) {
+        next = {
+          ...next,
+          actionLog: [
+            ...next.actionLog,
+            `${caster.displayName} phát động Vô Song trong Quyết Đấu (cần ${requiredCount} lá Sát mỗi lần)!`,
+          ],
+        };
+      }
+      const { state: s1, id } = nextFrameId(next, 'duel');
       return pushInterrupt(s1, {
         id,
         kind: 'WAIT_DUEL_SAT',
@@ -1513,6 +1555,9 @@ export function stepEngine(
               ...p,
               handCards: [...p.handCards, topEffect.card],
             }));
+            state = { ...state, actionLog: [
+              ...state.actionLog, `${receiver.displayName} nhận lá ${topEffect.card.nameVi} từ Phản Gián.`,
+            ] };
           } else {
             state = appendToDiscardPile(state, [topEffect.card]);
           }
@@ -1654,26 +1699,8 @@ export function stepEngine(
             }
           }
         }
-        const extraDraw =
-          getHeroSkillHandler(curPlayer.heroId)?.extraDrawCount?.(
-            state,
-            curPlayer,
-          ) ?? 0;
-        const dealt = dealCardsToSeat(
-          state,
-          state.currentTurnSeat,
-          2 + extraDraw,
-          rng,
-        );
-        const skipPlay = dealt.state.turnFlags?.skipPlayPhase ?? false;
-        state = {
-          ...dealt.state,
-          turnPhase: skipPlay ? 'DISCARD' : 'PLAY',
-          actionLog: [
-            ...dealt.state.actionLog,
-            `${curPlayer.displayName} rút ${dealt.dealt.length} lá ở pha Rút bài.`,
-          ],
-        };
+        if (state.manualDraw && (state.drawPile.length || state.discardPile.length)) return state;
+        state = completeTurnDraw(state, rng);
         break;
       }
       case 'PLAY': {
@@ -1734,6 +1761,31 @@ export function stepEngine(
   }
 
   throw new Error('ENGINE_STEP_LIMIT_EXCEEDED');
+}
+
+export function turnDrawCount(state: MasterGameState): number {
+  if (state.manualDraw && !state.turnFlags?.skipPlayPhase &&
+    (state.turnFlags?.drawSecondAvailable ||
+      getPlayerBySeat(state, state.currentTurnSeat).heroId === 'xu_chu')) return 1;
+  const player = getPlayerBySeat(state, state.currentTurnSeat);
+  return 2 + (getHeroSkillHandler(player.heroId)?.extraDrawCount?.(state, player) ?? 0);
+}
+
+export function completeTurnDraw(state: MasterGameState, rng: () => number): MasterGameState {
+  const player = getPlayerBySeat(state, state.currentTurnSeat);
+  const { state: drawn, dealt } = dealCardsToSeat(state, player.seatIndex, turnDrawCount(state), rng);
+  const isYingZiDraw =
+    player.heroId === 'zhou_yu' &&
+    (getHeroSkillHandler(player.heroId)?.extraDrawCount?.(state, player) ?? 0) > 0 &&
+    !drawn.turnFlags?.drawSecondAvailable;
+  const drawLog = isYingZiDraw
+    ? `${player.displayName} phát động Anh Tư, rút ${dealt.length} lá ở pha Rút bài.`
+    : `${player.displayName} rút ${dealt.length} lá ở pha Rút bài.`;
+  return {
+    ...drawn,
+    turnPhase: drawn.turnFlags?.skipPlayPhase ? 'DISCARD' : 'PLAY',
+    actionLog: [...drawn.actionLog, drawLog],
+  };
 }
 
 export function getPendingPrompt(state: MasterGameState): PendingPrompt | null {
@@ -1809,7 +1861,7 @@ export function getPendingPrompt(state: MasterGameState): PendingPrompt | null {
     }
   }
 
-  if (state.turnPhase === 'PLAY' || state.turnPhase === 'DISCARD') {
+  if (state.turnPhase === 'PLAY' || state.turnPhase === 'DISCARD' || state.turnPhase === 'DRAW' && state.manualDraw) {
     return {
       kind: state.turnPhase,
       actorSeats: [state.currentTurnSeat],

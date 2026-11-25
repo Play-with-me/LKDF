@@ -37,7 +37,7 @@ describe('Bước 0.2 — Kiểm thử nền tảng @lkdf/shared', () => {
       heroSelectSeconds: 20,
       mainTurnSeconds: 90,
       discardSeconds: 30,
-      reactionSeconds: 10,
+      reactionSeconds: 15,
     });
     expect(TIMER_PRESETS.STANDARD).toEqual({
       heroSelectSeconds: 30,

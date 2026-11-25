@@ -48,6 +48,7 @@ export const ClientGameActionSchema = z.discriminatedUnion('type', [
     cardIds: z.array(z.string().min(1)).optional(),
     targetSeats: z.array(SeatIndexSchema).optional(),
   }),
+  z.object({ type: z.literal('DRAW_CARDS'), seatIndex: SeatIndexSchema, extra: z.boolean().optional() }),
   z.object({
     type: z.literal('END_PLAY_PHASE'),
     seatIndex: SeatIndexSchema,

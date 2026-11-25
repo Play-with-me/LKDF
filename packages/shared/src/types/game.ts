@@ -576,6 +576,7 @@ export interface TurnFlags {
   readonly skipPlayPhase: boolean;
   readonly startSkillsChecked?: boolean;
   readonly drawSkillChecked?: boolean;
+  readonly drawSecondAvailable?: boolean;
   readonly endSkillChecked?: boolean;
   readonly keJiChecked?: boolean;
   readonly judgedLightningIds?: readonly string[];
@@ -597,7 +598,16 @@ export interface RefereeAuditEntry {
   readonly actionType: RefereeActionType;
 }
 
+export interface PublicCardReveal {
+  readonly id: number;
+  readonly seat: number;
+  readonly card: CardInstance;
+  readonly label: string;
+}
+
 export interface MasterGameState {
+  readonly manualDraw?: boolean;
+  readonly publicReveals?: readonly PublicCardReveal[];
   readonly matchId: string;
   readonly roundNumber: number;
   readonly currentTurnSeat: number;
@@ -619,6 +629,8 @@ export interface MasterGameState {
 }
 
 export interface PlayerViewState {
+  readonly availableDrawCount?: number;
+  readonly publicReveals?: readonly PublicCardReveal[];
   readonly matchId: string;
   readonly viewerSeatIndex: number;
   readonly roundNumber: number;

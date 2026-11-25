@@ -190,6 +190,9 @@ function computePhaseDeadlineIso(
   if (masterState.interruptStack.at(-1)?.kind === 'WAIT_NULLIFICATION') {
     return new Date(nowMs + nullificationWindowMs).toISOString();
   }
+  if (masterState.turnPhase === 'HERO_SELECT' && masterState.heroDraft?.stage === 'COMPLETED') {
+    return new Date(nowMs + Math.max(20, Math.round(3000 * timerScale))).toISOString();
+  }
   const config = TIMER_PRESETS[timerPreset];
   let seconds = config.mainTurnSeconds;
   if (masterState.turnPhase === 'HERO_SELECT') {
@@ -327,9 +330,10 @@ function advanceSkippedPhaseState(
   rng: () => number,
 ): MasterGameState {
   if (master.turnPhase === 'HERO_SELECT') {
+    if (master.heroDraft?.stage === 'COMPLETED') return startMatchCombat(master, rng);
     let nextState = autoSelectTimedOutHeroes(master, rng);
     if (nextState.heroDraft?.stage === 'COMPLETED') {
-      nextState = startMatchCombat(nextState, rng);
+      nextState = { ...nextState, turnPhase: 'HERO_SELECT' };
     }
     return nextState;
   }
@@ -441,7 +445,7 @@ export function createRoomManager(deps: {
   let globalOpQueue: Promise<unknown> = Promise.resolve();
   const getNowMs = deps.nowFn ?? (() => Date.now());
   const timerScale = deps.timerScale ?? 1;
-  const nullificationWindowMs = deps.nullificationWindowMs ?? 3500;
+  const nullificationWindowMs = deps.nullificationWindowMs ?? 8000;
   const hostFailoverDelayMs =
     deps.hostFailoverDelayMs ?? DEFAULT_HOST_FAILOVER_DELAY_MS;
   const fallbackRng = deps.defaultRng ?? Math.random;
@@ -527,6 +531,9 @@ export function createRoomManager(deps: {
     const oldPrompt = record.masterGameState?.interruptStack.at(-1);
     const keepNullificationDeadline = oldPrompt?.kind === 'WAIT_NULLIFICATION' &&
       oldPrompt.id === nextMasterState.interruptStack.at(-1)?.id;
+    const keepOpeningDeadline = record.masterGameState?.turnPhase === 'HERO_SELECT' &&
+      record.masterGameState.heroDraft?.stage === 'COMPLETED' &&
+      nextMasterState.turnPhase === 'HERO_SELECT' && nextMasterState.heroDraft?.stage === 'COMPLETED';
     record.masterGameState = nextMasterState;
     if (nextMasterState.turnPhase === 'GAME_OVER') {
       record.roomState = { ...record.roomState, status: 'FINISHED' };
@@ -537,7 +544,7 @@ export function createRoomManager(deps: {
       await deps.persistence.saveRoomSnapshot(toSnapshotRecord(record));
       await archiveFinishedMatch(record, nextMasterState, nowMs);
     } else {
-      record.phaseDeadlineAt = (keepNullificationDeadline ? record.phaseDeadlineAt : null) ?? computePhaseDeadlineIso(
+      record.phaseDeadlineAt = (keepNullificationDeadline || keepOpeningDeadline ? record.phaseDeadlineAt : null) ?? computePhaseDeadlineIso(
         nextMasterState,
         record.roomState.timerPreset,
         record.roomState.isTimerPaused,
@@ -1026,6 +1033,7 @@ export function createRoomManager(deps: {
         const rng = options?.rng ?? fallbackRng;
         const setupState = createInitialMatchSetup({
           matchId,
+          manualDraw: true,
           seats: record.roomState.seats.map((seat) => ({
             userId: seat.userId,
             displayName: seat.displayName,
@@ -1136,7 +1144,7 @@ export function createRoomManager(deps: {
           }
 
           if (nextState.heroDraft?.stage === 'COMPLETED') {
-            nextState = startMatchCombat(nextState, rng);
+            nextState = { ...nextState, turnPhase: 'HERO_SELECT' };
           }
         } catch (err) {
           return {
@@ -1569,7 +1577,7 @@ export function createRoomManager(deps: {
               ? selectLordHero(master, botActorSeat, heroPick, rng)
               : selectPlayerHero(master, botActorSeat, heroPick);
           if (nextState.heroDraft?.stage === 'COMPLETED') {
-            nextState = startMatchCombat(nextState, rng);
+            nextState = { ...nextState, turnPhase: 'HERO_SELECT' };
           }
         } else {
           const botAction = decideBotAction(botView, rng);
@@ -1616,10 +1624,15 @@ export function createRoomManager(deps: {
 
         const rng = options?.rng ?? fallbackRng;
 
+        if (master.turnPhase === 'HERO_SELECT' && master.heroDraft?.stage === 'COMPLETED') {
+          await persistAfterMasterTransition(record, startMatchCombat(master, rng), nowMs, { event: 'COMBAT_STARTED' });
+          return { handled: true, roomCode };
+        }
+
         if (master.turnPhase === 'HERO_SELECT') {
           let nextState = autoSelectTimedOutHeroes(master, rng);
           if (nextState.heroDraft?.stage === 'COMPLETED') {
-            nextState = startMatchCombat(nextState, rng);
+            nextState = { ...nextState, turnPhase: 'HERO_SELECT' };
           }
           nextState = {
             ...nextState,

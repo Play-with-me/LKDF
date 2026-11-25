@@ -153,7 +153,7 @@ export const STANDARD_DECK_TEMPLATES: readonly CardTemplate[] = [
     'thuan_thu_khien_duong',
     'Thuận Thủ Khiên Dương',
     'NORMAL_SCROLL',
-    'Lấy 1 lá bài từ tay, trang bị hoặc khu phán xét của mục tiêu ở khoảng cách 1.',
+    'Lấy 1 lá bài từ tay hoặc khu trang bị của mục tiêu ở khoảng cách 1.',
     [
       { suit: 'SPADE', rank: 3 },
       { suit: 'SPADE', rank: 4 },
@@ -167,7 +167,7 @@ export const STANDARD_DECK_TEMPLATES: readonly CardTemplate[] = [
     'qua_ha_sai_cau',
     'Quá Hà Sái Cầu',
     'NORMAL_SCROLL',
-    'Hủy 1 lá bài từ tay, trang bị hoặc khu phán xét của bất kỳ người chơi khác.',
+    'Hủy 1 lá bài từ tay hoặc khu trang bị của bất kỳ người chơi khác.',
     [
       { suit: 'SPADE', rank: 3 },
       { suit: 'SPADE', rank: 4 },

@@ -174,7 +174,7 @@ describe('Bước 2.2 — Phòng chờ 4–8 người thật, 3 mức Đồng h�
       heroSelectSeconds: 20,
       mainTurnSeconds: 90,
       discardSeconds: 30,
-      reactionSeconds: 10,
+      reactionSeconds: 15,
     });
 
     const startWithThreeRes = await srv.app.inject({
@@ -477,6 +477,14 @@ describe('Bước 2.2 — Phòng chờ 4–8 người thật, 3 mức Đồng h�
       });
       expect(pickRes.statusCode).toBe(200);
     }
+
+    const openingOnSrv2 = srv2.roomManager.getSnapshotRecord(roomCode);
+    expect(openingOnSrv2?.masterGameState?.heroDraft?.stage).toBe('COMPLETED');
+    expect(openingOnSrv2?.masterGameState?.turnPhase).toBe('HERO_SELECT');
+    expect(openingOnSrv2?.masterGameState?.players.every(player => player.handCards.length === 0)).toBe(true);
+    expect(Date.parse(openingOnSrv2?.phaseDeadlineAt ?? '') - Date.now()).toBeGreaterThan(2500);
+    await expect.poll(() => srv2.roomManager.getSnapshotRecord(roomCode)?.masterGameState?.turnPhase,
+      { timeout: 4000 }).not.toBe('HERO_SELECT');
 
     const combatViewOnSrv2 = (
       await srv2.app.inject({
