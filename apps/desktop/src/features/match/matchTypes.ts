@@ -419,15 +419,50 @@ export function getAvailableConvertModes(
   return options;
 }
 
+export function isCardValidForConvertMode(
+  card: CardInstance,
+  mode: ConvertCardMode | null,
+): boolean {
+  if (!mode) return true;
+  switch (mode) {
+    case 'wu_sheng':
+    case 'cuu_vien':
+      return isRedSuit(card.suit);
+    case 'long_dan_sat':
+      return card.cardKey === 'thiem';
+    case 'long_dan_thiem':
+      return card.cardKey === 'sat';
+    case 'ky_tap':
+    case 'thanh_quoc':
+      return !isRedSuit(card.suit);
+    case 'quoc_sac':
+      return card.suit === 'DIAMOND';
+    case 'truong_bat':
+      return true;
+  }
+}
+
 export function getEffectivePlayCardKey(
   selection: MatchSelectionState,
   ownedCards: readonly CardInstance[],
 ): string | null {
   if (selection.activeConvertMode) {
+    if (selection.activeConvertMode === 'truong_bat') {
+      const hasTwoValid =
+        selection.selectedCardIds.length === 2 &&
+        selection.selectedCardIds.every((id) => ownedCards.some((c) => c.id === id));
+      return hasTwoValid ? 'sat' : null;
+    }
+    if (selection.selectedCardIds.length !== 1) {
+      return null;
+    }
+    const card = ownedCards.find((c) => c.id === selection.selectedCardIds[0]);
+    if (!card || !isCardValidForConvertMode(card, selection.activeConvertMode)) {
+      return null;
+    }
     switch (selection.activeConvertMode) {
       case 'wu_sheng':
       case 'long_dan_sat':
-      case 'truong_bat':
         return 'sat';
       case 'long_dan_thiem':
       case 'thanh_quoc':
@@ -453,8 +488,7 @@ function hasAnyCardOnPlayer(player: PublicPlayerView): boolean {
     player.equipments.weapon !== null ||
     player.equipments.armor !== null ||
     player.equipments.plusOneHorse !== null ||
-    player.equipments.minusOneHorse !== null ||
-    player.delayedScrolls.length > 0
+    player.equipments.minusOneHorse !== null
   );
 }
 
@@ -644,7 +678,10 @@ export function getRequiredTargetSpec(
         minTargets: 1,
         maxTargets: 1,
         eligibleSeats: eligible,
-        promptVi: 'Hãy bấm chọn 1 mục tiêu trong khoảng cách 1 để Thuận Thủ',
+        promptVi:
+          viewer.heroId === 'huang_yue_ying'
+            ? 'Kỳ Tài: chọn bất kỳ mục tiêu có bài để Thuận Thủ (không giới hạn khoảng cách)'
+            : 'Hãy bấm chọn 1 mục tiêu trong khoảng cách 1 để Thuận Thủ',
       };
     }
     case 'qua_ha_sai_cau': {
@@ -731,6 +768,32 @@ export function getRequiredTargetSpec(
     default:
       return { minTargets: 0, maxTargets: 0, eligibleSeats: [], promptVi: '' };
   }
+}
+
+export function describeJianXiongDamageCard(
+  view: PlayerViewState,
+  targetSeat: number,
+): string | null {
+  const target = view.players.find((p) => p.seatIndex === targetSeat);
+  if (!target) return null;
+  const prefix = `${target.displayName} chịu `;
+  for (let i = view.actionLog.length - 1; i >= Math.max(0, view.actionLog.length - 10); i--) {
+    const line = view.actionLog[i]!;
+    if (!line.startsWith(prefix)) continue;
+    const match = /chịu \d+ sát thương từ .+? \(([^)]+)\)/u.exec(line);
+    if (!match) continue;
+    const rawReason = match[1]!;
+    const baseReason = rawReason.replace(/\s*\(Lỏa Y \+1\)$/u, '');
+    const top = view.discardPileTop;
+    if (
+      top &&
+      ((baseReason === 'Sát' && top.cardKey === 'sat') || top.nameVi === baseReason)
+    ) {
+      return formatCardShort(top);
+    }
+    return `lá ${baseReason}`;
+  }
+  return null;
 }
 
 export function describePendingActorPrompt(view: PlayerViewState): TurnActorPrompt {
@@ -842,18 +905,25 @@ export function describePendingActorPrompt(view: PlayerViewState): TurnActorProm
           isMyTurn: interrupt.targetSeat === viewerSeat,
           isAllTableWait: false,
         };
-      case 'WAIT_DODGE':
+      case 'WAIT_DODGE': {
+        const req = interrupt.requiredCount ?? 1;
+        const dodged = interrupt.dodgedSoFar ?? 0;
+        const voSongHint = req >= 2 ? ' (Vô Song — Lữ Bố)' : '';
         return {
           headlineVi:
             interrupt.targetSeat === viewerSeat
-              ? `Bạn bị đánh Sát — Cần ${interrupt.requiredCount ?? 1} lá Thiểm (đã né ${interrupt.dodgedSoFar ?? 0})`
-              : `Đang chờ ${targetName} đánh Thiểm né Sát...`,
-          detailVi: `Nguồn sát thương: ${sourceName}.`,
+              ? `Bạn bị đánh Sát${voSongHint} — Cần ${req} lá Thiểm (đã né ${dodged})`
+              : `Đang chờ ${targetName} đánh ${req} lá Thiểm né Sát...`,
+          detailVi:
+            req >= 2
+              ? `Nguồn sát thương: ${sourceName} (Vô Song: phải đánh đủ ${req} lá Thiểm).`
+              : `Nguồn sát thương: ${sourceName}.`,
           actorSeat: interrupt.targetSeat,
           actorNameVi: targetName,
           isMyTurn: interrupt.targetSeat === viewerSeat,
           isAllTableWait: false,
         };
+      }
       case 'ASK_QUAN_THACH_PHU':
         return {
           headlineVi:
@@ -902,18 +972,24 @@ export function describePendingActorPrompt(view: PlayerViewState): TurnActorProm
           isMyTurn: interrupt.sourceSeat === viewerSeat,
           isAllTableWait: false,
         };
-      case 'WAIT_DUEL_SAT':
+      case 'WAIT_DUEL_SAT': {
+        const req = interrupt.requiredCount ?? 1;
+        const voSongHint = req >= 2 ? ' (Vô Song — Lữ Bố)' : '';
         return {
           headlineVi:
             interrupt.targetSeat === viewerSeat
-              ? `Quyết Đấu — Cần đánh ${interrupt.requiredCount ?? 1} lá Sát`
-              : `Đang chờ ${targetName} đánh Sát trong Quyết Đấu...`,
-          detailVi: 'Ai không đánh đủ Sát sẽ chịu 1 sát thương.',
+              ? `Quyết Đấu${voSongHint} — Cần đánh ${req} lá Sát`
+              : `Đang chờ ${targetName} đánh ${req} lá Sát trong Quyết Đấu...`,
+          detailVi:
+            req >= 2
+              ? `Vô Song: cần đủ ${req} lá Sát, nếu thiếu sẽ chịu 1 sát thương.`
+              : 'Ai không đánh đủ Sát sẽ chịu 1 sát thương.',
           actorSeat: interrupt.targetSeat,
           actorNameVi: targetName,
           isMyTurn: interrupt.targetSeat === viewerSeat,
           isAllTableWait: false,
         };
+      }
       case 'WAIT_COLLATERAL_SAT':
         return {
           headlineVi:
@@ -978,7 +1054,7 @@ export function describePendingActorPrompt(view: PlayerViewState): TurnActorProm
             interrupt.sourceSeat === viewerSeat
               ? `Hãy chọn 1 khu bài của ${targetName} để ${interrupt.stealing ? 'lấy 1 lá về tay' : 'hủy bỏ 1 lá'}`
               : `Đang chờ ${sourceName} ${interrupt.stealing ? 'lấy' : 'hủy'} bài từ ${targetName}...`,
-          detailVi: 'Chọn từ Tay bài, Trang bị hoặc khu Thời gian ở trung tâm bàn.',
+          detailVi: 'Chọn từ Tay bài hoặc khu Trang bị ở trung tâm bàn.',
           actorSeat: interrupt.sourceSeat ?? null,
           actorNameVi: sourceName,
           isMyTurn: interrupt.sourceSeat === viewerSeat,
@@ -1087,7 +1163,7 @@ export function describePendingActorPrompt(view: PlayerViewState): TurnActorProm
               ? 'Quỷ Tài — Đánh 1 lá trên tay thay thế lá phán xét?'
               : `Đang chờ ${targetName} phản ứng Quỷ Tài...`,
           detailVi: interrupt.judgeCard
-            ? `Lá phán xét hiện tại: ${formatCardShort(interrupt.judgeCard)}.`
+            ? `Lá phán xét: ${formatCardShort(interrupt.judgeCard)}${interrupt.judgePurpose ? ` (${interrupt.judgePurpose})` : ''}.`
             : 'Có thể giữ nguyên hoặc thay thế lá phán xét.',
           actorSeat: interrupt.targetSeat,
           actorNameVi: targetName,
@@ -1108,18 +1184,22 @@ export function describePendingActorPrompt(view: PlayerViewState): TurnActorProm
           isMyTurn: interrupt.targetSeat === viewerSeat,
           isAllTableWait: false,
         };
-      case 'ASK_JIAN_XIONG':
+      case 'ASK_JIAN_XIONG': {
+        const dmgCardDesc = describeJianXiongDamageCard(view, interrupt.targetSeat);
         return {
           headlineVi:
             interrupt.targetSeat === viewerSeat
-              ? 'Gian Hùng — Thu lấy lá bài vừa gây sát thương?'
+              ? `Gian Hùng — Thu lấy ${dmgCardDesc ?? 'lá bài vừa gây sát thương'}?`
               : `Đang chờ ${targetName} quyết định Gian Hùng...`,
-          detailVi: 'Tào Tháo có thể thu về tay lá bài gây sát thương.',
+          detailVi: dmgCardDesc
+            ? `Tào Tháo có thể thu về tay ${dmgCardDesc} vừa gây sát thương.`
+            : 'Tào Tháo có thể thu về tay lá bài gây sát thương.',
           actorSeat: interrupt.targetSeat,
           actorNameVi: targetName,
           isMyTurn: interrupt.targetSeat === viewerSeat,
           isAllTableWait: false,
         };
+      }
       case 'ASK_FAN_KUI':
         return {
           headlineVi:
@@ -1220,28 +1300,49 @@ export function describePendingActorPrompt(view: PlayerViewState): TurnActorProm
         isMyTurn: isSelfTurn,
         isAllTableWait: false,
       };
-    case 'DRAW':
+    case 'DRAW': {
+      const selfHeroId = viewer?.heroId;
+      const drawCount =
+        view.availableDrawCount ??
+        (selfHeroId === 'zhou_yu' ? 3 : selfHeroId === 'xu_chu' ? 1 : 2);
+      const skillTag =
+        selfHeroId === 'zhou_yu'
+          ? ' — Anh Tư (+1 lá)'
+          : selfHeroId === 'xu_chu'
+            ? ' — Lỏa Y (rút 1 lá đầu)'
+            : '';
       return {
-        headlineVi: `Pha Rút Bài — ${currentActorName}`,
-        detailVi: 'Đang rút bài đầu lượt.',
+        headlineVi: isSelfTurn
+          ? `ĐẾN LƯỢT BẠN — PHA RÚT BÀI (Rút ${drawCount} lá${skillTag})`
+          : `Pha Rút Bài — ${currentActorName}`,
+        detailVi: isSelfTurn
+          ? selfHeroId === 'xu_chu'
+            ? 'Bấm nút Rút bài bên dưới hoặc chồng bài rút (Enter / Space) để rút 1 lá đầu lượt.'
+            : 'Bấm nút Rút bài bên dưới hoặc chồng bài rút (Enter / Space) để bắt đầu lượt.'
+          : 'Đang rút bài đầu lượt.',
         actorSeat: view.currentTurnSeat,
         actorNameVi: currentActorName,
         isMyTurn: isSelfTurn,
         isAllTableWait: false,
       };
-    case 'PLAY':
+    }
+    case 'PLAY': {
+      const isSelfLuoYiDrawSecond = isSelfTurn && Boolean(view.turnFlags?.drawSecondAvailable);
       return {
         headlineVi: isSelfTurn
           ? 'Lượt của bạn — Pha Đánh Bài'
           : `Đang chờ ${currentActorName} đánh bài...`,
         detailVi: isSelfTurn
-          ? 'Chọn lá bài hoặc kỹ năng bên dưới rồi chọn mục tiêu nếu cần.'
+          ? isSelfLuoYiDrawSecond
+            ? 'Bạn có thể rút thêm lá thứ 2 (bỏ Lỏa Y) hoặc đánh Sát / Quyết Đấu ngay để +1 sát thương.'
+            : 'Chọn lá bài hoặc kỹ năng bên dưới rồi chọn mục tiêu nếu cần.'
           : 'Bạn có thể bật "Tự bỏ qua Vô Giải" nếu không muốn giữ nhịp chờ.',
         actorSeat: view.currentTurnSeat,
         actorNameVi: currentActorName,
         isMyTurn: isSelfTurn,
         isAllTableWait: false,
       };
+    }
     case 'DISCARD': {
       const needDrop = Math.max(0, (viewer?.handCount ?? 0) - Math.max(0, viewer?.hp ?? 0));
       return {
@@ -1354,18 +1455,18 @@ function isCardValidForPlayConvert(
   card: CardInstance,
   mode: ConvertCardMode | null,
 ): string | null {
-  if (!mode) return null;
+  if (!mode || isCardValidForConvertMode(card, mode)) return null;
   switch (mode) {
     case 'wu_sheng':
-      return isRedSuit(card.suit) ? null : 'Võ Thánh cần chọn lá chất Đỏ (Cơ/Rô).';
+      return 'Võ Thánh cần chọn lá chất Đỏ (Cơ/Rô).';
     case 'long_dan_sat':
-      return card.cardKey === 'thiem' ? null : 'Long Đảm (chuyển Sát) cần lá Thiểm.';
+      return 'Long Đảm (chuyển Sát) cần lá Thiểm.';
     case 'ky_tap':
-      return !isRedSuit(card.suit) ? null : 'Kỳ Tập cần chọn lá chất Đen (Bích/Chuồn).';
+      return 'Kỳ Tập cần chọn lá chất Đen (Bích/Chuồn).';
     case 'quoc_sac':
-      return card.suit === 'DIAMOND' ? null : 'Quốc Sắc cần chọn lá chất Rô.';
+      return 'Quốc Sắc cần chọn lá chất Rô.';
     case 'cuu_vien':
-      return isRedSuit(card.suit) ? null : 'Cấp Cứu cần chọn lá chất Đỏ.';
+      return 'Cấp Cứu cần chọn lá chất Đỏ.';
     default:
       return null;
   }

@@ -3,7 +3,7 @@ import {
   formatSuitSymbol,
   getHeroDefinition,
 } from '@lkdf/shared';
-import type { PublicPlayerView } from '@lkdf/shared';
+import type { CardInstance, PublicPlayerView } from '@lkdf/shared';
 import { getCardArtUrl, getHeroPortraitUrl, getUiAssetUrl } from '../../lib/assetCatalog.js';
 import {
   FactionSeal,
@@ -11,6 +11,7 @@ import {
   SuitGlyph,
   getCardGameIcon,
 } from '../../components/icons/index.js';
+import { isPassiveSkillId } from './SeatCard.js';
 import {
   getCardCategoryLabelVi,
   getCardDescriptionVi,
@@ -23,24 +24,72 @@ export interface MatchInspectorBoxProps {
   readonly inspector: MatchInspectorTarget | null;
   readonly selfPlayer: PublicPlayerView | undefined;
   readonly players: readonly PublicPlayerView[];
-  readonly onResetToSelf: () => void;
+  readonly title?: string;
+  readonly onClose: () => void;
+  readonly onResetToSelf?: () => void;
+}
+
+function getCardRuleTip(card: CardInstance): string | null {
+  switch (card.category) {
+    case 'WEAPON':
+      return 'Mẹo: Vũ khí chỉ tăng tầm đánh Sát; Thuận Thủ Khiên Dương vẫn đòi hỏi khoảng cách ≤ 1.';
+    case 'ARMOR':
+      return 'Mẹo: Giáp tự động kích hoạt phòng thủ khi bạn bị nhắm, không tốn lượt.';
+    case 'PLUS_ONE_HORSE':
+      return 'Mẹo: Ngựa +1 khiến mọi đối thủ tính khoảng cách tới bạn xa thêm 1.';
+    case 'MINUS_ONE_HORSE':
+      return 'Mẹo: Ngựa −1 giúp bạn tính khoảng cách tới mọi đối thủ gần hơn 1.';
+    case 'DELAYED_SCROLL':
+      return 'Mẹo: Cẩm nang thời gian chờ phán xét ở pha đầu lượt, có thể bị Vô Giải Khả Kích chặn.';
+    default:
+      return null;
+  }
 }
 
 export function MatchInspectorBox({
   inspector,
   selfPlayer,
   players,
+  title,
+  onClose,
   onResetToSelf,
 }: MatchInspectorBoxProps) {
+  if (!inspector) {
+    return null;
+  }
+
   const inkBaseUrl = getUiAssetUrl('tex-ink-base');
   const boxBgStyle = inkBaseUrl
     ? {
-        backgroundImage: `linear-gradient(rgba(14,11,9,0.72), rgba(10,8,7,0.86)), url(${inkBaseUrl})`,
-        backgroundSize: '300px auto',
+        backgroundColor: '#140F0C',
+        backgroundImage: `linear-gradient(168deg, rgba(22,16,13,0.97), rgba(14,10,8,0.99)), url(${inkBaseUrl})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
       }
-    : undefined;
+    : { backgroundColor: '#140F0C' };
 
-  if (inspector?.kind === 'card') {
+  const cornerBrackets = (
+    <>
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute top-1 left-1 z-20 h-2 w-2 border-t border-l border-[#E6BE6C]/75"
+      />
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute top-1 right-1 z-20 h-2 w-2 border-t border-r border-[#E6BE6C]/75"
+      />
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute bottom-1 left-1 z-20 h-2 w-2 border-b border-l border-[#E6BE6C]/75"
+      />
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute right-1 bottom-1 z-20 h-2 w-2 border-r border-b border-[#E6BE6C]/75"
+      />
+    </>
+  );
+
+  if (inspector.kind === 'card') {
     const { card, sourceLabel } = inspector;
     const artUrl = getCardArtUrl(card.cardKey);
     const rankLabel = formatRankLabel(card.rank);
@@ -48,28 +97,54 @@ export function MatchInspectorBox({
     const red = isCardRed(card);
     const categoryLabel = getCardCategoryLabelVi(card.category, card.attackRange);
     const description = getCardDescriptionVi(card.cardKey, card.nameVi);
+    const tip = getCardRuleTip(card);
 
     return (
       <aside
+        data-match-inspector="true"
+        role="region"
+        aria-label={`Chi tiết lá bài ${card.nameVi}`}
         style={boxBgStyle}
-        className="flex h-full min-h-0 w-[var(--right-w,250px)] shrink-0 flex-col justify-between rounded-[6px] border border-[#E6BE6C]/55 bg-[#12161E] p-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]"
+        className="animate-lkdf-slide relative flex min-h-0 w-full flex-col overflow-hidden rounded-lg border border-[#C89B4B]/70 bg-[#140F0C] text-[#EFE6D5] shadow-[0_20px_48px_rgba(0,0,0,0.88),inset_0_1px_0_rgba(230,190,108,0.16)]"
       >
-        <div className="flex min-h-0 flex-1 flex-col">
-          <div className="flex shrink-0 items-center justify-between gap-1.5 border-b border-white/10 pb-1">
+        {cornerBrackets}
+        <header className="relative z-10 flex shrink-0 items-center justify-between gap-1.5 border-b border-[#806345]/50 bg-[#1B1410]/95 px-2.5 py-1.5">
+          <div className="flex min-w-0 items-center gap-1.5">
+            <GameIcon
+              name={getCardGameIcon(card.cardKey)}
+              size={12}
+              className="shrink-0 text-[#E6BE6C]"
+            />
             <span className="truncate text-[10px] font-bold tracking-wide text-[#F3D38C] uppercase">
-              {sourceLabel}
+              {title ?? sourceLabel}
             </span>
+          </div>
+          <div className="flex shrink-0 items-center gap-1">
+            {onResetToSelf ? (
+              <button
+                type="button"
+                onClick={onResetToSelf}
+                className="cursor-pointer rounded border border-[#806345]/75 bg-[#231A14] px-1.5 py-0.5 text-[9.5px] font-semibold text-[#E6CFA3] transition-colors hover:border-[#E6BE6C] hover:text-[#FFF8ED]"
+              >
+                Soi mình
+              </button>
+            ) : null}
             <button
               type="button"
-              onClick={onResetToSelf}
-              className="shrink-0 cursor-pointer rounded border border-[#B89352]/55 bg-[#1B212C] px-1.5 py-0.5 text-[9.5px] font-bold text-[#F4EBD8] hover:border-[#E6BE6C]"
+              onClick={onClose}
+              title="Đóng (Esc)"
+              aria-label="Đóng bảng xem chi tiết (Esc)"
+              className="inline-flex cursor-pointer items-center gap-1 rounded border border-[#806345]/80 bg-[#231A14] px-1.5 py-0.5 text-[10px] font-semibold text-[#F5EBD6] transition-colors hover:border-[#E6BE6C] hover:text-[#FFF8ED] focus-visible:outline-2 focus-visible:outline-[#E6BE6C]"
             >
-              Về tướng bạn
+              <GameIcon name="ui:x" size={10} />
+              <span>Đóng</span>
             </button>
           </div>
+        </header>
 
-          <div className="mt-1.5 flex shrink-0 items-center gap-2">
-            <div className="flex h-[46px] w-[34px] shrink-0 items-center justify-center overflow-hidden rounded-[4px] border border-[#B89352]/65 bg-[#161B23]">
+        <div className="lkdf-scroll relative z-10 min-h-0 flex-1 space-y-2.5 overflow-y-auto px-3 py-2.5">
+          <div className="flex items-start gap-2.5">
+            <div className="flex h-[62px] w-[45px] shrink-0 items-center justify-center overflow-hidden rounded-[5px] border border-[#C89B4B]/70 bg-[#1D1510] shadow-md">
               {artUrl ? (
                 <img
                   src={artUrl}
@@ -78,150 +153,184 @@ export function MatchInspectorBox({
                   className="h-full w-full object-cover"
                 />
               ) : (
-                <GameIcon name={getCardGameIcon(card.cardKey)} size={18} className="text-[#5C3E1A]" />
+                <GameIcon
+                  name={getCardGameIcon(card.cardKey)}
+                  size={20}
+                  className="text-[#E6BE6C]"
+                />
               )}
             </div>
 
             <div className="min-w-0 flex-1">
-              <div className="font-serif-title truncate text-[13px] font-bold text-[#F3D38C]">
+              <div className="font-serif-title text-[14px] leading-snug font-bold text-[#F5EBD6]">
                 {card.nameVi}
               </div>
-              <div className="mt-1 flex flex-wrap items-center gap-1">
+              <div className="mt-1 flex flex-wrap items-center gap-1.5">
                 <span
                   className={[
-                    'font-mono-num inline-flex items-center gap-0.5 rounded border px-1.5 py-0 text-[10px] font-bold',
+                    'font-mono-num inline-flex items-center gap-0.5 rounded border px-1.5 py-0.5 text-[10.5px] leading-none font-bold',
                     red
-                      ? 'border-[#F87171]/45 bg-[#B91C1C]/25 text-[#FCA5A5]'
-                      : 'border-[#9CA3AF]/40 bg-[#374151]/55 text-[#E5E7EB]',
+                      ? 'border-[#F87171]/50 bg-[#7F1D1D]/45 text-[#FCA5A5]'
+                      : 'border-[#806345]/60 bg-[#231A14] text-[#F5EBD6]',
                   ].join(' ')}
                 >
                   <span>{rankLabel}</span>
                   <SuitGlyph suit={card.suit} size={11} tone="darkSurface" />
                   <span className="sr-only">{suitSym}</span>
                 </span>
-                <span className="rounded border border-[#A68042]/35 bg-[#14100C]/90 px-1.5 py-0 text-[9.5px] font-semibold text-[#E6CFA3]">
+                <span className="rounded border border-[#C89B4B]/45 bg-[#231A14]/90 px-1.5 py-0.5 text-[10px] leading-none font-semibold text-[#E6CFA3]">
                   {categoryLabel}
                 </span>
+                {card.category === 'WEAPON' && card.attackRange !== undefined ? (
+                  <span className="font-mono-num inline-flex items-center gap-1 rounded border border-[#D99B26]/55 bg-[#D99B26]/16 px-1.5 py-0.5 text-[10px] leading-none font-bold text-[#FDE68A] tabular-nums">
+                    <GameIcon name="archery-target" size={10} />
+                    Tầm {card.attackRange}
+                  </span>
+                ) : null}
               </div>
             </div>
           </div>
 
-          <div className="lkdf-scroll mt-2 min-h-0 flex-1 overflow-y-auto pr-1">
-            <p className="text-[11.5px] leading-[1.45] text-[#E2D9C8]">{description}</p>
-          </div>
+          <p className="text-[12px] leading-[1.48] text-[#EDE3D2]">{description}</p>
+
+          {tip ? (
+            <div className="flex items-start gap-1.5 rounded-md border border-[#806345]/45 bg-[#1B1410]/85 px-2.5 py-1.5 text-[11px] leading-snug text-[#D5C3A5]">
+              <GameIcon name="ui:info" size={12} className="mt-0.5 shrink-0 text-[#E6BE6C]" />
+              <span>{tip}</span>
+            </div>
+          ) : null}
         </div>
       </aside>
     );
   }
 
-  const targetSeatPlayer =
-    inspector?.kind === 'hero'
-      ? players.find((p) => p.seatIndex === inspector.seatIndex)
-      : selfPlayer;
-  const isOpponent = inspector?.kind === 'hero';
+  const targetSeatPlayer = players.find((p) => p.seatIndex === inspector.seatIndex) ?? selfPlayer;
+  const isSelf = Boolean(selfPlayer && targetSeatPlayer?.seatIndex === selfPlayer.seatIndex);
   const heroDef = targetSeatPlayer?.heroId ? getHeroDefinition(targetSeatPlayer.heroId) : null;
   const factionStyle = heroDef ? getFactionStyle(heroDef.faction) : null;
   const portraitUrl = getHeroPortraitUrl(targetSeatPlayer?.heroId);
 
   return (
     <aside
+      data-match-inspector="true"
+      role="region"
+      aria-label={`Chi tiết tướng ${heroDef?.nameVi ?? ''}`}
       style={boxBgStyle}
-      className={[
-        'flex h-full min-h-0 w-[var(--right-w,250px)] shrink-0 flex-col justify-between rounded-[6px] border bg-[#12161E] p-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]',
-        isOpponent ? 'border-[#E6BE6C]/55' : 'border-[#94A3B8]/35',
-      ].join(' ')}
+      className="animate-lkdf-slide relative flex min-h-0 w-full flex-col overflow-hidden rounded-lg border border-[#C89B4B]/70 bg-[#140F0C] text-[#EFE6D5] shadow-[0_20px_48px_rgba(0,0,0,0.88),inset_0_1px_0_rgba(230,190,108,0.16)]"
     >
-      <div className="flex min-h-0 flex-1 flex-col">
-        <div className="flex shrink-0 items-center justify-between gap-1.5 border-b border-white/10 pb-1">
-          {isOpponent && targetSeatPlayer ? (
-            <>
-              <span className="truncate text-[10px] font-bold tracking-wide text-[#F3D38C] uppercase">
-                Tướng: {targetSeatPlayer.displayName}
-              </span>
-              <button
-                type="button"
-                onClick={onResetToSelf}
-                className="shrink-0 cursor-pointer rounded border border-[#B89352]/55 bg-[#1B212C] px-1.5 py-0.5 text-[9.5px] font-bold text-[#F4EBD8] hover:border-[#E6BE6C]"
-              >
-                Về tướng bạn
-              </button>
-            </>
-          ) : (
-            <>
-              <span className="truncate text-[10px] font-bold tracking-wide text-[#C89B4B] uppercase">
-                Kỹ năng{' '}
-                {heroDef && factionStyle ? (
-                  <span className={`normal-case ${factionStyle.nameTextClass}`}>
-                    · {heroDef.nameVi}
-                  </span>
-                ) : null}
-              </span>
-              <span className="hidden shrink-0 text-[9px] text-[#94A3B8] xl:inline">Bấm bài/ghế để soi</span>
-            </>
-          )}
+      {cornerBrackets}
+      <header className="relative z-10 flex shrink-0 items-center justify-between gap-1.5 border-b border-[#806345]/50 bg-[#1B1410]/95 px-2.5 py-1.5">
+        <div className="flex min-w-0 items-center gap-1.5">
+          {heroDef ? <FactionSeal faction={heroDef.faction} size="xs" /> : null}
+          <span className="truncate text-[10px] font-bold tracking-wide text-[#F3D38C] uppercase">
+            {title ?? (isSelf ? 'Tướng của bạn' : targetSeatPlayer?.displayName || 'Hồ sơ tướng')}
+          </span>
         </div>
+        <div className="flex shrink-0 items-center gap-1">
+          {!isSelf && onResetToSelf ? (
+            <button
+              type="button"
+              onClick={onResetToSelf}
+              className="cursor-pointer rounded border border-[#806345]/75 bg-[#231A14] px-1.5 py-0.5 text-[9.5px] font-semibold text-[#E6CFA3] transition-colors hover:border-[#E6BE6C] hover:text-[#FFF8ED]"
+            >
+              Soi mình
+            </button>
+          ) : null}
+          <button
+            type="button"
+            onClick={onClose}
+            title="Đóng (Esc)"
+            aria-label="Đóng bảng xem chi tiết (Esc)"
+            className="inline-flex cursor-pointer items-center gap-1 rounded border border-[#806345]/80 bg-[#231A14] px-1.5 py-0.5 text-[10px] font-semibold text-[#F5EBD6] transition-colors hover:border-[#E6BE6C] hover:text-[#FFF8ED] focus-visible:outline-2 focus-visible:outline-[#E6BE6C]"
+          >
+            <GameIcon name="ui:x" size={10} />
+            <span>Đóng</span>
+          </button>
+        </div>
+      </header>
 
+      <div className="lkdf-scroll relative z-10 min-h-0 flex-1 space-y-2.5 overflow-y-auto px-3 py-2.5">
         {heroDef && factionStyle && targetSeatPlayer ? (
           <>
-            {isOpponent ? (
-              <div className="mt-1 flex shrink-0 items-center gap-1.5 border-b border-white/6 pb-1">
-                <div
-                  className={`flex h-6 w-6 shrink-0 items-center justify-center overflow-hidden rounded border bg-[#14171A] ${factionStyle.borderClass}`}
-                >
-                  {portraitUrl ? (
-                    <img
-                      src={portraitUrl}
-                      alt={heroDef.nameVi}
-                      draggable={false}
-                      className="h-full w-full object-cover object-[50%_18%]"
-                    />
-                  ) : (
-                    <FactionSeal faction={heroDef.faction} size="sm" />
-                  )}
-                </div>
-                <div className="flex min-w-0 flex-1 items-baseline justify-between gap-1.5">
-                  <span className={`font-serif-title truncate text-[11.5px] font-bold ${factionStyle.nameTextClass}`}>
-                    {heroDef.nameVi} · {factionStyle.labelVi}
+            <div className="flex items-center gap-2.5 border-b border-[#806345]/35 pb-2">
+              <div
+                className={`flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-md border bg-[#1B1410] shadow-md ${factionStyle.borderClass}`}
+              >
+                {portraitUrl ? (
+                  <img
+                    src={portraitUrl}
+                    alt={heroDef.nameVi}
+                    draggable={false}
+                    className="h-full w-full object-cover object-[50%_18%]"
+                  />
+                ) : (
+                  <FactionSeal faction={heroDef.faction} size="sm" />
+                )}
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className={`font-serif-title text-[14px] leading-snug font-bold ${factionStyle.nameTextClass}`}>
+                    {heroDef.nameVi}
                   </span>
-                  <span className="font-mono-num shrink-0 text-[9.5px] text-[#B5A792]">
+                  <span className={`rounded border px-1.5 py-0 text-[9.5px] font-bold ${factionStyle.badgeClass}`}>
+                    {factionStyle.labelVi}
+                  </span>
+                </div>
+                <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-[#D5C3A5]">
+                  <span className="font-mono-num inline-flex items-center gap-1 font-bold text-[#FCA5A5] tabular-nums">
+                    <GameIcon name="heart-plus" size={11} className="text-[#EF4444]" />
                     {targetSeatPlayer.hp}/{targetSeatPlayer.maxHp} máu
+                  </span>
+                  <span className="font-mono-num text-[#B5A792] tabular-nums">
+                    · {targetSeatPlayer.handCount} lá tay
                   </span>
                 </div>
               </div>
-            ) : null}
+            </div>
 
-            <div className="lkdf-scroll mt-1 min-h-0 flex-1 space-y-1 overflow-y-auto pr-1">
-              {heroDef.skills.map((sk) => (
-                <div key={sk.id}>
-                  <div className="flex flex-wrap items-center gap-1">
-                    <span className="font-serif-title text-[10.5px] font-bold text-[#F3D38C]">
-                      【{sk.nameVi}】
-                    </span>
-                    {sk.isLordSkill ? (
-                      <span className="rounded border border-[#D99B26]/55 bg-[#D99B26]/16 px-1 py-0 text-[8px] font-bold text-[#FBBF24]">
-                        Chủ Công
+            <div className="space-y-2">
+              {heroDef.skills.map((sk) => {
+                const isPassive = isPassiveSkillId(sk.id);
+                return (
+                  <div
+                    key={sk.id}
+                    className="rounded-md border border-[#806345]/35 bg-[#1B1410]/70 px-2.5 py-2"
+                  >
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span className="font-serif-title text-[12px] font-bold text-[#F3D38C]">
+                        【{sk.nameVi}】
                       </span>
-                    ) : null}
+                      {sk.isLordSkill ? (
+                        <span className="inline-flex items-center gap-0.5 rounded border border-[#D99B26]/60 bg-[#D99B26]/18 px-1.5 py-0 text-[9px] font-bold text-[#FDE68A]">
+                          <GameIcon name="crown" size={9} />
+                          Kỹ năng Chủ Công
+                        </span>
+                      ) : null}
+                      {isPassive ? (
+                        <span className="inline-flex items-center rounded border border-[#6EE7B7]/45 bg-[#064E3B]/65 px-1.5 py-0 text-[9px] font-bold text-[#A7F3D0]">
+                          Bị động
+                        </span>
+                      ) : null}
+                    </div>
+                    <p className="mt-1 text-[11.5px] leading-[1.45] text-[#EDE3D2]">
+                      {sk.descriptionVi}
+                    </p>
                   </div>
-                  <p className="mt-0.5 text-[10px] leading-[1.3] text-[#E2D9C8]">
-                    {sk.descriptionVi}
-                  </p>
-                </div>
-              ))}
+                );
+              })}
+            </div>
+
+            <div className="flex items-start gap-1.5 rounded-md border border-[#806345]/35 bg-[#1B1410]/75 px-2.5 py-1.5 text-[10.5px] leading-snug text-[#B5A792]">
+              <GameIcon name="ui:info" size={11} className="mt-0.5 shrink-0 text-[#E6BE6C]" />
+              <span>Bấm nút thông tin ghế khác hoặc lá trang bị/giữa bàn để đổi mục soi.</span>
             </div>
           </>
         ) : (
-          <div className="flex flex-1 items-center justify-center text-center text-[11px] text-[#B5A792]">
+          <div className="flex h-24 items-center justify-center text-center text-[11.5px] text-[#B5A792]">
             Đang chọn Tướng đầu ván...
           </div>
         )}
       </div>
-
-      {!isOpponent ? (
-        <div className="mt-1 shrink-0 truncate border-t border-white/8 pt-0.5 text-[9px] text-[#94A3B8]">
-          Bấm bài, ô trang bị hoặc ⓘ để soi
-        </div>
-      ) : null}
     </aside>
   );
 }

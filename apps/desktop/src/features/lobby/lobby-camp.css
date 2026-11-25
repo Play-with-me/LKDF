@@ -1,7 +1,7 @@
 .lkdf-lobby-camp {
   background: #120d0a;
   color: #f5ebd6;
-  font-family: "Segoe UI", system-ui, sans-serif;
+  font-family: var(--lkdf-font-ui);
 }
 .lkdf-lobby-camp-art {
   position: absolute;
@@ -41,10 +41,10 @@
 }
 .lkdf-lobby-camp-title {
   margin: 12px 0 24px;
-  font-family: 'Times New Roman', 'Segoe UI', serif;
+  font-family: var(--lkdf-font-serif);
   font-size: clamp(40px, 4.8vw, 60px);
   font-weight: 700;
-  line-height: 1.08;
+  line-height: 1.18;
   letter-spacing: normal;
   text-shadow: 0 4px 16px #090605;
 }
@@ -91,12 +91,12 @@
   .lkdf-lobby-camp-command:hover { transform: none; }
 }
 
-.lkdf-lobby-camp .font-serif-title { font-family: "Times New Roman", "Segoe UI", serif; }
-.lkdf-lobby-camp .font-mono-num { font-family: inherit; font-variant-numeric: tabular-nums; }
+.lkdf-lobby-camp .font-serif-title { font-family: var(--lkdf-font-serif); }
+.lkdf-lobby-camp .font-mono-num { font-family: var(--lkdf-font-mono); font-variant-numeric: tabular-nums; }
 .lkdf-lobby-camp button:disabled { opacity: .55; cursor: wait; }
 .lkdf-lobby-camp-welcome {
   align-self: center;
-  margin: 56px 16px 0;
+  margin: 14px 16px 0;
   display: flex;
   flex-wrap: wrap;
   gap: 8px 16px;
@@ -106,9 +106,18 @@
   background: #211913;
   font-size: 14px;
 }
-.lkdf-lobby-camp-welcome button { text-decoration: underline; }
+.lkdf-lobby-camp-welcome button {
+  cursor: pointer;
+  border-radius: 3px;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.lkdf-lobby-camp-welcome button:focus-visible {
+  outline: 2px solid #e6be6c;
+  outline-offset: 2px;
+}
 
-.lkdf-lobby-camp[data-live-session] .lkdf-lobby-camp-content { padding-bottom: 56px; }
+.lkdf-lobby-camp[data-live-session] .lkdf-lobby-camp-content { padding-top: 24px; padding-bottom: 24px; }
 
 :root[data-lkdf-reduce-motion] .lkdf-lobby-camp-command { transition: none; }
 :root[data-lkdf-reduce-motion] .lkdf-lobby-camp-command:hover { transform: none; }

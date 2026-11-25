@@ -352,39 +352,139 @@ export function HomeLobbyHub({
               <OnlinePreview control={control} playerName={profile.displayName} />
             ) : (
               <div className="lkdf-online-entry">
-                <h2 className="font-serif-title text-[clamp(24px,3vw,42px)] font-bold leading-tight text-[#F5EBD6]">Chơi online</h2>
-                {isCheckingActiveRoom ? <p role="status" className="mt-2 text-sm">Đang kiểm tra phòng đang chơi…</p> : null}
-                <form onSubmit={handleJoinRoom} className="lkdf-online-panel" data-pending={isJoiningRoom}>
-                  <h3 className="font-serif-title">Vào phòng bằng mã</h3>
-                  <label htmlFor="lobby-room-code" className="lkdf-online-hint">Dán mã 6 ký tự bạn nhận được.</label>
-                  <div className="lkdf-online-code-row">
-                    <input ref={roomInputRef} id="lobby-room-code" value={roomCodeInput} autoComplete="off" readOnly={isJoiningRoom} aria-invalid={Boolean(joinError && !/^[A-Z0-9]{6}$/.test(roomCodeInput))} aria-describedby={joinError ? 'lobby-join-error' : undefined}
-                      placeholder="K9M2P4" onChange={event => {
-                        setRoomCodeInput(event.target.value.replace(/\s+/g, '').toUpperCase());
-                        setJoinError(null);
-                      }} className={`${control} lkdf-online-code font-mono-num`} />
-                    <button disabled={isJoiningRoom || isCreatingRoom || isCheckingActiveRoom} className="lkdf-online-join">{isJoiningRoom ? 'Đang vào…' : 'Vào phòng'}</button>
-                  </div>
-                  {joinError ? <p id="lobby-join-error" role="alert" className="lkdf-online-error">{joinError}</p> : null}
-                </form>
-                <details className="lkdf-online-create">
-                  <summary className="cursor-pointer rounded-sm text-sm text-[#DFCAA9] focus-visible:outline-2 focus-visible:outline-[#E6BE6C]">
-                    Tạo phòng
-                  </summary>
-                  <div className="lkdf-online-presets">
-                    {PRESET_CARDS.map(preset => (
-                      <button key={preset.id} type="button" aria-pressed={preset.id === selectedPreset}
-                        onClick={() => setSelectedPreset(preset.id)} className={`${control} px-1.5 aria-pressed:border-[#E6BE6C]`}>
-                        {preset.label}<small>{TIMER_PRESETS[preset.id].mainTurnSeconds} giây/lượt</small>
+                <h2 className="font-serif-title">Chơi online</h2>
+                {isCheckingActiveRoom ? (
+                  <p role="status" className="mb-3 inline-flex items-center gap-2 text-sm text-[#E6BE6C]">
+                    <GameIcon name="ui:loader" size={14} className="animate-spin" />
+                    <span>Đang kiểm tra phòng đang chơi…</span>
+                  </p>
+                ) : null}
+                <div className="lkdf-online-grid">
+                  {/* Thẻ Trái (Chính): Lập Phòng Mới */}
+                  <section
+                    aria-label="Lập phòng mới"
+                    className="lkdf-online-card lkdf-online-card-primary"
+                  >
+                    <div className="space-y-3">
+                      <div className="lkdf-online-card-header">
+                        <div className="lkdf-online-card-title">
+                          <span
+                            aria-hidden="true"
+                            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded border border-[#D4A451]/70 bg-gradient-to-b from-[#9E2B25] to-[#6E1A16] text-[#F9EED9]"
+                          >
+                            <GameIcon name="castle" size={16} />
+                          </span>
+                          <h3 className="font-serif-title">Lập Phòng Mới</h3>
+                        </div>
+                        <span className="lkdf-online-card-badge">4–8 người</span>
+                      </div>
+                      <p className="text-xs leading-relaxed text-[#DFCAA9]">
+                        Chọn nhịp đồng hồ bàn đấu và nhận mã Hổ Phù để mời bằng hữu vào sảnh.
+                      </p>
+                      <div>
+                        <span className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.06em] text-[#E6BE6C]">
+                          Nhịp chơi
+                        </span>
+                        <div className="lkdf-online-presets" role="group" aria-label="Nhịp chơi">
+                          {PRESET_CARDS.map((preset) => (
+                            <button
+                              key={preset.id}
+                              type="button"
+                              aria-pressed={preset.id === selectedPreset}
+                              onClick={() => setSelectedPreset(preset.id)}
+                              className={`${control} flex flex-col items-center justify-center px-1.5 py-2 text-center aria-pressed:border-[#E6BE6C]`}
+                            >
+                              <span className="text-xs font-semibold">{preset.label}</span>
+                              <small className="font-mono-num tabular-nums">
+                                {TIMER_PRESETS[preset.id].mainTurnSeconds}s/lượt
+                              </small>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="pt-2">
+                      <button
+                        type="button"
+                        onClick={handleCreateRoom}
+                        disabled={isCreatingRoom || isJoiningRoom || isCheckingActiveRoom}
+                        className="tqs-talisman-btn flex min-h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-[4px] border border-[#F2CF84]/75 px-4 text-sm font-bold text-[#FFF8ED] focus-visible:outline-2 focus-visible:outline-[#E6BE6C] disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        <GameIcon name="castle" size={16} />
+                        <span>
+                          {isCreatingRoom ? 'Đang mở phòng…' : 'Lập Phòng Mới (4–8 người)'}
+                        </span>
                       </button>
-                    ))}
-                  </div>
-                <button type="button" onClick={handleCreateRoom} disabled={isCreatingRoom || isJoiningRoom || isCheckingActiveRoom}
-                  className="mt-6 flex min-h-12 w-full items-center justify-center gap-2 rounded border border-[#BE9360] bg-[#9E2B25] px-4 text-sm font-bold text-[#FFF0DA] hover:bg-[#B7372E] focus-visible:outline-2 focus-visible:outline-[#E6BE6C]">
-                  <GameIcon name="castle" size={16} /> {isCreatingRoom ? 'Đang mở phòng…' : 'Tạo phòng 4–8 người'}
-                </button>
-                {createError ? <p role="alert" className="mt-2 text-sm text-[#FFB4A8]">{createError}</p> : null}
-                </details>
+                      {createError ? (
+                        <p role="alert" className="lkdf-online-error">
+                          {createError}
+                        </p>
+                      ) : null}
+                    </div>
+                  </section>
+
+                  {/* Thẻ Phải: Vào Phòng Bằng Mã Hổ Phù */}
+                  <form
+                    onSubmit={handleJoinRoom}
+                    className="lkdf-online-card"
+                    data-pending={isJoiningRoom}
+                  >
+                    <div className="space-y-3">
+                      <div className="lkdf-online-card-header">
+                        <div className="lkdf-online-card-title">
+                          <span
+                            aria-hidden="true"
+                            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded border border-[#806345]/80 bg-[#261C15] text-[#E6BE6C]"
+                          >
+                            <GameIcon name="ui:key" size={15} />
+                          </span>
+                          <h3 className="font-serif-title">Vào Phòng Bằng Mã Hổ Phù</h3>
+                        </div>
+                      </div>
+                      <label htmlFor="lobby-room-code" className="block text-xs leading-relaxed text-[#DFCAA9]">
+                        Nhập mã 6 ký tự nhận từ Chủ phòng để gia nhập bàn đấu ngay.
+                      </label>
+                      <div>
+                        <span className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.06em] text-[#D5C3A5]">
+                          Mã Hổ Phù (6 ký tự)
+                        </span>
+                        <input
+                          ref={roomInputRef}
+                          id="lobby-room-code"
+                          maxLength={6}
+                          value={roomCodeInput}
+                          autoComplete="off"
+                          readOnly={isJoiningRoom}
+                          aria-invalid={Boolean(joinError && !/^[A-Z0-9]{6}$/.test(roomCodeInput))}
+                          aria-describedby={joinError ? 'lobby-join-error' : undefined}
+                          placeholder="K9M2P4"
+                          onChange={(event) => {
+                            setRoomCodeInput(event.target.value.replace(/\s+/g, '').toUpperCase());
+                            setJoinError(null);
+                          }}
+                          className={`${control} lkdf-online-code font-mono-num w-full text-center text-base font-bold uppercase`}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="pt-2">
+                      <button
+                        type="submit"
+                        disabled={isJoiningRoom || isCreatingRoom || isCheckingActiveRoom}
+                        className="lkdf-online-join flex min-h-11 w-full items-center justify-center gap-2"
+                      >
+                        <GameIcon name="ui:door-open" size={16} />
+                        <span>{isJoiningRoom ? 'Đang vào phòng…' : 'Vào phòng'}</span>
+                      </button>
+                      {joinError ? (
+                        <p id="lobby-join-error" role="alert" className="lkdf-online-error">
+                          {joinError}
+                        </p>
+                      ) : null}
+                    </div>
+                  </form>
+                </div>
               </div>
             ) : lobbyScreen === 'reference' ? (
               <LobbyReference control={control} />

@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, ipcMain, shell } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, screen, shell } from 'electron';
 import { readFileSync } from 'node:fs';
 import fs from 'node:fs/promises';
 import http from 'node:http';
@@ -236,10 +236,28 @@ async function startLocalAuthCallbackServer(): Promise<{ readonly port: number }
   return { port };
 }
 
+function getTargetDisplay(): Electron.Display {
+  try {
+    return screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
+  } catch {
+    return screen.getPrimaryDisplay();
+  }
+}
+
 function createMainWindow(): BrowserWindow {
   allowForceClose = false;
 
+  const initialDisplay = getTargetDisplay();
+  const { x, y, width, height } = initialDisplay.bounds;
+
   const win = new BrowserWindow({
+    x,
+    y,
+    width,
+    height,
+    minWidth: 960,
+    minHeight: 600,
+    fullscreenable: true,
     show: false,
     frame: false,
     backgroundColor: '#090807',
@@ -253,7 +271,30 @@ function createMainWindow(): BrowserWindow {
     },
   });
 
+  const handleDisplayMetricsChanged = (
+    _event: Electron.Event,
+    changedDisplay: Electron.Display,
+  ): void => {
+    if (win.isDestroyed() || !win.isFullScreen()) {
+      return;
+    }
+    const currentDisplay = screen.getDisplayMatching(win.getBounds());
+    if (currentDisplay.id !== changedDisplay.id) {
+      return;
+    }
+    win.setBounds(changedDisplay.bounds);
+  };
+
+  screen.on('display-metrics-changed', handleDisplayMetricsChanged);
+
   win.once('ready-to-show', () => {
+    if (win.isDestroyed()) {
+      return;
+    }
+    const activeDisplay =
+      screen.getAllDisplays().find((d) => d.id === initialDisplay.id) ??
+      getTargetDisplay();
+    win.setBounds(activeDisplay.bounds);
     win.setFullScreen(true);
     win.show();
   });
@@ -293,6 +334,7 @@ function createMainWindow(): BrowserWindow {
   });
 
   win.on('closed', () => {
+    screen.removeListener('display-metrics-changed', handleDisplayMetricsChanged);
     matchCloseGuardActive = false;
     allowForceClose = false;
     if (mainWindow === win) {

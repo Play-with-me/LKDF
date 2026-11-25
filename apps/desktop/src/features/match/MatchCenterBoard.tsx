@@ -17,6 +17,7 @@ import {
   getCardGameIcon,
 } from '../../components/icons/index.js';
 import { TakeHandTray } from './TakeHandTray.js';
+import { BlindHandCardFan } from './MatchActionSidebar.js';
 import { PlayingCardFace } from './HandCardItem.js';
 import {
   describePendingActorPrompt,
@@ -102,11 +103,13 @@ function GuanXingPlanner({
   };
 
   return (
-    <div className="rounded-lg border border-[#D99B26]/60 bg-[#14171A] p-2.5">
-      <div className="mb-2 flex items-center justify-between gap-2">
-        <span className="inline-flex items-center gap-1.5 text-[12px] font-bold text-[#FBBF24]">
-          <GameIcon name="ui:sparkles" size={13} />
-          Quan Tinh — Đầu ({topIds.length}) / Đáy ({bottomIds.length})
+    <div className="lkdf-planner-panel">
+      <div className="lkdf-planner-head mb-1.5 flex items-center justify-between gap-2">
+        <span className="inline-flex min-w-0 items-center gap-1.5 truncate text-[11.5px] font-bold text-[#FDE68A]">
+          <GameIcon name="ui:sparkles" size={13} className="shrink-0 text-[#E6BE6C]" />
+          <span className="truncate">
+            Quan Tinh ({topIds.length}/{bottomIds.length})
+          </span>
         </span>
         <button
           type="button"
@@ -118,58 +121,70 @@ function GuanXingPlanner({
               bottomCardIds: bottomIds,
             })
           }
-          className="cursor-pointer rounded bg-[#C83E37] px-2.5 py-1 text-[11px] font-bold text-[#F3F4F6] hover:bg-[#B2342E]"
+          className="shrink-0 cursor-pointer whitespace-nowrap rounded bg-[#9E2B25] px-2 py-1 text-[10.5px] font-bold text-[#FFF5EC] hover:bg-[#B2342E]"
         >
           Xác nhận Quan Tinh
         </button>
       </div>
-      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-        <div className="rounded border border-[#2D333B] bg-[#1E2328] p-2">
-          <div className="mb-1.5 text-[11px] font-bold text-[#86EFAC]">
-            Đầu chồng bài (rút trước)
+      <div className="lkdf-planner-grid grid grid-cols-1 gap-1.5">
+        <div className="lkdf-planner-col rounded border border-[#806345]/50 bg-[#1D1510] p-1.5">
+          <div className="mb-1 flex items-center justify-between text-[10.5px] leading-tight font-bold text-[#86EFAC]">
+            <span>Đầu chồng bài (rút trước)</span>
+            <span className="text-[9.5px] font-normal text-[#C7B69B]">Bấm lá để đẩy xuống đáy</span>
           </div>
-          <div className="flex flex-wrap gap-1.5">
-            {topIds.map((id, idx) => {
-              const card = cardById.get(id);
-              if (!card) return null;
-              return (
-                <button
-                  key={id}
-                  type="button"
-                  onClick={() => moveCard(id, 'BOTTOM')}
-                  title={`Bấm để chuyển ${formatCardShort(card)} xuống đáy`}
-                  className="lkdf-card-gwent group relative flex h-[68px] w-[48px] shrink-0 cursor-pointer flex-col overflow-hidden rounded-[5px] border border-[#86EFAC]/65 text-left transition-transform duration-150 hover:-translate-y-0.5 hover:border-[#FBBF24]"
-                >
-                  <PlayingCardFace card={card} showCategoryTag={false} />
-                  <span className="absolute top-0.5 right-0.5 z-10 rounded bg-[#14171A]/90 px-1 text-[9px] font-bold text-[#86EFAC] ring-1 ring-[#86EFAC]/50">
-                    #{idx + 1}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
+          {topIds.length > 0 ? (
+            <div className="flex flex-wrap gap-1">
+              {topIds.map((id, idx) => {
+                const card = cardById.get(id);
+                if (!card) return null;
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => moveCard(id, 'BOTTOM')}
+                    title={`Bấm để chuyển ${formatCardShort(card)} xuống đáy`}
+                    className="lkdf-card-gwent lkdf-planner-card group relative flex h-[64px] w-[46px] shrink-0 cursor-pointer flex-col overflow-hidden rounded-[5px] border border-[#86EFAC]/65 text-left transition-transform duration-150 hover:-translate-y-0.5 hover:border-[#FBBF24]"
+                  >
+                    <PlayingCardFace card={card} showCategoryTag={false} />
+                    <span className="absolute top-0.5 right-0.5 z-10 rounded bg-[#16110E]/92 px-1 text-[8.5px] leading-tight font-bold text-[#86EFAC] ring-1 ring-[#86EFAC]/50">
+                      #{idx + 1}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="text-[10px] text-[#A89984]">Chưa có lá ở đầu chồng bài.</p>
+          )}
         </div>
-        <div className="rounded border border-[#2D333B] bg-[#1E2328] p-2">
-          <div className="mb-1.5 text-[11px] font-bold text-[#93C5FD]">
-            Đáy chồng bài
+        <div className="lkdf-planner-col rounded border border-[#806345]/50 bg-[#1D1510] p-1.5">
+          <div className="flex items-center justify-between text-[10.5px] leading-tight font-bold text-[#93C5FD]">
+            <span>Đáy chồng bài</span>
+            {bottomIds.length === 0 ? (
+              <span className="text-[9.5px] font-normal text-[#A89984]">Trống</span>
+            ) : (
+              <span className="text-[9.5px] font-normal text-[#C7B69B]">Bấm lá để đưa lên đầu</span>
+            )}
           </div>
-          <div className="flex flex-wrap gap-1.5">
-            {bottomIds.map((id) => {
-              const card = cardById.get(id);
-              if (!card) return null;
-              return (
-                <button
-                  key={id}
-                  type="button"
-                  onClick={() => moveCard(id, 'TOP')}
-                  title={`Bấm để chuyển ${formatCardShort(card)} lên đầu`}
-                  className="lkdf-card-gwent group relative flex h-[68px] w-[48px] shrink-0 cursor-pointer flex-col overflow-hidden rounded-[5px] border border-[#93C5FD]/55 opacity-85 text-left transition-transform duration-150 hover:-translate-y-0.5 hover:border-[#FBBF24] hover:opacity-100"
-                >
-                  <PlayingCardFace card={card} showCategoryTag={false} />
-                </button>
-              );
-            })}
-          </div>
+          {bottomIds.length > 0 ? (
+            <div className="mt-1 flex flex-wrap gap-1">
+              {bottomIds.map((id) => {
+                const card = cardById.get(id);
+                if (!card) return null;
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => moveCard(id, 'TOP')}
+                    title={`Bấm để chuyển ${formatCardShort(card)} lên đầu`}
+                    className="lkdf-card-gwent lkdf-planner-card group relative flex h-[64px] w-[46px] shrink-0 cursor-pointer flex-col overflow-hidden rounded-[5px] border border-[#93C5FD]/55 opacity-85 text-left transition-transform duration-150 hover:-translate-y-0.5 hover:border-[#FBBF24] hover:opacity-100"
+                  >
+                    <PlayingCardFace card={card} showCategoryTag={false} />
+                  </button>
+                );
+              })}
+            </div>
+          ) : null}
         </div>
       </div>
     </div>
@@ -227,22 +242,22 @@ function YiJiDistributor({
   };
 
   return (
-    <div className="rounded-lg border border-[#D99B26]/60 bg-[#14171A] p-2.5">
-      <div className="mb-2 flex items-center justify-between gap-2">
-        <span className="inline-flex items-center gap-1.5 text-[12px] font-bold text-[#FBBF24]">
-          <GameIcon name="scroll-unfurled" size={13} />
+    <div className="lkdf-planner-panel">
+      <div className="lkdf-planner-head mb-1.5 flex items-center justify-between gap-2">
+        <span className="inline-flex items-center gap-1.5 text-[11.5px] font-bold text-[#FDE68A]">
+          <GameIcon name="scroll-unfurled" size={13} className="text-[#E6BE6C]" />
           Di Kế — Chọn người nhận bài
         </span>
         <button
           type="button"
           onClick={handleConfirm}
-          className="cursor-pointer rounded bg-[#C83E37] px-2.5 py-1 text-[11px] font-bold text-[#F3F4F6] hover:bg-[#B2342E]"
+          className="cursor-pointer rounded bg-[#9E2B25] px-2.5 py-1 text-[11px] font-bold text-[#FFF5EC] hover:bg-[#B2342E]"
         >
           Chia bài Di Kế
         </button>
       </div>
       <div className="flex flex-wrap items-start gap-2">
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex flex-wrap gap-1">
           {cards.map((card) => {
             const targetSeat = assignByCardId[card.id] ?? playerView.viewerSeatIndex;
             const isSelected = selectedCardId === card.id;
@@ -257,14 +272,14 @@ function YiJiDistributor({
                 onClick={() => setSelectedCardId(card.id)}
                 title={`Chọn ${formatCardShort(card)} để gán người nhận`}
                 className={[
-                  'lkdf-card-gwent relative flex h-[68px] w-[48px] shrink-0 cursor-pointer flex-col overflow-hidden rounded-[5px] text-left transition-transform duration-150',
+                  'lkdf-card-gwent lkdf-planner-card relative flex h-[64px] w-[46px] shrink-0 cursor-pointer flex-col overflow-hidden rounded-[5px] text-left transition-transform duration-150',
                   isSelected
                     ? 'border-2 border-[#FBBF24] ring-2 ring-[#FBBF24]/50 -translate-y-0.5'
                     : 'border border-[#B89352]/60 hover:border-[#E6BE6C]',
                 ].join(' ')}
               >
                 <PlayingCardFace card={card} showCategoryTag={false} />
-                <span className="absolute inset-x-0 bottom-0 z-10 truncate bg-[#14171A]/90 px-1 py-0.5 text-center text-[9px] font-bold text-[#FDE68A]">
+                <span className="absolute inset-x-0 bottom-0 z-10 truncate bg-[#16110E]/92 px-1 py-0.5 text-center text-[8.5px] leading-tight font-bold text-[#FDE68A]">
                   {shortTarget}
                 </span>
               </button>
@@ -296,7 +311,7 @@ function YiJiDistributor({
                   'cursor-pointer rounded-full border px-2 py-0.5 text-[10.5px] font-semibold transition-colors',
                   activeTarget
                     ? 'border-[#FBBF24] bg-[#D99B26]/25 text-[#FDE68A]'
-                    : 'border-[#3A424C] bg-[#1E2328] text-[#D1D5DB] hover:border-[#B89352]',
+                    : 'border-[#806345]/60 bg-[#1D1510] text-[#E8DCC8] hover:border-[#E6BE6C]',
                 ].join(' ')}
               >
                 {label}
@@ -316,7 +331,39 @@ function getPublicTargetZones(player: PublicPlayerView): TargetCardZone[] {
   if (player.equipments.armor !== null) zones.push('ARMOR');
   if (player.equipments.plusOneHorse !== null) zones.push('PLUS_ONE_HORSE');
   if (player.equipments.minusOneHorse !== null) zones.push('MINUS_ONE_HORSE');
-  if (player.delayedScrolls.length > 0) zones.push('DELAYED');
+  return zones;
+}
+
+function getTargetEquipZones(player: PublicPlayerView): readonly {
+  readonly zone: 'WEAPON' | 'ARMOR' | 'PLUS_ONE_HORSE' | 'MINUS_ONE_HORSE';
+  readonly prefix: string;
+  readonly card: CardInstance;
+}[] {
+  const zones: {
+    readonly zone: 'WEAPON' | 'ARMOR' | 'PLUS_ONE_HORSE' | 'MINUS_ONE_HORSE';
+    readonly prefix: string;
+    readonly card: CardInstance;
+  }[] = [];
+  if (player.equipments.weapon) {
+    zones.push({ zone: 'WEAPON', prefix: 'Vũ khí:', card: player.equipments.weapon });
+  }
+  if (player.equipments.armor) {
+    zones.push({ zone: 'ARMOR', prefix: 'Giáp:', card: player.equipments.armor });
+  }
+  if (player.equipments.plusOneHorse) {
+    zones.push({
+      zone: 'PLUS_ONE_HORSE',
+      prefix: 'Ngựa +1 (Thủ):',
+      card: player.equipments.plusOneHorse,
+    });
+  }
+  if (player.equipments.minusOneHorse) {
+    zones.push({
+      zone: 'MINUS_ONE_HORSE',
+      prefix: 'Ngựa -1 (Công):',
+      card: player.equipments.minusOneHorse,
+    });
+  }
   return zones;
 }
 
@@ -373,8 +420,9 @@ function TablePlayedCard({
     <button
       ref={faceRef}
       data-recent-discard={isLatest ? 'latest' : 'older'}
+      data-inspected-trigger={isInspected ? 'true' : undefined}
       type="button"
-      onClick={onInspect ? () => onInspect(card, 'Bài ngửa giữa bàn') : undefined}
+      onClick={onInspect ? () => onInspect(card, 'Bài ngửa') : undefined}
       title={`Bấm xem kỹ năng ${rankLabel} ${card.nameVi}`}
       className={[
         'lkdf-card-gwent group relative flex h-[104px] w-[74px] shrink-0 flex-col overflow-hidden rounded-[6px] text-left text-[#F4EBD8] transition-transform duration-150 select-none',
@@ -391,20 +439,36 @@ function TablePlayedCard({
   );
 }
 
-function buildTargetedSelfAlertVi(view: PlayerViewState): string | null {
+function buildTargetedSelfAlert(
+  view: PlayerViewState,
+): { readonly icon: 'archery-target' | 'ui:alert'; readonly text: string } | null {
   const interrupt = view.activeInterrupt;
   if (!interrupt) return null;
   const viewer = view.viewerSeatIndex;
   const getName = (seat: number | undefined | null) =>
     seat === undefined || seat === null ? 'Đối thủ' : getPlayerSeatLabel(view.players, seat);
 
+  if (interrupt.kind === 'WAIT_FAN_JIAN_GUESS' && interrupt.targetSeat === viewer) {
+    return {
+      icon: 'archery-target',
+      text: `${getName(interrupt.sourceSeat)} dùng Phản Gián nhắm BẠN · Chọn chất bài!`,
+    };
+  }
   if (
     interrupt.kind === 'WAIT_DODGE' &&
     interrupt.targetSeat === viewer &&
     interrupt.sourceSeat !== undefined &&
     interrupt.sourceSeat !== viewer
   ) {
-    return `🎯 ${getName(interrupt.sourceSeat)} đang đánh Sát vào BẠN!`;
+    const req = interrupt.requiredCount ?? 1;
+    const dodged = interrupt.dodgedSoFar ?? 0;
+    return {
+      icon: 'archery-target',
+      text:
+        req >= 2
+          ? `${getName(interrupt.sourceSeat)} đang đánh Sát vào BẠN · Vô Song (Lữ Bố): Cần ${req} lá Thiểm (${dodged}/${req})!`
+          : `${getName(interrupt.sourceSeat)} đang đánh Sát vào BẠN!`,
+    };
   }
   if (
     interrupt.kind === 'WAIT_DUEL_SAT' &&
@@ -412,7 +476,15 @@ function buildTargetedSelfAlertVi(view: PlayerViewState): string | null {
     interrupt.sourceSeat !== undefined &&
     interrupt.sourceSeat !== viewer
   ) {
-    return `🎯 ${getName(interrupt.sourceSeat)} đang Quyết Đấu với BẠN!`;
+    const req = interrupt.requiredCount ?? 1;
+    const played = interrupt.dodgedSoFar ?? 0;
+    return {
+      icon: 'archery-target',
+      text:
+        req >= 2
+          ? `${getName(interrupt.sourceSeat)} đang Quyết Đấu với BẠN · Vô Song (Lữ Bố): Cần ${req} lá Sát (${played}/${req})!`
+          : `${getName(interrupt.sourceSeat)} đang Quyết Đấu với BẠN!`,
+    };
   }
   if (
     interrupt.kind === 'WAIT_AOE_SAT' &&
@@ -420,7 +492,10 @@ function buildTargetedSelfAlertVi(view: PlayerViewState): string | null {
     interrupt.sourceSeat !== undefined &&
     interrupt.sourceSeat !== viewer
   ) {
-    return `🎯 ${getName(interrupt.sourceSeat)} dùng Nam Man Nhập Xâm nhắm BẠN!`;
+    return {
+      icon: 'archery-target',
+      text: `${getName(interrupt.sourceSeat)} dùng Nam Man Nhập Xâm nhắm BẠN!`,
+    };
   }
   if (
     interrupt.kind === 'WAIT_AOE_DODGE' &&
@@ -428,7 +503,10 @@ function buildTargetedSelfAlertVi(view: PlayerViewState): string | null {
     interrupt.sourceSeat !== undefined &&
     interrupt.sourceSeat !== viewer
   ) {
-    return `🎯 ${getName(interrupt.sourceSeat)} dùng Vạn Tiễn Tề Phát nhắm BẠN!`;
+    return {
+      icon: 'archery-target',
+      text: `${getName(interrupt.sourceSeat)} dùng Vạn Tiễn Tề Phát nhắm BẠN!`,
+    };
   }
   if (
     interrupt.kind === 'PICK_TARGET_CARD' &&
@@ -441,7 +519,10 @@ function buildTargetedSelfAlertVi(view: PlayerViewState): string | null {
       : interrupt.id.startsWith('tu_xi_take')
         ? 'Đột Tập'
         : interrupt.stealing ? 'Thuận Thủ Khiên Dương' : 'Quá Hà Sái Cầu';
-    return `🎯 ${getName(interrupt.sourceSeat)} dùng ${action} nhắm bài của BẠN!`;
+    return {
+      icon: 'archery-target',
+      text: `${getName(interrupt.sourceSeat)} dùng ${action} nhắm bài của BẠN!`,
+    };
   }
   if (
     interrupt.kind === 'WAIT_COLLATERAL_SAT' &&
@@ -449,7 +530,10 @@ function buildTargetedSelfAlertVi(view: PlayerViewState): string | null {
     interrupt.sourceSeat !== undefined &&
     interrupt.sourceSeat !== viewer
   ) {
-    return `🎯 ${getName(interrupt.sourceSeat)} dùng Tá Đao Sát Nhân lên BẠN!`;
+    return {
+      icon: 'archery-target',
+      text: `${getName(interrupt.sourceSeat)} dùng Tá Đao Sát Nhân lên BẠN!`,
+    };
   }
   if (interrupt.kind === 'WAIT_NULLIFICATION') {
     const nullifyInterrupt = interrupt as typeof interrupt & {
@@ -460,7 +544,10 @@ function buildTargetedSelfAlertVi(view: PlayerViewState): string | null {
     const origTarget = nullifyInterrupt.originalTargetSeat ?? interrupt.targetSeat;
     const origName = nullifyInterrupt.originalScrollNameVi ?? interrupt.scrollNameVi ?? 'Cẩm nang';
     if (origTarget === viewer && (nullifyInterrupt.nullifyDepth ?? 0) % 2 === 0) {
-      return `⚠️ Cẩm nang [${origName}] đang nhắm vào BẠN!`;
+      return {
+        icon: 'ui:alert',
+        text: `Cẩm nang [${origName}] đang nhắm vào BẠN!`,
+      };
     }
   }
   return null;
@@ -479,6 +566,107 @@ export function MatchCenterBoard({
   const [recentDiscards, setRecentDiscards] = useState<readonly CardInstance[]>(() =>
     playerView.discardPileTop ? [playerView.discardPileTop] : [],
   );
+  const [privateDraw, setPrivateDraw] = useState<readonly CardInstance[]>([]);
+  const privateDrawRef = useRef<HTMLDivElement>(null);
+  const previousDrawView = useRef(playerView);
+  useEffect(() => {
+    const before = previousDrawView.current;
+    previousDrawView.current = playerView;
+    if (before.matchId !== playerView.matchId) { setPrivateDraw([]); return; }
+    if (!before.availableDrawCount || !playerView.actionLog.slice(before.actionLog.length)
+      .some(line => /rút [1-9]\d* lá ở pha Rút bài/u.test(line))) return;
+    const seat = playerView.viewerSeatIndex;
+    const oldIds = new Set(before.players.find(player => player.seatIndex === seat)?.handCards?.map(card => card.id));
+    const received = playerView.players.find(player => player.seatIndex === seat)?.handCards?.filter(card => !oldIds.has(card.id));
+    if (received?.length) setPrivateDraw(received.slice(0, before.availableDrawCount));
+  }, [playerView]);
+  useEffect(() => {
+    if (!privateDraw.length) return;
+    const timer = window.setTimeout(() => setPrivateDraw([]), 1380);
+    return () => window.clearTimeout(timer);
+  }, [privateDraw]);
+  useLayoutEffect(() => {
+    const preview = privateDrawRef.current;
+    const arena = preview?.closest('.lkdf-arena-stage');
+    if (!preview || !arena) return;
+    const origin = arena.querySelector('[data-motion-draw-pile]')?.getBoundingClientRect();
+    const hand = arena.querySelector('.lkdf-hand-row')?.getBoundingClientRect();
+    const display = preview.getBoundingClientRect();
+    if (origin && hand) {
+      const delta = (rect: DOMRect, axis: 'x' | 'y') => axis === 'x'
+        ? rect.left + rect.width / 2 - display.left - display.width / 2
+        : rect.top + rect.height / 2 - display.top - display.height / 2;
+      for (const axis of ['x', 'y'] as const) {
+        preview.style.setProperty(`--draw-from-${axis}`, `${delta(origin, axis)}px`);
+        preview.style.setProperty(`--draw-to-${axis}`, `${delta(hand, axis)}px`);
+      }
+    }
+    const received = new Set(privateDraw.map(card => card.id));
+    const hidden = [...arena.querySelectorAll<HTMLElement>('[data-hand-card-id]')].filter(card =>
+      received.has(card.dataset.handCardId ?? ''));
+    hidden.forEach(card => card.setAttribute('data-draw-arriving', 'true'));
+    return () => hidden.forEach(card => card.removeAttribute('data-draw-arriving'));
+  }, [privateDraw]);
+
+  const [shownReveal, setShownReveal] = useState<NonNullable<PlayerViewState['publicReveals']>[number] | null>(null);
+  const [prePrepareStealId, setPrePrepareStealId] = useState<string | null>(null);
+  const revealCursor = useRef(playerView.publicReveals?.at(-1)?.id ?? 0);
+  const [drawNotice, setDrawNotice] = useState<string | null>(null);
+  const noticeCursor = useRef({ id: playerView.matchId, count: playerView.actionLog.length });
+  const [criticalNotice, setCriticalNotice] = useState<string[]>([]);
+  const revealMatch = useRef(playerView.matchId);
+  const pendingReveals = useRef<NonNullable<PlayerViewState['publicReveals']>>([]);
+  useEffect(() => {
+    setPrePrepareStealId(null);
+  }, [playerView.activeInterrupt?.id]);
+  useEffect(() => {
+    if (revealMatch.current !== playerView.matchId) {
+      revealMatch.current = playerView.matchId;
+      revealCursor.current = 0;
+      pendingReveals.current = [];
+      setShownReveal(null);
+    }
+    const reveals = (playerView.publicReveals ?? []).filter(item => item.id > revealCursor.current);
+    if (!reveals.length) return;
+    revealCursor.current = reveals.at(-1)!.id;
+    pendingReveals.current = [...pendingReveals.current, ...reveals];
+    setShownReveal(current => current ?? pendingReveals.current[0] ?? null);
+  }, [playerView.matchId, playerView.publicReveals]);
+  useEffect(() => {
+    if (!shownReveal) return;
+    const timer = window.setTimeout(() => {
+      pendingReveals.current = pendingReveals.current.filter(item => item.id > shownReveal.id);
+      setShownReveal(pendingReveals.current[0] ?? null);
+    }, 1800);
+    return () => window.clearTimeout(timer);
+  }, [shownReveal]);
+
+  useEffect(() => {
+    const cursor = noticeCursor.current;
+    const additions = cursor.id === playerView.matchId && cursor.count <= playerView.actionLog.length
+      ? playerView.actionLog.slice(cursor.count)
+      : [];
+    noticeCursor.current = { id: playerView.matchId, count: playerView.actionLog.length };
+    if (cursor.id !== playerView.matchId || cursor.count > playerView.actionLog.length) {
+      setDrawNotice(null);
+      setCriticalNotice([]);
+    }
+    const draw = additions.find(line => /rút [1-9]\d* lá ở pha Rút bài/u.test(line));
+    if (draw) setDrawNotice(draw);
+    const critical = additions.filter(line => /đã tử trận|rút thưởng|dùng Đào cứu/u.test(line));
+    if (critical.length) setCriticalNotice(critical);
+  }, [playerView.actionLog, playerView.matchId]);
+  useEffect(() => {
+    if (!drawNotice || shownReveal) return;
+    const timer = window.setTimeout(() => setDrawNotice(null), 950);
+    return () => window.clearTimeout(timer);
+  }, [drawNotice, shownReveal]);
+  useEffect(() => {
+    if (!criticalNotice.length) return;
+    const timer = window.setTimeout(() => setCriticalNotice([]), 3200);
+    return () => window.clearTimeout(timer);
+  }, [criticalNotice]);
+
   const prevMatchIdRef = useRef<string>(playerView.matchId);
   const prevDiscardCountRef = useRef<number>(playerView.discardPileCount);
 
@@ -526,11 +714,17 @@ export function MatchCenterBoard({
     interrupt?.kind === 'PICK_TARGET_CARD'
       ? playerView.players.find((p) => p.seatIndex === interrupt.targetSeat)
       : undefined;
+  const hanBangTarget =
+    interrupt?.kind === 'ASK_HAN_BANG_KIEM' &&
+    interrupt.sourceSeat === playerView.viewerSeatIndex
+      ? playerView.players.find((p) => p.seatIndex === interrupt.targetSeat)
+      : undefined;
 
   const hasSpecialChoice =
     isMyInteractiveZone &&
     ((interrupt.kind === 'WAIT_HARVEST_PICK' && playerView.harvestPool.length > 0) ||
       (interrupt.kind === 'PICK_TARGET_CARD' && Boolean(pickTargetPlayer)) ||
+      (interrupt.kind === 'ASK_HAN_BANG_KIEM' && Boolean(hanBangTarget)) ||
       (interrupt.kind === 'WAIT_GUAN_XING' && Boolean(interrupt.guanXingCards)) ||
       (interrupt.kind === 'WAIT_YI_JI' && Boolean(interrupt.yiJiCards)));
 
@@ -539,7 +733,7 @@ export function MatchCenterBoard({
     playerView.actionLog.length > 0
       ? playerView.actionLog[playerView.actionLog.length - 1]
       : null;
-  const targetAlertVi = buildTargetedSelfAlertVi(playerView);
+  const targetAlert = buildTargetedSelfAlert(playerView);
   const isFirstRoundPeaceful = Boolean(
     playerView.peacefulFirstRound &&
       playerView.roundNumber === 1 &&
@@ -553,14 +747,51 @@ export function MatchCenterBoard({
     distributionLines.unshift(line);
     if (distributionLines.length === 2) break;
   }
+  const activeStage =
+    shownReveal || playerView.turnPhase === 'DRAW' || playerView.turnPhase === 'JUDGE'
+      ? 0
+      : playerView.turnPhase === 'DISCARD'
+        ? 2
+        : playerView.turnPhase === 'PLAY'
+          ? 1
+          : 0;
+  const liveRescue = playerView.activeInterrupt?.kind === 'WAIT_PEACH_RESCUE';
+  const isSelfTurnPlayWithOnlyDrawLog = Boolean(
+    playerView.viewerSeatIndex === playerView.currentTurnSeat &&
+      playerView.turnPhase === 'PLAY' &&
+      latestActionEntry &&
+      /rút [1-9]\d* lá ở pha Rút bài/u.test(latestActionEntry),
+  );
   const spotlightText = distributionLines.length
     ? distributionLines.join(' ')
-    : latestActionEntry ?? prompt.detailVi;
+    : isSelfTurnPlayWithOnlyDrawLog
+      ? prompt.detailVi
+      : latestActionEntry ?? prompt.detailVi;
+  const showDrawNotice = Boolean(
+    drawNotice &&
+      !shownReveal &&
+      !isSelfTurnPlayWithOnlyDrawLog &&
+      drawNotice !== spotlightText,
+  );
+  const isSelfDrawTurn =
+    playerView.viewerSeatIndex === playerView.currentTurnSeat &&
+    playerView.turnPhase === 'DRAW' &&
+    !interrupt &&
+    (playerView.availableDrawCount ?? 0) > 0;
+  const selfPlayer = playerView.players.find(
+    (p) => p.seatIndex === playerView.viewerSeatIndex,
+  );
+  const drawReady = Boolean(playerView.availableDrawCount && !isTimerPaused);
+  const isLuoYiSecond = drawReady && playerView.turnPhase === 'PLAY';
+  const isAnhTuDraw =
+    drawReady &&
+    selfPlayer?.heroId === 'zhou_yu' &&
+    (playerView.availableDrawCount ?? 0) >= 3;
   const cloudBorderUrl = getUiAssetUrl('tex-cloud-border');
   const inkBaseUrl = getUiAssetUrl('tex-ink-base');
   const plaqueStyle = cloudBorderUrl
     ? {
-        backgroundImage: `linear-gradient(rgba(18,14,11,0.84), rgba(14,11,9,0.92))${inkBaseUrl ? `, url(${inkBaseUrl})` : ''}`,
+        backgroundImage: `linear-gradient(rgba(22,16,13,0.88), rgba(14,10,8,0.94))${inkBaseUrl ? `, url(${inkBaseUrl})` : ''}`,
         borderStyle: 'solid' as const,
         borderWidth: '5px 10px',
         borderColor: 'transparent',
@@ -569,57 +800,102 @@ export function MatchCenterBoard({
     : undefined;
 
   return (
-    <div className="lkdf-battle-center-stack flex max-h-full min-h-0 min-w-0 w-full flex-col items-center gap-1.5">
-      {/* Thanh trạng thái lượt + Cảnh báo nhắm vào BẠN + Nhật ký hành động mới nhất */}
-      <div className="flex w-full max-w-[min(500px,100%)] flex-col items-center gap-1">
+    <div className="lkdf-battle-center-stack lkdf-scroll flex max-h-full min-h-0 min-w-0 w-full flex-col items-center gap-1.5 overflow-y-auto">
+      {/* Tier 1: Bảng Trạng Thái Lượt Thống Nhất + Cảnh báo & Nhịp Hành Động */}
+      <div className="flex w-full max-w-[min(500px,100%)] shrink-0 flex-col items-center gap-1">
         <div
           style={plaqueStyle}
-          className={
+          className={[
             cloudBorderUrl
-              ? 'inline-flex max-w-full items-center gap-2 px-3 py-1 shadow-lg'
-              : 'inline-flex max-w-full items-center gap-2 rounded-2xl border border-[#D99B26]/35 bg-[#14171A]/85 px-3.5 py-1 shadow-md backdrop-blur-sm'
-          }
+              ? 'lkdf-center-plaque inline-flex max-w-full flex-col items-center gap-1 px-3 py-1.5 shadow-lg'
+              : 'lkdf-center-plaque inline-flex max-w-full flex-col items-center gap-1 rounded-2xl border border-[#C89B4B]/45 bg-[#16110E]/92 px-3.5 py-1.5 shadow-md backdrop-blur-sm',
+            isSelfDrawTurn
+              ? 'ring-1 ring-[#FBBF24]/75 shadow-[0_0_20px_rgba(251,191,36,0.28)]'
+              : '',
+          ].join(' ')}
         >
-          <span
-            className={`h-2 w-2 shrink-0 rounded-full ${
-              prompt.isMyTurn ? 'bg-[#D99B26]' : 'bg-[#6B7280]'
-            }`}
-          />
-          <span
-            className={[
-              'line-clamp-2 text-center text-[11.5px] font-bold leading-snug',
-              prompt.isMyTurn ? 'text-[#FBBF24]' : 'text-[#F3F4F6]',
-            ].join(' ')}
-          >
-            {prompt.headlineVi}
-          </span>
-
-          {remainingSeconds !== null ? (
+          <div className="flex max-w-full items-center justify-center gap-2">
+            {isSelfDrawTurn ? (
+              <GameIcon name="ui:zap" size={13} className="shrink-0 text-[#FBBF24]" />
+            ) : (
+              <span
+                className={`h-2 w-2 shrink-0 rounded-full ${
+                  prompt.isMyTurn
+                    ? 'bg-[#E6BE6C] shadow-[0_0_8px_rgba(230,190,108,0.85)]'
+                    : 'bg-[#78716C]'
+                }`}
+              />
+            )}
             <span
               className={[
-                'font-mono-num inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-bold tabular-nums',
-                isTimerPaused
-                  ? 'border-[#D97706]/50 bg-[#D97706]/15 text-[#FBBF24]'
-                  : remainingSeconds <= 5
-                    ? 'border-[#DC2626]/60 bg-[#DC2626]/20 text-[#FCA5A5]'
-                    : 'border-[#3A424C] bg-[#1E2328] text-[#F3F4F6]',
+                'line-clamp-2 text-center text-[11.5px] font-bold leading-snug',
+                prompt.isMyTurn ? 'text-[#FDE68A]' : 'text-[#F5EBD6]',
               ].join(' ')}
             >
-              <GameIcon name={isTimerPaused ? 'ui:pause' : 'ui:clock'} size={11} />
-              {isTimerPaused ? `Dừng (${remainingSeconds}s)` : `${remainingSeconds}s`}
+              {prompt.headlineVi}
             </span>
-          ) : null}
-        </div>
 
-        {(targetAlertVi || isFirstRoundPeaceful) ? (
+            {remainingSeconds !== null ? (
+              <span
+                className={[
+                  'font-mono-num inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-bold tabular-nums',
+                  isTimerPaused
+                    ? 'border-[#D97706]/55 bg-[#2A1C0E] text-[#FBBF24]'
+                    : remainingSeconds <= 5
+                      ? 'border-[#DC2626]/65 bg-[#3B1312] text-[#FCA5A5]'
+                      : 'border-[#806345]/65 bg-[#1B1410] text-[#F5EBD6]',
+                ].join(' ')}
+              >
+                <GameIcon name={isTimerPaused ? 'ui:pause' : 'ui:clock'} size={11} />
+                {isTimerPaused ? `Dừng (${remainingSeconds}s)` : `${remainingSeconds}s`}
+              </span>
+            ) : null}
+          </div>
+
+          <div className="lkdf-center-steps flex min-h-[18px] flex-wrap items-center justify-center gap-1 border-t border-[#806345]/35 pt-0.5 text-[9.5px] leading-none">
+            {['Phán xét & Rút bài', 'Ra bài', 'Bỏ bài'].map((label, index) => (
+              <span
+                key={label}
+                aria-current={activeStage === index ? 'step' : undefined}
+                className={
+                  activeStage === index
+                    ? 'rounded border border-[#D99B26]/65 bg-[#5C3712] px-1.5 py-0.5 font-bold text-[#FFF1C6]'
+                    : 'rounded px-1.5 py-0.5 text-[#C6B7A0]'
+                }
+              >
+                {label}
+              </span>
+            ))}
+          </div>
+        </div>
+        {shownReveal || showDrawNotice ? (
+          <div role="status" className="rounded border border-[#C89B4B]/55 bg-[#1B1410] px-2.5 py-0.5 text-[10px] font-medium text-[#FDE68A] shadow">
+            {shownReveal ? (shownReveal.label.startsWith('Phản Gián') ? shownReveal.label : `Phán xét · ${shownReveal.label}`) : drawNotice}
+          </div>
+        ) : null}
+        {liveRescue ? (
+          <div role="status" className="rounded border border-red-400 bg-red-950 px-2.5 py-1 text-center text-xs font-bold text-red-100">
+            Hấp hối · {playerView.players.find(player => player.seatIndex === playerView.activeInterrupt?.targetSeat)?.displayName} cần Đào
+          </div>
+        ) : criticalNotice.length ? (
+          <div role="status" className="lkdf-critical-notice max-w-full rounded border border-[#D99B26]/70 bg-[#2E1A10] px-2.5 py-0.5 text-center text-[10px] font-bold text-[#FDE68A]">
+            {criticalNotice.slice(-2).join(' ')}
+          </div>
+        ) : null}
+        {(targetAlert || isFirstRoundPeaceful) ? (
           <div className="flex flex-wrap items-center justify-center gap-1.5">
-            {targetAlertVi ? (
+            {targetAlert ? (
               <div
                 role="alert"
                 data-targeted-alert="true"
                 className="inline-flex max-w-full items-center gap-1 rounded-full border border-[#F87171]/85 bg-[#451212]/94 px-2.5 py-0.5 text-[10.5px] font-extrabold text-[#FEE2E2] shadow-[0_0_16px_rgba(220,38,38,0.45)]"
               >
-                <span>{targetAlertVi}</span>
+                <GameIcon
+                  name={targetAlert.icon}
+                  size={11}
+                  className={targetAlert.icon === 'ui:alert' ? 'shrink-0 text-[#FBBF24]' : 'shrink-0 text-[#FCA5A5]'}
+                />
+                <span>{targetAlert.text}</span>
               </div>
             ) : null}
             {isFirstRoundPeaceful ? (
@@ -627,7 +903,8 @@ export function MatchCenterBoard({
                 data-round1-peace="true"
                 className="inline-flex items-center gap-1 rounded-full border border-[#34D399]/55 bg-[#064E3B]/75 px-2.5 py-0.5 text-[10px] font-bold text-[#A7F3D0]"
               >
-                🕊️ Vòng 1 Hòa Bình · Không rút bài &amp; Chưa đánh Sát
+                <GameIcon name="ui:feather" size={11} className="shrink-0 text-[#6EE7B7]" />
+                <span>Vòng 1 Hòa Bình · Không rút bài &amp; Chưa đánh Sát</span>
               </span>
             ) : null}
           </div>
@@ -638,30 +915,91 @@ export function MatchCenterBoard({
             data-action-spotlight={playerView.actionLog.length}
             role="status"
             title={spotlightText}
-            className="w-max max-w-full rounded-lg border border-[#B89352]/45 bg-[#12161F]/92 px-2 py-0.5 text-center text-[10.5px] font-semibold leading-snug text-[#FDE68A] shadow"
+            className="lkdf-center-spotlight inline-flex w-max max-w-full items-center gap-1.5 rounded-lg border border-[#C89B4B]/50 bg-[#16110E]/94 px-2.5 py-0.5 text-center text-[10.5px] font-semibold leading-snug text-[#FDE68A] shadow"
           >
-            <span className="line-clamp-2">📣 {spotlightText}</span>
+            <GameIcon name="ui:bell" size={11} className="shrink-0 text-[#E6BE6C]" />
+            <span className="line-clamp-2">{spotlightText}</span>
           </div>
         ) : null}
       </div>
 
+      {privateDraw.length ? (
+        <div ref={privateDrawRef} role="status" aria-label={`Bài bạn vừa rút: ${privateDraw.map(card => card.nameVi).join(', ')}`}
+          className="pointer-events-none absolute left-1/2 top-1/2 z-40 flex -translate-x-1/2 -translate-y-1/2 gap-2">
+          {privateDraw.map(card => (
+            <div key={card.id} className="lkdf-private-draw relative h-[105px] w-[74px] rounded border border-[#E6BE6C] bg-[#211509] shadow-lg">
+              <PlayingCardFace card={card} />
+            </div>
+          ))}
+        </div>
+      ) : null}
       {/* Tier 2: Bàn bài trung tâm — Chồng bài rút + Các lá bài đánh ra tách rời dễ đọc */}
-      {interrupt?.handPick && pickTargetPlayer ? (
-        <TakeHandTray key={interrupt.id} interrupt={interrupt} owner={pickTargetPlayer}
-          viewerSeat={playerView.viewerSeatIndex} onSendAction={onSendAction} />
+      {(interrupt?.handPick || prePrepareStealId === interrupt?.id) && pickTargetPlayer ? (
+        <TakeHandTray
+          key={`${interrupt.id}-${interrupt.handPick ?? 'pre'}`}
+          interrupt={interrupt}
+          owner={pickTargetPlayer}
+          viewerSeat={playerView.viewerSeatIndex}
+          onSendAction={onSendAction}
+          onBackToZones={
+            !interrupt.handPick && getTargetEquipZones(pickTargetPlayer).length > 0
+              ? () => setPrePrepareStealId(null)
+              : undefined
+          }
+        />
       ) : !hasSpecialChoice ? (
         <div className="lkdf-battle-card-line flex items-end justify-center gap-3 pt-1 pb-1">
           {/* Chồng bài rút dạng xấp bài úp */}
           <div className="flex flex-col items-center gap-1.5 shrink-0">
-            <div data-motion-draw-pile className="relative flex h-[104px] w-[74px] items-center justify-center">
+            <div
+              data-motion-draw-pile
+              data-draw-ready={drawReady ? 'true' : undefined}
+              className="relative flex h-[104px] w-[74px] items-center justify-center"
+            >
               <span aria-hidden="true" className="absolute inset-0 translate-x-1 translate-y-1 rounded-[6px] border border-[#D99B26]/40 bg-[#15253A]" />
               <span aria-hidden="true" className="absolute inset-0 translate-x-0.5 translate-y-0.5 rounded-[6px] border border-[#D99B26]/55 bg-[#182B44]" />
-              <CardBack size="md" className="relative block h-full w-full shadow-lg" />
+              {drawReady ? (
+                <button
+                  type="button"
+                  aria-label={`Rút ${playerView.availableDrawCount} lá`}
+                  disabled={privateDraw.length > 0}
+                  onClick={() =>
+                    onSendAction({
+                      type: 'DRAW_CARDS',
+                      seatIndex: playerView.viewerSeatIndex,
+                      extra: playerView.turnPhase === 'PLAY',
+                    })
+                  }
+                  className="relative h-full w-full cursor-pointer rounded-lg ring-2 ring-[#FBBF24] shadow-[0_0_18px_rgba(251,191,36,0.45)] transition-all hover:ring-4 focus-visible:outline-2 focus-visible:outline-[#FFF1C6]"
+                >
+                  <CardBack size="md" className="relative block h-full w-full shadow-lg" />
+                  <span className="pointer-events-none absolute inset-x-0.5 bottom-1 z-10 flex flex-col items-center gap-0.5 rounded bg-[#1A120A]/92 px-1 py-0.5 text-center shadow-[0_0_12px_rgba(251,191,36,0.6)] ring-1 ring-[#FBBF24]/85">
+                    <span className="text-[10px] font-extrabold leading-none text-[#FDE68A]">
+                      {isLuoYiSecond ? 'Rút lá 2' : `Rút ${playerView.availableDrawCount} lá`}
+                    </span>
+                    {isAnhTuDraw ? (
+                      <span className="text-[8.5px] font-bold leading-none text-[#FBBF24]">Anh Tư</span>
+                    ) : isLuoYiSecond ? (
+                      <span className="text-[8.5px] font-bold leading-none text-[#FCA5A5]">Lỏa Y</span>
+                    ) : null}
+                  </span>
+                </button>
+              ) : (
+                <CardBack size="md" className="relative block h-full w-full shadow-lg" />
+              )}
             </div>
-            <span className="font-mono-num inline-flex items-center gap-1 rounded-full border border-[#303740] bg-[#14171A]/85 px-2.5 py-0.5 text-[11px] font-semibold text-[#D1D5DB] tabular-nums">
-              Rút: <strong className="text-[#F3F4F6]">{playerView.drawPileCount}</strong>
+            <span className="font-mono-num inline-flex items-center gap-1 rounded-full border border-[#806345]/55 bg-[#16110E]/90 px-2 py-0.5 text-[11px] font-semibold text-[#E8DCC8] tabular-nums">
+              Rút: <strong className="text-[#F5EBD6]">{playerView.drawPileCount}</strong>
             </span>
           </div>
+          {shownReveal ? (
+            <div data-public-card-reveal key={shownReveal.id} className="flex shrink-0 flex-col items-center gap-0.5 rounded border border-[#E6BE6C] bg-[#211509] p-1 shadow-lg">
+              <span className="max-w-24 text-center text-[10px] font-bold text-[#FEF08A]">{shownReveal.label}</span>
+              <div className="relative h-[86px] w-[62px]">
+                <PlayingCardFace card={shownReveal.card} />
+              </div>
+            </div>
+          ) : null}
           {/* Các lá bài đã đánh / bỏ gần nhất (tách rời thẳng hàng, 0px đè lên nhau) */}
           <div className="flex flex-col items-center gap-1.5 min-w-0">
             <div className="flex min-h-[104px] min-w-[74px] items-center justify-center px-0.5">
@@ -679,23 +1017,23 @@ export function MatchCenterBoard({
                   ))}
                 </div>
               ) : (
-                <div className="flex h-[98px] w-[72px] flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-[#D99B26]/30 bg-[#14171A]/35 text-center text-[#9CA3AF]">
-                  <GameIcon name="card-play" size={20} className="text-[#D99B26]/55" />
+                <div className="flex h-[98px] w-[72px] flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-[#C89B4B]/40 bg-[#16110E]/45 text-center text-[#B5A792]">
+                  <GameIcon name="card-play" size={20} className="text-[#D99B26]/65" />
                   <span className="text-[10px] font-medium leading-tight">
                     Vùng đánh bài
                   </span>
                 </div>
               )}
             </div>
-            <span className="font-mono-num inline-flex items-center gap-1.5 rounded-full border border-[#303740] bg-[#14171A]/85 px-2.5 py-0.5 text-[11px] font-semibold text-[#D1D5DB] tabular-nums">
-              <GameIcon name="card-discard" size={11} className="text-[#9CA3AF]" />
+            <span className="font-mono-num inline-flex items-center gap-1.5 rounded-full border border-[#806345]/55 bg-[#16110E]/90 px-2.5 py-0.5 text-[11px] font-semibold text-[#E8DCC8] tabular-nums">
+              <GameIcon name="card-discard" size={11} className="text-[#C89B4B]" />
               {topDiscard ? (
-                <span className="max-w-[160px] truncate">
-                  {topDiscard.nameVi} · Bỏ: <strong className="text-[#F3F4F6]">{playerView.discardPileCount}</strong>
+                <span className="max-w-[236px] truncate">
+                  {topDiscard.nameVi} · Bỏ: <strong className="text-[#F5EBD6]">{playerView.discardPileCount}</strong>
                 </span>
               ) : (
                 <span>
-                  Bỏ: <strong className="text-[#F3F4F6]">{playerView.discardPileCount}</strong>
+                  Bỏ: <strong className="text-[#F5EBD6]">{playerView.discardPileCount}</strong>
                 </span>
               )}
             </span>
@@ -703,7 +1041,7 @@ export function MatchCenterBoard({
         </div>
       ) : (
         /* Khu tương tác đặc biệt (chỉ bật nổi giữa bàn khi tới lượt chọn bài chung/mục tiêu/Quan Tinh/Di Kế) */
-        <div className="lkdf-battle-choice lkdf-scroll w-full space-y-1.5 overflow-y-auto rounded-xl border border-[#D99B26]/65 bg-[#14171A]/95 p-2.5 shadow-2xl">
+        <div className="lkdf-battle-choice lkdf-scroll min-h-0 w-full flex-1 space-y-1.5 overflow-y-auto rounded-xl border border-[#C89B4B]/70 bg-[#16110E]/96 p-2.5 shadow-2xl">
           {/* Ngũ Cốc Phong Đăng */}
           {interrupt.kind === 'WAIT_HARVEST_PICK' &&
           playerView.harvestPool.length > 0 ? (
@@ -735,87 +1073,121 @@ export function MatchCenterBoard({
           {/* Thuận Thủ Khiên Dương / Quá Hà Sái Cầu */}
           {interrupt.kind === 'PICK_TARGET_CARD' && pickTargetPlayer ? (
             <div>
-              <div className="mb-1.5 inline-flex items-center gap-1.5 text-[12px] font-bold text-[#FBBF24]">
-                <GameIcon name="archery-target" size={13} />
+              <div className="mb-1.5 inline-flex items-center gap-1.5 text-[12px] font-bold text-[#FDE68A]">
+                <GameIcon name="archery-target" size={13} className="text-[#E6BE6C]" />
                 Chọn 1 lá từ {getPlayerSeatLabel(playerView.players, pickTargetPlayer.seatIndex)}:
               </div>
-              <div className="flex flex-wrap gap-1.5">
-                {getPublicTargetZones(pickTargetPlayer).map((zone: TargetCardZone) => {
-                  if (zone === 'HAND') {
-                    if (interrupt.stealing) {
-                      return <button key="HAND" type="button"
-                        className="rounded border border-[#D99B26]/60 bg-[#272D35] px-3 py-1.5 text-xs font-bold"
-                        onClick={() => onSendAction({
-                          type: 'RESPOND_PICK_TARGET_CARD', seatIndex: playerView.viewerSeatIndex, zone: 'HAND',
-                        })}>Lấy từ bài tay ({pickTargetPlayer.handCount})</button>;
-                    }
-                    return Array.from({ length: pickTargetPlayer.handCount }, (_, idx) => (
-                      <button
-                        key={`hand-${idx}`}
-                        type="button"
-                        onClick={() =>
-                          onSendAction({
-                            type: 'RESPOND_PICK_TARGET_CARD',
-                            seatIndex: playerView.viewerSeatIndex,
-                            zone: 'HAND',
-                            handIndex: idx,
-                          })
-                        }
-                        className="inline-flex cursor-pointer items-center gap-1 rounded border border-[#D99B26]/60 bg-[#272D35] px-2 py-1 text-[11px] font-bold text-[#F3F4F6] hover:bg-[#323A45]"
-                      >
-                        <CardBack size="xs" />
-                        Tay #{idx + 1}
-                      </button>
-                    ));
-                  }
-                  if (zone === 'DELAYED') {
-                    if (interrupt.allowDelayed === false) return null;
-                    return pickTargetPlayer.delayedScrolls.map((scroll) => (
-                      <button
-                        key={scroll.id}
-                        type="button"
-                        onClick={() =>
-                          onSendAction({
-                            type: 'RESPOND_PICK_TARGET_CARD',
-                            seatIndex: playerView.viewerSeatIndex,
-                            zone: 'DELAYED',
-                            delayedCardId: scroll.id,
-                          })
-                        }
-                        className="inline-flex cursor-pointer items-center gap-1 rounded border border-[#D97706] bg-[#D97706]/20 px-2 py-1 text-[11px] font-bold text-[#FCD34D] hover:bg-[#D97706]/30"
-                      >
-                        <GameIcon name="ui:clock" size={11} />
-                        {formatCardShort(scroll)}
-                      </button>
-                    ));
-                  }
-                  const equipCard =
-                    zone === 'WEAPON'
-                      ? pickTargetPlayer.equipments.weapon
-                      : zone === 'ARMOR'
-                        ? pickTargetPlayer.equipments.armor
-                        : zone === 'PLUS_ONE_HORSE'
-                          ? pickTargetPlayer.equipments.plusOneHorse
-                          : pickTargetPlayer.equipments.minusOneHorse;
-                  if (!equipCard) return null;
-                  return (
+              <div className="flex flex-wrap items-center gap-1.5">
+                {pickTargetPlayer.handCount > 0 ? (
+                  interrupt.stealing ? (
                     <button
-                      key={zone}
+                      key="HAND"
                       type="button"
-                      onClick={() =>
+                      className="cursor-pointer rounded border border-[#C89B4B]/60 bg-[#231A14] px-3 py-1.5 text-xs font-bold text-[#F5EBD6] hover:border-[#E6BE6C]"
+                      onClick={() => setPrePrepareStealId(interrupt.id)}
+                    >
+                      Lấy từ bài tay ({pickTargetPlayer.handCount})
+                    </button>
+                  ) : (
+                    <BlindHandCardFan
+                      key="HAND-FAN"
+                      count={pickTargetPlayer.handCount}
+                      ariaVerb="Chọn"
+                      tone="bronze"
+                      onPickIndex={(idx) =>
                         onSendAction({
                           type: 'RESPOND_PICK_TARGET_CARD',
                           seatIndex: playerView.viewerSeatIndex,
-                          zone,
+                          zone: 'HAND',
+                          handIndex: idx,
                         })
                       }
-                      className="inline-flex cursor-pointer items-center gap-1 rounded border border-[#B89352]/60 bg-[#1B212C] px-2 py-1 text-[11px] font-bold text-[#F4EBD8] hover:border-[#E6BE6C]"
-                    >
-                      <GameIcon name={getCardGameIcon(equipCard.cardKey)} size={12} />
-                      {formatCardShort(equipCard)}
-                    </button>
-                  );
-                })}
+                    />
+                  )
+                ) : null}
+                {getTargetEquipZones(pickTargetPlayer).map(({ zone, prefix, card }) => (
+                  <button
+                    key={zone}
+                    type="button"
+                    onClick={() =>
+                      onSendAction({
+                        type: 'RESPOND_PICK_TARGET_CARD',
+                        seatIndex: playerView.viewerSeatIndex,
+                        zone,
+                      })
+                    }
+                    className="inline-flex cursor-pointer items-center gap-1 rounded border border-[#B89352]/60 bg-[#231A14] px-2 py-1 text-[11px] font-bold text-[#F4EBD8] hover:border-[#E6BE6C] hover:bg-[#2E2219]"
+                  >
+                    <GameIcon name={getCardGameIcon(card.cardKey)} size={12} />
+                    <span className="text-[#FDE68A]">{prefix}</span> {formatCardShort(card)}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
+          {/* Hàn Băng Kiếm */}
+          {interrupt.kind === 'ASK_HAN_BANG_KIEM' && hanBangTarget ? (
+            <div className="space-y-2">
+              <div className="flex flex-wrap items-center justify-between gap-1.5">
+                <div className="inline-flex items-center gap-1.5 text-[12px] font-bold text-[#93C5FD]">
+                  <GameIcon name="ui:sparkles" size={14} className="text-[#60A5FA]" />
+                  <span>
+                    Hàn Băng Kiếm ({interrupt.remainingDiscards ?? 2}/2) — Hủy bài của{' '}
+                    {getPlayerSeatLabel(playerView.players, hanBangTarget.seatIndex)} thay sát thương:
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() =>
+                    onSendAction({
+                      type: 'RESPOND_HAN_BANG_KIEM',
+                      seatIndex: playerView.viewerSeatIndex,
+                      activate: false,
+                    })
+                  }
+                  className="inline-flex cursor-pointer items-center gap-1 rounded border border-[#806345]/80 bg-[#231A14] px-2.5 py-1 text-[11px] font-semibold text-[#EDE3D2] hover:border-[#C89B4B] hover:bg-[#2C2017]"
+                >
+                  <GameIcon name="ui:skip" size={12} />
+                  {(interrupt.remainingDiscards ?? 2) === 1
+                    ? 'Bỏ qua Hàn Băng Kiếm (Dừng hủy)'
+                    : 'Bỏ qua Hàn Băng Kiếm'}
+                </button>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                {hanBangTarget.handCount > 0 ? (
+                  <BlindHandCardFan
+                    count={hanBangTarget.handCount}
+                    ariaVerb="Hủy"
+                    tone="crimson"
+                    onPickIndex={(idx) =>
+                      onSendAction({
+                        type: 'RESPOND_HAN_BANG_KIEM',
+                        seatIndex: playerView.viewerSeatIndex,
+                        activate: true,
+                        picks: [{ zone: 'HAND', handIndex: idx }],
+                      })
+                    }
+                  />
+                ) : null}
+                {getTargetEquipZones(hanBangTarget).map(({ zone, prefix, card }) => (
+                  <button
+                    key={zone}
+                    type="button"
+                    onClick={() =>
+                      onSendAction({
+                        type: 'RESPOND_HAN_BANG_KIEM',
+                        seatIndex: playerView.viewerSeatIndex,
+                        activate: true,
+                        picks: [{ zone }],
+                      })
+                    }
+                    className="inline-flex cursor-pointer items-center gap-1 rounded border border-[#C83E37]/75 bg-[#2B1715] px-2.5 py-1 text-[11px] font-bold text-[#FECACA] hover:border-[#F87171] hover:bg-[#3A1B18]"
+                  >
+                    <GameIcon name={getCardGameIcon(card.cardKey)} size={12} />
+                    <span className="text-[#FEE2E2]">{prefix}</span> {formatCardShort(card)}
+                  </button>
+                ))}
               </div>
             </div>
           ) : null}

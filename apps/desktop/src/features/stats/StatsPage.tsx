@@ -33,10 +33,10 @@ const IDENTITY_ORDER: readonly {
   readonly nameVi: string;
   readonly accentClass: string;
 }[] = [
-  { id: 'LORD', nameVi: 'Chủ Công', accentClass: 'border-[#D99B26]/60 text-[#FCD34D]' },
-  { id: 'LOYALIST', nameVi: 'Trung Thần', accentClass: 'border-[#3B82F6]/60 text-[#93C5FD]' },
-  { id: 'REBEL', nameVi: 'Phản Tặc', accentClass: 'border-[#C83E37]/70 text-[#FCA5A5]' },
-  { id: 'SPY', nameVi: 'Nội Gián', accentClass: 'border-[#9CA3AF]/60 text-[#E5E7EB]' },
+  { id: 'LORD', nameVi: 'Chủ Công', accentClass: 'border-[#C89B4B]/70 bg-[#3A290F]/60 text-[#FCD34D]' },
+  { id: 'LOYALIST', nameVi: 'Trung Thần', accentClass: 'border-[#3B82F6]/60 bg-[#162C48]/60 text-[#93C5FD]' },
+  { id: 'REBEL', nameVi: 'Phản Tặc', accentClass: 'border-[#C83E37]/70 bg-[#3D2022]/60 text-[#FCA5A5]' },
+  { id: 'SPY', nameVi: 'Nội Gián', accentClass: 'border-[#A78BFA]/55 bg-[#30213E]/60 text-[#DDD6FE]' },
 ];
 
 const FACTION_STYLE: Readonly<
@@ -100,7 +100,8 @@ export function StatsPage({
   const [meta, setMeta] = useState<StatsMetaResponse | null>(null);
   const [stats, setStats] = useState<FilteredStatsResponse | null>(null);
   const [filter, setFilter] = useState<StatsFilterState>(() => ({
-    ...EMPTY_FILTER, userId: startWithCurrentUser ? currentUserId ?? null : null,
+    ...EMPTY_FILTER,
+    userId: startWithCurrentUser ? currentUserId ?? null : null,
   }));
   const [activeTab, setActiveTab] = useState<StatsSectionTab>('ALL');
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -232,7 +233,7 @@ export function StatsPage({
   return (
     <section
       aria-label="Trang thống kê và lịch sử ván đấu"
-      className="flex h-full w-full min-h-0 min-w-0 flex-col bg-transparent text-[#F3F4F6]"
+      className="flex h-full w-full min-h-0 min-w-0 flex-col bg-transparent text-[#F5EBD6]"
     >
       <StatsMetaFilters
         meta={meta}
@@ -245,22 +246,22 @@ export function StatsPage({
         onBack={onBack}
       />
 
-      <div className="flex-1 min-h-0 min-w-0 overflow-y-auto px-4 py-4">
+      <div className="lkdf-scroll flex-1 min-h-0 min-w-0 overflow-y-auto px-4 py-4">
         <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 min-w-0">
           {/* Trạng thái 1: Đang tải */}
           {isLoading ? (
             <div
               role="status"
               aria-live="polite"
-              className="flex flex-col gap-4 rounded-[8px] border border-[#94A3B8]/28 bg-[#11151D]/92 p-6 backdrop-blur-md"
+              className="flex flex-col gap-4 rounded-lg border border-[#806345]/60 bg-[#16110E]/94 p-6 backdrop-blur-md"
             >
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
                   <span
                     aria-hidden="true"
-                    className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-[#D99B26] border-t-transparent"
+                    className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-[#E6BE6C] border-t-transparent"
                   />
-                  <span className="text-sm font-medium text-[#F4EFE6]">
+                  <span className="text-sm font-medium text-[#F5EBD6]">
                     Đang tải dữ liệu thống kê từ máy chủ...
                   </span>
                 </div>
@@ -268,15 +269,15 @@ export function StatsPage({
                   <button
                     type="button"
                     onClick={handleCancelLoading}
-                    className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-[#3B424C] bg-[#14171A] px-3 py-1.5 text-xs font-medium text-[#F3F4F6] hover:border-[#C83E37] focus-visible:outline-2 focus-visible:outline-[#D99B26]"
+                    className="lkdf-bronze-pill inline-flex cursor-pointer items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium text-[#F5EBD6] hover:border-[#C83E37] focus-visible:outline-2 focus-visible:outline-[#E6BE6C]"
                   >
                     <GameIcon name="ui:x" size={13} />
-                    Hủy tải
+                    <span>Hủy tải</span>
                   </button>
                   <button
                     type="button"
                     onClick={onBack}
-                    className="rounded-md border border-[#3B424C] bg-[#14171A] px-3 py-1.5 text-xs font-medium text-[#F3F4F6] hover:border-[#D99B26] focus-visible:outline-2 focus-visible:outline-[#D99B26]"
+                    className="lkdf-bronze-pill cursor-pointer rounded-md px-3 py-1.5 text-xs font-medium text-[#F5EBD6] focus-visible:outline-2 focus-visible:outline-[#E6BE6C]"
                   >
                     ← Quay lại
                   </button>
@@ -287,29 +288,29 @@ export function StatsPage({
                 {[0, 1, 2, 3].map((idx) => (
                   <div
                     key={idx}
-                    className="h-20 animate-pulse rounded-md border border-[#2D333B] bg-[#14171A]"
+                    className="h-20 animate-pulse rounded-md border border-[#806345]/40 bg-[#1F1712]"
                   />
                 ))}
               </div>
             </div>
           ) : isCancelled && !stats ? (
-            <div className="flex flex-col items-center justify-center gap-3 rounded-[8px] border border-[#D97706]/50 bg-[#11151D]/92 p-8 text-center backdrop-blur-md">
-              <p className="text-sm font-medium text-[#F4EFE6]">
+            <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-[#C89B4B]/60 bg-[#16110E]/94 p-8 text-center backdrop-blur-md">
+              <p className="text-sm font-medium text-[#F5EBD6]">
                 Đã hủy tải dữ liệu thống kê.
               </p>
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={handleRefresh}
-                  className="inline-flex cursor-pointer items-center gap-1.5 rounded-md bg-[#C83E37] px-4 py-2 text-sm font-semibold text-[#F4EFE6] hover:bg-[#B2342E] focus-visible:outline-2 focus-visible:outline-[#D99B26]"
+                  className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-[#F2CF84]/70 bg-[#9E2B25] px-4 py-2 text-sm font-semibold text-[#FFF8ED] hover:bg-[#B7372E] focus-visible:outline-2 focus-visible:outline-[#E6BE6C]"
                 >
                   <GameIcon name="ui:refresh" size={14} />
-                  Tải lại thống kê
+                  <span>Tải lại thống kê</span>
                 </button>
                 <button
                   type="button"
                   onClick={onBack}
-                  className="rounded-md border border-[#3B424C] bg-[#14171A] px-4 py-2 text-sm font-medium text-[#F3F4F6] hover:border-[#D99B26] focus-visible:outline-2 focus-visible:outline-[#D99B26]"
+                  className="lkdf-bronze-pill cursor-pointer rounded-md px-4 py-2 text-sm font-medium text-[#F5EBD6] focus-visible:outline-2 focus-visible:outline-[#E6BE6C]"
                 >
                   ← Quay lại
                 </button>
@@ -319,30 +320,33 @@ export function StatsPage({
             /* Trạng thái 5: Gặp lỗi */
             <div
               role="alert"
-              className="flex flex-col items-start justify-between gap-4 rounded-lg border border-[#DC2626]/70 bg-[#DC2626]/10 p-5 sm:flex-row sm:items-center"
+              className="flex flex-col items-start justify-between gap-4 rounded-lg border border-[#DC2626]/70 bg-[#2A1212]/90 p-5 sm:flex-row sm:items-center"
             >
               <div className="min-w-0">
-                <h2 className="text-sm font-bold text-[#FCA5A5]">
+                <h2 className="font-serif-title text-sm font-bold text-[#FCA5A5]">
                   Không tải được thống kê từ máy chủ
                 </h2>
-                <p className="mt-1 text-sm text-[#F3F4F6]">{errorMessage}</p>
+                <p className="mt-1 text-sm text-[#F5EBD6]">{errorMessage}</p>
               </div>
               <button
                 type="button"
                 onClick={handleRefresh}
-                className="inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-md bg-[#C83E37] px-4 py-2 text-sm font-semibold text-[#F4EFE6] transition-colors duration-150 hover:bg-[#B2342E] focus-visible:outline-2 focus-visible:outline-[#D99B26]"
+                className="inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-md border border-[#F2CF84]/70 bg-[#9E2B25] px-4 py-2 text-sm font-semibold text-[#FFF8ED] transition-colors duration-150 hover:bg-[#B7372E] focus-visible:outline-2 focus-visible:outline-[#E6BE6C]"
               >
                 <GameIcon name="ui:refresh" size={14} />
-                Tải lại thống kê
+                <span>Tải lại thống kê</span>
               </button>
             </div>
           ) : stats && stats.summary.totalDistinctMatches === 0 ? (
             /* Trạng thái 2: Chưa có dữ liệu (phân biệt chưa có ván nào vs lọc ra 0) */
-            <div className="flex flex-col items-center justify-center gap-4 rounded-[8px] border border-[#94A3B8]/28 bg-[#11151D]/92 p-10 text-center backdrop-blur-md">
-              <div className="rounded-full border border-[#30363D] bg-[#14171A] p-3 text-[#D99B26]" aria-hidden="true">
+            <div className="flex flex-col items-center justify-center gap-4 rounded-lg border border-[#806345]/60 bg-[#16110E]/94 p-10 text-center backdrop-blur-md">
+              <div
+                className="rounded-full border border-[#C89B4B]/60 bg-[#1F1712] p-3 text-[#E6BE6C]"
+                aria-hidden="true"
+              >
                 <GameIcon name={hasActiveFilter ? 'ui:layers' : 'scroll-unfurled'} size={28} />
               </div>
-              <p className="max-w-lg text-sm leading-relaxed text-[#F3F4F6]">
+              <p className="max-w-lg text-sm leading-relaxed text-[#F5EBD6]">
                 {hasActiveFilter
                   ? 'Không có ván đấu nào khớp bộ lọc đang chọn.'
                   : 'Chưa có ván đấu nào được ghi nhận. Hãy hoàn thành ván đầu tiên để xem thống kê theo Thân Phận và Tướng!'}
@@ -351,16 +355,16 @@ export function StatsPage({
                 <button
                   type="button"
                   onClick={handleResetFilters}
-                  className="inline-flex cursor-pointer items-center gap-1.5 rounded-md bg-[#C83E37] px-4 py-2 text-sm font-semibold text-[#F4EFE6] transition-colors duration-150 hover:bg-[#B2342E] focus-visible:outline-2 focus-visible:outline-[#D99B26]"
+                  className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-[#F2CF84]/70 bg-[#9E2B25] px-4 py-2 text-sm font-semibold text-[#FFF8ED] transition-colors duration-150 hover:bg-[#B7372E] focus-visible:outline-2 focus-visible:outline-[#E6BE6C]"
                 >
                   <GameIcon name="ui:undo" size={14} />
-                  Xóa bộ lọc
+                  <span>Xóa bộ lọc</span>
                 </button>
               ) : (
                 <button
                   type="button"
                   onClick={onBack}
-                  className="rounded-md border border-[#3B424C] bg-[#14171A] px-4 py-2 text-sm font-medium text-[#F3F4F6] hover:border-[#D99B26] focus-visible:outline-2 focus-visible:outline-[#D99B26]"
+                  className="lkdf-bronze-pill cursor-pointer rounded-md px-4 py-2 text-sm font-medium text-[#F5EBD6] focus-visible:outline-2 focus-visible:outline-[#E6BE6C]"
                 >
                   ← Quay lại sảnh chờ
                 </button>
@@ -371,42 +375,42 @@ export function StatsPage({
             <>
               {/* 4 Thẻ chỉ số tổng quan (KPI) */}
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 min-w-0">
-                <div className="rounded-[8px] border border-[#94A3B8]/28 bg-[#11151D]/92 p-4 min-w-0 backdrop-blur-md">
-                  <p className="text-xs font-medium text-[#94A3B8]">Tổng trận</p>
-                  <p className="mt-1 text-2xl font-bold tabular-nums text-[#F4EFE6]">
+                <div className="rounded-lg border border-[#806345]/60 bg-[#16110E]/94 p-4 min-w-0 backdrop-blur-md">
+                  <p className="text-xs font-medium text-[#D5C3A5]">Tổng trận</p>
+                  <p className="font-mono-num mt-1 text-2xl font-bold tabular-nums text-[#F5EBD6]">
                     {stats.summary.totalDistinctMatches}
                   </p>
-                  <p className="mt-0.5 text-[11px] tabular-nums text-[#94A3B8]">
+                  <p className="font-mono-num mt-0.5 text-[11px] tabular-nums text-[#D5C3A5]">
                     {stats.summary.totalAppearances} lượt tham gia
                   </p>
                 </div>
 
-                <div className="rounded-[8px] border border-[#94A3B8]/28 bg-[#11151D]/92 p-4 min-w-0 backdrop-blur-md">
-                  <p className="text-xs font-medium text-[#94A3B8]">Số thắng</p>
-                  <p className="mt-1 text-2xl font-bold tabular-nums text-[#86EFAC]">
+                <div className="rounded-lg border border-[#806345]/60 bg-[#16110E]/94 p-4 min-w-0 backdrop-blur-md">
+                  <p className="text-xs font-medium text-[#D5C3A5]">Số thắng</p>
+                  <p className="font-mono-num mt-1 text-2xl font-bold tabular-nums text-[#86EFAC]">
                     {stats.summary.totalWins}
                   </p>
-                  <p className="mt-0.5 text-[11px] text-[#94A3B8]">
+                  <p className="mt-0.5 text-[11px] text-[#D5C3A5]">
                     Theo bộ lọc hiện tại
                   </p>
                 </div>
 
-                <div className="rounded-[8px] border border-[#94A3B8]/28 bg-[#11151D]/92 p-4 min-w-0 backdrop-blur-md">
-                  <p className="text-xs font-medium text-[#94A3B8]">Số thua</p>
-                  <p className="mt-1 text-2xl font-bold tabular-nums text-[#FCA5A5]">
+                <div className="rounded-lg border border-[#806345]/60 bg-[#16110E]/94 p-4 min-w-0 backdrop-blur-md">
+                  <p className="text-xs font-medium text-[#D5C3A5]">Số thua</p>
+                  <p className="font-mono-num mt-1 text-2xl font-bold tabular-nums text-[#FCA5A5]">
                     {stats.summary.totalLosses}
                   </p>
-                  <p className="mt-0.5 text-[11px] text-[#94A3B8]">
+                  <p className="mt-0.5 text-[11px] text-[#D5C3A5]">
                     Theo bộ lọc hiện tại
                   </p>
                 </div>
 
-                <div className="rounded-[8px] border border-[#94A3B8]/28 bg-[#11151D]/92 p-4 min-w-0 backdrop-blur-md">
-                  <p className="text-xs font-medium text-[#94A3B8]">Tỷ lệ thắng</p>
-                  <p className="mt-1 text-2xl font-bold tabular-nums text-[#E6BE6C]">
+                <div className="rounded-lg border border-[#806345]/60 bg-[#16110E]/94 p-4 min-w-0 backdrop-blur-md">
+                  <p className="text-xs font-medium text-[#D5C3A5]">Tỷ lệ thắng</p>
+                  <p className="font-mono-num mt-1 text-2xl font-bold tabular-nums text-[#E6BE6C]">
                     {stats.summary.winRatePercent.toFixed(1)}%
                   </p>
-                  <p className="mt-0.5 text-[11px] text-[#94A3B8]">
+                  <p className="mt-0.5 text-[11px] text-[#D5C3A5]">
                     Trên tổng lượt tham gia
                   </p>
                 </div>
@@ -415,13 +419,13 @@ export function StatsPage({
               {/* Phân tích theo 4 Thân Phận */}
               <section
                 aria-label="Thống kê theo Thân Phận"
-                className="rounded-[8px] border border-[#94A3B8]/28 bg-[#11151D]/92 p-4 min-w-0 backdrop-blur-md"
+                className="rounded-lg border border-[#806345]/60 bg-[#16110E]/94 p-4 min-w-0 backdrop-blur-md"
               >
-                <div className="mb-3 flex items-center justify-between gap-2">
-                  <h2 className="text-sm font-bold text-[#F4EFE6]">
+                <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                  <h2 className="font-serif-title text-sm font-bold text-[#F5EBD6]">
                     Thống kê theo 4 Thân Phận
                   </h2>
-                  <span className="text-xs text-[#9CA3AF]">
+                  <span className="text-xs text-[#D5C3A5]">
                     Bấm vào thẻ Thân Phận để lọc nhanh
                   </span>
                 </div>
@@ -440,10 +444,10 @@ export function StatsPage({
                             identity: prev.identity === item.id ? null : item.id,
                           }))
                         }
-                        className={`flex flex-col gap-2 rounded-md border p-3 text-left transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-[#D99B26] ${
+                        className={`flex cursor-pointer flex-col gap-2 rounded-md border p-3 text-left transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-[#E6BE6C] ${
                           isSelected
-                            ? 'border-[#D99B26] bg-[#14171A]'
-                            : 'border-[#2D333B] bg-[#14171A]/75 hover:border-[#D99B26]/60'
+                            ? 'border-[#E6BE6C] bg-[#291D15]'
+                            : 'border-[#806345]/55 bg-[#1F1712]/90 hover:border-[#C89B4B]'
                         }`}
                       >
                         <div className="flex items-center justify-between gap-2">
@@ -452,19 +456,19 @@ export function StatsPage({
                           >
                             {item.nameVi}
                           </span>
-                          <span className="text-sm font-bold tabular-nums text-[#F4EFE6]">
+                          <span className="font-mono-num text-sm font-bold tabular-nums text-[#F5EBD6]">
                             {entry.winRatePercent.toFixed(1)}%
                           </span>
                         </div>
-                        <div className="h-1.5 w-full overflow-hidden rounded-full bg-[#2D333B]">
+                        <div className="h-1.5 w-full overflow-hidden rounded-full bg-[#120D0A]">
                           <div
-                            className="h-full rounded-full bg-[#D99B26] transition-all duration-200"
+                            className="h-full rounded-full bg-gradient-to-r from-[#9E2B25] to-[#E6BE6C] transition-all duration-200"
                             style={{
                               width: `${Math.min(100, Math.max(0, entry.winRatePercent))}%`,
                             }}
                           />
                         </div>
-                        <div className="flex items-center justify-between text-xs tabular-nums text-[#9CA3AF]">
+                        <div className="font-mono-num flex items-center justify-between text-xs tabular-nums text-[#D5C3A5]">
                           <span>{entry.played} lượt</span>
                           <span>
                             {entry.wins} thắng · {entry.losses} thua
@@ -477,45 +481,45 @@ export function StatsPage({
               </section>
 
               {/* Thanh chuyển vùng hiển thị */}
-              <div className="flex flex-wrap items-center gap-2 border-b border-[#2D333B] pb-2">
+              <div className="flex flex-wrap items-center gap-2 border-b border-[#806345]/45 pb-2">
                 <button
                   type="button"
                   aria-pressed={activeTab === 'ALL'}
                   onClick={() => setActiveTab('ALL')}
-                  className={`inline-flex cursor-pointer items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-[#D99B26] ${
+                  className={`inline-flex cursor-pointer items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-semibold transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-[#E6BE6C] ${
                     activeTab === 'ALL'
-                      ? 'bg-[#C83E37] text-[#F4EFE6]'
-                      : 'border border-[#2D333B] bg-[#1E2328] text-[#9CA3AF] hover:text-[#F3F4F6]'
+                      ? 'border-[#F2CF84]/70 bg-[#9E2B25] text-[#FFF8ED]'
+                      : 'border-[#806345]/60 bg-[#1F1712] text-[#D5C3A5] hover:border-[#C89B4B] hover:text-[#F5EBD6]'
                   }`}
                 >
                   <GameIcon name="ui:layers" size={13} />
-                  Xem tất cả
+                  <span>Xem tất cả</span>
                 </button>
                 <button
                   type="button"
                   aria-pressed={activeTab === 'PLAYERS_HEROES'}
                   onClick={() => setActiveTab('PLAYERS_HEROES')}
-                  className={`inline-flex cursor-pointer items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-[#D99B26] ${
+                  className={`inline-flex cursor-pointer items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-semibold transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-[#E6BE6C] ${
                     activeTab === 'PLAYERS_HEROES'
-                      ? 'bg-[#C83E37] text-[#F4EFE6]'
-                      : 'border border-[#2D333B] bg-[#1E2328] text-[#9CA3AF] hover:text-[#F3F4F6]'
+                      ? 'border-[#F2CF84]/70 bg-[#9E2B25] text-[#FFF8ED]'
+                      : 'border-[#806345]/60 bg-[#1F1712] text-[#D5C3A5] hover:border-[#C89B4B] hover:text-[#F5EBD6]'
                   }`}
                 >
                   <GameIcon name="ui:users" size={13} />
-                  Bảng xếp hạng &amp; 25 Tướng ({sortedPlayers.length})
+                  <span>Bảng xếp hạng &amp; 25 Tướng ({sortedPlayers.length})</span>
                 </button>
                 <button
                   type="button"
                   aria-pressed={activeTab === 'HISTORY'}
                   onClick={() => setActiveTab('HISTORY')}
-                  className={`inline-flex cursor-pointer items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-[#D99B26] ${
+                  className={`inline-flex cursor-pointer items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-semibold transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-[#E6BE6C] ${
                     activeTab === 'HISTORY'
-                      ? 'bg-[#C83E37] text-[#F4EFE6]'
-                      : 'border border-[#2D333B] bg-[#1E2328] text-[#9CA3AF] hover:text-[#F3F4F6]'
+                      ? 'border-[#F2CF84]/70 bg-[#9E2B25] text-[#FFF8ED]'
+                      : 'border-[#806345]/60 bg-[#1F1712] text-[#D5C3A5] hover:border-[#C89B4B] hover:text-[#F5EBD6]'
                   }`}
                 >
                   <GameIcon name="scroll-unfurled" size={13} />
-                  Lịch sử các ván đấu gần đây ({recentMatches.length})
+                  <span>Lịch sử các ván đấu gần đây ({recentMatches.length})</span>
                 </button>
               </div>
 
@@ -524,20 +528,20 @@ export function StatsPage({
                   {/* Bảng xếp hạng người chơi */}
                   <section
                     aria-label="Bảng xếp hạng người chơi"
-                    className="rounded-[8px] border border-[#94A3B8]/28 bg-[#11151D]/92 p-4 lg:col-span-6 min-w-0 backdrop-blur-md"
+                    className="rounded-lg border border-[#806345]/60 bg-[#16110E]/94 p-4 lg:col-span-6 min-w-0 backdrop-blur-md"
                   >
-                    <h2 className="mb-3 text-sm font-bold text-[#F4EFE6]">
+                    <h2 className="font-serif-title mb-3 text-sm font-bold text-[#F5EBD6]">
                       Bảng xếp hạng người chơi
                     </h2>
                     {sortedPlayers.length === 0 ? (
-                      <p className="text-sm text-[#9CA3AF]">
+                      <p className="text-sm text-[#D5C3A5]">
                         Chưa có dữ liệu người chơi cho bộ lọc này.
                       </p>
                     ) : (
-                      <div className="overflow-x-auto">
+                      <div className="lkdf-scroll overflow-x-auto">
                         <table className="w-full border-collapse text-left text-sm">
                           <thead>
-                            <tr className="border-b border-[#2D333B] text-xs text-[#9CA3AF]">
+                            <tr className="border-b border-[#806345]/50 text-xs text-[#D5C3A5]">
                               <th className="py-2 pr-2 font-medium">#</th>
                               <th className="py-2 pr-2 font-medium">Người chơi</th>
                               <th className="py-2 px-2 text-right font-medium">Trận</th>
@@ -554,11 +558,11 @@ export function StatsPage({
                               return (
                                 <tr
                                   key={player.userId}
-                                  className={`border-b border-[#2D333B]/60 last:border-b-0 ${
-                                    isFiltered ? 'bg-[#D99B26]/10' : ''
+                                  className={`border-b border-[#806345]/30 last:border-b-0 ${
+                                    isFiltered ? 'bg-[#C89B4B]/15' : ''
                                   }`}
                                 >
-                                  <td className="py-2 pr-2 font-mono text-xs tabular-nums text-[#9CA3AF]">
+                                  <td className="font-mono-num py-2 pr-2 text-xs tabular-nums text-[#D5C3A5]">
                                     {index + 1}
                                   </td>
                                   <td className="py-2 pr-2 min-w-0">
@@ -573,40 +577,40 @@ export function StatsPage({
                                               : player.userId,
                                         }))
                                       }
-                                      className="flex items-center gap-2 text-left hover:text-[#D99B26] focus-visible:outline-2 focus-visible:outline-[#D99B26]"
+                                      className="flex cursor-pointer items-center gap-2 text-left hover:text-[#E6BE6C] focus-visible:outline-2 focus-visible:outline-[#E6BE6C]"
                                       title={`Lọc theo ${player.displayName}`}
                                     >
                                       {player.avatarUrl ? (
                                         <img
                                           src={player.avatarUrl}
                                           alt=""
-                                          className="h-6 w-6 shrink-0 rounded-full border border-[#3B424C] object-cover"
+                                          className="h-6 w-6 shrink-0 rounded-full border border-[#806345] object-cover"
                                         />
                                       ) : (
-                                        <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-[#3B424C] bg-[#14171A] text-[10px] font-bold text-[#F4EFE6]">
+                                        <span className="font-serif-title inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-[#806345] bg-[#271C15] text-[10px] font-bold text-[#F5EBD6]">
                                           {getInitials(player.displayName)}
                                         </span>
                                       )}
-                                      <span className="truncate font-medium text-[#F3F4F6]">
+                                      <span className="truncate font-medium text-[#F5EBD6]">
                                         {player.displayName}
                                       </span>
                                       {isSelf ? (
-                                        <span className="shrink-0 rounded border border-[#D99B26]/60 bg-[#D99B26]/15 px-1.5 py-0.5 text-[10px] font-semibold text-[#FCD34D]">
+                                        <span className="shrink-0 rounded border border-[#C89B4B]/70 bg-[#C89B4B]/15 px-1.5 py-0.5 text-[10px] font-semibold text-[#FCD34D]">
                                           Bạn
                                         </span>
                                       ) : null}
                                     </button>
                                   </td>
-                                  <td className="py-2 px-2 text-right tabular-nums text-[#F3F4F6]">
+                                  <td className="font-mono-num py-2 px-2 text-right tabular-nums text-[#F5EBD6]">
                                     {player.played}
                                   </td>
-                                  <td className="py-2 px-2 text-right tabular-nums text-[#86EFAC]">
+                                  <td className="font-mono-num py-2 px-2 text-right tabular-nums text-[#86EFAC]">
                                     {player.wins}
                                   </td>
-                                  <td className="py-2 px-2 text-right tabular-nums text-[#FCA5A5]">
+                                  <td className="font-mono-num py-2 px-2 text-right tabular-nums text-[#FCA5A5]">
                                     {player.losses}
                                   </td>
-                                  <td className="py-2 pl-2 text-right font-semibold tabular-nums text-[#D99B26]">
+                                  <td className="font-mono-num py-2 pl-2 text-right font-semibold tabular-nums text-[#E6BE6C]">
                                     {player.winRatePercent.toFixed(1)}%
                                   </td>
                                 </tr>
@@ -621,13 +625,13 @@ export function StatsPage({
                   {/* Lưới thống kê 25 Tướng theo Thế lực */}
                   <section
                     aria-label="Thống kê theo 25 Tướng"
-                    className="rounded-[8px] border border-[#94A3B8]/28 bg-[#11151D]/92 p-4 lg:col-span-6 min-w-0 backdrop-blur-md"
+                    className="rounded-lg border border-[#806345]/60 bg-[#16110E]/94 p-4 lg:col-span-6 min-w-0 backdrop-blur-md"
                   >
                     <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                      <h2 className="text-sm font-bold text-[#F4EFE6]">
+                      <h2 className="font-serif-title text-sm font-bold text-[#F5EBD6]">
                         Thống kê theo Tướng (4 Thế lực)
                       </h2>
-                      <div className="flex items-center gap-2 text-[11px] text-[#9CA3AF]">
+                      <div className="flex items-center gap-2 text-[11px] text-[#D5C3A5]">
                         <span className="inline-flex items-center gap-1">
                           <span className="h-2 w-2 rounded-full bg-[#C83E37]" /> Thục
                         </span>
@@ -659,12 +663,12 @@ export function StatsPage({
                                 heroId: prev.heroId === hero.id ? null : hero.id,
                               }))
                             }
-                            className={`flex items-center justify-between gap-2 rounded-md border px-3 py-2 text-left transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-[#D99B26] ${
+                            className={`flex cursor-pointer items-center justify-between gap-2 rounded-md border px-3 py-2 text-left transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-[#E6BE6C] ${
                               isSelected
-                                ? 'border-[#D99B26] bg-[#14171A]'
+                                ? 'border-[#E6BE6C] bg-[#291D15]'
                                 : entry.played > 0
-                                  ? 'border-[#2D333B] bg-[#14171A]/80 hover:border-[#D99B26]/60'
-                                  : 'border-[#2D333B]/60 bg-[#14171A]/40 opacity-70 hover:opacity-100'
+                                  ? 'border-[#806345]/55 bg-[#1F1712]/90 hover:border-[#C89B4B]'
+                                  : 'border-[#806345]/35 bg-[#1A130F]/60 opacity-75 hover:opacity-100'
                             }`}
                           >
                             <div className="flex items-center gap-2 min-w-0">
@@ -673,7 +677,7 @@ export function StatsPage({
                                 className={`h-2.5 w-2.5 shrink-0 rounded-full ${style.dot}`}
                               />
                               <div className="min-w-0">
-                                <p className="truncate text-sm font-semibold text-[#F3F4F6]">
+                                <p className="font-serif-title truncate text-sm font-semibold text-[#F5EBD6]">
                                   {catalogHero?.nameVi ?? hero.nameVi}
                                 </p>
                                 <span
@@ -684,13 +688,13 @@ export function StatsPage({
                               </div>
                             </div>
 
-                            <div className="shrink-0 text-right tabular-nums">
-                              <p className="text-xs font-bold text-[#F4EFE6]">
+                            <div className="font-mono-num shrink-0 text-right tabular-nums">
+                              <p className="text-xs font-bold text-[#F5EBD6]">
                                 {entry.played > 0
                                   ? `${entry.winRatePercent.toFixed(1)}%`
                                   : '—'}
                               </p>
-                              <p className="text-[11px] text-[#9CA3AF]">
+                              <p className="text-[11px] text-[#D5C3A5]">
                                 {entry.wins}/{entry.played} thắng
                               </p>
                             </div>
@@ -704,11 +708,11 @@ export function StatsPage({
 
               {activeTab === 'ALL' || activeTab === 'HISTORY' ? (
                 <section aria-label="Lịch sử các ván đấu gần đây" className="min-w-0">
-                  <div className="mb-3 flex items-center justify-between gap-2">
-                    <h2 className="text-sm font-bold text-[#F4EFE6]">
+                  <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                    <h2 className="font-serif-title text-sm font-bold text-[#F5EBD6]">
                       Lịch sử các ván đấu gần đây ({recentMatches.length})
                     </h2>
-                    <span className="text-xs text-[#9CA3AF]">
+                    <span className="text-xs text-[#D5C3A5]">
                       Bấm vào tên người chơi hoặc tướng để lọc nhanh
                     </span>
                   </div>

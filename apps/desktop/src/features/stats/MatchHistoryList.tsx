@@ -29,10 +29,10 @@ const IDENTITY_LABELS: Readonly<Record<IdentityRole, string>> = {
 };
 
 const IDENTITY_BADGE_CLASSES: Readonly<Record<IdentityRole, string>> = {
-  LORD: 'border-[#D99B26]/60 bg-[#D99B26]/15 text-[#FCD34D]',
-  LOYALIST: 'border-[#3B82F6]/50 bg-[#3B82F6]/15 text-[#93C5FD]',
-  REBEL: 'border-[#C83E37]/60 bg-[#C83E37]/15 text-[#FCA5A5]',
-  SPY: 'border-[#9CA3AF]/60 bg-[#9CA3AF]/15 text-[#E5E7EB]',
+  LORD: 'border-[#C89B4B]/70 bg-[#3A290F]/70 text-[#FCD34D]',
+  LOYALIST: 'border-[#3B82F6]/55 bg-[#162C48]/70 text-[#93C5FD]',
+  REBEL: 'border-[#C83E37]/65 bg-[#3D2022]/70 text-[#FCA5A5]',
+  SPY: 'border-[#A78BFA]/55 bg-[#30213E]/70 text-[#DDD6FE]',
 };
 
 const WINNING_FACTION_META: Readonly<
@@ -44,7 +44,7 @@ const WINNING_FACTION_META: Readonly<
   LORD_LOYALIST: {
     icon: 'crown',
     labelVi: 'Phe Chủ Công & Trung Thần thắng',
-    className: 'border-[#D99B26]/60 bg-[#D99B26]/15 text-[#FCD34D]',
+    className: 'border-[#C89B4B]/70 bg-[#3A290F]/65 text-[#FCD34D]',
   },
   REBEL: {
     icon: 'crossed-swords',
@@ -84,7 +84,7 @@ export function MatchHistoryList({
 }: MatchHistoryListProps): ReactElement {
   if (matches.length === 0) {
     return (
-      <div className="rounded-[8px] border border-[#94A3B8]/28 bg-[#11151D]/92 p-6 text-center text-sm text-[#94A3B8]">
+      <div className="rounded-lg border border-[#806345]/60 bg-[#16110E]/94 p-6 text-center text-sm text-[#D5C3A5]">
         Không có lịch sử ván đấu nào khớp bộ lọc hiện tại.
       </div>
     );
@@ -97,12 +97,12 @@ export function MatchHistoryList({
         return (
           <article
             key={match.matchId}
-            className="rounded-[8px] border border-[#94A3B8]/28 bg-[#11151D]/92 p-4 min-w-0 backdrop-blur-md"
+            className="rounded-lg border border-[#806345]/60 bg-[#16110E]/94 p-4 min-w-0 backdrop-blur-md"
           >
             {/* Đầu thẻ ván đấu */}
-            <div className="mb-3 flex flex-wrap items-center justify-between gap-2 border-b border-[#2D333B] pb-2.5 min-w-0">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2 border-b border-[#806345]/45 pb-2.5 min-w-0">
               <div className="flex flex-wrap items-center gap-2 min-w-0">
-                <span className="rounded border border-[#3B424C] bg-[#14171A] px-2 py-0.5 font-mono text-xs font-semibold tabular-nums text-[#F4EFE6]">
+                <span className="font-mono-num rounded border border-[#806345]/75 bg-[#1F1712] px-2 py-0.5 text-xs font-semibold tabular-nums text-[#F5EBD6]">
                   Phòng #{match.roomCode}
                 </span>
                 <span
@@ -111,12 +111,12 @@ export function MatchHistoryList({
                   <GameIcon name={winningMeta.icon} size={12} />
                   {winningMeta.labelVi}
                 </span>
-                <span className="text-xs font-medium tabular-nums text-[#9CA3AF]">
+                <span className="font-mono-num text-xs font-medium tabular-nums text-[#D5C3A5]">
                   {match.playerCount} người
                 </span>
               </div>
 
-              <div className="flex flex-wrap items-center gap-3 text-xs tabular-nums text-[#9CA3AF]">
+              <div className="font-mono-num flex flex-wrap items-center gap-3 text-xs tabular-nums text-[#D5C3A5]">
                 <span>Thời lượng: {formatDurationVi(match.durationSeconds)}</span>
                 <span>{formatFinishedAtVi(match.finishedAt)}</span>
               </div>
@@ -135,8 +135,8 @@ export function MatchHistoryList({
                     key={`${match.matchId}-${participant.seatIndex}-${participant.userId}`}
                     className={`flex flex-col justify-between gap-2 rounded-md border p-2.5 min-w-0 ${
                       isSelf
-                        ? 'border-[#D99B26]/70 bg-[#14171A]'
-                        : 'border-[#2D333B] bg-[#14171A]/80'
+                        ? 'border-[#E6BE6C]/80 bg-[#271C15]'
+                        : 'border-[#806345]/55 bg-[#1F1712]/90'
                     }`}
                   >
                     <div className="flex items-start justify-between gap-2 min-w-0">
@@ -145,13 +145,13 @@ export function MatchHistoryList({
                           <button
                             type="button"
                             onClick={() => onSelectPlayer(participant.userId)}
-                            className="max-w-full truncate text-left text-sm font-semibold text-[#F3F4F6] hover:text-[#D99B26] focus-visible:outline-2 focus-visible:outline-[#D99B26]"
+                            className="max-w-full cursor-pointer truncate text-left text-sm font-semibold text-[#F5EBD6] hover:text-[#E6BE6C] focus-visible:outline-2 focus-visible:outline-[#E6BE6C]"
                             title={`Lọc theo ${participant.displayName}`}
                           >
                             {participant.displayName}
                           </button>
                         ) : (
-                          <p className="truncate text-sm font-semibold text-[#F3F4F6]">
+                          <p className="truncate text-sm font-semibold text-[#F5EBD6]">
                             {participant.displayName}
                           </p>
                         )}
@@ -162,7 +162,7 @@ export function MatchHistoryList({
                             {IDENTITY_LABELS[participant.identity]}
                           </span>
                           {isSelf ? (
-                            <span className="rounded border border-[#D99B26]/60 bg-[#D99B26]/15 px-1.5 py-0.5 text-[11px] font-semibold text-[#FCD34D]">
+                            <span className="rounded border border-[#C89B4B]/70 bg-[#C89B4B]/15 px-1.5 py-0.5 text-[11px] font-semibold text-[#FCD34D]">
                               Bạn
                             </span>
                           ) : null}
@@ -180,12 +180,12 @@ export function MatchHistoryList({
                       </span>
                     </div>
 
-                    <div className="flex items-center justify-between gap-2 border-t border-[#2D333B]/70 pt-1.5 text-xs min-w-0">
+                    <div className="flex items-center justify-between gap-2 border-t border-[#806345]/45 pt-1.5 text-xs min-w-0">
                       {onSelectHero ? (
                         <button
                           type="button"
                           onClick={() => onSelectHero(participant.heroId)}
-                          className={`truncate rounded border px-1.5 py-0.5 text-xs font-medium transition-opacity hover:opacity-85 focus-visible:outline-2 focus-visible:outline-[#D99B26] ${FACTION_BADGE_CLASSES[heroFaction]}`}
+                          className={`cursor-pointer truncate rounded border px-1.5 py-0.5 text-xs font-medium transition-opacity hover:opacity-85 focus-visible:outline-2 focus-visible:outline-[#E6BE6C] ${FACTION_BADGE_CLASSES[heroFaction]}`}
                           title={`Lọc theo tướng ${hero?.nameVi ?? participant.heroId}`}
                         >
                           {hero ? `${hero.nameVi} (${hero.factionLabelVi})` : participant.heroId}
@@ -198,7 +198,7 @@ export function MatchHistoryList({
                         </span>
                       )}
 
-                      <span className="shrink-0 text-[11px] text-[#9CA3AF]">
+                      <span className="shrink-0 text-[11px] text-[#D5C3A5]">
                         {participant.survived ? 'Sống sót' : 'Tử trận'}
                       </span>
                     </div>

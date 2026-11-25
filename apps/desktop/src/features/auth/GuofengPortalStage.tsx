@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
 import { GameIcon } from '../../components/icons/index.js';
 import { getHeroPortraitUrl, getUiAssetUrl } from '../../lib/assetCatalog.js';
+import { prefersReducedMotion } from '../../lib/devicePreferences.js';
 import type { DesktopUpdateState } from '../../lib/types.js';
 
 export interface GuofengPortalStageProps {
@@ -14,6 +15,7 @@ export interface GuofengPortalStageProps {
   readonly onCheckUpdate: () => void;
   readonly onOpenStats?: () => void;
   readonly onRecheckServer?: () => void;
+  readonly onPlayOffline?: () => void;
   readonly onOpenDevPreview?: () => void;
   readonly children: ReactNode;
 }
@@ -57,6 +59,7 @@ export function GuofengPortalStage({
   onCheckUpdate,
   onOpenStats,
   onRecheckServer,
+  onPlayOffline,
   onOpenDevPreview,
   children,
 }: GuofengPortalStageProps) {
@@ -73,11 +76,6 @@ export function GuofengPortalStage({
       return undefined;
     }
 
-    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (reducedMotion) {
-      return undefined;
-    }
-
     const resetParallax = () => {
       stageEl.style.setProperty('--tqs-px-bg', '0px');
       stageEl.style.setProperty('--tqs-py-bg', '0px');
@@ -87,7 +85,16 @@ export function GuofengPortalStage({
       stageEl.style.setProperty('--tqs-py-r', '0px');
     };
 
+    if (prefersReducedMotion()) {
+      resetParallax();
+      return undefined;
+    }
+
     const handleMouseMove = (ev: MouseEvent) => {
+      if (prefersReducedMotion()) {
+        resetParallax();
+        return;
+      }
       const rect = stageEl.getBoundingClientRect();
       if (rect.width <= 0 || rect.height <= 0) {
         return;
@@ -122,10 +129,6 @@ export function GuofengPortalStage({
       return undefined;
     }
 
-    const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-    const embers = createEmbers();
-    let rafId = 0;
-
     const syncCanvasSize = () => {
       const w = stageEl.clientWidth || 1280;
       const h = stageEl.clientHeight || 720;
@@ -135,12 +138,21 @@ export function GuofengPortalStage({
       }
     };
 
+    if (prefersReducedMotion()) {
+      syncCanvasSize();
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      return undefined;
+    }
+
+    const embers = createEmbers();
+    let rafId = 0;
+
     const renderFrame = (now: number) => {
       syncCanvasSize();
       const { width: w, height: h } = canvas;
       ctx.clearRect(0, 0, w, h);
 
-      if (!motionQuery.matches) {
+      if (!prefersReducedMotion()) {
         const t = now * 0.001;
         for (const e of embers) {
           e.y -= e.vy;
@@ -303,7 +315,7 @@ export function GuofengPortalStage({
       </div>
 
       {/* Thanh trạng thái đáy tinh gọn 44px */}
-      <footer className="relative z-[6] flex h-11 shrink-0 items-center justify-between gap-3 border-t border-[#D4A451]/22 bg-[#07090D]/88 px-4 sm:px-6">
+      <footer className="relative z-[6] flex h-11 shrink-0 items-center justify-between gap-3 border-t border-[#D4A451]/25 bg-[#110D0A]/90 px-4 sm:px-6">
         <div className="flex items-center gap-3 min-w-0">
           <span
             className={`inline-flex items-center gap-1.5 text-[11.5px] font-medium ${
@@ -324,7 +336,7 @@ export function GuofengPortalStage({
             <button
               type="button"
               onClick={onOpenUpdateModal}
-              className="inline-flex cursor-pointer items-center gap-1.5 rounded-[4px] border border-[#E6BE6C] bg-[#B8332C] px-2.5 py-0.5 font-mono-num text-[11px] font-semibold tabular-nums text-[#F4EFE6] shadow transition-colors hover:bg-[#C83E37]"
+              className="inline-flex cursor-pointer items-center gap-1.5 rounded-[4px] border border-[#E6BE6C] bg-[#B8332C] px-2.5 py-0.5 font-mono-num text-[11px] font-semibold tabular-nums text-[#F4EFE6] shadow transition-colors hover:bg-[#C83E37] focus-visible:outline-2 focus-visible:outline-[#E6BE6C]"
             >
               <GameIcon name="ui:download" size={11} />
               Có bản v{updateState.latestVersion}
@@ -339,7 +351,7 @@ export function GuofengPortalStage({
                   : 'Chờ kết nối máy chủ để kiểm tra cập nhật'
               }
               onClick={onCheckUpdate}
-              className="inline-flex cursor-pointer items-center gap-1 font-mono-num text-[11.5px] tabular-nums text-[#7E899B] transition-colors hover:text-[#F5ECDC] disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex cursor-pointer items-center gap-1 rounded px-1.5 py-0.5 font-mono-num text-[11.5px] tabular-nums text-[#D5C3A5] transition-colors hover:text-[#FFF5DF] focus-visible:outline-2 focus-visible:outline-[#E6BE6C] disabled:cursor-not-allowed disabled:opacity-60"
             >
               <GameIcon name="ui:refresh" size={10} />
               v{appVersion}
@@ -347,12 +359,23 @@ export function GuofengPortalStage({
           )}
         </div>
 
-        <div className="flex items-center gap-4 sm:gap-5 shrink-0">
+        <div className="flex items-center gap-3 sm:gap-5 shrink-0">
+          {onPlayOffline ? (
+            <button
+              type="button"
+              onClick={onPlayOffline}
+              className="inline-flex cursor-pointer items-center gap-1.5 rounded-[4px] border border-[#C89B4B]/65 bg-[#241813]/92 px-2.5 py-1 text-xs font-semibold text-[#F5EBD6] transition-colors hover:border-[#F2CF84] hover:bg-[#6C2521] focus-visible:outline-2 focus-visible:outline-[#E6BE6C]"
+            >
+              <GameIcon name="ui:bot" size={12} />
+              Chơi với Máy
+            </button>
+          ) : null}
+
           {onOpenStats ? (
             <button
               type="button"
               onClick={onOpenStats}
-              className="cursor-pointer text-xs font-medium text-[#B7C1D0] transition-colors hover:text-[#F5ECDC] focus:outline-none focus:text-[#F2CF84]"
+              className="cursor-pointer rounded px-1.5 py-0.5 text-xs font-medium text-[#E6D4B8] transition-colors hover:text-[#FFF8ED] focus-visible:outline-2 focus-visible:outline-[#E6BE6C]"
             >
               Bảng Thống Kê
             </button>
@@ -362,7 +385,7 @@ export function GuofengPortalStage({
             <button
               type="button"
               onClick={onRecheckServer}
-              className="cursor-pointer text-xs font-medium text-[#B7C1D0] transition-colors hover:text-[#F5ECDC] focus:outline-none focus:text-[#F2CF84]"
+              className="cursor-pointer rounded px-1.5 py-0.5 text-xs font-medium text-[#E6D4B8] transition-colors hover:text-[#FFF8ED] focus-visible:outline-2 focus-visible:outline-[#E6BE6C]"
             >
               Kiểm tra máy chủ
             </button>
@@ -372,7 +395,7 @@ export function GuofengPortalStage({
             <button
               type="button"
               onClick={onOpenDevPreview}
-              className="cursor-pointer text-xs font-semibold text-[#F2CF84] transition-colors hover:text-[#FFF5DF] focus:outline-none"
+              className="cursor-pointer rounded px-1.5 py-0.5 text-xs font-semibold text-[#F2CF84] transition-colors hover:text-[#FFF5DF] focus-visible:outline-2 focus-visible:outline-[#E6BE6C]"
             >
               Xem thử Bàn 8 người →
             </button>

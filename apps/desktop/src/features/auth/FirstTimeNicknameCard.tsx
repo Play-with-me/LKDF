@@ -13,6 +13,7 @@ export interface FirstTimeNicknameCardProps {
   readonly updateState: DesktopUpdateState;
   readonly onOpenUpdateModal: () => void;
   readonly onCheckUpdate: () => void;
+  readonly onPlayOffline?: () => void;
   readonly isPreviewMode?: boolean;
   readonly onComplete: (updatedProfile: UserProfile) => void;
 }
@@ -37,6 +38,7 @@ export function FirstTimeNicknameCard({
   updateState,
   onOpenUpdateModal,
   onCheckUpdate,
+  onPlayOffline,
   isPreviewMode = false,
   onComplete,
 }: FirstTimeNicknameCardProps) {
@@ -88,6 +90,7 @@ export function FirstTimeNicknameCard({
       updateState={updateState}
       onOpenUpdateModal={onOpenUpdateModal}
       onCheckUpdate={onCheckUpdate}
+      onPlayOffline={onPlayOffline}
     >
       <div className="mx-auto max-w-[360px]">
         <div className="mb-2.5 text-center">
@@ -155,7 +158,7 @@ export function FirstTimeNicknameCard({
                 setErrorMsg(null);
               }}
               placeholder="VD: Mạnh Đức, Khổng Minh..."
-              className="w-full rounded-[3px] border border-[#D4A451]/42 bg-[#07090E]/88 px-3 py-2.5 text-center text-sm font-semibold text-[#F5ECDC] placeholder-[#64748B] transition-colors focus:border-[#F2CF84] focus:outline-none"
+              className="w-full rounded-[4px] border border-[#C89B4B]/55 bg-[#140F0C]/92 px-3 py-2.5 text-center text-sm font-semibold text-[#F5EBD6] placeholder-[#A8947A] transition-colors focus:border-[#F2CF84] focus-visible:outline-2 focus-visible:outline-[#E6BE6C]"
             />
           </div>
 
@@ -174,7 +177,7 @@ export function FirstTimeNicknameCard({
               type="button"
               disabled={isSaving}
               onClick={() => onComplete(profile)}
-              className="cursor-pointer rounded-[3px] border border-[#B7C1D0]/34 bg-[#0C0F16]/75 px-3 py-2.5 text-xs font-semibold text-[#B7C1D0] transition-colors hover:border-[#D4A451]/55 hover:text-[#F5ECDC] disabled:opacity-50"
+              className="lkdf-bronze-pill cursor-pointer rounded-[4px] px-3 py-2.5 text-xs font-semibold text-[#EFE6D5] focus-visible:outline-2 focus-visible:outline-[#E6BE6C] disabled:opacity-50"
             >
               Giữ tên Google
             </button>
@@ -182,7 +185,7 @@ export function FirstTimeNicknameCard({
             <button
               type="submit"
               disabled={isSaving || !isLengthValid}
-              className="tqs-talisman-btn inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-[3px] border border-[#F2CF84]/78 px-4 py-2.5 text-[13px] font-bold text-[#FFF8ED] focus:outline-none focus:ring-2 focus:ring-[#F2CF84]/70 disabled:cursor-not-allowed disabled:opacity-50"
+              className="tqs-talisman-btn inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-[4px] border border-[#F2CF84]/78 px-4 py-2.5 text-[13px] font-bold text-[#FFF8ED] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#F2CF84] disabled:cursor-not-allowed disabled:opacity-50"
             >
               <GameIcon
                 name={isSaving ? 'ui:loader' : 'ui:check'}

@@ -1,3 +1,4 @@
+import { orderHand } from './handOrder.js';
 import {
   TIMER_PRESETS,
   applyGameAction,
@@ -26,8 +27,9 @@ import { useGameAmbience } from '../../lib/useGameAmbience.js';
 import { useInterfaceSounds } from '../../lib/useInterfaceSounds.js';
 import { playMatchCue } from '../../lib/soundFx.js';
 import { botDelayMs, finishOfflineNullification, getOfflineBotSeat, OFFLINE_NULLIFICATION_MS, runOfflineBotStep, scheduleBotStep } from './offlineBot.js';
-import { MatchSettings } from './MatchSettings.js';
+import { MatchQuickHudPills, MatchSettings } from './MatchSettings.js';
 import { GameIcon } from '../../components/icons/index.js';
+import { GuofengModalShell } from '../../components/ui/GuofengModalShell.js';
 import { ActionLogDialog } from './ActionLogDialog.js';
 import { GameOverSummaryModal } from './GameOverSummaryModal.js';
 import { MatchActionSidebar } from './MatchActionSidebar.js';
@@ -169,7 +171,7 @@ export function DevMatchPreview({
   const [previewStage, setPreviewStage] = useState<PreviewStage>('IN_PLAY');
   const [masterState, setMasterState] = useState<MasterGameState>(() =>
     offline
-      ? createInitialMatchSetup({ matchId: crypto.randomUUID(), seats: buildPreviewSeats(initialPlayerCount, true) })
+      ? createInitialMatchSetup({ matchId: crypto.randomUUID(), manualDraw: true, seats: buildPreviewSeats(initialPlayerCount, true) })
       : createPreviewMatchState(initialPlayerCount, 'IN_PLAY'),
   );
   const [undoHistory, setUndoHistory] = useState<MasterGameState[]>([]);
@@ -185,7 +187,7 @@ export function DevMatchPreview({
   const [actionError, setActionError] = useState<string | null>(null);
   const [showLogDialog, setShowLogDialog] = useState<boolean>(false);
   const [showRulesDialog, setShowRulesDialog] = useState<boolean>(false);
-  const exitDialog = useRef<HTMLDialogElement>(null);
+  const [showExitDialog, setShowExitDialog] = useState<boolean>(false);
   const lastBotTurn = useRef<string | null>(null);
   const [botFault, setBotFault] = useState(false);
   const [showRefereeDialog, setShowRefereeDialog] = useState<boolean>(false);
@@ -200,7 +202,7 @@ export function DevMatchPreview({
       setPlayerCount(nextCount);
       setPreviewStage(nextStage);
       setMasterState(offline
-        ? createInitialMatchSetup({ matchId: crypto.randomUUID(), seats: buildPreviewSeats(nextCount, true) })
+        ? createInitialMatchSetup({ matchId: crypto.randomUUID(), manualDraw: true, seats: buildPreviewSeats(nextCount, true) })
         : createPreviewMatchState(nextCount, nextStage));
       lastBotTurn.current = null;
       setBotFault(false);
@@ -287,6 +289,30 @@ export function DevMatchPreview({
     };
   }, [isPaused, masterState, offline]);
 
+  const isOpening =
+    masterState.turnPhase === 'HERO_SELECT' &&
+    masterState.heroDraft?.stage === 'COMPLETED';
+  const openingMatchId = masterState.matchId;
+  const openingDeadline = useMemo(
+    () => (isOpening ? Date.now() + 3000 : null),
+    [isOpening, openingMatchId],
+  );
+  useEffect(() => {
+    if (openingDeadline === null) return;
+    return scheduleBotStep(() => {
+      setMasterState((current) => {
+        if (
+          current.matchId !== openingMatchId ||
+          current.turnPhase !== 'HERO_SELECT' ||
+          current.heroDraft?.stage !== 'COMPLETED'
+        ) {
+          return current;
+        }
+        return startMatchCombat(current);
+      });
+    }, Math.max(0, openingDeadline - Date.now()));
+  }, [openingDeadline, openingMatchId]);
+
   const offlineBotSeat = offline && !botFault ? getOfflineBotSeat(masterState) : undefined;
   const offlineFrame = offline ? masterState.interruptStack.at(-1) : undefined;
   const nullificationId = offlineFrame?.kind === 'WAIT_NULLIFICATION' ? offlineFrame.id : null;
@@ -310,7 +336,7 @@ export function DevMatchPreview({
         const expired = nullificationDeadline !== null && Date.now() >= nullificationDeadline;
         const next = expired || offlineBotSeat === undefined
           ? finishOfflineNullification(masterState)
-          : runOfflineBotStep(masterState, offlineBotSeat);
+          : runOfflineBotStep(masterState, offlineBotSeat, Math.random, true);
         if (!offlineFrame && masterState.turnPhase !== 'HERO_SELECT') lastBotTurn.current = turn;
         setMasterState(current => current === masterState ? next : current);
       } catch {
@@ -375,7 +401,7 @@ export function DevMatchPreview({
             : selectPlayerHero(prev, 0, heroId);
         if (!offline) next = autoSelectTimedOutHeroes(next);
         if (next.heroDraft?.stage === 'COMPLETED') {
-          next = startMatchCombat(next);
+          next = { ...next, turnPhase: 'HERO_SELECT' };
         }
         return next;
       } catch (err: unknown) {
@@ -542,17 +568,32 @@ export function DevMatchPreview({
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.tagName === 'SELECT' ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
       if (
         showLogDialog ||
         showRulesDialog ||
         showRefereeDialog ||
+        showExitDialog ||
         masterState.turnPhase === 'GAME_OVER'
       ) {
         if (event.key === 'Escape') {
           setShowLogDialog(false);
           setShowRulesDialog(false);
           setShowRefereeDialog(false);
+          setShowExitDialog(false);
         }
+        return;
+      }
+      if (playerView.turnPhase === 'HERO_SELECT') {
         return;
       }
       if (event.key === 'Escape') {
@@ -560,8 +601,24 @@ export function DevMatchPreview({
         setSelection(EMPTY_MATCH_SELECTION);
         return;
       }
+      if (document.querySelector('[data-reordering-hand="true"]')) {
+        if (
+          (event.key >= '1' && event.key <= '9') ||
+          event.key === 'e' ||
+          event.key === 'E'
+        ) {
+          event.preventDefault();
+          return;
+        }
+        if (event.key === 'Enter' || event.key === ' ') {
+          if (target?.closest('button.lkdf-hand-card, [data-hand-card-id]')) {
+            event.preventDefault();
+          }
+          return;
+        }
+      }
       if (event.key >= '1' && event.key <= '9') {
-        const card = playerView.players[0]?.handCards?.[Number(event.key) - 1];
+        const card = orderHand(playerView.matchId, playerView.players[0]?.handCards ?? [])[Number(event.key) - 1];
         if (card) {
           event.preventDefault();
           handleToggleCard(card.id);
@@ -579,12 +636,22 @@ export function DevMatchPreview({
         return;
       }
       if (event.key === 'Enter' || event.key === ' ') {
+        if (event.defaultPrevented) {
+          return;
+        }
         const btn = document.querySelector<HTMLButtonElement>(
           'button[data-primary-action="true"]:not(:disabled)',
         );
         if (btn) {
           event.preventDefault();
           btn.click();
+          return;
+        }
+        if (
+          event.key === 'Enter' &&
+          target?.closest('button.lkdf-hand-card, [data-hand-card-id] button')
+        ) {
+          event.preventDefault();
         }
       }
     };
@@ -598,6 +665,7 @@ export function DevMatchPreview({
     showLogDialog,
     showRefereeDialog,
     showRulesDialog,
+    showExitDialog,
   ]);
 
   const prompt = describePendingActorPrompt(playerView);
@@ -616,15 +684,25 @@ export function DevMatchPreview({
   const decisionSeconds = playerView.activeInterrupt ? timerConfig.reactionSeconds :
     playerView.turnPhase === 'DISCARD' ? timerConfig.discardSeconds : timerConfig.mainTurnSeconds;
   const phaseDeadlineAt = useMemo(
-    () => offline
-      ? nullificationDeadline === null ? null : new Date(nullificationDeadline).toISOString()
-      : decisionKey === null ? null : new Date(Date.now() + decisionSeconds * 1000).toISOString(),
-    [decisionKey, decisionSeconds, isPaused, nullificationDeadline, offline],
+    () => {
+      if (openingDeadline !== null) {
+        return new Date(openingDeadline).toISOString();
+      }
+      if (offline) {
+        return nullificationDeadline === null
+          ? null
+          : new Date(nullificationDeadline).toISOString();
+      }
+      return decisionKey === null
+        ? null
+        : new Date(Date.now() + decisionSeconds * 1000).toISOString();
+    },
+    [decisionKey, decisionSeconds, isPaused, nullificationDeadline, openingDeadline, offline],
   );
 
   // Tự động xử lý khi hết giờ (0s) trong bản xem thử cục bộ để không bị treo
   useEffect(() => {
-    if (offline || isPaused || !phaseDeadlineAt || masterState.turnPhase === 'GAME_OVER') {
+    if (offline || isOpening || isPaused || !phaseDeadlineAt || masterState.turnPhase === 'GAME_OVER') {
       return undefined;
     }
     const deadlineMs = Date.parse(phaseDeadlineAt);
@@ -639,7 +717,7 @@ export function DevMatchPreview({
           if (prev.turnPhase === 'HERO_SELECT') {
             let next = autoSelectTimedOutHeroes(prev);
             if (next.heroDraft?.stage === 'COMPLETED') {
-              next = startMatchCombat(next);
+              next = { ...next, turnPhase: 'HERO_SELECT' };
             }
             return next;
           }
@@ -671,30 +749,20 @@ export function DevMatchPreview({
     return () => {
       window.clearTimeout(timer);
     };
-  }, [isPaused, masterState.turnPhase, offline, phaseDeadlineAt]);
+  }, [isOpening, isPaused, masterState.turnPhase, offline, phaseDeadlineAt]);
 
   return (
     <section className="relative flex h-screen w-screen min-h-0 min-w-0 flex-col overflow-hidden bg-[#090807] text-[#EFE6D5]">
       <MatchSettings
         topRightExtra={
-          <button
-            type="button"
-            title="Tự động bỏ qua cơ hội Vô Giải Khả Kích toàn bàn"
-            aria-pressed={autoSkipNullify}
-            onClick={() => handleToggleAutoSkipNullify(!autoSkipNullify)}
-            className={`cursor-pointer rounded-lg border px-2 py-1 text-[11px] leading-tight font-semibold whitespace-nowrap transition-colors ${
-              autoSkipNullify
-                ? 'border-[#D99B26] bg-[#D99B26]/20 text-[#FDE68A]'
-                : 'border-[#9A7B4F]/60 bg-[#14100D]/95 text-[#D1D5DB] hover:border-[#D99B26]'
-            }`}
-          >
-            <span className="hidden lg:inline">
-              {autoSkipNullify ? '✓ Tự bỏ qua Vô Giải' : 'Tự bỏ qua Vô Giải'}
-            </span>
-            <span className="lg:hidden">
-              {autoSkipNullify ? '✓ Bỏ Vô Giải' : 'Bỏ Vô Giải'}
-            </span>
-          </button>
+          <MatchQuickHudPills
+            autoSkipNullification={autoSkipNullify}
+            onToggleAutoSkip={handleToggleAutoSkipNullify}
+            actionLogCount={playerView.actionLog.length}
+            onOpenLog={() => setShowLogDialog(true)}
+            onOpenRules={() => setShowRulesDialog(true)}
+            onOpenReferee={!offline ? () => setShowRefereeDialog(true) : undefined}
+          />
         }
       >
         <div className="mb-3 flex flex-wrap items-center gap-4">
@@ -777,7 +845,7 @@ export function DevMatchPreview({
               name={previewStage === 'HERO_SELECT' ? 'crown' : 'saber-slash'}
               size={12}
             />
-            <span className="hidden sm:inline whitespace-nowrap shrink-0">
+            <span className="whitespace-nowrap shrink-0">
               <span className="lg:hidden">
                 {previewStage === 'HERO_SELECT' ? 'Chọn tướng' : 'Đánh bài'}
               </span>
@@ -786,7 +854,7 @@ export function DevMatchPreview({
               </span>
             </span>
           </button>
-          <span className="font-mono-num hidden sm:inline shrink-0 whitespace-nowrap text-[#B5A792] tabular-nums">
+          <span className="font-mono-num shrink-0 whitespace-nowrap text-[#B5A792] tabular-nums">
             Rút: {playerView.drawPileCount}
           </span>
         </div>
@@ -798,9 +866,10 @@ export function DevMatchPreview({
             aria-label="Hiệu ứng âm thanh"
             aria-pressed={soundEnabled}
             onClick={() => setSoundEnabled(enabled => !enabled)}
-            className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-[#9A7B4F]/40 bg-[#14100D]/90 px-2 py-1 text-[11px] font-medium text-[#EFE6D5] hover:border-[#D99B26] xl:px-2.5 xl:text-xs"
+            className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-[#9A7B4F]/40 bg-[#14100D]/90 px-2.5 py-1 text-[11px] font-medium text-[#EFE6D5] hover:border-[#D99B26] xl:text-xs"
           >
             <GameIcon name={soundEnabled ? 'ui:volume-on' : 'ui:volume-off'} size={13} />
+            <span className="lg:hidden">Âm thanh</span>
             <span className="hidden lg:inline">Hiệu ứng âm thanh</span>
           </button>
           <button
@@ -808,47 +877,18 @@ export function DevMatchPreview({
             aria-label="Nhạc nền"
             aria-pressed={musicEnabled}
             onClick={() => setMusicEnabled(enabled => !enabled)}
-            className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-[#9A7B4F]/40 bg-[#14100D]/90 px-2 py-1 text-[11px] font-medium text-[#EFE6D5] hover:border-[#D99B26] xl:px-2.5 xl:text-xs"
+            className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-[#9A7B4F]/40 bg-[#14100D]/90 px-2.5 py-1 text-[11px] font-medium text-[#EFE6D5] hover:border-[#D99B26] xl:text-xs"
           >
             <GameIcon name={musicEnabled ? 'ui:volume-on' : 'ui:volume-off'} size={13} />
             <span>Nhạc nền</span>
           </button>
           <button
             type="button"
-            onClick={() => setShowLogDialog(true)}
-            className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-[#9A7B4F]/40 bg-[#14100D]/90 px-2 py-1 text-[11px] font-medium text-[#EFE6D5] hover:border-[#D99B26] xl:px-2.5 xl:text-xs"
-          >
-            <GameIcon name="scroll-unfurled" size={13} className="text-[#D99B26]" />
-            <span>Nhật ký</span>
-            <span className="font-mono-num rounded bg-[#272D35] px-1 py-0 text-[10px] font-bold text-[#FDE68A] tabular-nums">
-              {playerView.actionLog.length}
-            </span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setShowRulesDialog(true)}
-            className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-[#9A7B4F]/40 bg-[#14100D]/90 px-2 py-1 text-[11px] font-medium text-[#EFE6D5] hover:border-[#D99B26] xl:px-2.5 xl:text-xs"
-          >
-            <GameIcon name="ui:book-open" size={13} />
-            <span>
-              Luật <span className="hidden xl:inline">&amp; Phím tắt</span>
-            </span>
-          </button>
-          {!offline ? <button
-            type="button"
-            onClick={() => setShowRefereeDialog(true)}
-            className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-[#CA9A48]/50 bg-[#D99B26]/12 px-2 py-1 text-[11px] font-semibold text-[#FDE68A] hover:bg-[#D99B26]/22 xl:px-2.5 xl:text-xs"
-          >
-            <GameIcon name="scales" size={13} />
-            Trọng tài
-          </button> : null}
-          <button
-            type="button"
-            onClick={() => offline ? exitDialog.current?.showModal() : onExitPreview()}
-            className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-[#9A7B4F]/40 bg-[#14100D]/90 px-2 py-1 text-[11px] font-medium text-[#FCA5A5] hover:border-[#DC2626] xl:px-2.5 xl:text-xs"
+            onClick={() => (offline ? setShowExitDialog(true) : onExitPreview())}
+            className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-[#9A7B4F]/40 bg-[#14100D]/90 px-2.5 py-1 text-[11px] font-medium text-[#FCA5A5] hover:border-[#DC2626] xl:text-xs"
           >
             <GameIcon name="ui:undo" size={13} />
-            {offline ? 'Về menu' : 'Thoát'}
+            <span>{offline ? 'Về menu' : 'Thoát'}</span>
           </button>
         </div>
       </MatchSettings>
@@ -913,14 +953,35 @@ export function DevMatchPreview({
       /> : null}
 
       {offline ? (
-        <dialog ref={exitDialog} aria-labelledby="offline-exit-title" className="m-auto w-sm max-w-[calc(100vw-2rem)] rounded-lg border border-[#9A7B4F] bg-[#14100D] p-5 text-[#EFE6D5] backdrop:bg-black/65">
-          <h2 id="offline-exit-title" className="text-lg font-semibold">Rời ván tập?</h2>
-          <p className="my-3 text-sm">Tiến độ ván này sẽ mất khi bạn về menu.</p>
-          <div className="flex justify-end gap-3">
-            <button autoFocus type="button" onClick={() => exitDialog.current?.close()} className="rounded border border-[#9A7B4F] px-3 py-2">Ở lại ván</button>
-            <button type="button" onClick={onExitPreview} className="rounded bg-[#9E2B25] px-3 py-2">Về menu</button>
-          </div>
-        </dialog>
+        <GuofengModalShell
+          open={showExitDialog}
+          onClose={() => setShowExitDialog(false)}
+          ariaLabelledBy="offline-exit-title"
+          icon="ui:door-open"
+          title="Rời ván tập?"
+          maxWidthClass="max-w-sm"
+          footer={
+            <>
+              <button
+                autoFocus
+                type="button"
+                onClick={() => setShowExitDialog(false)}
+                className="lkdf-bronze-pill cursor-pointer rounded-lg px-3.5 py-2 text-xs font-semibold"
+              >
+                Ở lại ván
+              </button>
+              <button
+                type="button"
+                onClick={onExitPreview}
+                className="cursor-pointer rounded-lg border border-[#E6BE6C]/45 bg-[#9E2B25] px-3.5 py-2 text-xs font-bold text-[#FFF5EC] hover:bg-[#B8322B]"
+              >
+                Về menu
+              </button>
+            </>
+          }
+        >
+          <p className="text-sm text-[#E8DCC8]">Tiến độ ván này sẽ mất khi bạn về menu.</p>
+        </GuofengModalShell>
       ) : null}
 
       {botFault ? (

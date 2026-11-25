@@ -50,10 +50,17 @@ export interface SeatCardProps {
   ) => void;
 }
 
+const PASSIVE_SKILL_ID_PATTERN =
+  /^(pao_xiao|kong_cheng|ma_shu|ji_zhi|qi_cai|jiu_yuan|ying_zi|qian_xun|lian_ying|xiao_ji|wu_shuang|bi_yue|tian_du|ke_ji)$/;
+
+export function isPassiveSkillId(skillId: string): boolean {
+  return PASSIVE_SKILL_ID_PATTERN.test(skillId);
+}
+
 function getInitials(name: string): string {
   const parts = name.trim().split(/\s+/);
   if (parts.length === 0 || !parts[0]) {
-    return 'LK';
+    return 'TQ';
   }
   if (parts.length === 1) {
     return parts[0].slice(0, 2).toUpperCase();
@@ -164,7 +171,28 @@ export function SeatCard({
   });
   const delayedItems = openCards.filter(item => item.sourceId.includes(':delayed:'));
 
-  const isDying = playerView.turnPhase !== 'HERO_SELECT' && player.alive && player.hp <= 0;
+  const isHeroSelectPhase = playerView.turnPhase === 'HERO_SELECT';
+  const isSeatReady = Boolean(playerView.heroDraft?.readySeats.includes(player.seatIndex));
+  const isDying = !isHeroSelectPhase && player.alive && player.hp <= 0;
+  const isLuoYiActive =
+    !isHeroSelectPhase &&
+    playerView.turnPhase !== 'GAME_OVER' &&
+    isCurrentTurnOwner &&
+    Boolean(playerView.turnFlags?.luoYiActive);
+  const isKongChengActive =
+    !isHeroSelectPhase &&
+    player.alive &&
+    player.heroId === 'zhuge_liang' &&
+    player.handCount === 0;
+  const isQianXunActive =
+    !isHeroSelectPhase &&
+    player.alive &&
+    player.heroId === 'lu_xun';
+  const isReactingSeat =
+    !isHeroSelectPhase &&
+    playerView.turnPhase !== 'GAME_OVER' &&
+    isActiveActor &&
+    !isCurrentTurnOwner;
 
   return (
     <div
@@ -172,7 +200,9 @@ export function SeatCard({
       data-seat-name={player.displayName}
       data-faction={hero?.faction}
       data-turn-owner={isCurrentTurnOwner ? 'true' : undefined}
-      data-active-turn={isActiveActor ? 'true' : undefined}
+      data-reacting-seat={isReactingSeat ? 'true' : undefined}
+      data-active-turn={isCurrentTurnOwner && isActiveActor ? 'true' : undefined}
+      data-luoyi-active={isLuoYiActive ? 'true' : undefined}
       data-dying={isDying ? 'true' : undefined}
       data-hp-impact={hpImpact ? (hpImpact.delta < 0 ? 'damage' : 'heal') : undefined}
       data-recoil={recoilVector ? recoilVector.id : undefined}
@@ -193,6 +223,7 @@ export function SeatCard({
           ? (e) => {
               if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
+                e.stopPropagation();
                 onSelectTarget?.(player.seatIndex);
               }
             }
@@ -212,8 +243,8 @@ export function SeatCard({
                 ? 'cursor-pointer border-[#E6BE6C] hover:bg-[#1A212E] shadow-[0_0_14px_rgba(230,190,108,0.28)]'
                 : isCurrentTurnOwner
                   ? 'border-[#FBBF24] ring-2 ring-[#E6BE6C]/85 shadow-[0_0_18px_rgba(230,190,108,0.38)]'
-                  : isActiveActor
-                    ? 'border-[#F97316] ring-1 ring-[#F97316]/80 shadow-[0_0_14px_rgba(249,115,22,0.34)]'
+                  : isReactingSeat
+                    ? 'border-[#38BDF8] ring-1 ring-[#38BDF8]/80 shadow-[0_0_14px_rgba(56,189,248,0.34)]'
                     : isInspectedHero
                       ? 'border-[#E6BE6C] ring-1 ring-[#E6BE6C]/55'
                       : 'border-[#94A3B8]/38',
@@ -332,17 +363,28 @@ export function SeatCard({
                 className={[
                   'inline-flex shrink-0 items-center gap-0.5 rounded px-1 py-0 text-[8px] leading-[13px] font-extrabold uppercase shadow-sm',
                   isCurrentTurnOwner && isActiveActor
-                    ? 'border border-[#FBBF24]/85 bg-[#D99B26]/28 text-[#FEF08A]'
+                    ? 'border border-[#FBBF24]/90 bg-[#D99B26]/32 text-[#FEF08A]'
                     : isCurrentTurnOwner
-                      ? 'border border-[#E6BE6C]/55 bg-[#D99B26]/14 text-[#F6DFA8]'
-                      : 'border border-[#FB923C]/85 bg-[#9A3412]/70 text-[#FFEDD5]',
+                      ? 'border border-[#E6BE6C]/60 bg-[#D99B26]/16 text-[#F6DFA8]'
+                      : 'border border-[#38BDF8]/85 bg-[#0C4A6E]/85 text-[#E0F2FE]',
                 ].join(' ')}
               >
-                {isCurrentTurnOwner && isActiveActor
-                  ? '🚩 Lượt'
-                  : isCurrentTurnOwner
-                    ? '🚩 Chờ'
-                    : '⚡ Phản ứng'}
+                {isCurrentTurnOwner && isActiveActor ? (
+                  <>
+                    <GameIcon name="ui:flag" size={9} />
+                    <span>Lượt</span>
+                  </>
+                ) : isCurrentTurnOwner ? (
+                  <>
+                    <GameIcon name="ui:flag" size={9} />
+                    <span>Chờ</span>
+                  </>
+                ) : (
+                  <>
+                    <GameIcon name="ui:zap" size={9} />
+                    <span>Phản ứng</span>
+                  </>
+                )}
               </span>
             ) : null}
           </div>
@@ -375,20 +417,27 @@ export function SeatCard({
             {canInspectSeatHero ? (
               <button
                 type="button"
+                data-seat-inspect={player.seatIndex}
+                data-inspected-trigger={isInspectedHero ? 'true' : undefined}
                 onClick={(e) => {
                   e.stopPropagation();
                   onInspectHero?.(player.seatIndex);
                 }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.stopPropagation();
+                  }
+                }}
                 title={`Xem kỹ năng tướng ${hero?.nameVi ?? ''}`}
                 aria-label={`Xem kỹ năng tướng ${hero?.nameVi ?? ''}`}
                 className={[
-                  'inline-flex h-4 w-4 cursor-pointer items-center justify-center rounded border text-[9px] font-extrabold transition-colors',
+                  'inline-flex h-6 w-6 min-h-[24px] min-w-[24px] shrink-0 cursor-pointer items-center justify-center rounded-md border transition-colors',
                   isInspectedHero
-                    ? 'border-[#FDE68A] bg-[#E6BE6C] text-[#11151D]'
-                    : 'border-[#94A3B8]/40 bg-[#0D1016]/85 text-[#E5E7EB] hover:border-[#E6BE6C]',
+                    ? 'border-[#FDE68A] bg-gradient-to-b from-[#E6BE6C] to-[#B88B3A] text-[#140F0C] shadow-[0_0_10px_rgba(230,190,108,0.45)]'
+                    : 'border-[#806345]/75 bg-[#1B1410]/92 text-[#E6BE6C] hover:border-[#E6BE6C] hover:bg-[#2A1F17] hover:text-[#FDE68A]',
                 ].join(' ')}
               >
-                ⓘ
+                <GameIcon name="ui:info" size={12} />
               </button>
             ) : null}
           </div>
@@ -417,8 +466,13 @@ export function SeatCard({
               </span>
             </>
           ) : (
-            <span className="truncate text-[10.5px] font-medium text-[#9CA3AF]">
-              Đang chọn tướng
+            <span
+              className={[
+                'truncate text-[10.5px] font-medium',
+                isSeatReady ? 'text-[#86EFAC]' : 'text-[#9CA3AF]',
+              ].join(' ')}
+            >
+              {isSeatReady ? 'Đã chốt tướng' : 'Đang chọn tướng…'}
             </span>
           )}
           <span
@@ -430,21 +484,83 @@ export function SeatCard({
         </div>
       </div>
 
-      {/* Hàng 3: Kỹ năng tướng gọn */}
+      {/* Hàng 3: Kỹ năng tướng gọn + Trạng thái sống (Lỏa Y / Không Thành / Khiêm Tốn) */}
       {hero && (
         <div className="relative z-10 flex flex-wrap gap-0.5">
-          {hero.skills.map(skill => (
-            <button key={skill.id} type="button" className="lkdf-hero-skill-label"
-              data-passive-skill={/^(pao_xiao|kong_cheng|ma_shu|ji_zhi|qi_cai|jiu_yuan|ying_zi|qian_xun|lian_ying|xiao_ji|wu_shuang|bi_yue)$/.test(skill.id) || undefined}
-              data-hover-name={skill.nameVi} data-hover-description={skill.descriptionVi}
-              onClick={event => event.stopPropagation()}>{skill.nameVi}</button>
-          ))}
+          {hero.skills.map((skill) => {
+            const isPassive = isPassiveSkillId(skill.id) || undefined;
+            const isLuoYiChip = skill.id === 'luo_yi' && isLuoYiActive;
+            const isKongChengChip = skill.id === 'kong_cheng' && isKongChengActive;
+            const isQianXunChip = skill.id === 'qian_xun' && isQianXunActive;
+            const statusClass = isLuoYiChip
+              ? 'inline-flex items-center gap-0.5 border-[#FB923C]! bg-[#7C2D12]! text-[#FFEDD5]! shadow-[0_0_8px_rgba(249,115,22,0.55)]'
+              : isKongChengChip
+                ? 'inline-flex items-center gap-0.5 border-[#34D399]! bg-[#065F46]! text-[#D1FAE5]! shadow-[0_0_8px_rgba(16,185,129,0.45)]'
+                : isQianXunChip
+                  ? 'inline-flex items-center gap-0.5 border-[#6EE7B7]! bg-[#064E3B]! text-[#A7F3D0]!'
+                  : '';
+            const labelContent = (
+              <>
+                {isLuoYiChip ? <GameIcon name="broadsword" size={9} /> : null}
+                {isKongChengChip ? <GameIcon name="shield" size={9} /> : null}
+                {isQianXunChip ? <GameIcon name="bordered-shield" size={9} /> : null}
+                <span>{isLuoYiChip ? 'Lỏa Y +1 ST' : skill.nameVi}</span>
+              </>
+            );
+            const hoverTitle = isLuoYiChip
+              ? 'Lỏa Y đang kích hoạt: +1 sát thương cho Sát và Quyết Đấu trong lượt này'
+              : isKongChengChip
+                ? 'Không Thành đang kích hoạt: Miễn nhiễm Sát và Quyết Đấu khi 0 bài tay'
+                : isQianXunChip
+                  ? 'Khiêm Tốn: Miễn nhiễm Thuận Thủ Khiên Dương và Lạc Bất Tư Thục'
+                  : undefined;
+            if (canClick || !canInspectSeatHero) {
+              return (
+                <span
+                  key={skill.id}
+                  className={`lkdf-hero-skill-label ${statusClass} ${canClick ? 'pointer-events-none' : ''}`}
+                  data-passive-skill={isPassive}
+                  data-kong-cheng={isKongChengChip ? 'true' : undefined}
+                  data-qian-xun={isQianXunChip ? 'true' : undefined}
+                  data-hover-name={isLuoYiChip ? 'Lỏa Y +1 ST' : skill.nameVi}
+                  data-hover-description={hoverTitle ?? skill.descriptionVi}
+                >
+                  {labelContent}
+                </span>
+              );
+            }
+            return (
+              <button
+                key={skill.id}
+                type="button"
+                className={`lkdf-hero-skill-label cursor-pointer hover:border-[#E6BE6C] ${statusClass}`}
+                data-passive-skill={isPassive}
+                data-kong-cheng={isKongChengChip ? 'true' : undefined}
+                data-qian-xun={isQianXunChip ? 'true' : undefined}
+                data-inspected-trigger={isInspectedHero ? 'true' : undefined}
+                data-hover-name={isLuoYiChip ? 'Lỏa Y +1 ST' : skill.nameVi}
+                data-hover-description={hoverTitle ?? skill.descriptionVi}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onInspectHero?.(player.seatIndex);
+                }}
+              >
+                {labelContent}
+              </button>
+            );
+          })}
         </div>
       )}
 
       {/* Hàng 4: Ngọc sinh lực + Bot/Mất mạng + Số bài úp */}
-      <div className="lkdf-battle-seat-summary relative z-10 mt-0.5 flex items-center justify-between gap-1">
-        <HpJadeMeter hp={player.hp} maxHp={player.maxHp} size="sm" />
+      <div className="lkdf-battle-seat-summary relative z-10 mt-0.5 flex items-center justify-between gap-1.5">
+        {isHeroSelectPhase && player.maxHp <= 0 ? (
+          <span className="truncate text-[10px] font-medium text-[#94A3B8]">
+            {isSeatReady ? 'Chờ người khác…' : 'Chưa chốt tướng'}
+          </span>
+        ) : (
+          <HpJadeMeter hp={player.hp} maxHp={player.maxHp} size="sm" />
+        )}
 
         <div className="flex items-center gap-1 shrink-0">
           {player.isBotTakeover ? (
@@ -464,23 +580,29 @@ export function SeatCard({
               <GameIcon name="ui:wifi-off" size={10} />
             </span>
           ) : null}
-          <div
-            className="inline-flex items-center gap-1 rounded border border-[#94A3B8]/35 bg-[#0B0E14]/90 px-1.5 py-0.5"
-            data-motion-hand-count
-            title={`Đang cầm ${player.handCount} lá bài trên tay`}
-          >
-            <CardBack size="xs" />
-            <span className="font-mono-num text-[clamp(10px,0.9cqw,11.5px)] font-extrabold text-[#F4EFE6] tabular-nums">
-              {player.handCount}
+          {isHeroSelectPhase ? (
+            <span className="inline-flex items-center rounded border border-[#94A3B8]/25 bg-[#0B0E14]/80 px-1.5 py-0.5 text-[9.5px] font-medium text-[#9CA3AF]">
+              Chờ chia bài…
             </span>
-          </div>
+          ) : (
+            <div
+              className="inline-flex items-center gap-1 rounded border border-[#94A3B8]/35 bg-[#0B0E14]/90 px-1.5 py-0.5"
+              data-motion-hand-count
+              title={`Đang cầm ${player.handCount} lá bài trên tay`}
+            >
+              <CardBack size="xs" />
+              <span className="font-mono-num text-[clamp(10px,0.9cqw,11.5px)] font-extrabold text-[#F4EFE6] tabular-nums">
+                {player.handCount}
+              </span>
+            </div>
+          )}
 
         </div>
       </div>
 
-      {/* Hàng 5: Trang bị đang mặc — chỉ hiện khi có đồ; >= 3 món tự xếp 2 cột gọn để không đội chiều cao */}
+      {/* Hàng 5: Trang bị đang mặc — chỉ hiện khi có đồ; xếp 2 cột gọn khi nhiều đồ để không đội chiều cao */}
       {equippedItems.length > 0 ? (() => {
-        const compactEquipGrid = equippedItems.length >= 3;
+        const compactEquipGrid = compact ? equippedItems.length >= 2 : equippedItems.length >= 3;
         return (
           <div
             className={
@@ -493,25 +615,16 @@ export function SeatCard({
               const artUrl = getCardArtUrl(item.card.cardKey);
               const active = inspectedCardSourceId === item.sourceId;
               const red = isCardRed(item.card);
-              return (
-                <button
-                  key={slot}
-                  type="button"
-                  data-equipment-slot={slot}
-                  {...cardHover(item.card)}
-                  aria-label={`${label} · ${item.card.nameVi}`}
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    onInspectCard?.(item.card, item.sourceId, item.sourceLabel);
-                  }}
-                  className={[
-                    compactEquipGrid ? 'h-[19px] text-[9.5px]' : 'h-[21px] text-[10px]',
-                    'flex w-full min-w-0 cursor-pointer items-center gap-1 overflow-hidden rounded border px-1 text-left leading-none transition-colors',
-                    active
-                      ? 'border-[#FDE68A] bg-[#E6BE6C]/22 ring-1 ring-[#FDE68A]/55'
-                      : 'border-[#B89352]/40 bg-[#0B0E14]/92 hover:border-[#E6BE6C]',
-                  ].join(' ')}
-                >
+              const chipClass = [
+                compactEquipGrid ? 'h-[18px] text-[9.5px]' : 'h-[20px] text-[10px]',
+                'lkdf-seat-equip-chip flex w-full min-w-0 items-center gap-1 overflow-hidden rounded border px-1 text-left leading-none transition-colors',
+                canClick ? 'pointer-events-none' : 'cursor-pointer',
+                active
+                  ? 'border-[#FDE68A] bg-[#E6BE6C]/22 ring-1 ring-[#FDE68A]/55'
+                  : 'border-[#B89352]/40 bg-[#0B0E14]/92 hover:border-[#E6BE6C]',
+              ].join(' ');
+              const content = (
+                <>
                   {artUrl ? (
                     <img
                       src={artUrl}
@@ -539,6 +652,35 @@ export function SeatCard({
                   <span className="min-w-0 flex-1 truncate font-semibold text-[#F5EBD6]">
                     {item.card.nameVi}
                   </span>
+                </>
+              );
+              if (canClick) {
+                return (
+                  <div
+                    key={slot}
+                    data-equipment-slot={slot}
+                    aria-label={`${label} · ${item.card.nameVi}`}
+                    className={chipClass}
+                  >
+                    {content}
+                  </div>
+                );
+              }
+              return (
+                <button
+                  key={slot}
+                  type="button"
+                  data-equipment-slot={slot}
+                  data-inspected-trigger={active ? 'true' : undefined}
+                  {...cardHover(item.card)}
+                  aria-label={`${label} · ${item.card.nameVi}`}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onInspectCard?.(item.card, item.sourceId, item.sourceLabel);
+                  }}
+                  className={chipClass}
+                >
+                  {content}
                 </button>
               );
             })}
@@ -553,22 +695,15 @@ export function SeatCard({
             const artUrl = getCardArtUrl(item.card.cardKey);
             const active = inspectedCardSourceId === item.sourceId;
             const red = isCardRed(item.card);
-            return (
-              <button
-                key={item.sourceId}
-                {...cardHover(item.card)}
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onInspectCard?.(item.card, item.sourceId, item.sourceLabel);
-                }}
-                className={[
-                  'inline-flex h-[21px] w-full min-w-0 cursor-pointer items-center gap-1 rounded border px-1.5 text-left transition-colors',
-                  active
-                    ? 'border-[#FDE68A] bg-[#E6BE6C]/25 ring-1 ring-[#FDE68A]/55'
-                    : 'border-[#D99B26]/55 bg-[#2A1B0C]/90 hover:border-[#FBBF24]',
-                ].join(' ')}
-              >
+            const scrollClass = [
+              'lkdf-seat-equip-chip inline-flex h-[20px] w-full min-w-0 items-center gap-1 rounded border px-1.5 text-left transition-colors',
+              canClick ? 'pointer-events-none' : 'cursor-pointer',
+              active
+                ? 'border-[#FDE68A] bg-[#E6BE6C]/25 ring-1 ring-[#FDE68A]/55'
+                : 'border-[#D99B26]/55 bg-[#2A1B0C]/90 hover:border-[#FBBF24]',
+            ].join(' ');
+            const content = (
+              <>
                 {artUrl ? (
                   <img
                     src={artUrl}
@@ -591,6 +726,28 @@ export function SeatCard({
                 <span className="min-w-0 flex-1 truncate text-[10px] font-bold leading-tight text-[#FDE68A]">
                   {item.shortLabel}
                 </span>
+              </>
+            );
+            if (canClick) {
+              return (
+                <div key={item.sourceId} className={scrollClass}>
+                  {content}
+                </div>
+              );
+            }
+            return (
+              <button
+                key={item.sourceId}
+                data-inspected-trigger={active ? 'true' : undefined}
+                {...cardHover(item.card)}
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onInspectCard?.(item.card, item.sourceId, item.sourceLabel);
+                }}
+                className={scrollClass}
+              >
+                {content}
               </button>
             );
           })}

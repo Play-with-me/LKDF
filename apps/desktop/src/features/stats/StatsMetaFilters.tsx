@@ -1,5 +1,6 @@
 import type { ReactElement } from 'react';
 import { GameIcon } from '../../components/icons/index.js';
+import { GuofengPillSelect } from '../../components/ui/GuofengPillSelect.js';
 import type {
   HeroFaction,
   HeroId,
@@ -81,8 +82,33 @@ export function StatsMetaFilters({
     });
   };
 
+  const playerOptions = [
+    { value: '', label: 'Tất cả người chơi' },
+    ...(meta?.players ?? []).map((player) => ({
+      value: player.userId,
+      label: `${player.displayName}${currentUserId && player.userId === currentUserId ? ' (Bạn)' : ''}`,
+    })),
+  ];
+
+  const identityOptions = [
+    { value: '', label: 'Tất cả thân phận' },
+    ...(meta?.identities ?? []).map((identity) => ({
+      value: identity.id,
+      label: identity.nameVi,
+    })),
+  ];
+
+  const heroOptions = [
+    { value: '', label: 'Tất cả 25 tướng' },
+    ...(meta?.heroes ?? []).map((hero) => ({
+      value: hero.id,
+      label: hero.nameVi,
+      detail: hero.factionLabelVi,
+    })),
+  ];
+
   return (
-    <header className="shrink-0 border-b border-[#94A3B8]/25 bg-[#10141B]/92 px-4 py-3 backdrop-blur-md">
+    <header className="shrink-0 border-b border-[#806345]/55 bg-[#16110E]/94 px-4 py-3 backdrop-blur-md">
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-3 min-w-0">
         {/* Hàng 1: Tiêu đề và nút điều hướng */}
         <div className="flex flex-wrap items-center justify-between gap-2 min-w-0">
@@ -90,16 +116,16 @@ export function StatsMetaFilters({
             <button
               type="button"
               onClick={onBack}
-              className="inline-flex items-center gap-1.5 rounded-md border border-[#3B424C] bg-[#14171A] px-3 py-1.5 text-sm font-medium text-[#F3F4F6] transition-colors duration-150 hover:border-[#D99B26] hover:text-[#F4EFE6] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D99B26]"
+              className="lkdf-bronze-pill inline-flex cursor-pointer items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium text-[#F5EBD6] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E6BE6C]"
             >
-              <span aria-hidden="true">←</span>
+              <GameIcon name="ui:arrow-left" size={14} className="text-[#E6BE6C]" />
               <span>Quay lại</span>
             </button>
             <div className="min-w-0">
-              <h1 className="truncate text-lg font-bold tracking-tight text-[#F3F4F6]">
+              <h1 className="font-serif-title truncate text-lg font-bold tracking-tight text-[#F5EBD6]">
                 Thống Kê &amp; Lịch Sử Ván Đấu
               </h1>
-              <p className="truncate text-xs text-[#9CA3AF]">
+              <p className="truncate text-xs text-[#D5C3A5]">
                 Số liệu thực tế từ máy chủ theo Người chơi, Thân Phận và 25 Tướng
               </p>
             </div>
@@ -111,13 +137,13 @@ export function StatsMetaFilters({
                 type="button"
                 onClick={handleToggleMine}
                 aria-pressed={isMyFilterActive}
-                className={`inline-flex cursor-pointer items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D99B26] ${
+                className={`inline-flex cursor-pointer items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E6BE6C] ${
                   isMyFilterActive
-                    ? 'border-[#D99B26] bg-[#C83E37]/20 text-[#F4EFE6]'
-                    : 'border-[#3B424C] bg-[#14171A] text-[#F3F4F6] hover:border-[#D99B26]'
+                    ? 'border-[#E6BE6C] bg-[#6C2521] text-[#FFF8ED]'
+                    : 'border-[#806345]/80 bg-[#1F1712] text-[#F5EBD6] hover:border-[#E6BE6C]'
                 }`}
               >
-                <GameIcon name="ui:user" size={14} />
+                <GameIcon name="ui:user" size={14} className="text-[#E6BE6C]" />
                 <span>{isMyFilterActive ? 'Đang lọc: Của tôi' : 'Chỉ xem của tôi'}</span>
               </button>
             ) : null}
@@ -126,9 +152,13 @@ export function StatsMetaFilters({
               type="button"
               onClick={onRefresh}
               disabled={isLoading}
-              className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-[#3B424C] bg-[#14171A] px-3 py-1.5 text-sm font-medium text-[#F3F4F6] transition-colors duration-150 hover:border-[#D99B26] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D99B26]"
+              className="lkdf-bronze-pill inline-flex cursor-pointer items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium text-[#F5EBD6] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E6BE6C]"
             >
-              <GameIcon name="ui:refresh" size={14} className={isLoading ? 'animate-spin' : ''} />
+              <GameIcon
+                name="ui:refresh"
+                size={14}
+                className={isLoading ? 'animate-spin text-[#E6BE6C]' : 'text-[#E6BE6C]'}
+              />
               <span>{isLoading ? 'Đang tải...' : 'Tải lại thống kê'}</span>
             </button>
           </div>
@@ -136,85 +166,54 @@ export function StatsMetaFilters({
 
         {/* Hàng 2: 3 Bộ lọc Người chơi / Thân phận / Tướng */}
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 lg:grid-cols-4 min-w-0">
-          <label className="flex flex-col gap-1 min-w-0">
-            <span className="text-xs font-medium text-[#9CA3AF]">Người chơi</span>
-            <select
-              aria-label="Lọc theo người chơi"
-              value={filter.userId ?? ''}
-              onChange={(event) => {
-                const value = event.target.value;
-                onChangeFilter({
-                  ...filter,
-                  userId: value === '' ? null : value,
-                });
-              }}
-              className="w-full rounded-md border border-[#3B424C] bg-[#14171A] px-2.5 py-1.5 text-sm text-[#F3F4F6] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D99B26]"
-            >
-              <option value="">Tất cả người chơi</option>
-              {(meta?.players ?? []).map((player) => (
-                <option key={player.userId} value={player.userId}>
-                  {player.displayName}
-                  {currentUserId && player.userId === currentUserId ? ' (Bạn)' : ''}
-                </option>
-              ))}
-            </select>
-          </label>
+          <GuofengPillSelect
+            label="Người chơi"
+            ariaLabel="Lọc theo người chơi"
+            value={filter.userId ?? ''}
+            options={playerOptions}
+            onChange={(value) =>
+              onChangeFilter({
+                ...filter,
+                userId: value === '' ? null : value,
+              })
+            }
+          />
 
-          <label className="flex flex-col gap-1 min-w-0">
-            <span className="text-xs font-medium text-[#9CA3AF]">Thân phận</span>
-            <select
-              aria-label="Lọc theo thân phận"
-              value={filter.identity ?? ''}
-              onChange={(event) => {
-                const value = event.target.value;
-                onChangeFilter({
-                  ...filter,
-                  identity: value === '' ? null : (value as IdentityRole),
-                });
-              }}
-              className="w-full rounded-md border border-[#3B424C] bg-[#14171A] px-2.5 py-1.5 text-sm text-[#F3F4F6] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D99B26]"
-            >
-              <option value="">Tất cả thân phận</option>
-              {(meta?.identities ?? []).map((identity) => (
-                <option key={identity.id} value={identity.id}>
-                  {identity.nameVi}
-                </option>
-              ))}
-            </select>
-          </label>
+          <GuofengPillSelect
+            label="Thân phận"
+            ariaLabel="Lọc theo thân phận"
+            value={filter.identity ?? ''}
+            options={identityOptions}
+            onChange={(value) =>
+              onChangeFilter({
+                ...filter,
+                identity: value === '' ? null : (value as IdentityRole),
+              })
+            }
+          />
 
-          <label className="flex flex-col gap-1 min-w-0">
-            <span className="text-xs font-medium text-[#9CA3AF]">Tướng (25 tướng)</span>
-            <select
-              aria-label="Lọc theo tướng"
-              value={filter.heroId ?? ''}
-              onChange={(event) => {
-                const value = event.target.value;
-                onChangeFilter({
-                  ...filter,
-                  heroId: value === '' ? null : (value as HeroId),
-                });
-              }}
-              className="w-full rounded-md border border-[#3B424C] bg-[#14171A] px-2.5 py-1.5 text-sm text-[#F3F4F6] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D99B26]"
-            >
-              <option value="">Tất cả 25 tướng</option>
-              {(meta?.heroes ?? []).map((hero) => (
-                <option key={hero.id} value={hero.id}>
-                  [{hero.factionLabelVi}] {hero.nameVi}
-                </option>
-              ))}
-            </select>
-          </label>
+          <GuofengPillSelect
+            label="Tướng (25 tướng)"
+            ariaLabel="Lọc theo tướng"
+            value={filter.heroId ?? ''}
+            options={heroOptions}
+            onChange={(value) =>
+              onChangeFilter({
+                ...filter,
+                heroId: value === '' ? null : (value as HeroId),
+              })
+            }
+          />
 
           <div className="flex items-end min-w-0">
             <button
               type="button"
               onClick={onResetFilters}
               disabled={!hasActiveFilter}
-              className="inline-flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-md border border-[#3B424C] bg-[#14171A] px-3 py-1.5 text-sm font-medium text-[#F3F4F6] transition-colors duration-150 hover:border-[#C83E37] hover:text-[#F4EFE6] disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D99B26]"
+              className="lkdf-bronze-pill inline-flex min-h-9 w-full cursor-pointer items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium text-[#F5EBD6] hover:border-[#C83E37] hover:text-[#FFF8ED] disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E6BE6C]"
             >
-              <GameIcon name="ui:undo" size={14} />
-              Xóa bộ lọc
+              <GameIcon name="ui:undo" size={14} className="text-[#E6BE6C]" />
+              <span>Xóa bộ lọc</span>
             </button>
           </div>
         </div>
@@ -225,15 +224,15 @@ export function StatsMetaFilters({
             className="flex flex-wrap items-center gap-2 pt-0.5 text-xs"
             aria-label="Bộ lọc đang áp dụng"
           >
-            <span className="font-medium text-[#D99B26]">Đang lọc theo:</span>
+            <span className="font-semibold text-[#E6BE6C]">Đang lọc theo:</span>
             {selectedPlayerName !== null ? (
               <button
                 type="button"
                 onClick={() => onChangeFilter({ ...filter, userId: null })}
-                className="inline-flex items-center gap-1.5 rounded-full border border-[#D99B26]/60 bg-[#14171A] px-2.5 py-0.5 text-[#F3F4F6] hover:border-[#C83E37] focus-visible:outline-2 focus-visible:outline-[#D99B26]"
+                className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-[#C89B4B]/70 bg-[#1F1712] px-2.5 py-0.5 text-[#F5EBD6] hover:border-[#C83E37] focus-visible:outline-2 focus-visible:outline-[#E6BE6C]"
               >
                 <span>Người chơi: {selectedPlayerName}</span>
-                <span aria-hidden="true" className="text-[#9CA3AF]">
+                <span aria-hidden="true" className="text-[#D5C3A5]">
                   ×
                 </span>
               </button>
@@ -243,10 +242,10 @@ export function StatsMetaFilters({
               <button
                 type="button"
                 onClick={() => onChangeFilter({ ...filter, identity: null })}
-                className="inline-flex items-center gap-1.5 rounded-full border border-[#D99B26]/60 bg-[#14171A] px-2.5 py-0.5 text-[#F3F4F6] hover:border-[#C83E37] focus-visible:outline-2 focus-visible:outline-[#D99B26]"
+                className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-[#C89B4B]/70 bg-[#1F1712] px-2.5 py-0.5 text-[#F5EBD6] hover:border-[#C83E37] focus-visible:outline-2 focus-visible:outline-[#E6BE6C]"
               >
                 <span>Thân phận: {selectedIdentityName}</span>
-                <span aria-hidden="true" className="text-[#9CA3AF]">
+                <span aria-hidden="true" className="text-[#D5C3A5]">
                   ×
                 </span>
               </button>
@@ -256,7 +255,7 @@ export function StatsMetaFilters({
               <button
                 type="button"
                 onClick={() => onChangeFilter({ ...filter, heroId: null })}
-                className="inline-flex items-center gap-1.5 rounded-full border border-[#D99B26]/60 bg-[#14171A] px-2.5 py-0.5 text-[#F3F4F6] hover:border-[#C83E37] focus-visible:outline-2 focus-visible:outline-[#D99B26]"
+                className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-[#C89B4B]/70 bg-[#1F1712] px-2.5 py-0.5 text-[#F5EBD6] hover:border-[#C83E37] focus-visible:outline-2 focus-visible:outline-[#E6BE6C]"
               >
                 {selectedHero ? (
                   <span
@@ -267,7 +266,7 @@ export function StatsMetaFilters({
                 <span>
                   Tướng: {selectedHero ? selectedHero.nameVi : filter.heroId}
                 </span>
-                <span aria-hidden="true" className="text-[#9CA3AF]">
+                <span aria-hidden="true" className="text-[#D5C3A5]">
                   ×
                 </span>
               </button>

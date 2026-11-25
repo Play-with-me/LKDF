@@ -1,3 +1,4 @@
+import { orderHand } from './handOrder.js';
 import { readDevicePreference, writeDevicePreference } from '../../lib/devicePreferences.js';
 import type {
   GameAction,
@@ -12,7 +13,7 @@ import { useGameAmbience } from '../../lib/useGameAmbience.js';
 import type { RoomViewerPayload, UserProfile } from '../../lib/types.js';
 import { createRoomWsClient } from '../../lib/wsClient.js';
 import type { RoomWsClient, WsConnectionStatus } from '../../lib/wsClient.js';
-import { MatchSettings } from './MatchSettings.js';
+import { MatchQuickHudPills, MatchSettings } from './MatchSettings.js';
 import { GameIcon } from '../../components/icons/index.js';
 import { ActionLogDialog } from './ActionLogDialog.js';
 import { GameOverSummaryModal } from './GameOverSummaryModal.js';
@@ -506,7 +507,7 @@ export function MatchScreen({
         return;
       }
 
-      if (!playerView) {
+      if (!playerView || playerView.turnPhase === 'HERO_SELECT') {
         return;
       }
 
@@ -516,12 +517,29 @@ export function MatchScreen({
         return;
       }
 
+      if (document.querySelector('[data-reordering-hand="true"]')) {
+        if (
+          (event.key >= '1' && event.key <= '9') ||
+          event.key === 'e' ||
+          event.key === 'E'
+        ) {
+          event.preventDefault();
+          return;
+        }
+        if (event.key === 'Enter' || event.key === ' ') {
+          if (target?.closest('button.lkdf-hand-card, [data-hand-card-id]')) {
+            event.preventDefault();
+          }
+          return;
+        }
+      }
+
       if (event.key >= '1' && event.key <= '9') {
         const index = Number(event.key) - 1;
         const selfPlayer = playerView.players.find(
           (p) => p.seatIndex === playerView.viewerSeatIndex,
         );
-        const card = selfPlayer?.handCards?.[index];
+        const card = orderHand(playerView.matchId, selfPlayer?.handCards ?? [])[index];
         if (card) {
           event.preventDefault();
           handleToggleCard(card.id);
@@ -529,25 +547,34 @@ export function MatchScreen({
         return;
       }
 
-      if (event.key === 'e' || event.key === 'E') {
-        if (
-          playerView.turnPhase === 'PLAY' &&
-          playerView.currentTurnSeat === playerView.viewerSeatIndex &&
-          !playerView.activeInterrupt
-        ) {
-          event.preventDefault();
-          handleEndPlayPhase();
-        }
+      if (
+        (event.key === 'e' || event.key === 'E') &&
+        playerView.turnPhase === 'PLAY' &&
+        playerView.currentTurnSeat === playerView.viewerSeatIndex &&
+        !playerView.activeInterrupt
+      ) {
+        event.preventDefault();
+        handleEndPlayPhase();
         return;
       }
 
       if (event.key === 'Enter' || event.key === ' ') {
+        if (event.defaultPrevented) {
+          return;
+        }
         const primaryButton = document.querySelector<HTMLButtonElement>(
           'button[data-primary-action="true"]:not(:disabled)',
         );
         if (primaryButton) {
           event.preventDefault();
           primaryButton.click();
+          return;
+        }
+        if (
+          event.key === 'Enter' &&
+          target?.closest('button.lkdf-hand-card, [data-hand-card-id] button')
+        ) {
+          event.preventDefault();
         }
       }
     };
@@ -575,24 +602,14 @@ export function MatchScreen({
     <section className="relative flex h-screen w-screen min-h-0 min-w-0 flex-col overflow-hidden bg-[#090807] text-[#EFE6D5]">
       <MatchSettings
         topRightExtra={
-            <button
-            type="button"
-            title="Tự động bỏ qua cơ hội Vô Giải Khả Kích toàn bàn"
-            aria-pressed={autoSkipNullification}
-            onClick={() => handleToggleAutoSkipNullification(!autoSkipNullification)}
-            className={`cursor-pointer rounded-lg border px-2 py-1 text-[11px] leading-tight font-semibold whitespace-nowrap transition-colors ${
-              autoSkipNullification
-                ? 'border-[#D99B26] bg-[#D99B26]/20 text-[#FDE68A]'
-                : 'border-[#9A7B4F]/60 bg-[#14100D]/95 text-[#D1D5DB] hover:border-[#D99B26]'
-            }`}
-          >
-            <span className="hidden lg:inline">
-              {autoSkipNullification ? '✓ Tự bỏ qua Vô Giải' : 'Tự bỏ qua Vô Giải'}
-            </span>
-            <span className="lg:hidden">
-              {autoSkipNullification ? '✓ Bỏ Vô Giải' : 'Bỏ Vô Giải'}
-            </span>
-          </button>
+          <MatchQuickHudPills
+            autoSkipNullification={autoSkipNullification}
+            onToggleAutoSkip={handleToggleAutoSkipNullification}
+            actionLogCount={playerView?.actionLog.length ?? 0}
+            onOpenLog={() => setShowLogDialog(true)}
+            onOpenRules={() => setShowRulesDialog(true)}
+            onOpenReferee={() => setShowRefereeDialog(true)}
+          />
         }
       >
         <div className="mb-3 flex flex-wrap items-center gap-4">
@@ -616,8 +633,8 @@ export function MatchScreen({
           <span className="font-mono-num shrink-0 font-semibold text-[#EFE6D5] tabular-nums">
             Vòng {roundNumber}
           </span>
-          <span className="hidden sm:inline text-[#4B5563]">·</span>
-          <span className="font-mono-num hidden sm:inline shrink-0 text-[#B5A792] tabular-nums">
+          <span className="text-[#4B5563]">·</span>
+          <span className="font-mono-num shrink-0 text-[#B5A792] tabular-nums">
             Rút: {drawPileCount}
           </span>
         </div>
@@ -631,47 +648,14 @@ export function MatchScreen({
             onClick={() => {
               void handleToggleSound();
             }}
-            className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-[#9A7B4F]/40 bg-[#14100D]/90 px-2 py-1 text-[11px] font-medium text-[#EFE6D5] hover:border-[#D99B26] disabled:opacity-50 xl:px-2.5 xl:text-xs"
+            className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-[#9A7B4F]/40 bg-[#14100D]/90 px-2.5 py-1 text-[11px] font-medium text-[#EFE6D5] hover:border-[#D99B26] disabled:opacity-50 xl:text-xs"
           >
             <GameIcon
               name={currentUser.preferences.soundEnabled ? 'ui:volume-on' : 'ui:volume-off'}
               size={13}
             />
-            <span className="hidden lg:inline">
-              Hiệu ứng âm thanh
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setShowLogDialog(true)}
-            className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-[#9A7B4F]/40 bg-[#14100D]/90 px-2 py-1 text-[11px] font-medium text-[#EFE6D5] hover:border-[#D99B26] xl:px-2.5 xl:text-xs"
-          >
-            <GameIcon name="scroll-unfurled" size={13} className="text-[#D99B26]" />
-            <span>Nhật ký</span>
-            <span className="font-mono-num rounded bg-[#272D35] px-1 py-0 text-[10px] font-bold text-[#FDE68A] tabular-nums">
-              {playerView?.actionLog.length ?? 0}
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setShowRulesDialog(true)}
-            className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-[#9A7B4F]/40 bg-[#14100D]/90 px-2 py-1 text-[11px] font-medium text-[#EFE6D5] hover:border-[#D99B26] xl:px-2.5 xl:text-xs"
-          >
-            <GameIcon name="ui:book-open" size={13} />
-            <span>
-              Luật <span className="hidden xl:inline">&amp; Phím tắt</span>
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setShowRefereeDialog(true)}
-            className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-[#CA9A48]/50 bg-[#D99B26]/12 px-2 py-1 text-[11px] font-semibold text-[#FDE68A] hover:bg-[#D99B26]/22 xl:px-2.5 xl:text-xs"
-          >
-            <GameIcon name="scales" size={13} />
-            Trọng tài
+            <span className="lg:hidden">Âm thanh</span>
+            <span className="hidden lg:inline">Hiệu ứng âm thanh</span>
           </button>
 
           <button
@@ -680,16 +664,14 @@ export function MatchScreen({
             onClick={() => {
               void handleManualSync();
             }}
-            className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-[#9A7B4F]/40 bg-[#14100D]/90 px-2 py-1 text-[11px] font-medium text-[#D1D5DB] hover:border-[#D99B26] disabled:opacity-50 xl:px-2.5 xl:text-xs"
+            className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-[#9A7B4F]/40 bg-[#14100D]/90 px-2.5 py-1 text-[11px] font-medium text-[#D1D5DB] hover:border-[#D99B26] disabled:opacity-50 xl:text-xs"
           >
             <GameIcon
               name={isSyncing ? 'ui:loader' : 'ui:refresh'}
               size={13}
               className={isSyncing ? 'animate-spin' : ''}
             />
-            <span className="hidden md:inline">
-              {isSyncing ? 'Đồng bộ...' : 'Đồng bộ'}
-            </span>
+            <span>{isSyncing ? 'Đồng bộ...' : 'Đồng bộ'}</span>
           </button>
 
           <button
@@ -698,7 +680,7 @@ export function MatchScreen({
             onClick={() => {
               void handleLeaveRoom();
             }}
-            className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-[#9A7B4F]/40 bg-[#14100D]/90 px-2 py-1 text-[11px] font-medium text-[#FCA5A5] hover:border-[#DC2626] disabled:opacity-50 xl:px-2.5 xl:text-xs"
+            className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-[#9A7B4F]/40 bg-[#14100D]/90 px-2.5 py-1 text-[11px] font-medium text-[#FCA5A5] hover:border-[#DC2626] disabled:opacity-50 xl:text-xs"
           >
             <GameIcon name="ui:door-open" size={13} />
             <span>{isLeavingRoom ? 'Đang rời...' : 'Rời bàn'}</span>
@@ -747,7 +729,7 @@ export function MatchScreen({
         </div>
       ) : (
         <div className="flex flex-1 min-h-0 min-w-0 items-center justify-center p-6">
-          <div className="inline-flex items-center gap-2 rounded-xl border border-[#2D343C] bg-[#1E2328] px-6 py-4 text-sm text-[#D1D5DB]">
+          <div className="inline-flex items-center gap-2 rounded-xl border border-[#806345]/60 bg-[#18120E] px-6 py-4 text-sm text-[#EDE3D2]">
             <GameIcon name="ui:loader" size={16} className="animate-spin text-[#D99B26]" />
             Đang tải trạng thái bàn đấu...
           </div>

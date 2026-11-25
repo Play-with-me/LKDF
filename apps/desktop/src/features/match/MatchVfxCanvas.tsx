@@ -1,5 +1,13 @@
 import { useEffect, useRef, type RefObject } from 'react';
+import type { HeroFaction } from '@lkdf/shared';
 import { prefersReducedMotion } from '../../lib/devicePreferences.js';
+import {
+  VFX_ASSET_SPECS,
+  getCachedVfxImage,
+  preloadVfxAssets,
+  syncVfxCssCustomProperties,
+  type VfxAssetKey,
+} from '../../lib/vfxAssetCatalog.js';
 
 export type VfxKind =
   | 'SAT'
@@ -10,7 +18,12 @@ export type VfxKind =
   | 'VAN_TIEN'
   | 'LIGHTNING'
   | 'DYING'
-  | 'ELIMINATION';
+  | 'ELIMINATION'
+  | 'DISMANTLE'
+  | 'STEAL'
+  | 'SKILL_BURST'
+  | 'SCROLL_SEAL'
+  | 'EQUIP_FORGE';
 
 export interface VfxEvent {
   readonly id: number;
@@ -18,6 +31,7 @@ export interface VfxEvent {
   readonly fromSeat?: number;
   readonly toSeats?: readonly number[];
   readonly nullifyDepth?: number;
+  readonly faction?: HeroFaction;
 }
 
 export interface MatchVfxCanvasProps {
@@ -62,9 +76,17 @@ interface ActiveEffect {
   readonly targets: readonly SeatRect[];
   readonly center: Point;
   readonly nullifyDepth: number;
+  readonly faction?: HeroFaction;
   readonly particles: Particle[];
   readonly lightningPoints?: readonly Point[];
 }
+
+const FACTION_PALETTE: Readonly<Record<HeroFaction, { readonly primary: string; readonly glow: string }>> = {
+  SHU: { primary: '#EF4444', glow: '#FDE68A' },
+  WEI: { primary: '#38BDF8', glow: '#BAE6FD' },
+  WU: { primary: '#34D399', glow: '#A7F3D0' },
+  QUN: { primary: '#FBBF24', glow: '#FEF08A' },
+};
 
 function measureSeat(stage: HTMLElement, stageRect: DOMRect, seatIndex: number): SeatRect | null {
   const el =
@@ -108,18 +130,60 @@ function buildLightningBolt(target: SeatRect): Point[] {
   return pts;
 }
 
+function drawFlipbookFrame(
+  ctx: CanvasRenderingContext2D,
+  assetKey: VfxAssetKey,
+  cx: number,
+  cy: number,
+  drawW: number,
+  drawH: number,
+  progress: number,
+  opts?: { alpha?: number; rotation?: number },
+): boolean {
+  const img = getCachedVfxImage(assetKey);
+  if (!img) return false;
+  const spec = VFX_ASSET_SPECS[assetKey];
+  const isHorizontalStrip = img.naturalWidth >= spec.frameWidth * 2;
+  const totalFrames = isHorizontalStrip
+    ? Math.max(1, Math.round(img.naturalWidth / spec.frameWidth))
+    : 1;
+  const clampedP = Math.max(0, Math.min(0.9999, progress));
+  const frameIdx = Math.min(totalFrames - 1, Math.floor(clampedP * totalFrames));
+  const sw = img.naturalWidth / totalFrames;
+  const sh = img.naturalHeight;
+  const sx = frameIdx * sw;
+
+  ctx.save();
+  ctx.globalAlpha = opts?.alpha ?? 1;
+  ctx.translate(cx, cy);
+  if (opts?.rotation) ctx.rotate(opts.rotation);
+  ctx.drawImage(img, sx, 0, sw, sh, -drawW / 2, -drawH / 2, drawW, drawH);
+  ctx.restore();
+  return true;
+}
+
+function quadBezierPoint(p0: Point, p1: Point, p2: Point, t: number): Point {
+  const mt = 1 - t;
+  return {
+    x: mt * mt * p0.x + 2 * mt * t * p1.x + t * t * p2.x,
+    y: mt * mt * p0.y + 2 * mt * t * p1.y + t * t * p2.y,
+  };
+}
+
 function spawnParticles(
   kind: VfxKind,
+  from: SeatRect | undefined,
   targets: readonly SeatRect[],
   center: Point,
   nullifyDepth: number,
+  faction?: HeroFaction,
 ): Particle[] {
   const particles: Particle[] = [];
   const push = (p: Particle) => {
     if (particles.length < 24) particles.push(p);
   };
 
-  if (kind === 'SAT') {
+  if (kind === 'SAT' || kind === 'DISMANTLE') {
     const t = targets[0] ?? { cx: center.x, cy: center.y, w: 120, h: 80 };
     for (let i = 0; i < 16; i++) {
       const ang = -Math.PI * 0.75 + Math.random() * Math.PI * 1.5;
@@ -131,12 +195,14 @@ function spawnParticles(
         vy: Math.sin(ang) * spd,
         size: 2 + Math.random() * 2.5,
         alpha: 1,
-        color: i % 3 === 0 ? '#FDE68A' : '#E85D4A',
+        color: kind === 'DISMANTLE'
+          ? (i % 2 === 0 ? '#FBBF24' : '#B91C1C')
+          : (i % 3 === 0 ? '#FDE68A' : '#E85D4A'),
         rot: ang,
-        vRot: 0,
+        vRot: (Math.random() - 0.5) * 6,
         life: 0,
         maxLife: 0.28 + Math.random() * 0.14,
-        shape: 'spark',
+        shape: kind === 'DISMANTLE' && i % 2 === 0 ? 'shard' : 'spark',
       });
     }
   } else if (kind === 'THIEM') {
@@ -220,6 +286,70 @@ function spawnParticles(
         shape: 'spark',
       });
     }
+  } else if (kind === 'STEAL') {
+    const origin = from ?? { cx: center.x, cy: center.y, w: 120, h: 80 };
+    const dest = targets[0] ?? { cx: center.x, cy: center.y, w: 120, h: 80 };
+    const mid = { x: (origin.cx + dest.cx) / 2, y: Math.min(origin.cy, dest.cy) - 54 };
+    for (let i = 0; i < 14; i++) {
+      const pt = quadBezierPoint({ x: origin.cx, y: origin.cy }, mid, { x: dest.cx, y: dest.cy }, i / 13);
+      push({
+        x: pt.x + (Math.random() - 0.5) * 10,
+        y: pt.y + (Math.random() - 0.5) * 10,
+        vx: (dest.cx - origin.cx) * 0.18 + (Math.random() - 0.5) * 28,
+        vy: (dest.cy - origin.cy) * 0.18 - 18,
+        size: 2.4 + Math.random() * 2,
+        alpha: 0.95,
+        color: i % 2 === 0 ? '#FDE68A' : '#D99B26',
+        rot: Math.random() * Math.PI,
+        vRot: (Math.random() - 0.5) * 5,
+        life: 0,
+        maxLife: 0.36 + (i / 13) * 0.12,
+        shape: i % 3 === 0 ? 'shard' : 'spark',
+      });
+    }
+  } else if (kind === 'SKILL_BURST') {
+    const t = targets[0] ?? { cx: center.x, cy: center.y, w: 120, h: 80 };
+    const pal = faction ? FACTION_PALETTE[faction] : { primary: '#E6BE6C', glow: '#FDE68A' };
+    for (let i = 0; i < 14; i++) {
+      const ang = (i / 14) * Math.PI * 2;
+      const spd = 55 + Math.random() * 95;
+      push({
+        x: t.cx,
+        y: t.cy,
+        vx: Math.cos(ang) * spd,
+        vy: Math.sin(ang) * spd,
+        size: 2.2 + Math.random() * 2.2,
+        alpha: 0.95,
+        color: i % 2 === 0 ? pal.glow : pal.primary,
+        rot: ang,
+        vRot: (Math.random() - 0.5) * 6,
+        life: 0,
+        maxLife: 0.34 + Math.random() * 0.1,
+        shape: i % 3 === 0 ? 'shard' : 'spark',
+      });
+    }
+  } else if (kind === 'SCROLL_SEAL' || kind === 'EQUIP_FORGE') {
+    const t = targets[0] ?? { cx: center.x, cy: center.y, w: 120, h: 80 };
+    for (let i = 0; i < 12; i++) {
+      const ang = (i / 12) * Math.PI * 2;
+      const spd = 48 + Math.random() * 88;
+      push({
+        x: t.cx + (Math.random() - 0.5) * 20,
+        y: t.cy + (Math.random() - 0.5) * 14,
+        vx: Math.cos(ang) * spd,
+        vy: Math.sin(ang) * spd - (kind === 'EQUIP_FORGE' ? 24 : 0),
+        size: 2.2 + Math.random() * 2,
+        alpha: 0.95,
+        color: kind === 'SCROLL_SEAL'
+          ? (i % 2 === 0 ? '#C084FC' : '#FBBF24')
+          : (i % 2 === 0 ? '#FDE68A' : '#E6BE6C'),
+        rot: ang,
+        vRot: (Math.random() - 0.5) * 6,
+        life: 0,
+        maxLife: 0.36 + Math.random() * 0.1,
+        shape: i % 2 === 0 ? 'shard' : 'spark',
+      });
+    }
   } else if (kind === 'DYING' || kind === 'ELIMINATION') {
     const t = targets[0] ?? { cx: center.x, cy: center.y, w: 120, h: 80 };
     const count = kind === 'ELIMINATION' ? 22 : 14;
@@ -258,6 +388,13 @@ export function MatchVfxCanvas({ stageRef, events, duelSeats }: MatchVfxCanvasPr
     height: 0,
     dpr: 1,
   });
+
+  useEffect(() => {
+    syncVfxCssCustomProperties();
+    if (!prefersReducedMotion()) {
+      preloadVfxAssets();
+    }
+  }, []);
 
   useEffect(() => {
     const stage = stageRef.current;
@@ -302,15 +439,14 @@ export function MatchVfxCanvas({ stageRef, events, duelSeats }: MatchVfxCanvasPr
       return;
     }
 
+    preloadVfxAssets();
     const stageRect = stage.getBoundingClientRect();
     if (stageRect.width <= 0 || stageRect.height <= 0) return;
 
-    // Snapshot duel seat rects once when duelSeats changes
     duelRectsRef.current = duelSeats
       .map((s) => measureSeat(stage, stageRect, s))
       .filter((r): r is SeatRect => r !== null);
 
-    // Queue new events with one-time DOM coordinate snapshots
     const now = performance.now();
     const center = measureCenter(stage, stageRect);
     for (const ev of events) {
@@ -323,13 +459,13 @@ export function MatchVfxCanvas({ stageRef, events, duelSeats }: MatchVfxCanvasPr
         .filter((r): r is SeatRect => r !== null);
 
       const duration =
-        ev.kind === 'HEAL' || ev.kind === 'ELIMINATION'
-          ? 500
-          : ev.kind === 'NAM_MAN' || ev.kind === 'VAN_TIEN'
+        ev.kind === 'HEAL' || ev.kind === 'ELIMINATION' || ev.kind === 'STEAL'
+          ? 480
+          : ev.kind === 'NAM_MAN' || ev.kind === 'VAN_TIEN' || ev.kind === 'LIGHTNING'
             ? 440
-            : ev.kind === 'NULLIFICATION'
+            : ev.kind === 'NULLIFICATION' || ev.kind === 'SKILL_BURST' || ev.kind === 'SCROLL_SEAL' || ev.kind === 'EQUIP_FORGE'
               ? 420
-              : 340;
+              : 380;
 
       effectsRef.current.push({
         id: ev.id,
@@ -340,13 +476,13 @@ export function MatchVfxCanvas({ stageRef, events, duelSeats }: MatchVfxCanvasPr
         targets,
         center,
         nullifyDepth: ev.nullifyDepth ?? 0,
-        particles: spawnParticles(ev.kind, targets, center, ev.nullifyDepth ?? 0),
+        faction: ev.faction,
+        particles: spawnParticles(ev.kind, from, targets, center, ev.nullifyDepth ?? 0, ev.faction),
         lightningPoints:
           ev.kind === 'LIGHTNING' && targets[0] ? buildLightningBolt(targets[0]) : undefined,
       });
     }
 
-    // Prune seenIdsRef if it grows large
     if (seenIdsRef.current.size > 120) {
       const activeIds = new Set(events.map((e) => e.id));
       for (const id of seenIdsRef.current) {
@@ -371,14 +507,17 @@ export function MatchVfxCanvas({ stageRef, events, duelSeats }: MatchVfxCanvasPr
     lastFrameRef.current = performance.now();
 
     const tick = (ts: number) => {
-      const dt = Math.min(0.05, Math.max(0.001, (ts - lastFrameRef.current) / 1000));
-      lastFrameRef.current = ts;
-
       const ctx = canvas.getContext('2d');
-      if (!ctx) {
+      if (!ctx || prefersReducedMotion()) {
+        effectsRef.current = [];
+        duelRectsRef.current = [];
+        if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
         rafRef.current = null;
         return;
       }
+
+      const dt = Math.min(0.05, Math.max(0.001, (ts - lastFrameRef.current) / 1000));
+      lastFrameRef.current = ts;
 
       const { width: stageW, height: stageH, dpr: frameDpr } = stageSizeRef.current;
       ctx.setTransform(frameDpr, 0, 0, frameDpr, 0, 0);
@@ -402,20 +541,19 @@ export function MatchVfxCanvas({ stageRef, events, duelSeats }: MatchVfxCanvasPr
         ctx.roundRect(x, y, w, h, 8);
         ctx.stroke();
 
-        // 4 orbiting ember sparks around the duel seat
         for (let k = 0; k < 4; k++) {
           const phase = ts * 0.003 + (k * Math.PI) / 2;
           const sx = seat.cx + Math.cos(phase) * (w * 0.48);
           const sy = seat.cy + Math.sin(phase) * (h * 0.48);
           ctx.fillStyle = k % 2 === 0 ? '#FDE68A' : '#E85D4A';
           ctx.beginPath();
-          ctx.arc(sx, sy, 2.2, 0, Math.PI * 2);
+          ctx.arc(sx, sy, Math.max(0.5, 2.2), 0, Math.PI * 2);
           ctx.fill();
         }
         ctx.restore();
       }
 
-      // 2. Render & advance discrete VFX effects
+      // 2. Render & advance discrete hybrid flipbook + procedural VFX effects
       const remaining: ActiveEffect[] = [];
       for (const eff of effectsRef.current) {
         const elapsed = Math.max(0, ts - eff.startTime);
@@ -426,35 +564,43 @@ export function MatchVfxCanvas({ stageRef, events, duelSeats }: MatchVfxCanvasPr
         const easeOut = 1 - Math.pow(1 - p, 3);
         const fadeOut = 1 - p;
 
-        if (eff.kind === 'SAT' && eff.targets[0]) {
+        if ((eff.kind === 'SAT' || eff.kind === 'DISMANTLE') && eff.targets[0]) {
           const t = eff.targets[0];
+          const size = eff.kind === 'DISMANTLE' ? 136 : 156;
+          drawFlipbookFrame(ctx, 'vfx-ink-slash', t.cx, t.cy, size, size, p, {
+            alpha: 0.96,
+            rotation: eff.kind === 'DISMANTLE' ? 0.35 : 0,
+          });
           ctx.save();
           ctx.translate(t.cx, t.cy);
-          ctx.rotate(-0.45);
-          ctx.strokeStyle = `rgba(253, 230, 138, ${fadeOut * 0.95})`;
-          ctx.lineWidth = 3.5 * (1 - p * 0.5);
+          ctx.rotate(eff.kind === 'DISMANTLE' ? 0.35 : -0.45);
+          ctx.strokeStyle = `rgba(253, 230, 138, ${fadeOut * 0.9})`;
+          ctx.lineWidth = 3 * (1 - p * 0.5);
           ctx.lineCap = 'round';
           ctx.beginPath();
-          ctx.arc(0, 0, Math.max(0.5, 38 + easeOut * 16), -Math.PI * 0.42, Math.PI * 0.42);
-          ctx.stroke();
-          ctx.strokeStyle = `rgba(232, 93, 74, ${fadeOut * 0.85})`;
-          ctx.lineWidth = 6 * (1 - p * 0.6);
-          ctx.beginPath();
-          ctx.arc(-4, 0, Math.max(0.5, 34 + easeOut * 14), -Math.PI * 0.35, Math.PI * 0.35);
+          ctx.arc(0, 0, Math.max(0.5, 36 + easeOut * 16), -Math.PI * 0.42, Math.PI * 0.42);
           ctx.stroke();
           ctx.restore();
         } else if (eff.kind === 'THIEM' && eff.targets[0]) {
           const t = eff.targets[0];
+          drawFlipbookFrame(ctx, 'vfx-bagua-seal', t.cx, t.cy, 136, 136, p, { alpha: 0.88 });
           ctx.save();
           ctx.translate(t.cx, t.cy);
           ctx.strokeStyle = `rgba(85, 214, 160, ${fadeOut * 0.92})`;
-          ctx.lineWidth = 4 * (1 - p * 0.4);
+          ctx.lineWidth = 3.5 * (1 - p * 0.4);
           ctx.lineCap = 'round';
           ctx.beginPath();
           ctx.arc(0, 0, Math.max(0.5, 32 + easeOut * 12), -Math.PI * 0.65, Math.PI * 0.65);
           ctx.stroke();
           ctx.restore();
+        } else if (eff.kind === 'HEAL') {
+          const targets = eff.targets.length > 0 ? eff.targets : [{ cx: eff.center.x, cy: eff.center.y, w: 120, h: 80 }];
+          for (const t of targets) {
+            drawFlipbookFrame(ctx, 'vfx-peach-bloom', t.cx, t.cy, 146, 146, p, { alpha: 0.94 });
+          }
         } else if (eff.kind === 'NULLIFICATION') {
+          const sealSize = eff.nullifyDepth >= 1 ? 196 : 164;
+          drawFlipbookFrame(ctx, 'vfx-bagua-seal', eff.center.x, eff.center.y, sealSize, sealSize, p, { alpha: 0.95 });
           const maxR = eff.nullifyDepth >= 1 ? 115 : 82;
           const r = Math.max(0.5, 18 + easeOut * maxR);
           ctx.save();
@@ -499,24 +645,106 @@ export function MatchVfxCanvas({ stageRef, events, duelSeats }: MatchVfxCanvasPr
             ctx.stroke();
           }
           ctx.restore();
-        } else if (eff.kind === 'LIGHTNING' && eff.lightningPoints) {
-          ctx.save();
-          if (elapsed < 100) {
-            ctx.fillStyle = `rgba(253, 230, 138, ${(1 - elapsed / 100) * 0.14})`;
-            ctx.fillRect(0, 0, stageW, stageH);
+        } else if (eff.kind === 'LIGHTNING' && eff.targets[0]) {
+          const target = eff.targets[0];
+          drawFlipbookFrame(ctx, 'vfx-thunder-strike', target.cx, target.cy - 68, 148, 196, p, { alpha: 0.98 });
+          if (eff.lightningPoints) {
+            ctx.save();
+            if (elapsed < 100) {
+              ctx.fillStyle = `rgba(253, 230, 138, ${(1 - elapsed / 100) * 0.14})`;
+              ctx.fillRect(0, 0, stageW, stageH);
+            }
+            ctx.strokeStyle = `rgba(192, 132, 252, ${fadeOut * 0.95})`;
+            ctx.lineWidth = 3.5;
+            ctx.shadowColor = '#FDE68A';
+            ctx.shadowBlur = 12;
+            ctx.beginPath();
+            eff.lightningPoints.forEach((pt, idx) => {
+              if (idx === 0) ctx.moveTo(pt.x, pt.y);
+              else ctx.lineTo(pt.x, pt.y);
+            });
+            ctx.stroke();
+            ctx.strokeStyle = `rgba(253, 230, 138, ${fadeOut})`;
+            ctx.lineWidth = 1.6;
+            ctx.stroke();
+            ctx.restore();
           }
-          ctx.strokeStyle = `rgba(192, 132, 252, ${fadeOut * 0.95})`;
-          ctx.lineWidth = 4;
-          ctx.shadowColor = '#FDE68A';
-          ctx.shadowBlur = 12;
+        } else if (eff.kind === 'STEAL' && eff.targets[0]) {
+          const origin = eff.from ? { x: eff.from.cx, y: eff.from.cy } : eff.center;
+          const dest = { x: eff.targets[0].cx, y: eff.targets[0].cy };
+          const mid = { x: (origin.x + dest.x) / 2, y: Math.min(origin.y, dest.y) - 54 };
+          const headT = easeOut;
+          const tailT = Math.max(0, headT - 0.32);
+
+          ctx.save();
+          ctx.strokeStyle = `rgba(253, 230, 138, ${fadeOut * 0.92})`;
+          ctx.lineWidth = 3;
+          ctx.lineCap = 'round';
+          ctx.shadowColor = 'rgba(217, 155, 38, 0.7)';
+          ctx.shadowBlur = 8;
           ctx.beginPath();
-          eff.lightningPoints.forEach((pt, idx) => {
-            if (idx === 0) ctx.moveTo(pt.x, pt.y);
+          const steps = 10;
+          for (let i = 0; i <= steps; i++) {
+            const st = tailT + ((headT - tailT) * i) / steps;
+            const pt = quadBezierPoint(origin, mid, dest, st);
+            if (i === 0) ctx.moveTo(pt.x, pt.y);
             else ctx.lineTo(pt.x, pt.y);
-          });
+          }
           ctx.stroke();
-          ctx.strokeStyle = `rgba(253, 230, 138, ${fadeOut})`;
-          ctx.lineWidth = 1.8;
+
+          const headPt = quadBezierPoint(origin, mid, dest, headT);
+          ctx.fillStyle = `rgba(255, 251, 235, ${fadeOut})`;
+          ctx.beginPath();
+          ctx.arc(headPt.x, headPt.y, Math.max(0.5, 4.5 * (1 - p * 0.4)), 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        } else if (eff.kind === 'SKILL_BURST' && eff.targets[0]) {
+          const t = eff.targets[0];
+          const pal = eff.faction ? FACTION_PALETTE[eff.faction] : { primary: '#E6BE6C', glow: '#FDE68A' };
+          const r1 = Math.max(0.5, 22 + easeOut * 48);
+          const r2 = Math.max(0.5, 14 + easeOut * 34);
+          ctx.save();
+          ctx.globalAlpha = fadeOut * 0.9;
+          ctx.strokeStyle = pal.primary;
+          ctx.lineWidth = 2.6;
+          ctx.beginPath();
+          ctx.arc(t.cx, t.cy, r1, 0, Math.PI * 2);
+          ctx.stroke();
+
+          ctx.strokeStyle = pal.glow;
+          ctx.lineWidth = 1.6;
+          ctx.setLineDash([8, 6]);
+          ctx.beginPath();
+          ctx.arc(t.cx, t.cy, r2, p * 2.5, p * 2.5 + Math.PI * 2);
+          ctx.stroke();
+          ctx.restore();
+        } else if (eff.kind === 'SCROLL_SEAL' && eff.targets[0]) {
+          const t = eff.targets[0];
+          drawFlipbookFrame(ctx, 'vfx-bagua-seal', t.cx, t.cy, 118, 118, p, { alpha: 0.85 });
+          ctx.save();
+          ctx.strokeStyle = `rgba(192, 132, 252, ${fadeOut * 0.88})`;
+          ctx.lineWidth = 2.4;
+          ctx.beginPath();
+          ctx.arc(t.cx, t.cy, Math.max(0.5, 20 + easeOut * 36), 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.restore();
+        } else if (eff.kind === 'EQUIP_FORGE' && eff.targets[0]) {
+          const t = eff.targets[0];
+          const r = Math.max(0.5, 18 + easeOut * 42);
+          ctx.save();
+          ctx.strokeStyle = `rgba(253, 230, 138, ${fadeOut * 0.9})`;
+          ctx.lineWidth = 2.4;
+          ctx.beginPath();
+          ctx.arc(t.cx, t.cy, r, 0, Math.PI * 2);
+          ctx.stroke();
+
+          // Horizontal anvil gleam sweep
+          const gx = t.cx - t.w * 0.4 + easeOut * t.w * 0.8;
+          ctx.strokeStyle = `rgba(255, 251, 235, ${fadeOut * 0.75})`;
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(gx - 14, t.cy - 10);
+          ctx.lineTo(gx + 14, t.cy + 10);
           ctx.stroke();
           ctx.restore();
         } else if ((eff.kind === 'DYING' || eff.kind === 'ELIMINATION') && eff.targets[0]) {
@@ -546,7 +774,7 @@ export function MatchVfxCanvas({ stageRef, events, duelSeats }: MatchVfxCanvasPr
           ctx.fillStyle = pt.color;
           if (pt.shape === 'petal') {
             ctx.beginPath();
-            ctx.ellipse(0, 0, Math.max(0.5, pt.size), Math.max(0.3, pt.size * 0.55), 0, 0, Math.PI * 2);
+            ctx.ellipse(0, 0, Math.max(0.5, pt.size), Math.max(0.5, pt.size * 0.55), 0, 0, Math.PI * 2);
             ctx.fill();
           } else if (pt.shape === 'shard') {
             ctx.beginPath();

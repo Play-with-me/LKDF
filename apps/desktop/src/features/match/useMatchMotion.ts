@@ -1,6 +1,6 @@
+import { getHeroDefinition, type CardInstance, type HeroFaction, type PlayerViewState } from '@lkdf/shared';
 import { prefersReducedMotion } from '../../lib/devicePreferences.js';
 import { useEffect, useRef, useState, type RefObject } from 'react';
-import type { CardInstance, PlayerViewState } from '@lkdf/shared';
 import { getCardArtUrl, getUiAssetUrl } from '../../lib/assetCatalog.js';
 import type { VfxEvent, VfxKind } from './MatchVfxCanvas.js';
 import { getLoggedHeroSkill } from './matchSounds.js';
@@ -36,6 +36,18 @@ type BoardMotion = {
   readonly reduced: boolean;
 };
 
+type EmitVfxFn = (
+  kind: VfxKind,
+  opts?: {
+    fromSeat?: number;
+    toSeats?: readonly number[];
+    nullifyDepth?: number;
+    faction?: HeroFaction;
+  },
+) => void;
+
+const EQUIP_SLOTS = ['weapon', 'armor', 'plusOneHorse', 'minusOneHorse'] as const;
+
 function position(el: HTMLElement, x: number, y: number) {
   el.style.left = x + 'px';
   el.style.top = y + 'px';
@@ -52,9 +64,42 @@ function seatAt(motion: BoardMotion, seatIndex: number) {
     ?? motion.board.querySelector<HTMLElement>('[data-motion-self="' + seatIndex + '"]');
 }
 
+function handAt(motion: BoardMotion, state: PlayerViewState, seatIndex: number) {
+  return (seatIndex === state.viewerSeatIndex ? motion.board.querySelector('.lkdf-hand-row') : null)
+    ?? seatAt(motion, seatIndex);
+}
+
 function animateElement(el: HTMLElement, frames: Keyframe[], options: KeyframeAnimationOptions) {
   const animation = el.animate(frames, options);
   void animation.finished.then(() => el.remove(), () => el.remove());
+}
+
+function buildSwordsIconSvg(): SVGSVGElement {
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('width', '18');
+  svg.setAttribute('height', '18');
+  svg.setAttribute('fill', 'none');
+  svg.setAttribute('stroke', 'currentColor');
+  svg.setAttribute('stroke-width', '2.2');
+  svg.setAttribute('stroke-linecap', 'round');
+  svg.setAttribute('stroke-linejoin', 'round');
+  svg.setAttribute('aria-hidden', 'true');
+  for (const d of [
+    'M14.5 17.5L3 6V3h3l11.5 11.5',
+    'M13 19l6-6',
+    'M16 16l4 4',
+    'M19 21l2-2',
+    'M14.5 6.5L18 3h3v3l-3.5 3.5',
+    'M5 14l4 4',
+    'M7 17l-3 3',
+    'M3 19l2 2',
+  ]) {
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', d);
+    svg.append(path);
+  }
+  return svg;
 }
 
 function showTurnHandoff(motion: BoardMotion, previous: PlayerViewState, state: PlayerViewState) {
@@ -66,6 +111,7 @@ function showTurnHandoff(motion: BoardMotion, previous: PlayerViewState, state: 
   if (!next) return;
   const seat = seatAt(motion, next.seatIndex);
   if (!seat || motion.reduced) return;
+
   const bounds = relativeBounds(motion, seat);
   const outline = document.createElement('span');
   outline.className = 'lkdf-turn-handoff-ring';
@@ -77,6 +123,23 @@ function showTurnHandoff(motion: BoardMotion, previous: PlayerViewState, state: 
     duration: 620,
     easing: 'ease-out',
   });
+
+  // Layer 4: Non-blocking Imperial Gold turn banner when turn changes to viewer
+  if (state.currentTurnSeat === state.viewerSeatIndex) {
+    const banner = document.createElement('div');
+    banner.className = 'lkdf-turn-banner';
+    banner.setAttribute('aria-hidden', 'true');
+    const text = document.createElement('span');
+    text.textContent = 'ĐẾN LƯỢT BẠN';
+    banner.append(buildSwordsIconSvg(), text);
+    motion.layer.append(banner);
+    animateElement(banner, [
+      { opacity: 0, transform: 'translate(-50%, -50%) scale(0.84)' },
+      { opacity: 1, transform: 'translate(-50%, -50%) scale(1.04)', offset: 0.18 },
+      { opacity: 1, transform: 'translate(-50%, -50%) scale(1)', offset: 0.78 },
+      { opacity: 0, transform: 'translate(-50%, -56%) scale(0.96)' },
+    ], { duration: 760, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' });
+  }
 }
 
 function showEquipmentReveal(motion: BoardMotion, seat: HTMLElement, card: CardInstance) {
@@ -95,6 +158,10 @@ function showEquipmentReveal(motion: BoardMotion, seat: HTMLElement, card: CardI
   ], { duration: 1000 });
 }
 
+/**
+ * Face-down transfer token strictly reserved for Nhân Đức & Di Kế (and existing private/public
+ * non-draw hand transfers) to honor exact `.lkdf-motion-transfer` counts in skill-qa.
+ */
 function transferCard(motion: BoardMotion, from: Element, to: Element, card?: CardInstance, delay = 0) {
   if (motion.reduced) return;
   const start = relativeBounds(motion, from);
@@ -120,14 +187,86 @@ function transferCard(motion: BoardMotion, from: Element, to: Element, card?: Ca
   ], { duration: 420, delay, easing: 'ease-out', fill: 'backwards' });
 }
 
+/**
+ * Layer 1: Staggered curved-arc + 3D flip card-back draw flight (.lkdf-draw-flight, 90ms stagger, <240ms/hop).
+ * Never uses `.lkdf-motion-transfer` so Nhân Đức / Di Kế QA counts stay isolated.
+ */
+function launchDrawFlight(motion: BoardMotion, from: Element, to: Element, delay = 0) {
+  if (motion.reduced) return;
+  const start = relativeBounds(motion, from);
+  const end = relativeBounds(motion, to);
+  const token = document.createElement('span');
+  token.className = 'lkdf-draw-flight';
+  const art = getUiAssetUrl('card-back');
+  if (art) {
+    const image = document.createElement('img');
+    image.src = art;
+    image.alt = '';
+    token.append(image);
+  }
+  position(token, start.x + start.width / 2 - 22, start.y + start.height / 2 - 31);
+  const dx = end.x + end.width / 2 - start.x - start.width / 2;
+  const dy = end.y + end.height / 2 - start.y - start.height / 2;
+  const arcDx = dx * 0.52;
+  const arcDy = dy * 0.45 - 26;
+  motion.layer.append(token);
+  animateElement(token, [
+    { opacity: 0, transform: 'perspective(520px) translate3d(0, 0, 0) rotateY(0deg) scale(0.86)' },
+    { opacity: 1, transform: 'perspective(520px) translate3d(0, -6px, 0) rotateY(15deg) scale(0.98)', offset: 0.14 },
+    { opacity: 0.96, transform: `perspective(520px) translate3d(${arcDx}px, ${arcDy}px, 0) rotateY(-88deg) rotate(-5deg) scale(1.06)`, offset: 0.5 },
+    { opacity: 0.92, transform: `perspective(520px) translate3d(${dx}px, ${dy}px, 0) rotateY(0deg) scale(0.76)`, offset: 0.88 },
+    { opacity: 0, transform: `perspective(520px) translate3d(${dx}px, ${dy}px, 0) rotateY(0deg) scale(0.6)` },
+  ], { duration: 230, delay, easing: 'cubic-bezier(0.22, 1, 0.36, 1)', fill: 'backwards' });
+}
+
+/**
+ * Layer 2: Equipment steal/dismantle & delayed scroll flight (.lkdf-equip-flight).
+ */
+function launchEquipFlight(
+  motion: BoardMotion,
+  from: Element,
+  to: Element,
+  card: CardInstance | undefined,
+  variant: 'steal' | 'dismantle' | 'scroll' | 'equip',
+  delay = 0,
+) {
+  if (motion.reduced) return;
+  const start = relativeBounds(motion, from);
+  const end = relativeBounds(motion, to);
+  const token = document.createElement('span');
+  token.className = 'lkdf-equip-flight';
+  token.dataset.flightKind = variant;
+  const art = (card ? getCardArtUrl(card.cardKey) : null) ?? getUiAssetUrl('card-back');
+  if (art) {
+    const image = document.createElement('img');
+    image.src = art;
+    image.alt = '';
+    token.append(image);
+  }
+  position(token, start.x + start.width / 2 - 23, start.y + start.height / 2 - 32);
+  const dx = end.x + end.width / 2 - start.x - start.width / 2;
+  const dy = end.y + end.height / 2 - start.y - start.height / 2;
+  const arcX = dx * 0.5;
+  const arcY = dy * 0.5 - 32;
+  motion.layer.append(token);
+  animateElement(token, [
+    { opacity: 0, transform: 'translate3d(0, 0, 0) scale(0.9)' },
+    { opacity: 1, transform: `translate3d(${arcX}px, ${arcY}px, 0) rotate(${variant === 'dismantle' ? '14deg' : '-8deg'}) scale(1.06)`, offset: 0.48 },
+    { opacity: 0.92, transform: `translate3d(${dx}px, ${dy}px, 0) scale(0.74)`, offset: 0.88 },
+    { opacity: 0, transform: `translate3d(${dx}px, ${dy}px, 0) scale(0.55)` },
+  ], { duration: 240, delay, easing: 'cubic-bezier(0.22, 1, 0.36, 1)', fill: 'backwards' });
+}
+
 // Only explicit public draw results can identify the recipient and quantity.
-const DRAW_RESULT = /^(?:rút|bỏ qua Đột Tập, rút|kích hoạt Lỏa Y, rút|dùng Vô Trung Sinh Hữu rút|kích hoạt (?:Tập Trí|Khổ Nhục|Liên Doanh|Kiêu Cơ|Bế Nguyệt), rút|kích hoạt Chế Hành, bỏ \d+ lá và rút lại|tiêu diệt Phản Tặc, được rút thưởng) (\d+) lá(?: bài| ở pha Rút bài| nhờ Từ Hùng Song Cổ Kiếm| \(\+1 sát thương Sát\/Quyết Đấu\))?\.$/u;
+const DRAW_RESULT = /^(?:rút|bỏ qua Đột Tập, rút|kích hoạt Lỏa Y, rút|phát động Anh Tư, rút|dùng Vô Trung Sinh Hữu rút|kích hoạt (?:Tập Trí|Khổ Nhục|Liên Doanh|Kiêu Cơ|Bế Nguyệt), rút|kích hoạt Chế Hành, bỏ \d+ lá và rút lại|tiêu diệt Phản Tặc, được rút thưởng) (\d+) lá(?: bài| ở pha Rút bài| nhờ Từ Hùng Song Cổ Kiếm| \(\+1 sát thương Sát\/Quyết Đấu\))?\.$/u;
 
 function showDraws(motion: BoardMotion, previous: PlayerViewState, state: PlayerViewState) {
   const pile = motion.board.querySelector('[data-motion-draw-pile]');
   if (!pile || motion.reduced) return;
 
-  let offset = 0;
+  const previousRevealId = previous.publicReveals?.at(-1)?.id ?? 0;
+  const newReveals = state.publicReveals?.filter(item => item.id > previousRevealId).length ?? 0;
+  let offset = Math.min(newReveals, 2) * 320;
   for (const entry of state.actionLog.slice(previous.actionLog.length)) {
     const recipients = state.players.flatMap((player) => {
       const prefix = player.displayName + ' ';
@@ -137,24 +276,51 @@ function showDraws(motion: BoardMotion, previous: PlayerViewState, state: Player
     if (recipients.length !== 1) continue;
 
     const { player, count } = recipients[0]!;
+    if (previous.availableDrawCount && player.seatIndex === state.viewerSeatIndex) continue;
     const seat = seatAt(motion, player.seatIndex);
     const destination = player.seatIndex === state.viewerSeatIndex
       ? motion.board.querySelector('.lkdf-hand-row') ?? seat
       : seat;
     if (!destination) continue;
     for (let index = 0; index < Math.min(count, 8); index += 1) {
-      transferCard(motion, pile, destination, undefined, Math.min(offset, 420));
-      offset += 65;
+      launchDrawFlight(motion, pile, destination, Math.min(offset, 1440));
+      offset += 90;
     }
   }
 }
 
-function showTransfers(motion: BoardMotion, previous: PlayerViewState, state: PlayerViewState) {
+function showTransfers(
+  motion: BoardMotion,
+  previous: PlayerViewState,
+  state: PlayerViewState,
+  emitVfx: EmitVfxFn,
+) {
   showDraws(motion, previous, state);
-  const handAt = (seat: number) =>
-    (seat === state.viewerSeatIndex ? motion.board.querySelector('.lkdf-hand-row') : null)
-    ?? seatAt(motion, seat);
-  for (const line of state.actionLog.slice(previous.actionLog.length)) {
+  const newLogs = state.actionLog.slice(previous.actionLog.length);
+  const latestReveal = state.publicReveals?.at(-1);
+  if (latestReveal?.label.startsWith('Phản Gián')) {
+    const receiver = state.players.find(player => player.seatIndex === latestReveal.seat);
+    const source = motion.board.querySelector('[data-public-card-reveal]') ??
+      motion.board.querySelector('.lkdf-battle-center-stack');
+    if (receiver && source && newLogs
+      .includes(`${receiver.displayName} nhận lá ${latestReveal.card.nameVi} từ Phản Gián.`)) {
+      const destination = seatAt(motion, receiver.seatIndex);
+      if (destination) transferCard(motion, source, destination, latestReveal.card, 550);
+    }
+  }
+  if (latestReveal?.label.endsWith('Lạc Thần') &&
+    latestReveal.id !== previous.publicReveals?.at(-1)?.id &&
+    (latestReveal.card.suit === 'SPADE' || latestReveal.card.suit === 'CLUB')) {
+    const old = previous.players.find(player => player.seatIndex === latestReveal.seat);
+    const current = state.players.find(player => player.seatIndex === latestReveal.seat);
+    const source = motion.board.querySelector('[data-public-card-reveal]') ??
+      motion.board.querySelector('[data-motion-draw-pile]');
+    const destination = seatAt(motion, latestReveal.seat);
+    if (source && destination && old && current && current.handCount > old.handCount) {
+      transferCard(motion, source, destination, latestReveal.card, 500);
+    }
+  }
+  for (const line of newLogs) {
     const gift = /^(.+) dùng (Nhân Đức|Di Kế) giao (\d+) lá bài cho (.+?)(?: và hồi 1 máu)?\.$/u.exec(line);
     if (!gift) continue;
     const senders = state.players.filter(player => player.displayName === gift[1]);
@@ -164,8 +330,8 @@ function showTransfers(motion: BoardMotion, previous: PlayerViewState, state: Pl
     if (!sender || !receiver || sender.seatIndex === receiver.seatIndex) continue;
     const from = gift[2] === 'Di Kế'
       ? seatAt(motion, sender.seatIndex)
-      : handAt(sender.seatIndex);
-    const to = handAt(receiver.seatIndex);
+      : handAt(motion, state, sender.seatIndex);
+    const to = handAt(motion, state, receiver.seatIndex);
     if (!from || !to) continue;
     for (let index = 0; index < Math.min(Number(gift[3]), 8); index++) {
       transferCard(motion, from, to, undefined, index * 70);
@@ -177,7 +343,7 @@ function showTransfers(motion: BoardMotion, previous: PlayerViewState, state: Pl
   if (take?.handPick === 'SELECT' && take.sourceSeat != null && take.id !== state.activeInterrupt?.id) {
     const taker = state.players.find(player => player.seatIndex === take.sourceSeat);
     const owner = state.players.find(player => player.seatIndex === take.targetSeat);
-    if (taker && owner && state.actionLog.slice(previous.actionLog.length)
+    if (taker && owner && newLogs
       .includes(`${taker.displayName} nhận 1 lá úp từ ${owner.displayName}.`)) {
       const hand = taker.seatIndex === state.viewerSeatIndex
         ? motion.board.querySelector('.lkdf-hand-row') ?? seatAt(motion, taker.seatIndex)
@@ -185,6 +351,7 @@ function showTransfers(motion: BoardMotion, previous: PlayerViewState, state: Pl
       if (hand) transferCard(motion, center, hand);
       const ownerSeat = seatAt(motion, owner.seatIndex);
       if (ownerSeat && owner.handCount > 0) transferCard(motion, center, ownerSeat, undefined, 85);
+      emitVfx('STEAL', { fromSeat: owner.seatIndex, toSeats: [taker.seatIndex] });
     }
   }
   const harvest = previous.activeInterrupt;
@@ -197,15 +364,111 @@ function showTransfers(motion: BoardMotion, previous: PlayerViewState, state: Pl
       transferCard(motion, center, hand, removed[0]);
     }
   }
+
+  // Layer 2A: Delayed Scrolls placed or passed clockwise (Lạc Bất Tư Thục / Thiểm Điện)
   for (const player of state.players) {
+    const oldPlayer = previous.players.find((old) => old.seatIndex === player.seatIndex);
     const destination = seatAt(motion, player.seatIndex);
-    if (!destination) continue;
+    if (!destination || !oldPlayer) continue;
     for (const card of player.delayedScrolls) {
-      if (card.cardKey !== 'thiem_dien') continue;
+      const alreadyOnSelf = oldPlayer.delayedScrolls.some((entry) => entry.id === card.id);
+      if (alreadyOnSelf) continue;
+
       const oldHost = previous.players.find((old) => old.seatIndex !== player.seatIndex &&
         old.delayedScrolls.some((entry) => entry.id === card.id));
-      const host = oldHost && seatAt(motion, oldHost.seatIndex);
-      if (host) transferCard(motion, host, destination, card);
+      const fromSeat = oldHost ? oldHost.seatIndex : state.currentTurnSeat;
+      const fromEl = seatAt(motion, fromSeat) ?? center;
+      launchEquipFlight(motion, fromEl, destination, card, 'scroll');
+      emitVfx('SCROLL_SEAL', { fromSeat, toSeats: [player.seatIndex] });
+    }
+  }
+
+  // Layer 2B: Equipment Steal / Dismantle & Hand Dismantle detection
+  const prevInterrupt = previous.activeInterrupt;
+  const interruptChanged = prevInterrupt !== null && prevInterrupt.id !== state.activeInterrupt?.id;
+  const wasStealInterrupt = interruptChanged && prevInterrupt?.kind === 'PICK_TARGET_CARD' && Boolean(prevInterrupt.stealing);
+  const wasDismantleInterrupt = interruptChanged && (
+    (prevInterrupt?.kind === 'PICK_TARGET_CARD' && !prevInterrupt.stealing) ||
+    prevInterrupt?.kind === 'ASK_HAN_BANG_KIEM' ||
+    prevInterrupt?.kind === 'ASK_KY_LAN_CUNG'
+  );
+  const wasCollateralInterrupt = interruptChanged && prevInterrupt?.kind === 'WAIT_COLLATERAL_SAT';
+
+  for (const player of state.players) {
+    const old = previous.players.find((entry) => entry.seatIndex === player.seatIndex);
+    const victimSeatEl = seatAt(motion, player.seatIndex);
+    if (!old || !victimSeatEl || !player.alive) continue;
+
+    let handledEquipLoss = false;
+    for (const slot of EQUIP_SLOTS) {
+      const oldEq = old.equipments[slot];
+      const nowEq = player.equipments[slot];
+      if (!oldEq || nowEq) continue;
+
+      if (wasStealInterrupt && prevInterrupt?.targetSeat === player.seatIndex && prevInterrupt.sourceSeat != null) {
+        const takerSeat = prevInterrupt.sourceSeat;
+        const toEl = handAt(motion, state, takerSeat);
+        if (toEl) launchEquipFlight(motion, victimSeatEl, toEl, oldEq, 'steal');
+        emitVfx('STEAL', { fromSeat: player.seatIndex, toSeats: [takerSeat] });
+        handledEquipLoss = true;
+      } else if (
+        wasCollateralInterrupt &&
+        slot === 'weapon' &&
+        prevInterrupt?.attackerSeat === player.seatIndex &&
+        prevInterrupt.sourceSeat != null &&
+        state.discardPileTop?.id !== oldEq.id
+      ) {
+        const casterSeat = prevInterrupt.sourceSeat;
+        const toEl = handAt(motion, state, casterSeat);
+        if (toEl) launchEquipFlight(motion, victimSeatEl, toEl, oldEq, 'steal');
+        emitVfx('STEAL', { fromSeat: player.seatIndex, toSeats: [casterSeat] });
+        handledEquipLoss = true;
+      } else if (wasDismantleInterrupt && prevInterrupt?.targetSeat === player.seatIndex) {
+        launchEquipFlight(motion, victimSeatEl, center, oldEq, 'dismantle');
+        emitVfx('DISMANTLE', { fromSeat: prevInterrupt.sourceSeat ?? undefined, toSeats: [player.seatIndex] });
+        handledEquipLoss = true;
+      } else {
+        // Check explicit steal/dismantle actionLogs for this equipment
+        const stealLog = newLogs.find((line) =>
+          line.includes(`lấy trang bị ${oldEq.nameVi} từ ${player.displayName}`),
+        );
+        if (stealLog) {
+          const taker = state.players.find((p) => stealLog.startsWith(p.displayName + ' '));
+          const toEl = taker ? handAt(motion, state, taker.seatIndex) : null;
+          if (taker && toEl) {
+            launchEquipFlight(motion, victimSeatEl, toEl, oldEq, 'steal');
+            emitVfx('STEAL', { fromSeat: player.seatIndex, toSeats: [taker.seatIndex] });
+            handledEquipLoss = true;
+          }
+        } else if (
+          newLogs.some((line) =>
+            line.includes(`hủy trang bị ${oldEq.nameVi} của ${player.displayName}`),
+          )
+        ) {
+          launchEquipFlight(motion, victimSeatEl, center, oldEq, 'dismantle');
+          emitVfx('DISMANTLE', { toSeats: [player.seatIndex] });
+          handledEquipLoss = true;
+        }
+      }
+    }
+
+    if (!handledEquipLoss && player.handCount < old.handCount) {
+      if (wasDismantleInterrupt && prevInterrupt?.targetSeat === player.seatIndex) {
+        emitVfx('DISMANTLE', { fromSeat: prevInterrupt.sourceSeat ?? undefined, toSeats: [player.seatIndex] });
+      } else if (
+        wasStealInterrupt &&
+        prevInterrupt?.targetSeat === player.seatIndex &&
+        prevInterrupt.handPick !== 'SELECT' &&
+        prevInterrupt.sourceSeat != null
+      ) {
+        emitVfx('STEAL', { fromSeat: player.seatIndex, toSeats: [prevInterrupt.sourceSeat] });
+      } else if (
+        newLogs.some((line) =>
+          line.includes(`hủy 1 lá bài trên tay của ${player.displayName}`),
+        )
+      ) {
+        emitVfx('DISMANTLE', { toSeats: [player.seatIndex] });
+      }
     }
   }
 }
@@ -295,8 +558,20 @@ function detectPublicActionArcs(
       } else if (action.startsWith('dùng Trượng Bát Xà Mâu đánh Sát vào ')) {
         const targetName = action.slice('dùng Trượng Bát Xà Mâu đánh Sát vào '.length).replace(/\.$/, '');
         pushArc(actor.seatIndex, findSeatByName(targetName), 'attack');
-      } else if (action.startsWith('dùng Đào cứu ')) {
-        const rest = action.slice('dùng Đào cứu '.length);
+      } else if (
+        action.startsWith('dùng Võ Thánh đánh Sát vào ') ||
+        action.startsWith('dùng Long Đảm đánh Sát vào ')
+      ) {
+        const marker = action.startsWith('dùng Võ Thánh đánh Sát vào ')
+          ? 'dùng Võ Thánh đánh Sát vào '
+          : 'dùng Long Đảm đánh Sát vào ';
+        const rawTargets = action.slice(marker.length).replace(/\.$/, '');
+        for (const name of rawTargets.split(', ')) {
+          pushArc(actor.seatIndex, findSeatByName(name), 'attack');
+        }
+      } else if (action.startsWith('dùng Đào cứu ') || action.startsWith('dùng Cấp Cứu hóa Đào cứu ')) {
+        const marker = action.startsWith('dùng Đào cứu ') ? 'dùng Đào cứu ' : 'dùng Cấp Cứu hóa Đào cứu ';
+        const rest = action.slice(marker.length);
         const targetName = rest.split(' (')[0]?.replace(/\.$/, '') ?? '';
         const targetSeat = findSeatByName(targetName);
         if (targetSeat != null && targetSeat !== actor.seatIndex) {
@@ -457,7 +732,7 @@ export function useMatchMotion(
       shakeRafRef.current = requestAnimationFrame(stepShake);
     };
 
-    const emitVfx = (kind: VfxKind, opts?: { fromSeat?: number; toSeats?: readonly number[]; nullifyDepth?: number }) => {
+    const emitVfx: EmitVfxFn = (kind, opts) => {
       if (motion.reduced) return;
       vfxSeqRef.current += 1;
       const ev: VfxEvent = { id: vfxSeqRef.current, kind, ...opts };
@@ -504,6 +779,9 @@ export function useMatchMotion(
       stampSeqRef.current += 1;
       const sid = stampSeqRef.current;
       setSkillStampBySeat((prev) => ({ ...prev, [seatIndex]: { id: sid, label } }));
+      const actorPlayer = state.players.find((p) => p.seatIndex === seatIndex);
+      const faction = actorPlayer?.heroId ? getHeroDefinition(actorPlayer.heroId).faction : undefined;
+      emitVfx('SKILL_BURST', { toSeats: [seatIndex], faction });
       const t = window.setTimeout(() => {
         pending.current.delete(t);
         setSkillStampBySeat((prev) => {
@@ -512,7 +790,7 @@ export function useMatchMotion(
           delete next[seatIndex];
           return next;
         });
-      }, 1100);
+      }, 1360);
       pending.current.add(t);
     };
 
@@ -557,7 +835,8 @@ export function useMatchMotion(
       pending.current.add(expireTimeout);
     }
 
-    // Detect Guofeng VFX from new actionLog lines
+    // Detect Guofeng VFX & Hero Skill Stamps from new actionLog lines
+    const stampedSkillsThisTurn = new Set<string>();
     const newLogs = state.actionLog.slice(previous.actionLog.length);
     for (const line of newLogs) {
       if (line.includes('Nam Man Nhập Xâm')) {
@@ -587,16 +866,69 @@ export function useMatchMotion(
         .sort((first, second) => second.displayName.length - first.displayName.length);
       const actor = actors[0];
       if (actor && actor.displayName !== actors[1]?.displayName) {
-        const skillName = getLoggedHeroSkill(line.slice(actor.displayName.length + 1));
-        if (skillName) triggerSkillStamp(actor.seatIndex, skillName);
+        const skillName = getLoggedHeroSkill(line.slice(actor.displayName.length + 1), actor.heroId);
+        if (skillName === 'Cứu Viện') {
+          const sunQuan =
+            state.players.find((p) => p.heroId === 'sun_quan' && line.includes(`cứu ${p.displayName}`)) ??
+            state.players.find((p) => p.heroId === 'sun_quan');
+          if (sunQuan) {
+            stampedSkillsThisTurn.add(`${sunQuan.seatIndex}:Cứu Viện`);
+            triggerSkillStamp(sunQuan.seatIndex, 'Cứu Viện');
+          }
+        } else if (skillName) {
+          stampedSkillsThisTurn.add(`${actor.seatIndex}:${skillName}`);
+          triggerSkillStamp(actor.seatIndex, skillName);
+        }
       }
+    }
+
+    // Safe fallback skill stamps from interrupt/flag transitions if not explicitly logged
+    if (
+      previous.activeInterrupt?.kind === 'ASK_FAN_KUI' &&
+      state.activeInterrupt?.kind === 'PICK_TARGET_CARD' &&
+      state.activeInterrupt.id.startsWith('fankui_pick_')
+    ) {
+      const seatIdx = state.activeInterrupt.sourceSeat ?? previous.activeInterrupt.targetSeat;
+      if (!stampedSkillsThisTurn.has(`${seatIdx}:Phản Quỷ`)) {
+        triggerSkillStamp(seatIdx, 'Phản Quỷ');
+      }
+    }
+    if (
+      previous.activeInterrupt?.kind === 'WAIT_TU_XI' &&
+      state.activeInterrupt?.kind === 'PICK_TARGET_CARD' &&
+      state.activeInterrupt.id.startsWith('tu_xi_take')
+    ) {
+      const seatIdx = state.activeInterrupt.sourceSeat ?? previous.activeInterrupt.targetSeat;
+      if (!stampedSkillsThisTurn.has(`${seatIdx}:Đột Tập`)) {
+        triggerSkillStamp(seatIdx, 'Đột Tập');
+      }
+    }
+    if (
+      state.activeInterrupt &&
+      state.activeInterrupt.id !== previous.activeInterrupt?.id &&
+      (state.activeInterrupt.kind === 'WAIT_DODGE' || state.activeInterrupt.kind === 'WAIT_DUEL_SAT') &&
+      (state.activeInterrupt.requiredCount ?? 1) >= 2
+    ) {
+      const luBu = state.players.find((p) => p.heroId === 'lu_bu' && p.alive);
+      if (luBu && !stampedSkillsThisTurn.has(`${luBu.seatIndex}:Vô Song`)) {
+        triggerSkillStamp(luBu.seatIndex, 'Vô Song');
+      }
+    }
+    const turnActor = state.players.find((p) => p.seatIndex === state.currentTurnSeat);
+    if (
+      turnActor?.heroId === 'zhang_fei' &&
+      (state.turnFlags?.satUsedThisTurn ?? 0) >= 2 &&
+      (state.turnFlags?.satUsedThisTurn ?? 0) > (previous.turnFlags?.satUsedThisTurn ?? 0) &&
+      !stampedSkillsThisTurn.has(`${turnActor.seatIndex}:Phao Hống`)
+    ) {
+      triggerSkillStamp(turnActor.seatIndex, 'Phao Hống');
     }
 
     const incomingDodge = previous.activeInterrupt;
     const strike = previous.discardPileTop;
     const freshDiscard = state.discardPileCount > previous.discardPileCount &&
       state.discardPileTop?.id !== strike?.id;
-    showTransfers(motion, previous, state);
+    showTransfers(motion, previous, state, emitVfx);
     const track = (animation: Animation | null) => {
       if (!animation) return;
       reactions.current.add(animation);
@@ -659,9 +991,12 @@ export function useMatchMotion(
         emitVfx('DYING', { toSeats: [player.seatIndex] });
         addTrauma(0.6);
       }
-      for (const slot of ['weapon', 'armor', 'plusOneHorse', 'minusOneHorse'] as const) {
+      for (const slot of EQUIP_SLOTS) {
         const equipment = player.equipments[slot];
-        if (equipment && equipment.id !== old.equipments[slot]?.id) showEquipmentReveal(motion, seat, equipment);
+        if (equipment && equipment.id !== old.equipments[slot]?.id) {
+          showEquipmentReveal(motion, seat, equipment);
+          emitVfx('EQUIP_FORGE', { toSeats: [player.seatIndex] });
+        }
       }
     }
   }, [board, layer, state, suspended]);

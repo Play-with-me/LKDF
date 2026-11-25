@@ -26,6 +26,7 @@ import { StatsPage } from './features/stats/StatsPage.js';
 import { UpdateModal } from './features/update/UpdateModal.js';
 import { getUiAssetUrl } from './lib/assetCatalog.js';
 import {
+  ApiError,
   DEFAULT_SERVER_URL,
   createApiClient,
   loadInitialClientState,
@@ -128,7 +129,14 @@ export function App() {
     initialDevPreviewMode === 'nickname' || isLobbyPreview ? LOBBY_PREVIEW_PROFILE : null,
   );
   const [offlineMode, setOfflineMode] = useState<PlayerCount | 'setup' | null>(null);
+  const openOfflineSetup = useCallback(() => setOfflineMode('setup'), []);
   const closeOffline = useCallback(() => setOfflineMode(null), []);
+  const restoreAbortRef = useRef<AbortController | null>(null);
+  useEffect(() => {
+    return () => {
+      restoreAbortRef.current?.abort();
+    };
+  }, []);
   const [showMatchCrossing, setShowMatchCrossing] = useState(false);
   const effectsEnabled = profile?.preferences.soundEnabled ?? false;
   const musicEnabled = profile?.preferences.musicEnabled ?? effectsEnabled;
@@ -354,26 +362,56 @@ export function App() {
         return;
       }
 
+      restoreAbortRef.current?.abort();
+      const controller = new AbortController();
+      restoreAbortRef.current = controller;
+      let timedOut = false;
+      const timeoutId = window.setTimeout(() => {
+        timedOut = true;
+        controller.abort();
+      }, 8000);
+
       setIsRestoringSession(true);
       void api
-        .getMe(sessionToken)
+        .getMe(sessionToken, controller.signal)
         .then((userProfile) => {
+          if (restoreAbortRef.current !== controller) {
+            return;
+          }
           setProfile(userProfile);
           setJustLoggedIn(false);
           setLoginNotice(null);
           setScreen('HOME');
         })
-        .catch(() => {
-          void saveClientStatePatch({ sessionToken: null }).catch(() => undefined);
-          setSessionToken(null);
-          setProfile(null);
+        .catch((err: unknown) => {
+          if (restoreAbortRef.current !== controller) {
+            return;
+          }
+          if (err instanceof ApiError && err.statusCode === 401) {
+            void saveClientStatePatch({ sessionToken: null }).catch(() => undefined);
+            setSessionToken(null);
+            setProfile(null);
+            setLoginNotice(
+              'Phiên đăng nhập trước đã hết hạn. Vui lòng đăng nhập lại bằng Google.',
+            );
+            setScreen('LOGIN');
+            return;
+          }
           setLoginNotice(
-            'Phiên đăng nhập trước đã hết hạn. Vui lòng đăng nhập lại bằng Google.',
+            timedOut
+              ? 'Máy chủ phản hồi chậm khi khôi phục phiên. Vui lòng đăng nhập lại hoặc Chơi với Máy.'
+              : err instanceof Error
+                ? err.message
+                : 'Không thể khôi phục phiên đăng nhập. Vui lòng đăng nhập lại hoặc Chơi với Máy.',
           );
           setScreen('LOGIN');
         })
         .finally(() => {
-          setIsRestoringSession(false);
+          window.clearTimeout(timeoutId);
+          if (restoreAbortRef.current === controller) {
+            restoreAbortRef.current = null;
+            setIsRestoringSession(false);
+          }
         });
     },
     [api, sessionToken],
@@ -492,12 +530,6 @@ export function App() {
 
   return (
     <main className="relative flex h-screen w-screen min-h-0 min-w-0 flex-col overflow-hidden bg-[#090807] text-[#EFE6D5]">
-      {(screen === 'BOOT' || screen === 'WAKE' || screen === 'LOGIN') ? (
-        <button type="button" onClick={() => setOfflineMode('setup')}
-          className="absolute bottom-14 left-5 z-30 cursor-pointer rounded-md border border-[#C89B4B] bg-[#241813] px-4 py-2 text-sm font-semibold text-[#F5EBD6] hover:bg-[#6C2521] focus-visible:outline-2 focus-visible:outline-[#E6BE6C]">
-          Chơi với Máy
-        </button>
-      ) : null}
       {isLobbySurface && !isAuthPortalScreen && !isHomeLobby ? (
         <div
           aria-hidden="true"
@@ -535,15 +567,21 @@ export function App() {
                 }
               : undefined
           }
-          className={`z-10 flex h-11 shrink-0 items-center justify-between bg-[#10141B] px-5 ${isHomeLobby ? 'absolute inset-x-0 bottom-0 border-t border-[#94A3B8]/28' : 'relative border-b border-[#94A3B8]/28'}`}
+          className="relative z-10 flex h-11 shrink-0 items-center justify-between border-b border-[#94A3B8]/28 bg-[#10141B] px-5"
         >
         <div className="flex items-center gap-3 min-w-0">
           <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-[5px] border border-[#D4A451]/75 bg-gradient-to-b from-[#B8332C] to-[#7D1A16] font-serif-title text-[13px] font-bold text-[#F8EFDF] shadow-inner">
             殺
           </span>
-          <h1 className="truncate font-serif-title text-base font-semibold tracking-wide text-[#F4EBD8]">
-            Tam Quốc Sát
-          </h1>
+          {isHomeLobby ? (
+            <span className="truncate font-serif-title text-base font-semibold tracking-wide text-[#F4EBD8]">
+              Tam Quốc Sát
+            </span>
+          ) : (
+            <h1 className="truncate font-serif-title text-base font-semibold tracking-wide text-[#F4EBD8]">
+              Tam Quốc Sát
+            </h1>
+          )}
           {activeRoom && screen === 'WAITING_ROOM' ? (
             <span className="hidden rounded border border-[#B89352]/45 bg-[#12161E] px-2 py-0.5 font-mono-num text-xs text-[#E6BE6C] sm:inline-block">
               Phòng #{activeRoom.roomState.roomCode}
@@ -609,13 +647,23 @@ export function App() {
       <div className="relative z-10 flex flex-1 min-h-0 min-w-0 flex-col">
       {screen === 'BOOT' || isRestoringSession ? (
         <section className="flex flex-1 min-h-0 min-w-0 items-center justify-center p-6">
-          <div className="inline-flex items-center gap-2 rounded-lg border border-[#B89352]/45 bg-[#11151D]/95 px-6 py-4 text-sm text-[#F4EBD8] shadow-2xl">
-            <GameIcon name="ui:loader" size={16} className="animate-spin text-[#E6BE6C]" />
-            <span>
-              {isRestoringSession
-                ? 'Đang khôi phục phiên đăng nhập Google...'
-                : 'Đang khởi động ứng dụng Tam Quốc Sát...'}
-            </span>
+          <div className="flex flex-col items-center gap-4 rounded-lg border border-[#C89B4B]/60 bg-[#16110E]/95 px-6 py-5 text-sm text-[#F5EBD6] shadow-2xl">
+            <div className="inline-flex items-center gap-2">
+              <GameIcon name="ui:loader" size={16} className="animate-spin text-[#E6BE6C]" />
+              <span>
+                {isRestoringSession
+                  ? 'Đang khôi phục phiên đăng nhập Google...'
+                  : 'Đang khởi động ứng dụng Tam Quốc Sát...'}
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={openOfflineSetup}
+              className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-[#C89B4B]/70 bg-[#241813] px-4 py-2 text-sm font-semibold text-[#F5EBD6] transition-colors hover:border-[#E6BE6C] hover:bg-[#6C2521] focus-visible:outline-2 focus-visible:outline-[#E6BE6C]"
+            >
+              <GameIcon name="ui:bot" size={15} />
+              Chơi với Máy
+            </button>
           </div>
         </section>
       ) : null}
@@ -625,6 +673,7 @@ export function App() {
           serverUrl={serverUrl}
           onServerUrlChange={handleServerUrlChange}
           onServerReady={handleServerReady}
+          onPlayOffline={openOfflineSetup}
         />
       ) : null}
 
@@ -638,6 +687,7 @@ export function App() {
           onLoggedIn={handleLoggedIn}
           onOpenStats={() => handleOpenStatsFrom('LOGIN')}
           onRecheckServer={handleRecheckServer}
+          onPlayOffline={openOfflineSetup}
           onOpenUpdateModal={() => setIsUpdateModalOpen(true)}
           onCheckUpdate={() => {
             void runUpdateCheck({
@@ -671,6 +721,7 @@ export function App() {
               forceRefresh: true,
             });
           }}
+          onPlayOffline={openOfflineSetup}
           isPreviewMode={import.meta.env.DEV && !sessionToken}
           onComplete={handleCompleteNicknameSetup}
         />
@@ -688,7 +739,7 @@ export function App() {
             onProfileUpdated={setProfile}
             onEnterRoom={handleEnterRoom}
             onOpenStats={() => handleOpenStatsFrom('HOME')}
-            onPlayOffline={() => setOfflineMode('setup')}
+            onPlayOffline={openOfflineSetup}
             onLoggedOut={handleLoggedOut}
             onSessionInvalid={handleSessionInvalid}
           />

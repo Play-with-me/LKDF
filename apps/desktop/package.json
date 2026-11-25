@@ -18,6 +18,9 @@
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.electron.json --noEmit"
   },
   "dependencies": {
+    "@fontsource/be-vietnam-pro": "^5.3.0",
+    "@fontsource/jetbrains-mono": "^5.3.0",
+    "@fontsource/noto-serif": "^5.3.0",
     "@iconify/react": "^6.0.4",
     "@lkdf/shared": "*",
     "electron-updater": "^6.8.11",

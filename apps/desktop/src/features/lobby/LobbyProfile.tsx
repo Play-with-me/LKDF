@@ -1,3 +1,4 @@
+import { GuofengPillSelect } from '../../components/ui/GuofengPillSelect.js';
 import { readDevicePreference, writeDevicePreference, type DevicePreferenceKey } from '../../lib/devicePreferences.js';
 import { useEffect, useImperativeHandle, useRef, useState, type Ref, type FormEvent } from 'react';
 import type { UserPreferences, UserProfile } from '../../lib/types.js';
@@ -99,7 +100,7 @@ export function LobbyProfile({ profile, record, status, sample, onRetry, retryin
         event.preventDefault();
         closeEditor();
       }}>
-      <h2 id="lobby-profile-title">Hồ sơ</h2>
+      <h2 id="lobby-profile-title" className="font-serif-title">Hồ sơ</h2>
       <div className="lkdf-lobby-profile-card">
         <header className="lkdf-lobby-profile-identity">
           <div className="lkdf-lobby-profile-avatar" data-monogram={!profile.avatarUrl || avatarFailed} aria-hidden="true">
@@ -108,7 +109,7 @@ export function LobbyProfile({ profile, record, status, sample, onRetry, retryin
               : <span>{initials}</span>}
           </div>
           <div className="lkdf-lobby-profile-name">
-            <strong data-saved={saved}>{profile.displayName}</strong>
+            <strong data-saved={saved} className="font-serif-title">{profile.displayName}</strong>
             <div className="lkdf-lobby-profile-name-actions">
               <button ref={editButton} type="button" className="lkdf-lobby-profile-edit" disabled={editing} aria-expanded={editing}
                 onClick={() => {
@@ -209,10 +210,10 @@ function LobbyMonthlyResults({ results }: { readonly results: LobbyRecord['month
     <section className="lkdf-lobby-profile-monthly" aria-labelledby="lobby-profile-monthly-title">
       <div className="lkdf-lobby-profile-record-heading">
         <div className="lkdf-lobby-monthly-heading">
-          <h4 id="lobby-profile-monthly-title">Kết quả theo tháng</h4>
-          <small>{period} · {periodCount} ván</small>
+          <h4 id="lobby-profile-monthly-title" className="font-serif-title">Kết quả theo tháng</h4>
+          <small className="font-mono-num tabular-nums">{period} · {periodCount} ván</small>
         </div>
-          <p className="lkdf-lobby-monthly-summary" role="status">
+          <p className="lkdf-lobby-monthly-summary font-mono-num tabular-nums" role="status">
             <span>Tháng {activeMonth.label}</span>
             <span data-series="win">{activeMonth.wins} thắng</span>
             <span data-series="loss">{activeMonth.losses} thua</span>
@@ -236,7 +237,7 @@ function LobbyMonthlyResults({ results }: { readonly results: LobbyRecord['month
         {ticks.map(tick => (
           <text key={tick} x="43" y={y(tick)} textAnchor="end" dominantBaseline="middle">{tick}</text>
         ))}
-        <text x="8" y="12">Ván</text>
+        <text x="8" y="14">Ván</text>
         <g className="lkdf-lobby-monthly-series">
           <polyline points={points('wins')} className="lkdf-lobby-monthly-win" />
           <polyline points={points('losses')} className="lkdf-lobby-monthly-loss" />
@@ -330,7 +331,7 @@ function LobbyBattleRecord({ record, status, sample, onRetry, retryingMonthly, m
   return (
     <section className="lkdf-lobby-profile-record" aria-labelledby="lobby-battle-record-title">
       <div className="lkdf-lobby-profile-record-heading">
-        <h3 id="lobby-battle-record-title">Tổng quan mọi thời điểm</h3>
+        <h3 id="lobby-battle-record-title" className="font-serif-title">Tổng quan mọi thời điểm</h3>
         {sample && <small>Dữ liệu mẫu</small>}
       </div>
       {status === 'loading' ? <p role="status">Đang tải thống kê…</p> : status === 'error' ? (
@@ -340,16 +341,19 @@ function LobbyBattleRecord({ record, status, sample, onRetry, retryingMonthly, m
         </div>
       ) : <>
         <dl className="lkdf-lobby-profile-totals">
-          <div><dt>Tỷ lệ thắng</dt><dd>{winRate}</dd></div>
-          <div><dt>Thắng / Ván đã đấu</dt><dd>{wins} / {played}</dd></div>
-          <div><dt>Thua</dt><dd>{losses}</dd></div>
+          <div><dt>Tỷ lệ thắng</dt><dd className="font-mono-num tabular-nums">{winRate}</dd></div>
+          <div><dt>Thắng / Ván đã đấu</dt><dd className="font-mono-num tabular-nums">{wins} / {played}</dd></div>
+          <div><dt>Thua</dt><dd className="font-mono-num tabular-nums">{losses}</dd></div>
         </dl>
         <div className="lkdf-lobby-profile-highlight">
           {topHeroes[0]?.portrait && <img src={topHeroes[0].portrait} alt="" />}
           <div>
             <span>Tướng thắng nhiều nhất{topHeroes.length > 1 ? ' · Đồng hạng' : ''}</span>
             {topHeroes.length ? topHeroes.map(stats => (
-              <strong key={stats.name}>{stats.name} · {stats.wins} thắng / {stats.played} ván</strong>
+              <strong key={stats.name}>
+                <span className="font-serif-title">{stats.name}</span>
+                <span className="font-mono-num tabular-nums"> · {stats.wins} thắng / {stats.played} ván</span>
+              </strong>
             )) : <strong>Chưa có dữ liệu</strong>}
           </div>
         </div>
@@ -365,7 +369,7 @@ function LobbyBattleRecord({ record, status, sample, onRetry, retryingMonthly, m
             }}>Thử lại đồ thị</button>
           </div>)}
         <div className="lkdf-lobby-profile-record-heading">
-          <h4 id="lobby-profile-history-title" ref={historyHeading} tabIndex={-1}>Ván gần đây</h4>
+          <h4 id="lobby-profile-history-title" ref={historyHeading} tabIndex={-1} className="font-serif-title">Ván gần đây</h4>
           {recent.length > 0 && (
             <div className="lkdf-lobby-profile-filters" role="group" aria-label="Lọc lịch sử theo kết quả">
               {RECORD_FILTERS.map(option => (
@@ -376,10 +380,10 @@ function LobbyBattleRecord({ record, status, sample, onRetry, retryingMonthly, m
           )}
         </div>
         {recent.length > 0 && (
-          <p className="lkdf-lobby-profile-history-count" role="status">Hiện {visibleCount} / {recent.length} ván gần nhất</p>
+          <p className="lkdf-lobby-profile-history-count font-mono-num tabular-nums" role="status">Hiện {visibleCount} / {recent.length} ván gần nhất</p>
         )}
         {visibleCount ? (
-          <div ref={history} className="lkdf-lobby-profile-history" role="region" aria-labelledby="lobby-profile-history-title"
+          <div ref={history} className="lkdf-lobby-profile-history lkdf-scroll" role="region" aria-labelledby="lobby-profile-history-title"
             tabIndex={scrollable ? 0 : undefined}>
             <table className="lkdf-lobby-profile-matches" aria-label="Các ván gần nhất">
               <thead>
@@ -388,9 +392,9 @@ function LobbyBattleRecord({ record, status, sample, onRetry, retryingMonthly, m
               <tbody>
                 {visible.map(match => (
                   <tr key={match.id}>
-                    <td><span className="lkdf-lobby-profile-match-hero">{match.portrait && <img src={match.portrait} alt="" loading="lazy" />}<strong>{match.hero}</strong></span></td>
+                    <td><span className="lkdf-lobby-profile-match-hero">{match.portrait && <img src={match.portrait} alt="" loading="lazy" />}<strong className="font-serif-title">{match.hero}</strong></span></td>
                     <td>{match.role}</td>
-                    <td><time dateTime={match.date}>{historyDate.format(new Date(match.date))}</time><small>{formatDurationVi(match.durationSeconds)}</small></td>
+                    <td className="font-mono-num tabular-nums"><time dateTime={match.date}>{historyDate.format(new Date(match.date))}</time><small>{formatDurationVi(match.durationSeconds)}</small></td>
                     <td><span data-won={match.won}>{match.won ? 'Thắng' : 'Thua'}</span></td>
                   </tr>
                 ))}
@@ -461,7 +465,7 @@ export function LobbySettings({ profile, onSavePreferences, onLogout, onBack, re
 
   return (
     <section className="lkdf-lobby-profile lkdf-lobby-settings" aria-labelledby="lobby-settings-title">
-      <h2 id="lobby-settings-title">Cài đặt game</h2>
+      <h2 id="lobby-settings-title" className="font-serif-title">Cài đặt game</h2>
       <div className="lkdf-lobby-profile-card lkdf-lobby-settings-card">
         <div className="lkdf-lobby-profile-section lkdf-lobby-settings-compact-row">
           <div className="lkdf-lobby-profile-row lkdf-lobby-profile-sound">
@@ -488,11 +492,19 @@ export function LobbySettings({ profile, onSavePreferences, onLogout, onBack, re
         <div className="lkdf-lobby-profile-section lkdf-lobby-settings-compact-row">
           <div className="lkdf-lobby-profile-row lkdf-lobby-profile-sound">
             <label htmlFor="lobby-motion-mode">Chuyển động</label>
-            <select id="lobby-motion-mode" value={reduceMotion ? 'reduce' : 'system'}
-              onChange={event => changeDevicePreference('reduceMotion', event.target.value === 'reduce')}>
-              <option value="system">Theo hệ thống</option>
-              <option value="reduce">Giảm chuyển động</option>
-            </select>
+            <GuofengPillSelect
+              id="lobby-motion-mode"
+              ariaLabel="Chuyển động"
+              value={reduceMotion ? 'reduce' : 'system'}
+              className="min-w-[175px]"
+              options={[
+                { value: 'system', label: 'Theo hệ thống' },
+                { value: 'reduce', label: 'Giảm chuyển động' },
+              ]}
+              onChange={(nextValue) =>
+                changeDevicePreference('reduceMotion', nextValue === 'reduce')
+              }
+            />
           </div>
           {!reduceMotion && <p>Hệ thống đang {systemReduced ? 'giảm chuyển động' : 'cho phép chuyển động'}.</p>}
           {deviceError === 'reduceMotion' && <p role="alert" data-error="true">Không lưu được tùy chọn chuyển động trên thiết bị này.</p>}

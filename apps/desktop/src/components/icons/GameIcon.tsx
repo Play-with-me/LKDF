@@ -3,6 +3,7 @@ import {
   AlertTriangle,
   ArrowLeft,
   ArrowRightLeft,
+  Bell,
   BookOpen,
   Bot,
   Check,
@@ -13,8 +14,10 @@ import {
   Copy,
   DoorOpen,
   Download,
+  Feather,
   Flag,
   FolderOpen,
+  Info,
   KeyRound,
   Layers,
   Loader2,
@@ -24,8 +27,11 @@ import {
   RefreshCw,
   RotateCcw,
   Send,
+  Settings,
+  ShieldAlert,
   SkipForward,
   Sparkles,
+  Swords,
   Trash2,
   User,
   Users,
@@ -33,6 +39,7 @@ import {
   VolumeX,
   WifiOff,
   X,
+  Zap,
 } from 'lucide-react';
 import {
   GAME_ICON_DEFAULT_SIZE,
@@ -59,6 +66,7 @@ ensureOfflineGameIconsRegistered();
 export type UiIconName =
   | 'alert'
   | 'arrow-left'
+  | 'bell'
   | 'book-open'
   | 'bot'
   | 'chart'
@@ -71,8 +79,10 @@ export type UiIconName =
   | 'copy'
   | 'door-open'
   | 'download'
+  | 'feather'
   | 'flag'
   | 'folder'
+  | 'info'
   | 'key'
   | 'layers'
   | 'loader'
@@ -81,8 +91,11 @@ export type UiIconName =
   | 'play'
   | 'refresh'
   | 'send'
+  | 'settings'
+  | 'shield-alert'
   | 'skip'
   | 'sparkles'
+  | 'swords'
   | 'trash'
   | 'undo'
   | 'user'
@@ -90,7 +103,8 @@ export type UiIconName =
   | 'volume-off'
   | 'volume-on'
   | 'wifi-off'
-  | 'x';
+  | 'x'
+  | 'zap';
 
 export type GameIconName = GameIconKey | `ui:${UiIconName}`;
 
@@ -146,6 +160,7 @@ export interface GameIconProps {
 const LUCIDE_BY_NAME = {
   alert: AlertTriangle,
   'arrow-left': ArrowLeft,
+  bell: Bell,
   'book-open': BookOpen,
   bot: Bot,
   chart: Layers,
@@ -158,8 +173,10 @@ const LUCIDE_BY_NAME = {
   copy: Copy,
   'door-open': DoorOpen,
   download: Download,
+  feather: Feather,
   flag: Flag,
   folder: FolderOpen,
+  info: Info,
   key: KeyRound,
   layers: Layers,
   loader: Loader2,
@@ -168,8 +185,11 @@ const LUCIDE_BY_NAME = {
   play: Play,
   refresh: RefreshCw,
   send: Send,
+  settings: Settings,
+  'shield-alert': ShieldAlert,
   skip: SkipForward,
   sparkles: Sparkles,
+  swords: Swords,
   trash: Trash2,
   undo: RotateCcw,
   user: User,
@@ -178,6 +198,7 @@ const LUCIDE_BY_NAME = {
   'volume-on': Volume2,
   'wifi-off': WifiOff,
   x: X,
+  zap: Zap,
 } as const;
 
 export function GameIcon({

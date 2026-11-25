@@ -2,7 +2,7 @@ import { prefersReducedMotion } from '../../lib/devicePreferences.js';
 import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import { HERO_CATALOG } from '@lkdf/shared';
 import { Heart } from 'lucide-react';
-import { GameIcon } from '../../components/icons/index.js';
+import { FactionSeal, GameIcon } from '../../components/icons/index.js';
 import { getHeroPortraitUrl } from '../../lib/assetCatalog.js';
 
 const factions = [
@@ -12,6 +12,9 @@ const factions = [
   { name: 'Quần', seal: '群', crop: '95%', color: '#9CA3AF' },
 ];
 const all = 'Tất cả';
+
+const PASSIVE_SKILL_IDS =
+  /^(pao_xiao|kong_cheng|ma_shu|ji_zhi|qi_cai|jiu_yuan|ying_zi|qian_xun|lian_ying|xiao_ji|wu_shuang|bi_yue)$/;
 
 export function foldName(value: string) {
   return value.toLocaleLowerCase('vi').normalize('NFD').replace(/\p{M}/gu, '').replace(/đ/g, 'd').trim();
@@ -137,152 +140,281 @@ export function LobbyHeroCollection({ control }: { readonly control: string }) {
   return (
     <div className="lkdf-hero-collection" data-searching={searching}>
       <div ref={toolbarRef} className="lkdf-hero-toolbar">
-      <div className="lkdf-hero-filters" role="group" aria-label="Chương theo phe">
-        {faction !== all ? (
-          <><span className="lkdf-faction-jump-label">Đang xem {faction}</span><button type="button" className={control} onClick={() => setFaction(all)}>Tất cả các phe</button></>
-        ) : !searching ? <>
-          <span className="lkdf-faction-jump-label">Đến phe</span>
-          {factions.map(group => (
-          <button key={group.name} type="button" className={control}
-            aria-current={group.name === viewedFaction ? 'location' : undefined}
-            disabled={!matches.some(hero => hero.factionLabelVi === group.name)}
-            onClick={() => jumpToFaction(group.name)}>
-            <span aria-hidden="true" className="lkdf-hero-seal" style={{ borderColor: group.color }}>{group.seal}</span>
-            {group.name}
-          </button>
-        ))}
-        </> : null}
-      </div>
-
-      <div className="lkdf-hero-search" onBlur={event => {
-        if (!event.currentTarget.contains(event.relatedTarget)) setSuggesting(false);
-      }}>
-        <label htmlFor={`${listId}-search`} className="mb-1 block text-sm">Tìm tướng</label>
-        <input ref={searchRef} id={`${listId}-search`} value={query} autoComplete="off" placeholder="Tìm tướng…"
-          className={`${control} w-full ${searching ? 'pr-12' : ''}`} role="combobox" aria-autocomplete="list"
-          aria-expanded={suggestions.length > 0}
-          aria-controls={suggestions.length ? listId : undefined}
-          aria-activedescendant={active ? `${listId}-${active.id}` : undefined}
-          onFocus={() => setSuggesting(true)}
-          onChange={event => changeQuery(event.target.value)}
-          onKeyDown={event => {
-            if (event.nativeEvent.isComposing) return;
-            if (event.key === 'Escape' && suggestions.length) {
-              event.preventDefault();
-              setSuggesting(false);
-              setActiveIndex(-1);
-            } else if ((event.key === 'ArrowDown' || event.key === 'ArrowUp') && suggestions.length) {
-              event.preventDefault();
-              const count = suggestions.length;
-              const direction = event.key === 'ArrowDown' ? 1 : -1;
-              setActiveIndex(index => index < 0 ? (direction > 0 ? 0 : count - 1) : (index + direction + count) % count);
-            } else if (event.key === 'Enter') {
-              const suggestion = active ?? suggestions[0];
-              if (!suggestion) return;
-              event.preventDefault();
-              chooseSuggestion(suggestion);
-            }
-          }} />
-        {searching ? (
-          <button type="button" className="lkdf-hero-search-clear" aria-label="Xóa từ khóa" onClick={() => {
-            changeQuery('');
-            searchRef.current?.focus({ preventScroll: true });
-          }}>Xóa</button>
-        ) : null}
-        {suggestions.length > 0 ? (
-          <ul id={listId} role="listbox" aria-label="Gợi ý tìm tướng"
-            className="lkdf-hero-suggestions">
-            {suggestions.map(hero => (
-              <li key={hero.id} id={`${listId}-${hero.id}`} role="option" aria-selected={hero.id === active?.id}
-                onMouseDown={event => event.preventDefault()} onClick={() => chooseSuggestion(hero)}
-                className="cursor-pointer rounded px-3 py-2 text-sm hover:bg-[#493221] aria-selected:bg-[#493221]">
-                {hero.nameVi} <span className="text-[#DFCAA9]">· {hero.factionLabelVi}</span>
-              </li>
-            ))}
-          </ul>
-        ) : null}
-      </div>
-
-      </div>
-      <p role="status" className="mt-3 text-sm text-[#DFCAA9]">
-        {matches.length ? `${matches.length} tướng` : 'Không tìm thấy tướng phù hợp.'}
-      </p>
-      <div className="lkdf-hero-library" data-selected={Boolean(selected)}>
-      <div ref={galleryRef} className="min-w-0">
-      {factions.map(group => {
-        const members = matches.filter(hero => hero.factionLabelVi === group.name);
-        if (!members.length) return null;
-        return (
-          <section key={group.name} className="lkdf-faction-scene" data-faction={group.name} data-scene={group.scene} style={{ '--faction-color': group.color, '--faction-crop': group.crop } as CSSProperties}>
-            {!searching ? (
-              <div className="lkdf-faction-scene-art" aria-hidden="true">
-                {group.scene ? <span className="lkdf-faction-foreground" /> : null}
-              </div>
-            ) : null}
-            <header className="lkdf-faction-heading">
-              <h3 className="lkdf-faction-title font-serif-title">{group.name}</h3>
-              {faction === all && !searching ? (
-                <button type="button" className={`${control} lkdf-faction-filter`}
-                  aria-label={`Chỉ xem phe ${group.name}`}
-                  onClick={() => { setFaction(group.name); setActiveIndex(-1); }}>Chỉ xem phe này</button>
-              ) : null}
-              {!searching ? <span className="lkdf-faction-banner-seal font-serif-title" aria-hidden="true">{group.seal}</span> : null}
-            </header>
-            <div className="lkdf-lobby-hero-grid">
-              {members.map(hero => (
-                <button key={hero.id} type="button" aria-pressed={hero.id === selectedId}
-                  ref={element => {
-                    if (element) cardRefs.current.set(hero.id, element);
-                    else cardRefs.current.delete(hero.id);
-                  }}
-                  onClick={() => {
-                    setSelectedId(hero.id);
-                    requestAnimationFrame(() => detailRef.current?.focus({ preventScroll: true }));
-                  }}
-                  className="lkdf-hero-card">
-                  {hero.portrait ? <img src={hero.portrait} alt="" loading="lazy" decoding="async" className="aspect-[10/13] w-full object-cover" /> : null}
-                  <span className="lkdf-hero-card-name font-serif-title">{hero.nameVi}</span>
+        <div className="lkdf-hero-filters" role="group" aria-label="Chương theo phe">
+          {faction !== all ? (
+            <>
+              <span className="lkdf-faction-jump-label">Đang xem {faction}</span>
+              <button
+                type="button"
+                className={`${control} lkdf-ref-chip`}
+                onClick={() => setFaction(all)}
+              >
+                Tất cả các phe
+              </button>
+            </>
+          ) : !searching ? (
+            <>
+              <span className="lkdf-faction-jump-label">Đến phe</span>
+              {factions.map(group => (
+                <button
+                  key={group.name}
+                  type="button"
+                  className={`${control} lkdf-ref-chip`}
+                  aria-current={group.name === viewedFaction ? 'location' : undefined}
+                  disabled={!matches.some(hero => hero.factionLabelVi === group.name)}
+                  onClick={() => jumpToFaction(group.name)}
+                >
+                  <span aria-hidden="true" className="lkdf-hero-seal font-serif-title" style={{ borderColor: group.color }}>
+                    {group.seal}
+                  </span>
+                  <span>{group.name}</span>
                 </button>
               ))}
-            </div>
-          </section>
-        );
-      })}
+            </>
+          ) : null}
+        </div>
+
+        <div
+          className="lkdf-hero-search"
+          onBlur={event => {
+            if (!event.currentTarget.contains(event.relatedTarget)) setSuggesting(false);
+          }}
+        >
+          <label htmlFor={`${listId}-search`} className="mb-1 block text-sm">Tìm tướng</label>
+          <input
+            ref={searchRef}
+            id={`${listId}-search`}
+            value={query}
+            autoComplete="off"
+            placeholder="Tìm tướng…"
+            className={`${control} w-full ${searching ? 'pr-12' : ''}`}
+            role="combobox"
+            aria-autocomplete="list"
+            aria-expanded={suggestions.length > 0}
+            aria-controls={suggestions.length ? listId : undefined}
+            aria-activedescendant={active ? `${listId}-${active.id}` : undefined}
+            onFocus={() => setSuggesting(true)}
+            onChange={event => changeQuery(event.target.value)}
+            onKeyDown={event => {
+              if (event.nativeEvent.isComposing) return;
+              if (event.key === 'Escape' && suggestions.length) {
+                event.preventDefault();
+                setSuggesting(false);
+                setActiveIndex(-1);
+              } else if ((event.key === 'ArrowDown' || event.key === 'ArrowUp') && suggestions.length) {
+                event.preventDefault();
+                const count = suggestions.length;
+                const direction = event.key === 'ArrowDown' ? 1 : -1;
+                setActiveIndex(index => index < 0 ? (direction > 0 ? 0 : count - 1) : (index + direction + count) % count);
+              } else if (event.key === 'Enter') {
+                const suggestion = active ?? suggestions[0];
+                if (!suggestion) return;
+                event.preventDefault();
+                chooseSuggestion(suggestion);
+              }
+            }}
+          />
+          {searching ? (
+            <button
+              type="button"
+              className="lkdf-hero-search-clear"
+              aria-label="Xóa từ khóa"
+              onClick={() => {
+                changeQuery('');
+                searchRef.current?.focus({ preventScroll: true });
+              }}
+            >
+              Xóa
+            </button>
+          ) : null}
+          {suggestions.length > 0 ? (
+            <ul id={listId} role="listbox" aria-label="Gợi ý tìm tướng" className="lkdf-hero-suggestions lkdf-scroll">
+              {suggestions.map(hero => (
+                <li
+                  key={hero.id}
+                  id={`${listId}-${hero.id}`}
+                  role="option"
+                  aria-selected={hero.id === active?.id}
+                  onMouseDown={event => event.preventDefault()}
+                  onClick={() => chooseSuggestion(hero)}
+                  className="cursor-pointer rounded px-3 py-2 text-sm text-[#F5EBD6] hover:bg-[#493221] aria-selected:bg-[#493221]"
+                >
+                  <span className="font-serif-title font-semibold">{hero.nameVi}</span>{' '}
+                  <span className="text-[#E6D4B8]">· {hero.factionLabelVi}</span>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </div>
       </div>
-      {selected ? (
-        <article key={selected.id} ref={detailRef} tabIndex={-1} aria-labelledby={`${listId}-detail`} className="lkdf-hero-dossier">
-          <header className="lkdf-hero-dossier-header">
-            {selected.portrait ? <img src={selected.portrait} alt="" /> : null}
-            <div>
-              <h3 id={`${listId}-detail`} className="font-serif-title text-2xl font-bold">{selected.nameVi}</h3>
-              <p className="text-sm text-[#DFCAA9]">{selected.factionLabelVi}</p>
-              <div className="lkdf-dossier-health">
-                <span className="lkdf-dossier-hearts" aria-hidden="true">
-                  {Array.from({ length: selected.baseMaxHp }, (_, index) => (
-                    <Heart key={index} size={13} strokeWidth={1.8} />
+
+      <p role="status" className="mt-3 text-sm text-[#E6D4B8]">
+        {matches.length ? (
+          <>
+            <span className="font-mono-num font-semibold text-[#F5EBD6] tabular-nums">{matches.length}</span> tướng
+          </>
+        ) : (
+          'Không tìm thấy tướng phù hợp.'
+        )}
+      </p>
+
+      <div className="lkdf-hero-library" data-selected={Boolean(selected)}>
+        <div ref={galleryRef} className="min-w-0">
+          {factions.map(group => {
+            const members = matches.filter(hero => hero.factionLabelVi === group.name);
+            if (!members.length) return null;
+            return (
+              <section
+                key={group.name}
+                className="lkdf-faction-scene"
+                data-faction={group.name}
+                data-scene={group.scene}
+                style={{ '--faction-color': group.color, '--faction-crop': group.crop } as CSSProperties}
+              >
+                {!searching ? (
+                  <div className="lkdf-faction-scene-art" aria-hidden="true">
+                    {group.scene ? <span className="lkdf-faction-foreground" /> : null}
+                  </div>
+                ) : null}
+                <header className="lkdf-faction-heading">
+                  <h3 className="lkdf-faction-title font-serif-title">{group.name}</h3>
+                  {faction === all && !searching ? (
+                    <button
+                      type="button"
+                      className={`${control} lkdf-ref-chip lkdf-faction-filter`}
+                      aria-label={`Chỉ xem phe ${group.name}`}
+                      onClick={() => { setFaction(group.name); setActiveIndex(-1); }}
+                    >
+                      Chỉ xem phe này
+                    </button>
+                  ) : null}
+                  {!searching ? (
+                    <span className="lkdf-faction-banner-seal font-serif-title" aria-hidden="true">
+                      {group.seal}
+                    </span>
+                  ) : null}
+                </header>
+                <div className="lkdf-lobby-hero-grid">
+                  {members.map(hero => (
+                    <button
+                      key={hero.id}
+                      type="button"
+                      aria-pressed={hero.id === selectedId}
+                      ref={element => {
+                        if (element) cardRefs.current.set(hero.id, element);
+                        else cardRefs.current.delete(hero.id);
+                      }}
+                      onClick={() => {
+                        setSelectedId(hero.id);
+                        requestAnimationFrame(() => detailRef.current?.focus({ preventScroll: true }));
+                      }}
+                      className="lkdf-hero-card"
+                    >
+                      {hero.portrait ? (
+                        <img
+                          src={hero.portrait}
+                          alt=""
+                          loading="lazy"
+                          decoding="async"
+                          className="aspect-[10/13] w-full object-cover"
+                        />
+                      ) : null}
+                      <span className="lkdf-hero-card-name font-serif-title">{hero.nameVi}</span>
+                    </button>
                   ))}
-                </span>
-                <span>{selected.baseMaxHp} máu tối đa</span>
+                </div>
+              </section>
+            );
+          })}
+        </div>
+
+        {selected ? (
+          <article
+            key={selected.id}
+            ref={detailRef}
+            tabIndex={-1}
+            aria-labelledby={`${listId}-detail`}
+            className="lkdf-hero-dossier lkdf-scroll"
+          >
+            <header className="lkdf-hero-dossier-header">
+              {selected.portrait ? <img src={selected.portrait} alt="" className="rounded" /> : null}
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <h3
+                    id={`${listId}-detail`}
+                    className="font-serif-title truncate text-xl font-bold leading-snug text-[#F5EBD6]"
+                  >
+                    {selected.nameVi}
+                  </h3>
+                  <FactionSeal faction={selected.faction} size="sm" />
+                </div>
+                <p className="mt-0.5 text-xs font-medium text-[#E6D4B8]">
+                  Thế lực {selected.factionLabelVi}
+                  {selected.isLordCandidate ? ' · Ứng viên Chủ Công' : ''}
+                </p>
+                <div className="lkdf-dossier-health">
+                  <span className="lkdf-dossier-hearts" aria-hidden="true">
+                    {Array.from({ length: selected.baseMaxHp }, (_, index) => (
+                      <Heart key={index} size={13} strokeWidth={1.8} />
+                    ))}
+                  </span>
+                  <span className="font-mono-num font-semibold tabular-nums">
+                    {selected.baseMaxHp} máu tối đa
+                  </span>
+                </div>
               </div>
-            </div>
-            <button type="button" className={control} aria-label="Đóng hồ sơ tướng" onClick={() => {
-              setSelectedId('');
-              cardRefs.current.get(selected.id)?.focus({ preventScroll: true });
-            }}>Đóng</button>
-          </header>
-          <section className="lkdf-hero-skills" aria-labelledby={`${listId}-skills`}>
-            <h4 id={`${listId}-skills`} className="lkdf-dossier-skills-label">
-              <GameIcon name="scroll-unfurled" size={16} /> Kỹ năng
-            </h4>
-            {selected.skills.map(skill => (
-              <div key={skill.nameVi} className="lkdf-dossier-skill">
-                <h5 className="font-serif-title text-lg font-bold text-[#E6BE6C]">{skill.nameVi}</h5>
-                <p className="mt-1 text-sm leading-relaxed">{skill.descriptionVi}</p>
-              </div>
-            ))}
-          </section>
-        </article>
-      ) : null}
+              <button
+                type="button"
+                className="lkdf-bronze-pill shrink-0 cursor-pointer rounded-md px-2.5 py-1.5 text-xs font-semibold text-[#F5EBD6] focus-visible:outline-2 focus-visible:outline-[#E6BE6C]"
+                aria-label="Đóng hồ sơ tướng"
+                onClick={() => {
+                  setSelectedId('');
+                  cardRefs.current.get(selected.id)?.focus({ preventScroll: true });
+                }}
+              >
+                Đóng
+              </button>
+            </header>
+
+            <section className="lkdf-hero-skills" aria-labelledby={`${listId}-skills`}>
+              <h4 id={`${listId}-skills`} className="lkdf-dossier-skills-label">
+                <GameIcon name="scroll-unfurled" size={15} />
+                <span>Kỹ năng tướng</span>
+              </h4>
+              {selected.skills.map(skill => {
+                const isLord = Boolean(skill.isLordSkill);
+                const isPassive = PASSIVE_SKILL_IDS.test(skill.id);
+                return (
+                  <div
+                    key={skill.id}
+                    className="lkdf-dossier-skill"
+                    data-lord-skill={isLord || undefined}
+                    data-passive-skill={isPassive || undefined}
+                  >
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <h5 className="font-serif-title text-[15px] font-bold leading-snug text-[#F3D38C]">
+                        【{skill.nameVi}】
+                      </h5>
+                      {isLord ? (
+                        <span className="rounded border border-[#D99B26]/65 bg-[#3A290F]/80 px-1.5 py-0.5 text-[10px] font-bold text-[#FCD34D]">
+                          Chủ Công
+                        </span>
+                      ) : null}
+                      {isPassive ? (
+                        <span className="rounded border border-[#88AB94]/65 bg-[#214C3D]/75 px-1.5 py-0.5 text-[10px] font-bold text-[#BAFFDF]">
+                          Bị động
+                        </span>
+                      ) : null}
+                    </div>
+                    <p className="mt-1 text-[13px] leading-[1.52] text-[#EFE6D5]">
+                      {skill.descriptionVi}
+                    </p>
+                  </div>
+                );
+              })}
+            </section>
+          </article>
+        ) : null}
       </div>
     </div>
   );

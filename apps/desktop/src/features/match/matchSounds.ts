@@ -1,4 +1,4 @@
-import { HERO_CATALOG, type CardInstance, type PlayerViewState } from '@lkdf/shared';
+import { HERO_BY_ID, HERO_CATALOG, type CardInstance, type HeroId, type PlayerViewState } from '@lkdf/shared';
 import { playMatchCue, type MatchSoundEvent } from '../../lib/soundFx.js';
 
 const ACTION_GAINS = {
@@ -53,14 +53,95 @@ const CARD_CUES: Partial<Record<CardInstance['cardKey'], ActionCue>> = {
 };
 
 const HERO_SKILLS = HERO_CATALOG.flatMap(hero => hero.skills.map(skill => skill.nameVi));
+const HERO_SKILL_SET = new Set(HERO_SKILLS);
 const DISCARD_COST_SKILLS = new Set(['Lưu Ly', 'Kết Hôn', 'Ly Gián', 'Chế Hành', 'Thanh Nang']);
 
-export function getLoggedHeroSkill(action: string): string | undefined {
-  const activation = /^(?:dùng|kích hoạt|phát động|hưởng ứng) (.+)/u.exec(action)?.[1];
-  return activation ? HERO_SKILLS.find(name => activation === name ||
-    /^[\s,.!:(]/u.test(activation.slice(name.length)) && activation.startsWith(name)) : undefined;
+const SAFE_BOUNDARY_AFTER = /^[\s,.!:()\-]/u;
+
+function matchSkillPrefix(text: string): string | undefined {
+  return HERO_SKILLS.find(
+    (name) =>
+      text === name ||
+      (text.startsWith(name) && SAFE_BOUNDARY_AFTER.test(text.slice(name.length))),
+  );
 }
-const DRAW_ACTION = /^(?:rút \d+ lá|bỏ qua Đột Tập, rút \d+ lá|kích hoạt .+, rút \d+ lá|kích hoạt Chế Hành, bỏ \d+ lá và rút lại \d+ lá|dùng Vô Trung Sinh Hữu rút \d+ lá|tiêu diệt Phản Tặc, được rút thưởng \d+ lá)/u;
+
+/**
+ * Extracts canonical Vietnamese hero skill name from an actionLog line suffix (or full action phrase).
+ * Supports canonical `<Tên> (dùng|kích hoạt|phát động|hưởng ứng) <Skill>` as well as safe fallbacks
+ * for judgment flips, Cứu Viện bonus, Anh Tư draws, and hero-attributed skill mentions without
+ * misclassifying victim/negated phrases (`bỏ qua Đột Tập`, `trước Cương Liệt`, `từ Phản Gián`, `chịu ...`).
+ */
+export function getLoggedHeroSkill(
+  action: string,
+  actorHeroId?: HeroId | null,
+): string | undefined {
+  if (!action) return undefined;
+
+  // 1. Canonical verbs: dùng / kích hoạt / phát động / hưởng ứng
+  const activation = /^(?:dùng|kích hoạt|phát động|hưởng ứng) (.+)/u.exec(action)?.[1];
+  if (activation) {
+    const matched = matchSkillPrefix(activation);
+    if (matched) return matched;
+  }
+
+  // 2. Judgment flip logs: "lật lá phán xét (Thiết Kỵ|Cương Liệt|Lạc Thần): ..."
+  const judgeSkill = /^lật lá phán xét \(([^)]+)\)/u.exec(action)?.[1];
+  if (judgeSkill && HERO_SKILL_SET.has(judgeSkill)) {
+    return judgeSkill;
+  }
+
+  // 3. Quan Tinh completion log
+  if (/^hoàn tất Quan Tinh\b/u.test(action)) {
+    return 'Quan Tinh';
+  }
+
+  // 4. Anh Tư draw log (both legacy "rút 3 lá ở pha Rút bài." and canonical)
+  if (
+    /^rút 3 lá ở pha Rút bài\b/u.test(action) ||
+    (actorHeroId === 'zhou_yu' && /^rút \d+ lá ở pha Rút bài\b/u.test(action))
+  ) {
+    return 'Anh Tư';
+  }
+
+  // 5. Tôn Quyền Lord rescue bonus "(Cứu Viện +1)"
+  if (/\(Cứu Viện(?:\s*\+\d+)?\)/u.test(action)) {
+    return 'Cứu Viện';
+  }
+
+  // 6. Direct skill-leading phrase (excluding negated/victim lines)
+  if (!action.startsWith('bỏ qua ') && !action.startsWith('chịu ')) {
+    const direct = matchSkillPrefix(action);
+    if (direct) return direct;
+  }
+
+  // 7. Safe fallback for unprefixed skill tags attributed to known actor hero
+  if (
+    actorHeroId &&
+    !action.startsWith('chịu ') &&
+    !action.startsWith('bỏ qua ') &&
+    !action.includes('trước ') &&
+    !action.includes('từ Phản Gián')
+  ) {
+    const hero = HERO_BY_ID[actorHeroId];
+    if (hero) {
+      for (const skill of hero.skills) {
+        if (
+          action.includes(`(${skill.nameVi})`) ||
+          action.includes(`(${skill.nameVi} `) ||
+          action.includes(`nhờ ${skill.nameVi}`) ||
+          action.includes(`qua ${skill.nameVi}`)
+        ) {
+          return skill.nameVi;
+        }
+      }
+    }
+  }
+
+  return undefined;
+}
+
+const DRAW_ACTION = /^(?:rút \d+ lá|bỏ qua Đột Tập, rút \d+ lá|(?:kích hoạt|phát động) .+, rút \d+ lá|kích hoạt Chế Hành, bỏ \d+ lá và rút lại \d+ lá|dùng Vô Trung Sinh Hữu rút \d+ lá|tiêu diệt Phản Tặc, được rút thưởng \d+ lá)/u;
 
 export function getMatchActionCues(
   before: PlayerViewState | null,
@@ -82,17 +163,20 @@ export function getMatchActionCues(
     return cues;
   }
 
-  const names = after.players.map(player => player.displayName + ' ')
-    .sort((first, second) => second.length - first.length);
-  const actions = entries.map(entry => {
-    const name = names.find(prefix => entry.startsWith(prefix));
-    return name ? entry.slice(name.length) : '';
+  const playersByLen = [...after.players].sort((first, second) => second.displayName.length - first.displayName.length);
+  const parsedActions = entries.map(entry => {
+    const actor = playersByLen.find(player => entry.startsWith(player.displayName + ' '));
+    return {
+      actor,
+      action: actor ? entry.slice(actor.displayName.length + 1) : entry,
+    };
   });
+  const actions = parsedActions.map(item => item.action);
   const shuffled = entries.some(entry => entry.startsWith('Chồng bài rút đã hết, hệ thống tự động trộn'));
   const judged = actions.some(action => /^(?:lật lá phán xét \(|phán xét Bát Quái Trận ra )/u.test(action)) ||
     Boolean(after.activeInterrupt?.judgeCard &&
       after.activeInterrupt.judgeCard.id !== before.activeInterrupt?.judgeCard?.id);
-  const heroSkills = actions.map(getLoggedHeroSkill);
+  const heroSkills = parsedActions.map(item => getLoggedHeroSkill(item.action, item.actor?.heroId));
   const paidDiscardCost = heroSkills.some(skill => skill !== undefined && DISCARD_COST_SKILLS.has(skill));
   if (shuffled) cues.add('SHUFFLE');
   if (judged) cues.add('JUDGE');
@@ -140,9 +224,15 @@ export function getMatchActionCues(
     cues.add('DUEL');
   }
 
-  const satLogged = actions.some(action => /^(?:đánh Sát vào |dùng Trượng Bát Xà Mâu đánh Sát|hưởng ứng Kích Tướng đánh Sát)/u.test(action));
-  const daoLogged = actions.some(action => action.startsWith('dùng Đào '));
-  const thiemLogged = actions.some(action => action.startsWith('hưởng ứng Hộ Giá đánh Thiểm'));
+  const satLogged = actions.some(action =>
+    /^(?:đánh Sát|dùng Trượng Bát Xà Mâu đánh Sát|hưởng ứng Kích Tướng.*đánh Sát|dùng (?:Võ Thánh|Long Đảm) (?:đánh|hóa) Sát)/u.test(action),
+  );
+  const daoLogged = actions.some(action =>
+    /^(?:dùng Đào |dùng Cấp Cứu (?:hóa|đánh) Đào)/u.test(action),
+  );
+  const thiemLogged = actions.some(action =>
+    /^(?:hưởng ứng Hộ Giá.*đánh Thiểm|dùng (?:Long Đảm|Khuynh Quốc) (?:đánh|hóa) Thiểm)/u.test(action),
+  );
   if (satLogged) cues.add('SAT');
   if (daoLogged) cues.add('DAO');
   if (thiemLogged) cues.add('THIEM');

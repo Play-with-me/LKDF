@@ -31,7 +31,7 @@ export function scheduleBotStep(step: () => void, delayMs: number): () => void {
   return () => clearTimeout(timer);
 }
 
-export const OFFLINE_NULLIFICATION_MS = 3500;
+export const OFFLINE_NULLIFICATION_MS = 8000;
 
 export function finishOfflineNullification(state: MasterGameState, rng = Math.random): MasterGameState {
   const frame = state.interruptStack.at(-1);
@@ -52,7 +52,7 @@ export function getOfflineBotSeat(state: MasterGameState): number | undefined {
   return getPendingPrompt(state)?.actorSeats.find((seat) => seat !== 0);
 }
 
-export function runOfflineBotStep(state: MasterGameState, seat: number, rng = Math.random): MasterGameState {
+export function runOfflineBotStep(state: MasterGameState, seat: number, rng = Math.random, deferOpening = false): MasterGameState {
   const player = state.players[seat];
   if (!player || seat === 0) return state;
   if (state.turnPhase === 'HERO_SELECT') {
@@ -68,7 +68,8 @@ export function runOfflineBotStep(state: MasterGameState, seat: number, rng = Ma
       const view = projectStateForPlayer(next, candidate.userId);
       next = selectPlayerHero(next, candidate.seatIndex, chooseBotHero(view));
     }
-    return next.heroDraft?.stage === 'COMPLETED' ? startMatchCombat(next, rng) : next;
+    if (next.heroDraft?.stage !== 'COMPLETED') return next;
+    return deferOpening ? { ...next, turnPhase: 'HERO_SELECT' } : startMatchCombat(next, rng);
   }
 
   const view = projectStateForPlayer(state, player.userId);

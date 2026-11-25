@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { RedCliffsScene } from './red-cliffs/RedCliffsScene.js';
 import './lobby-camp.css';
 import { GameIcon } from '../../components/icons/index.js';
+import { GuofengPillSelect } from '../../components/ui/GuofengPillSelect.js';
 import { ApiError } from '../../lib/api.js';
 import type { LkdfApiClient } from '../../lib/api.js';
 import { playMatchCue } from '../../lib/soundFx.js';
@@ -51,7 +52,7 @@ const PRESET_OPTIONS: readonly {
 function getInitials(name: string): string {
   const parts = name.trim().split(/\s+/);
   if (parts.length === 0 || !parts[0]) {
-    return 'LK';
+    return 'TQ';
   }
   if (parts.length === 1) {
     return parts[0].slice(0, 2).toUpperCase();
@@ -353,13 +354,24 @@ export function WaitingRoomScreen({
               <div className="lkdf-waiting-actions">
                 {wsStatus !== 'CONNECTED' ? <button className={control} type="button" onClick={handleManualSync} disabled={isSyncing}>Đồng bộ lại</button> : null}
                 {isHost ? <>
-                  <label>Nhịp chơi <select className={control} value={roomState.timerPreset} disabled={isUpdatingPreset || isStartingMatch}
-                    onChange={event => {
-                      const option = PRESET_OPTIONS.find(item => item.id === event.target.value);
-                      if (option) void handleSelectTimerPreset(option.id);
-                    }}>
-                    {PRESET_OPTIONS.map(option => <option key={option.id} value={option.id} title={option.detail}>{option.title}</option>)}
-                  </select></label>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-medium text-[#DFCAA9]">Nhịp chơi</span>
+                    <GuofengPillSelect
+                      ariaLabel="Nhịp chơi"
+                      value={roomState.timerPreset}
+                      disabled={isUpdatingPreset || isStartingMatch}
+                      className="min-w-[138px]"
+                      options={PRESET_OPTIONS.map((option) => ({
+                        value: option.id,
+                        label: option.title,
+                        detail: option.detail,
+                      }))}
+                      onChange={(nextValue) => {
+                        const option = PRESET_OPTIONS.find((item) => item.id === nextValue);
+                        if (option) void handleSelectTimerPreset(option.id);
+                      }}
+                    />
+                  </div>
                   <div className="lkdf-waiting-start">
                     <button className="lkdf-online-join" type="button" disabled={Boolean(requirement) || isStartingMatch}
                       aria-describedby="live-room-start-status" onClick={handleStartMatch}>Bắt đầu ván đấu</button>

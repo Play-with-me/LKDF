@@ -1,3 +1,4 @@
+import { clearHandOrder, orderHand, rememberHandOrder } from './handOrder.js';
 import { createPortal } from 'react-dom';
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { formatRankLabel, getHeroDefinition } from '@lkdf/shared';
@@ -28,7 +29,8 @@ import { MatchActionArc } from './MatchActionArc.js';
 import { MatchVfxCanvas } from './MatchVfxCanvas.js';
 import { MatchCenterBoard } from './MatchCenterBoard.js';
 import { cardHover, MatchHoverTooltip } from './MatchHoverTooltip.js';
-import { SeatCard } from './SeatCard.js';
+import { MatchInspectorBox } from './MatchInspectorBox.js';
+import { isPassiveSkillId, SeatCard } from './SeatCard.js';
 import { useMatchMotion } from './useMatchMotion.js';
 import {
   buildCardDragDropIntent,
@@ -41,6 +43,7 @@ import {
   getOrderedSeatsClockwiseFromSelf,
   getRequiredTargetSpec,
   isCardRed,
+  isCardValidForConvertMode,
 } from './matchTypes.js';
 import type {
   ConvertCardMode,
@@ -212,9 +215,7 @@ function FuseTimer({ deadline, paused, pausedRemainingMs, totalSeconds }: {
 
 const EMPTY_AIMING_SEATS: readonly number[] = [];
 
-type OpeningCeremonyStage = 'COUNTDOWN' | 'IDENTITY_GACHA' | 'HERO_GACHA';
-const COUNTDOWN_SECOND_MS = 1000;
-const OPENING_COUNTDOWN_MS = 3 * COUNTDOWN_SECOND_MS;
+type OpeningCeremonyStage = 'IDENTITY_GACHA' | 'HERO_GACHA';
 
 function getIdentityMissionVi(identity: PublicPlayerView['identity']): string {
   switch (identity) {
@@ -300,15 +301,13 @@ export function MatchArenaLayout({
   const [ceremonyState, setCeremonyState] = useState<{
     readonly matchId: string;
     readonly stage: OpeningCeremonyStage;
-    readonly countdown: number;
     readonly identityRevealed: boolean;
   }>(() => ({
     matchId: playerView.matchId,
     stage:
       isHeroSelectPhaseNow && !selfHeroAlreadySelected && !prefersReducedMotion()
-        ? 'COUNTDOWN'
+        ? 'IDENTITY_GACHA'
         : 'HERO_GACHA',
-    countdown: 3,
     identityRevealed: false,
   }));
 
@@ -319,7 +318,6 @@ export function MatchArenaLayout({
     setCeremonyState({
       matchId: playerView.matchId,
       stage: 'HERO_GACHA',
-      countdown: 0,
       identityRevealed: true,
     });
   }, [playerView.matchId]);
@@ -332,8 +330,7 @@ export function MatchArenaLayout({
       setCeremonyState({
         matchId: playerView.matchId,
         stage: 'HERO_GACHA',
-        countdown: 0,
-        identityRevealed: true,
+          identityRevealed: true,
       });
       return;
     }
@@ -349,60 +346,71 @@ export function MatchArenaLayout({
       setCeremonyState({
         matchId: playerView.matchId,
         stage: 'HERO_GACHA',
-        countdown: 0,
-        identityRevealed: true,
+          identityRevealed: true,
       });
       return;
     }
 
-    setCeremonyState({
-      matchId: playerView.matchId,
-      stage: 'COUNTDOWN',
-      countdown: 3,
-      identityRevealed: false,
-    });
-    playMatchCue('COUNTDOWN_START', isMatchSoundEnabled());
-
-    const t1 = window.setTimeout(() => {
-      setCeremonyState((prev) =>
-        prev.matchId === playerView.matchId ? { ...prev, countdown: 2 } : prev,
-      );
-      playMatchCue('TIMER_TICK', isMatchSoundEnabled());
-    }, COUNTDOWN_SECOND_MS);
-    const t2 = window.setTimeout(() => {
-      setCeremonyState((prev) =>
-        prev.matchId === playerView.matchId ? { ...prev, countdown: 1 } : prev,
-      );
-      playMatchCue('TIMER_TICK', isMatchSoundEnabled());
-    }, 2 * COUNTDOWN_SECOND_MS);
-    const t3 = window.setTimeout(() => {
-      setCeremonyState((prev) =>
-        prev.matchId === playerView.matchId
-          ? { ...prev, stage: 'IDENTITY_GACHA', countdown: 0, identityRevealed: false }
-          : prev,
-      );
-      playMatchCue('SHUFFLE', isMatchSoundEnabled());
-    }, OPENING_COUNTDOWN_MS);
-    const t4 = window.setTimeout(() => {
-      setCeremonyState((prev) =>
-        prev.matchId === playerView.matchId ? { ...prev, identityRevealed: true } : prev,
-      );
+    setCeremonyState({ matchId: playerView.matchId, stage: 'IDENTITY_GACHA', identityRevealed: false });
+    const reveal = window.setTimeout(() => {
+      setCeremonyState(prev => ({ ...prev, identityRevealed: true }));
       playMatchCue('PANEL_OPEN', isMatchSoundEnabled());
-    }, OPENING_COUNTDOWN_MS + 160);
-    const t5 = window.setTimeout(() => {
+    }, 160);
+    const choose = window.setTimeout(() => {
       completedCeremonyMatchIdRef.current = playerView.matchId;
-      setCeremonyState((prev) =>
-        prev.matchId === playerView.matchId ? { ...prev, stage: 'HERO_GACHA' } : prev,
-      );
+      setCeremonyState(prev => ({ ...prev, stage: 'HERO_GACHA' }));
       playMatchCue('DEAL_OPENING', isMatchSoundEnabled());
-    }, OPENING_COUNTDOWN_MS + 1270);
-
-    ceremonyTimersRef.current = [t1, t2, t3, t4, t5];
+    }, 1270);
+    ceremonyTimersRef.current = [reveal, choose];
     return () => {
       ceremonyTimersRef.current.forEach((id) => window.clearTimeout(id));
       ceremonyTimersRef.current = [];
     };
   }, [isHeroSelectPhaseNow, playerView.matchId, selfHeroAlreadySelected]);
+
+  const opening = playerView.turnPhase === 'HERO_SELECT' && playerView.heroDraft?.stage === 'COMPLETED';
+  const [openingSeconds, setOpeningSeconds] = useState(3);
+  const openingFallbackDeadlineRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (!opening) {
+      openingFallbackDeadlineRef.current = null;
+      setOpeningSeconds(3);
+      return undefined;
+    }
+    const parsedDeadline = phaseDeadlineAt ? Date.parse(phaseDeadlineAt) : Number.NaN;
+    const targetDeadlineMs = Number.isFinite(parsedDeadline)
+      ? parsedDeadline
+      : (openingFallbackDeadlineRef.current ??= Date.now() + 3000);
+    const update = () =>
+      setOpeningSeconds(
+        Math.max(0, Math.min(3, Math.ceil((targetDeadlineMs - Date.now()) / 1000))),
+      );
+    update();
+    const timer = window.setInterval(update, 75);
+    return () => window.clearInterval(timer);
+  }, [opening, phaseDeadlineAt]);
+  const openingCue = useRef<number | null>(null);
+  useEffect(() => {
+    if (!opening) { openingCue.current = null; return; }
+    if (openingSeconds > 0 && openingSeconds !== openingCue.current) {
+      playMatchCue(openingCue.current === null ? 'COUNTDOWN_START' : 'TIMER_TICK', isMatchSoundEnabled());
+      openingCue.current = openingSeconds;
+    }
+  }, [opening, openingSeconds]);
+
+  const lastReveal = playerView.publicReveals?.at(-1);
+  const luoShenPrompt = playerView.activeInterrupt;
+  const autoLuoShen = luoShenPrompt?.kind === 'ASK_LUO_SHEN' &&
+    luoShenPrompt.targetSeat === playerView.viewerSeatIndex && lastReveal?.label.endsWith('Lạc Thần') &&
+    playerView.actionLog.at(-1)?.includes('thu về tay!');
+  useEffect(() => {
+    if (!autoLuoShen || isTimerPaused || connectionLost || selfPlayer?.isBotTakeover) return;
+    const timer = window.setTimeout(() => {
+      onSendAction({ type: 'RESPOND_LUO_SHEN', seatIndex: playerView.viewerSeatIndex, activate: true });
+    }, 1450);
+    return () => window.clearTimeout(timer);
+  }, [autoLuoShen, connectionLost, isTimerPaused, luoShenPrompt?.id, onSendAction,
+    playerView.viewerSeatIndex, selfPlayer?.isBotTakeover]);
 
   const prompt = describePendingActorPrompt(playerView);
   const targetSpec = getRequiredTargetSpec(playerView, selection);
@@ -410,6 +418,11 @@ export function MatchArenaLayout({
     playerView.turnPhase === 'PLAY' &&
     playerView.currentTurnSeat === playerView.viewerSeatIndex &&
     playerView.activeInterrupt === null;
+  const isDrawPhaseSelf =
+    playerView.turnPhase === 'DRAW' &&
+    playerView.currentTurnSeat === playerView.viewerSeatIndex &&
+    playerView.activeInterrupt === null &&
+    (playerView.availableDrawCount ?? 0) > 0;
 
   const isInterruptTargetSelection =
     playerView.activeInterrupt !== null &&
@@ -436,14 +449,55 @@ export function MatchArenaLayout({
   }, [selfDisplayPhoto]);
 
   const [stagedDiscardIds, setStagedDiscardIds] = useState<readonly string[]>([]);
-  const fullHand = selfPlayer?.handCards;
+  const [reorderingHand, setReorderingHand] = useState(false);
+  const [reorderDraggingId, setReorderDraggingId] = useState<string | null>(null);
+  const [reorderOverId, setReorderOverId] = useState<string | null>(null);
+  const [, refreshHand] = useState(0);
+  const draggedHandCard = useRef<string | null>(null);
+  useEffect(() => {
+    setReorderingHand(false);
+    setReorderDraggingId(null);
+    setReorderOverId(null);
+    return () => clearHandOrder(playerView.matchId);
+  }, [playerView.matchId]);
+  const fullHand = orderHand(playerView.matchId, selfPlayer?.handCards ?? []);
+  const handIsFaceDown = playerView.activeInterrupt?.handPick === 'SELECT' &&
+    playerView.activeInterrupt.targetSeat === playerView.viewerSeatIndex;
+  useEffect(() => {
+    if (!reorderingHand) {
+      setReorderDraggingId(null);
+      setReorderOverId(null);
+      return;
+    }
+    if (!selfPlayer?.alive || fullHand.length <= 1 || handIsFaceDown) {
+      setReorderingHand(false);
+      return;
+    }
+    const onEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setReorderingHand(false);
+      }
+    };
+    window.addEventListener('keydown', onEscape);
+    return () => window.removeEventListener('keydown', onEscape);
+  }, [reorderingHand, selfPlayer?.alive, fullHand.length, handIsFaceDown]);
+  const moveHandCard = (from: string, to: string) => {
+    const ids = fullHand.map(card => card.id);
+    const sourceIndex = ids.indexOf(from);
+    const destination = ids.indexOf(to);
+    if (sourceIndex < 0 || destination < 0 || sourceIndex === destination) return;
+    ids.splice(sourceIndex, 1);
+    ids.splice(destination, 0, from);
+    rememberHandOrder(playerView.matchId, ids);
+    refreshHand(value => value + 1);
+  };
   const discardLimit = Math.max(0, selfPlayer?.hp ?? 0);
   const discardRequired = !connectionLost && selfPlayer?.alive && !selfPlayer.isBotTakeover &&
     playerView.turnPhase === 'DISCARD' && playerView.activeInterrupt === null &&
     playerView.currentTurnSeat === playerView.viewerSeatIndex
     ? Math.max(0, (fullHand?.length ?? 0) - discardLimit)
     : 0;
-  const discardHandKey = discardRequired > 0 ? fullHand?.map((card) => card.id).join('|') : '';
+  const discardHandKey = discardRequired > 0 ? selfPlayer?.handCards?.map(card => card.id).join('|') : '';
   useEffect(() => {
     setStagedDiscardIds([]);
   }, [discardRequired, discardHandKey, playerView.matchId, playerView.roundNumber]);
@@ -462,14 +516,21 @@ export function MatchArenaLayout({
     if (!handCards.some((card) => card.id === cardId)) return;
     const cardIds = [...stagedDiscardIds, cardId];
     if (discardRemaining === 1) {
-      submitDiscard(cardIds);
+      const remainingSelected = selectedToDiscard
+        .filter((card) => card.id !== cardId)
+        .map((card) => card.id);
+      if (remainingSelected.length === 0) {
+        submitDiscard(cardIds);
+        return;
+      }
+      submitDiscard([...stagedDiscardIds, ...remainingSelected.slice(0, discardRemaining - 1), cardId]);
     } else {
       setStagedDiscardIds(cardIds);
-      onClearSelection?.();
+      if (selection.selectedCardIds.includes(cardId)) {
+        onToggleCard(cardId);
+      }
     }
   } : undefined;
-  const handIsFaceDown = playerView.activeInterrupt?.handPick === 'SELECT' &&
-    playerView.activeInterrupt.targetSeat === playerView.viewerSeatIndex;
   const isFirstRoundPeaceful = Boolean(
     playerView.peacefulFirstRound && playerView.roundNumber === 1,
   );
@@ -489,6 +550,28 @@ export function MatchArenaLayout({
   const isBotTakeoverSelf = Boolean(selfPlayer?.isBotTakeover);
   const showNetworkBanner = connectionLost || isBotTakeoverSelf;
   const isHeroSelectPhase = playerView.turnPhase === 'HERO_SELECT';
+  const isSelfLuoYiActive = Boolean(
+    selfPlayer &&
+      !isHeroSelectPhase &&
+      playerView.turnPhase !== 'GAME_OVER' &&
+      playerView.currentTurnSeat === selfPlayer.seatIndex &&
+      playerView.turnFlags?.luoYiActive,
+  );
+  const isSelfKongChengActive = Boolean(
+    selfPlayer &&
+      !isHeroSelectPhase &&
+      playerView.turnPhase !== 'GAME_OVER' &&
+      selfPlayer.alive &&
+      selfPlayer.heroId === 'zhuge_liang' &&
+      selfPlayer.handCount === 0,
+  );
+  const isSelfQianXunActive = Boolean(
+    selfPlayer &&
+      !isHeroSelectPhase &&
+      playerView.turnPhase !== 'GAME_OVER' &&
+      selfPlayer.alive &&
+      selfPlayer.heroId === 'lu_xun',
+  );
 
   // Tài nguyên Doanh Trại A (100% ảnh thật)
   const campBackdropUrl = getUiAssetUrl('camp-zhanhuo') ?? getUiAssetUrl('table-bg');
@@ -510,15 +593,95 @@ export function MatchArenaLayout({
     return () => window.clearTimeout(id);
   }, [dragFeedbackVi]);
 
-  // Đặt lại inspector và kéo thả khi chuyển ván hoặc đổi pha
+  // Đặt lại inspector khi chuyển ván hoặc vào pha chọn tướng
   useEffect(() => {
     setInspector(null);
   }, [playerView.matchId]);
 
   useEffect(() => {
+    if (isHeroSelectPhase) {
+      setInspector(null);
+    }
+  }, [isHeroSelectPhase]);
+
+  useEffect(() => {
+    if (!inspector) return undefined;
+    const onCaptureEscape = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      if (document.querySelector('dialog[open]')) return;
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      setInspector(null);
+    };
+    window.addEventListener('keydown', onCaptureEscape, { capture: true });
+    return () => window.removeEventListener('keydown', onCaptureEscape, { capture: true });
+  }, [inspector]);
+
+  useEffect(() => {
     dragSessionRef.current = null;
     setDragState(null);
   }, [playerView.turnPhase, playerView.activeInterrupt?.kind, playerView.currentTurnSeat]);
+
+  const drawShortcutKeyRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (
+      !isDrawPhaseSelf ||
+      connectionLost ||
+      isBotTakeoverSelf ||
+      isTimerPaused ||
+      !selfPlayer?.alive
+    ) {
+      drawShortcutKeyRef.current = null;
+      return undefined;
+    }
+    const turnKey = `${playerView.matchId}:${playerView.roundNumber}:${playerView.currentTurnSeat}:${playerView.drawPileCount}`;
+    const onDrawKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Enter' && event.key !== ' ') return;
+      if (event.metaKey || event.ctrlKey || event.altKey || event.repeat) return;
+      const target = event.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.tagName === 'SELECT' ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+      if (document.querySelector('dialog[open]') || reorderingHand) return;
+      const focusedButton = target?.closest('button, a, [role="button"]') as HTMLElement | null;
+      if (
+        focusedButton &&
+        !focusedButton.dataset.primaryAction &&
+        !focusedButton.closest('[data-hand-card-id]')
+      ) {
+        return;
+      }
+      if (drawShortcutKeyRef.current === turnKey) return;
+      drawShortcutKeyRef.current = turnKey;
+      event.preventDefault();
+      onSendAction({
+        type: 'DRAW_CARDS',
+        seatIndex: playerView.viewerSeatIndex,
+      });
+    };
+    window.addEventListener('keydown', onDrawKeyDown);
+    return () => window.removeEventListener('keydown', onDrawKeyDown);
+  }, [
+    connectionLost,
+    isBotTakeoverSelf,
+    isDrawPhaseSelf,
+    isTimerPaused,
+    onSendAction,
+    playerView.currentTurnSeat,
+    playerView.drawPileCount,
+    playerView.matchId,
+    playerView.roundNumber,
+    playerView.viewerSeatIndex,
+    reorderingHand,
+    selfPlayer?.alive,
+  ]);
 
   const handleCardToggleFromUi = useCallback(
     (cardId: string) => {
@@ -526,26 +689,9 @@ export function MatchArenaLayout({
         suppressClickCardIdRef.current = null;
         return;
       }
-      const cardObj = handCards.find((c) => c.id === cardId);
-      const willBeSelected = !selection.selectedCardIds.includes(cardId);
-      if (cardObj && willBeSelected) {
-        setInspector({
-          kind: 'card',
-          sourceId: `hand:${cardObj.id}`,
-          sourceLabel: 'Lá bài trên tay',
-          card: cardObj,
-        });
-      } else if (
-        !willBeSelected &&
-        selection.selectedCardIds.length <= 1 &&
-        inspector?.kind === 'card' &&
-        inspector.sourceId === `hand:${cardId}`
-      ) {
-        setInspector(null);
-      }
       onToggleCard(cardId);
     },
-    [handCards, inspector, onToggleCard, selection.selectedCardIds],
+    [onToggleCard],
   );
 
   const handleInspectHero = useCallback((seatIndex: number) => {
@@ -887,17 +1033,28 @@ export function MatchArenaLayout({
           : undefined;
 
     const isTopBand = coord.topPct <= 24;
-    const isActiveBot = isActor && opp.isBotTakeover;
+    const isTopCornerBand = isTopBand && (coord.leftPct <= 35 || coord.leftPct >= 65);
+    const isReactingTurn =
+      playerView.turnPhase !== 'HERO_SELECT' &&
+      playerView.turnPhase !== 'GAME_OVER' &&
+      isActor &&
+      !isCurrentTurnOwner;
+    const isActiveBot = (isActor || isCurrentTurnOwner) && opp.isBotTakeover;
     return (
       <div
         key={opp.seatIndex}
+        data-main-turn={isCurrentTurnOwner ? 'true' : undefined}
+        data-reacting-turn={isReactingTurn ? 'true' : undefined}
+        data-seat-band={isTopBand ? 'top' : undefined}
         style={{
           left: `${coord.leftPct}%`,
-          top: isTopBand
-            ? coord.topPct <= 14
-              ? 'clamp(3px, 0.8cqh, 8px)'
-              : 'clamp(6px, 1.3cqh, 12px)'
-            : `${coord.topPct}%`,
+          top: isTopCornerBand
+            ? 'clamp(38px, 6cqh, 44px)'
+            : isTopBand
+              ? coord.topPct <= 14
+                ? 'clamp(3px, 0.8cqh, 8px)'
+                : 'clamp(6px, 1.3cqh, 12px)'
+              : `${coord.topPct}%`,
         }}
         className={[
           'absolute z-20 -translate-x-1/2',
@@ -944,10 +1101,36 @@ export function MatchArenaLayout({
   };
 
   const interrupt = playerView.activeInterrupt;
+  const hasCenterInterruptChoice = Boolean(
+    prompt.isMyTurn &&
+      interrupt !== null &&
+      (interrupt.kind === 'WAIT_HARVEST_PICK' ||
+        interrupt.kind === 'PICK_TARGET_CARD' ||
+        interrupt.kind === 'ASK_HAN_BANG_KIEM' ||
+        interrupt.kind === 'WAIT_GUAN_XING' ||
+        interrupt.kind === 'WAIT_YI_JI'),
+  );
   const hasReaction = interrupt !== null && interrupt.kind !== 'WAIT_HARVEST_PICK';
   const actionSeconds = playerView.activeInterrupt ? timerConfig.reactionSeconds :
     playerView.turnPhase === 'DISCARD' ? timerConfig.discardSeconds ?? timerConfig.mainTurnSeconds : timerConfig.mainTurnSeconds;
-  const showLocalReaction = hasReaction && prompt.actorSeat === playerView.viewerSeatIndex;
+  const showLocalReaction =
+    hasReaction && !hasCenterInterruptChoice && prompt.actorSeat === playerView.viewerSeatIndex;
+  const responseScroll = interrupt?.originalScrollNameVi ?? interrupt?.scrollNameVi;
+  const directReaction = interrupt?.kind === 'WAIT_AOE_SAT' || interrupt?.kind === 'WAIT_AOE_DODGE' ||
+    interrupt?.kind === 'WAIT_NULLIFICATION' &&
+      (responseScroll === 'Nam Man Nhập Xâm' || responseScroll === 'Vạn Tiễn Tề Phát');
+  const handleHandClick = (cardId: string) => {
+    const card = handCards.find(item => item.id === cardId);
+    if (directReaction && card && selection.activeConvertMode !== 'truong_bat') {
+      const intent = buildCardDragDropIntent(playerView, card, selection);
+      if (intent.kind === 'table') {
+        onSendAction(intent.action);
+        onClearSelection?.();
+        return;
+      }
+    }
+    handleCardToggleFromUi(cardId);
+  };
   const showNullification = !connectionLost && !isBotTakeoverSelf &&
     interrupt?.kind === 'WAIT_NULLIFICATION' && interrupt.canRespondNullification;
   const showTableDropBanner =
@@ -967,10 +1150,10 @@ export function MatchArenaLayout({
           title={skill.descriptionVi}
           onClick={() => onToggleSkillMode(skill.id)}
           className={[
-            'inline-flex cursor-pointer items-center gap-0.5 rounded border px-1.5 py-0.5 text-[9.5px] leading-tight font-bold transition-colors',
+            'inline-flex min-h-[28px] cursor-pointer items-center gap-1 rounded border px-2.5 py-0.5 text-[11px] leading-tight font-bold transition-colors',
             active
               ? 'border-[#D99B26] bg-[#D99B26]/25 text-[#FBBF24]'
-              : 'border-[#3A424C] bg-[#1E2328] text-[#D1D5DB] hover:border-[#D99B26]/70',
+              : 'border-[#806345]/75 bg-[#231A14] text-[#EDE3D2] hover:border-[#D99B26]/80 hover:bg-[#2C2017]',
           ].join(' ')}
         >
           {skill.nameVi}
@@ -987,10 +1170,10 @@ export function MatchArenaLayout({
           title={opt.descriptionVi}
           onClick={() => onToggleConvertMode(opt.mode)}
           className={[
-            'inline-flex cursor-pointer items-center gap-0.5 rounded border px-1.5 py-0.5 text-[9.5px] leading-tight font-bold transition-colors',
+            'inline-flex min-h-[28px] cursor-pointer items-center gap-1 rounded border px-2.5 py-0.5 text-[11px] leading-tight font-bold transition-colors',
             active
               ? 'border-[#C83E37] bg-[#C83E37]/25 text-[#FCA5A5]'
-              : 'border-[#3A424C] bg-[#1E2328] text-[#D1D5DB] hover:border-[#C83E37]/70',
+              : 'border-[#806345]/75 bg-[#231A14] text-[#EDE3D2] hover:border-[#C83E37]/80 hover:bg-[#2B1715]',
           ].join(' ')}
         >
           {opt.labelVi}
@@ -1011,8 +1194,220 @@ export function MatchArenaLayout({
         ? selection.selectedTargets
         : EMPTY_AIMING_SEATS;
 
+  const stagedDiscardCards = stagedDiscardIds
+    .map((id) => fullHand.find((card) => card.id === id))
+    .filter((card): card is CardInstance => Boolean(card));
+
+  const transientPill = actionErrorVi ? (
+    <div
+      role="alert"
+      className="pointer-events-auto w-max max-w-full rounded-full border border-[#DC2626]/70 bg-[#2A1211]/96 px-3.5 py-1 text-center text-[11.5px] font-bold text-[#FCA5A5] shadow-lg"
+    >
+      {actionErrorVi}
+    </div>
+  ) : showTableDropBanner && dragState ? (
+    <div
+      data-drop-table="1"
+      className={[
+        'pointer-events-none w-[min(440px,100%)] rounded-xl border-2 border-dashed px-4 py-1.5 text-center shadow-2xl transition-colors',
+        dragState.hoverTable
+          ? 'lkdf-drop-pulse border-[#FBBF24] bg-[#5C2816]/94'
+          : 'border-[#D99B26]/70 bg-[#14100C]/90',
+      ].join(' ')}
+    >
+      <span className="font-serif-title inline-flex items-center justify-center gap-1.5 text-[12px] font-bold text-[#FDE68A]">
+        <GameIcon name="ui:sparkles" size={13} className="shrink-0 text-[#FBBF24]" />
+        <span>
+          {dragState.intent.kind === 'table'
+            ? dragState.intent.actionLabelVi
+            : dragState.intent.kind === 'toggle_select'
+              ? dragState.intent.promptVi
+              : ''}
+        </span>
+      </span>
+    </div>
+  ) : dragState && (dragState.intent.kind === 'seat' || dragState.intent.kind === 'seat_pair_step1') ? (
+    <div className="pointer-events-none inline-flex max-w-full items-center gap-1.5 rounded-full border border-[#D99B26]/60 bg-[#120E0B]/92 px-3.5 py-1 text-[11px] font-bold text-[#FDE68A] shadow-lg">
+      <GameIcon name="archery-target" size={12} className="shrink-0 text-[#FBBF24]" />
+      <span>
+        {dragState.intent.kind === 'seat'
+          ? `Kéo thả thẳng lên 1 ghế sáng viền vàng để ${dragState.intent.actionVerbVi}`
+          : dragState.intent.actionLabelVi}
+      </span>
+    </div>
+  ) : dragState && dragState.intent.kind === 'blocked' ? (
+    <div className="pointer-events-none inline-flex max-w-full items-center gap-1.5 rounded-full border border-[#DC2626]/55 bg-[#1B1111]/94 px-3.5 py-1 text-[11px] font-semibold text-[#FCA5A5] shadow-lg">
+      <GameIcon name="ui:lock" size={12} className="shrink-0 text-[#F87171]" />
+      <span>{dragState.intent.reasonVi}</span>
+    </div>
+  ) : !dragState && dragFeedbackVi ? (
+    <div className="pointer-events-none inline-flex max-w-full items-center gap-1.5 rounded-full border border-[#A68042]/50 bg-[#14110D]/92 px-3.5 py-1 text-[11px] font-semibold text-[#E6CFA3] shadow-lg">
+      <GameIcon name="ui:info" size={12} className="shrink-0 text-[#E6BE6C]" />
+      <span>{dragFeedbackVi}</span>
+    </div>
+  ) : showOnboardingHint && isPlayPhaseSelf && !hasReaction && discardRemaining === 0 ? (
+    <div
+      role="status"
+      data-onboarding-hint="true"
+      className="pointer-events-auto flex w-max max-w-full items-center gap-2 rounded-full border border-[#B89352]/65 bg-[#120E0B]/92 px-3 py-1 text-[10.5px] font-medium text-[#F4EBD8] shadow-[0_8px_20px_rgba(0,0,0,0.68)]"
+    >
+      <span className="truncate">
+        Mẹo nhanh: Bấm lá bài (phím 1–9) rồi chọn tướng sáng viền vàng · Nhấn E để kết thúc lượt
+      </span>
+      <button
+        type="button"
+        onClick={() => {
+          writeDevicePreference('onboardingHints', false);
+          setShowOnboardingHint(false);
+        }}
+        className="shrink-0 cursor-pointer rounded-full border border-[#E6BE6C]/70 bg-[#2C2115] px-2 py-0.5 text-[10px] font-bold text-[#FDE68A] transition-colors hover:bg-[#3F2F1E]"
+      >
+        Đã hiểu
+      </button>
+    </div>
+  ) : null;
+
+  const isDiscardReady = discardRemaining > 0 && selectedToDiscard.length === discardRemaining;
+  const floatingBar = showNullification ? (
+    <div className="lkdf-dock-floating-bar lkdf-nullification-actions pointer-events-auto">
+      {renderActionSidebar()}
+    </div>
+  ) : showLocalReaction ? (
+    <div className="lkdf-dock-floating-bar lkdf-battle-reaction lkdf-scroll pointer-events-auto max-h-[min(140px,28dvh)] overflow-y-auto">
+      {!isPlayPhaseSelf && availableConverts.length > 0 ? (
+        <div className="flex flex-wrap items-center justify-center gap-1.5" role="group" aria-label="Kỹ năng phản ứng">
+          {skillControls}
+        </div>
+      ) : null}
+      {renderActionSidebar()}
+    </div>
+  ) : discardRemaining > 0 ? (
+    <div className="lkdf-dock-floating-bar lkdf-command-bar pointer-events-auto">
+      <button
+        type="button"
+        data-primary-action={isDiscardReady ? 'true' : undefined}
+        disabled={!isDiscardReady}
+        onClick={() => submitDiscard([...stagedDiscardIds, ...selectedToDiscard.map((card) => card.id)])}
+        className="inline-flex min-h-[38px] w-max max-w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-[#C83E37] bg-[#9E2B25] px-3.5 py-1.5 text-xs font-bold text-[#FFF1EC] shadow-lg hover:bg-[#B8322B] disabled:cursor-not-allowed disabled:bg-[#641C1B] disabled:opacity-65"
+      >
+        <GameIcon name="card-discard" size={14} />
+        <span>
+          {isDiscardReady
+            ? `Bỏ ${discardRemaining} lá đã chọn (${selectedToDiscard.length}/${discardRemaining})`
+            : `Chọn ${discardRemaining} lá bài để bỏ (${selectedToDiscard.length}/${discardRemaining})`}
+        </span>
+        {isDiscardReady ? <kbd className="font-mono-num text-[10px] opacity-80">[Enter]</kbd> : null}
+      </button>
+      {selectedToDiscard.length > 0 ? (
+        <button
+          type="button"
+          onClick={() => onClearSelection?.()}
+          className="inline-flex min-h-[38px] cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-[#806345]/75 bg-[#231A14] px-3 py-1.5 text-xs font-semibold text-[#EDE3D2] hover:border-[#D99B26] hover:bg-[#2C2017]"
+        >
+          <GameIcon name="ui:undo" size={13} />
+          <span>Hủy chọn</span>
+          <kbd className="font-mono-num text-[10px] opacity-75">[Esc]</kbd>
+        </button>
+      ) : null}
+      {stagedDiscardCards.length > 0 ? (
+        <div className="flex flex-wrap items-center justify-center gap-1" role="group" aria-label="Bài đã kéo chờ bỏ">
+          {stagedDiscardCards.map((card) => (
+            <button
+              key={card.id}
+              type="button"
+              onClick={() => setStagedDiscardIds((prev) => prev.filter((id) => id !== card.id))}
+              title={`Bấm để đưa ${card.nameVi} trở lại tay`}
+              className="inline-flex min-h-[30px] cursor-pointer items-center gap-1 rounded border border-[#D99B26]/70 bg-[#2C1F13]/95 px-2 py-0.5 text-[11px] font-semibold text-[#FDE68A] hover:border-[#FBBF24]"
+            >
+              <GameIcon name="ui:undo" size={11} className="shrink-0" />
+              <span>{card.nameVi}</span>
+            </button>
+          ))}
+          {stagedDiscardCards.length > 1 ? (
+            <button
+              type="button"
+              onClick={() => setStagedDiscardIds([])}
+              className="inline-flex min-h-[30px] cursor-pointer items-center rounded border border-[#6E7889]/70 bg-[#1B2028] px-2 py-0.5 text-[11px] font-semibold text-[#E2E8F0] hover:border-[#E6BE6C]"
+            >
+              Hoàn tác hết
+            </button>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
+  ) : isPlayPhaseSelf && !hasReaction ? (
+    <div className="lkdf-dock-floating-bar lkdf-command-bar pointer-events-auto">
+      {(availableSkills.length > 0 || availableConverts.length > 0) ? (
+        <div className="flex flex-wrap items-center justify-center gap-1.5" role="group" aria-label="Kỹ năng chủ động">
+          {skillControls}
+        </div>
+      ) : null}
+      {renderActionSidebar()}
+    </div>
+  ) : isDrawPhaseSelf ? (
+    <div className="lkdf-dock-floating-bar lkdf-command-bar pointer-events-auto">
+      {renderActionSidebar()}
+    </div>
+  ) : null;
+
+  const topCenterIndex = coords.findIndex(
+    (coord) => coord.topPct <= 24 && coord.leftPct >= 34 && coord.leftPct <= 66,
+  );
+  const topCenterOpponent = topCenterIndex >= 0 ? opponents[topCenterIndex] : undefined;
+  const topCenterEquipCount = topCenterOpponent
+    ? [
+        topCenterOpponent.equipments.weapon,
+        topCenterOpponent.equipments.armor,
+        topCenterOpponent.equipments.plusOneHorse,
+        topCenterOpponent.equipments.minusOneHorse,
+      ].filter(Boolean).length
+    : 0;
+  const topCenterEquipRows =
+    topCenterEquipCount === 0
+      ? 0
+      : isCompactSeats
+        ? topCenterEquipCount >= 3
+          ? 2
+          : 1
+        : topCenterEquipCount >= 2
+          ? 2
+          : 1;
+  const topCenterExtraRows =
+    topCenterEquipRows + (topCenterOpponent && topCenterOpponent.delayedScrolls.length > 0 ? 1 : 0);
+  const centerTopReserve = !topCenterOpponent
+    ? 'clamp(10px, 2.2cqh, 24px)'
+    : topCenterExtraRows === 0
+      ? 'clamp(100px, 16.8cqh, 120px)'
+      : topCenterExtraRows === 1
+        ? 'clamp(124px, 21cqh, 148px)'
+        : 'clamp(154px, 25.5cqh, 174px)';
+  const hasReactionConverts = !isPlayPhaseSelf && availableConverts.length > 0;
+  const centerBottomReserve = hasCenterInterruptChoice
+    ? transientPill
+      ? '44px'
+      : '12px'
+    : showLocalReaction
+      ? transientPill
+        ? hasReactionConverts
+          ? 'clamp(96px, 18cqh, 132px)'
+          : 'clamp(76px, 15cqh, 118px)'
+        : hasReactionConverts
+          ? 'clamp(76px, 15cqh, 106px)'
+          : 'clamp(68px, 13.5cqh, 96px)'
+      : floatingBar
+        ? transientPill
+          ? 'clamp(74px, 13.5cqh, 98px)'
+          : 'clamp(48px, 9.5cqh, 70px)'
+        : transientPill
+          ? '44px'
+          : '12px';
+
   return (
-    <div ref={arenaRef} className="lkdf-arena-stage relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-[#090807]">
+    <div
+      ref={arenaRef}
+      data-reordering-hand={reorderingHand ? 'true' : undefined}
+      className="lkdf-arena-stage relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-[#090807]"
+    >
       <div ref={motionLayerRef} className="lkdf-motion-layer" aria-hidden="true" />
       {!isHeroSelectPhase ? (
         <>
@@ -1031,9 +1426,9 @@ export function MatchArenaLayout({
       ) : null}
       {dragState ? <DragGhostCard card={dragState.card} ghostRef={ghostRef} /> : null}
 
-      {/* Thanh cảnh báo rớt mạng / Máy đánh hộ (chừa lề phải cho cụm nút Tự bỏ qua Vô Giải + Cài đặt) */}
+      {/* Thanh cảnh báo rớt mạng / Máy đánh hộ (chừa lề phải cho cụm HUD nhanh + Cài đặt) */}
       {showNetworkBanner ? (
-        <div className="flex shrink-0 items-center justify-between gap-3 border-b border-[#D97706]/50 bg-[#D97706]/20 py-1 pl-4 pr-[230px] text-[12px] font-semibold text-[#FDE68A]">
+        <div className="flex shrink-0 items-center justify-between gap-3 border-b border-[#D97706]/50 bg-[#D97706]/20 py-1 pl-4 pr-3 pt-10 text-[12px] font-semibold text-[#FDE68A] min-[960px]:pt-1 min-[960px]:pr-[390px] lg:pr-[446px]">
           <span className="inline-flex min-w-0 items-center gap-2 truncate">
             <GameIcon name={connectionLost ? 'ui:wifi-off' : 'ui:bot'} size={14} className="shrink-0" />
             <span className="truncate">
@@ -1045,7 +1440,7 @@ export function MatchArenaLayout({
           <button
             type="button"
             onClick={onReconnect}
-            className="inline-flex shrink-0 cursor-pointer items-center gap-1 rounded border border-[#D99B26] bg-[#14171A] px-2.5 py-0.5 text-[11px] font-bold text-[#FBBF24] hover:bg-[#1E2328]"
+            className="inline-flex shrink-0 cursor-pointer items-center gap-1 rounded border border-[#D99B26] bg-[#18120E] px-2.5 py-0.5 text-[11px] font-bold text-[#FBBF24] hover:bg-[#281E17]"
           >
             <GameIcon name="ui:refresh" size={12} />
             {connectionLost ? 'Kết nối lại ngay' : 'Lấy lại điều khiển'}
@@ -1093,9 +1488,12 @@ export function MatchArenaLayout({
           {/* 3–7 ghế đối thủ phân bố đều & co giãn theo bàn */}
           {opponents.map(renderOpponentSeat)}
 
-          {/* Bảng trung tâm ở lòng Bàn Tròn (3 tầng tách bạch: Banner + Trạng thái + Rút/Đánh) */}
+          {/* Bảng trung tâm ở lòng Bàn Tròn (neo trong hành lang an toàn giữa ghế trên và thanh lệnh đáy) */}
           {!isHeroSelectPhase ? (
-            <div className="lkdf-battle-center absolute top-[52%] left-1/2 z-10 flex max-h-[calc(100%-84px)] w-[clamp(236px,28.5cqw,356px)] -translate-x-1/2 -translate-y-1/2 flex-col items-center">
+            <div
+              style={{ top: centerTopReserve, bottom: centerBottomReserve }}
+              className="lkdf-battle-center absolute left-1/2 z-10 flex w-[clamp(324px,38.5cqw,464px)] -translate-x-1/2 flex-col items-center justify-center"
+            >
               <MatchCenterBoard
                 playerView={playerView}
                 timerConfig={timerConfig}
@@ -1114,50 +1512,76 @@ export function MatchArenaLayout({
                 }
               />
             </div>
+          ) : playerView.heroDraft?.stage === 'COMPLETED' ? (
+            <div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center p-3">
+              <section
+                data-opening-ceremony="COUNTDOWN"
+                className="flex w-full max-w-[min(430px,calc(100%-2rem))] flex-col items-center gap-2 rounded-2xl border border-[#CA9A48]/75 bg-[#16110E]/95 px-5 py-4 text-center shadow-[0_20px_56px_rgba(0,0,0,0.85)]"
+              >
+                <h2 className="font-serif-title text-[18px] font-bold text-[#FDE68A] sm:text-xl">
+                  Tất cả đã chốt tướng
+                </h2>
+                <span
+                  key={openingSeconds}
+                  className="lkdf-countdown-num font-serif-title tabular-nums text-5xl font-black text-[#FEF08A] sm:text-6xl"
+                >
+                  {openingSeconds > 0 ? openingSeconds : 'Khai trận'}
+                </span>
+                <p className="text-[12px] font-medium text-[#CBD5E1]">
+                  {openingSeconds > 0
+                    ? 'Chuẩn bị chia 4 lá bài mở màn…'
+                    : 'Đang chia bài vào trận…'}
+                </p>
+                <div className="mt-1 flex flex-wrap items-center justify-center gap-1.5">
+                  {playerView.players.map((p) => {
+                    const heroDef = p.heroId ? getHeroDefinition(p.heroId) : null;
+                    return (
+                      <span
+                        key={p.seatIndex}
+                        className="inline-flex items-center gap-1 rounded border border-[#CA9A48]/40 bg-[#120D0A]/90 px-2 py-0.5 text-[10.5px] font-semibold text-[#F4EFE6]"
+                      >
+                        <span className="text-[#94A3B8]">{p.displayName}:</span>
+                        <span className="text-[#FDE68A]">{heroDef?.nameVi ?? '…'}</span>
+                        {p.maxHp > 0 ? (
+                          <span className="font-mono-num inline-flex items-center gap-0.5 text-[#FCA5A5]">
+                            ({p.maxHp}
+                            <GameIcon name="heart-plus" size={10} className="text-[#F87171]" />)
+                          </span>
+                        ) : null}
+                      </span>
+                    );
+                  })}
+                </div>
+              </section>
+            </div>
           ) : (
-            <div className="absolute inset-0 z-30 flex items-center justify-center bg-[#0B0E11]/68 p-3 backdrop-blur-[2px]">
-              <div className="h-full max-h-[440px] w-full max-w-[min(1040px,calc(100%-1rem))] min-h-0">
+            <div className="lkdf-hero-select-shell absolute inset-0 z-30 flex items-center justify-center bg-[#090706]/72 p-3 backdrop-blur-[2px]">
+              <div className="lkdf-hero-select-frame h-full max-h-[540px] w-full max-w-[min(1040px,calc(100%-1rem))] min-h-0">
                 {ceremonyState.stage !== 'HERO_GACHA' ? (
                   <section
                     data-opening-ceremony={ceremonyState.stage}
-                    className="relative flex h-full w-full flex-col justify-between overflow-hidden rounded-2xl border border-[#CA9A48]/70 bg-[radial-gradient(ellipse_at_top,#261812_0%,#11151D_62%,#090B10_100%)] p-5 text-[#F4EBD8] shadow-[0_24px_64px_rgba(0,0,0,0.86)]"
+                    className="relative flex h-full w-full flex-col justify-between overflow-hidden rounded-2xl border border-[#CA9A48]/70 bg-[radial-gradient(ellipse_at_top,#2B1C14_0%,#16110E_62%,#0B0806_100%)] p-5 text-[#F4EBD8] shadow-[0_24px_64px_rgba(0,0,0,0.86)]"
                   >
                     <div className="flex items-center justify-between gap-3">
-                      <div className="inline-flex items-center gap-2 rounded-full border border-[#CA9A48]/55 bg-[#1B130E]/90 px-3 py-1 text-[11px] font-bold tracking-wider text-[#FDE68A] uppercase">
-                        <span>{ceremonyState.stage === 'COUNTDOWN' ? '⚔️ Nghi thức Khai chiến' : '🎴 Rút Thân Phận'}</span>
+                      <div className="inline-flex items-center gap-1.5 rounded-full border border-[#CA9A48]/55 bg-[#1B130E]/90 px-3 py-1 text-[11px] font-bold tracking-wider text-[#FDE68A] uppercase">
+                        <GameIcon name="drama-masks" size={13} className="text-[#E6BE6C]" />
+                        <span>Rút Thân Phận</span>
                       </div>
                       <button
                         type="button"
                         data-skip-ceremony="true"
                         onClick={handleSkipOpeningCeremony}
-                        className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[#CA9A48]/65 bg-[#1A1D24]/95 px-3 py-1.5 text-xs font-bold text-[#FDE68A] transition-colors hover:border-[#FDE68A] hover:bg-[#2A2218]"
+                        className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[#CA9A48]/65 bg-[#1F1712]/95 px-3 py-1.5 text-xs font-bold text-[#FDE68A] transition-colors hover:border-[#FDE68A] hover:bg-[#2A2018]"
                       >
                         <span>Bỏ qua hiệu ứng</span>
-                        <span aria-hidden="true">⏭</span>
+                        <GameIcon name="ui:skip" size={13} />
                       </button>
                     </div>
 
                     <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-4 text-center">
-                      {ceremonyState.stage === 'COUNTDOWN' ? (
-                        <>
-                          <div
-                            key={`cd-${ceremonyState.countdown}`}
-                            className="lkdf-countdown-num flex h-28 w-28 items-center justify-center rounded-full border-2 border-[#E6BE6C] bg-[radial-gradient(circle,#7F1D1D_0%,#2A0E0E_74%,#120A0A_100%)] font-serif-title text-6xl font-black text-[#FEF08A] shadow-[0_0_40px_rgba(230,190,108,0.45)]"
-                          >
-                            {ceremonyState.countdown}
-                          </div>
-                          <div className="space-y-1">
-                            <h2 className="font-serif-title text-xl font-bold tracking-wide text-[#FDE68A]">
-                              Chuẩn bị bốc Thân Phận &amp; Tướng Lĩnh
-                            </h2>
-                            <p className="text-xs text-[#CBD5E1]">
-                              Bàn {playerView.players.length} người · Vòng 1 Hòa Bình: giữ 4 lá đầu, không rút thêm &amp; chưa đánh Sát
-                            </p>
-                          </div>
-                        </>
-                      ) : !ceremonyState.identityRevealed ? (
+                      {!ceremonyState.identityRevealed ? (
                         <div className="flex flex-col items-center gap-3">
-                          <div className="flex h-44 w-36 flex-col items-center justify-center gap-2 rounded-xl border-2 border-[#CA9A48]/80 bg-[radial-gradient(circle_at_top,#2B1E14_0%,#12161E_85%)] p-4 shadow-[0_0_32px_rgba(202,154,72,0.28)]">
+                          <div className="flex h-44 w-36 flex-col items-center justify-center gap-2 rounded-xl border-2 border-[#CA9A48]/80 bg-[radial-gradient(circle_at_top,#2B1E14_0%,#140F0C_85%)] p-4 shadow-[0_0_32px_rgba(202,154,72,0.28)]">
                             <span className="font-serif-title text-4xl font-black text-[#E6BE6C]">令</span>
                             <span className="text-xs font-bold tracking-widest text-[#E6BE6C] uppercase">Thân Phận</span>
                           </div>
@@ -1187,7 +1611,7 @@ export function MatchArenaLayout({
                     </div>
 
                     <div className="text-center text-[11px] text-[#94A3B8]">
-                      Bước {ceremonyState.stage === 'COUNTDOWN' ? '1/3 · Đếm ngược khai trận' : '2/3 · Mở Thân Phận'} → Bước 3/3: Chọn Tướng
+                      Mở thân phận → Chọn tướng → Khai trận
                     </div>
                   </section>
                 ) : (
@@ -1214,132 +1638,58 @@ export function MatchArenaLayout({
 
       {/* VÙNG 4: THANH ĐÁY RESPONSIVE (TRÁI: TƯỚNG + 4 Ô TRANG BỊ NGỬA | GIỮA: THANH LỆNH THỐNG NHẤT + BÀI TAY CĂN GIỮA) */}
       <div
-        className="lkdf-battle-dock flex h-[var(--dock-h,196px)] shrink-0 min-w-0 items-stretch gap-2.5 border-t border-[#94A3B8]/32 bg-[#0D1016] px-2.5 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]"
+        className="lkdf-battle-dock flex h-[var(--dock-h,196px)] shrink-0 min-w-0 items-stretch gap-2.5 border-t border-[#806345]/45 bg-[#16110F] px-2.5 py-2 shadow-[inset_0_1px_0_rgba(230,190,108,0.08)]"
       >
         {/* Ngăn xếp nổi thống nhất phía trên Dock: tối đa 1 thông báo thoáng + 1 thanh lệnh/phản ứng (0px đè lên nhau) */}
-        {(() => {
-          const transientPill = actionErrorVi ? (
-            <div
-              role="alert"
-              className="pointer-events-auto w-max max-w-[min(560px,calc(100vw-24px))] rounded-full border border-[#DC2626]/70 bg-[#2A1211]/96 px-3.5 py-1 text-center text-[11.5px] font-bold text-[#FCA5A5] shadow-lg"
-            >
-              {actionErrorVi}
-            </div>
-          ) : showTableDropBanner && dragState ? (
-            <div
-              data-drop-table="1"
-              className={[
-                'pointer-events-none w-[min(440px,46cqw)] rounded-xl border-2 border-dashed px-4 py-1.5 text-center shadow-2xl transition-colors',
-                dragState.hoverTable
-                  ? 'lkdf-drop-pulse border-[#FBBF24] bg-[#5C2816]/94'
-                  : 'border-[#D99B26]/70 bg-[#14100C]/90',
-              ].join(' ')}
-            >
-              <span className="font-serif-title text-[12px] font-bold text-[#FDE68A]">
-                ✨{' '}
-                {dragState.intent.kind === 'table'
-                  ? dragState.intent.actionLabelVi
-                  : dragState.intent.kind === 'toggle_select'
-                    ? dragState.intent.promptVi
-                    : ''}
-              </span>
-            </div>
-          ) : dragState && (dragState.intent.kind === 'seat' || dragState.intent.kind === 'seat_pair_step1') ? (
-            <div className="pointer-events-none rounded-full border border-[#D99B26]/60 bg-[#120E0B]/92 px-3.5 py-1 text-[11px] font-bold text-[#FDE68A] shadow-lg">
-              🎯{' '}
-              {dragState.intent.kind === 'seat'
-                ? `Kéo thả thẳng lên 1 ghế sáng viền vàng để ${dragState.intent.actionVerbVi}`
-                : dragState.intent.actionLabelVi}
-            </div>
-          ) : dragState && dragState.intent.kind === 'blocked' ? (
-            <div className="pointer-events-none rounded-full border border-[#DC2626]/55 bg-[#1B1111]/94 px-3.5 py-1 text-[11px] font-semibold text-[#FCA5A5] shadow-lg">
-              🔒 {dragState.intent.reasonVi}
-            </div>
-          ) : !dragState && dragFeedbackVi ? (
-            <div className="pointer-events-none rounded-full border border-[#A68042]/50 bg-[#14110D]/92 px-3.5 py-1 text-[11px] font-semibold text-[#E6CFA3] shadow-lg">
-              ℹ️ {dragFeedbackVi}
-            </div>
-          ) : showOnboardingHint && isPlayPhaseSelf && !hasReaction && discardRemaining === 0 ? (
-            <div
-              role="status"
-              data-onboarding-hint="true"
-              className="pointer-events-auto flex w-max max-w-[min(560px,calc(100vw-24px))] items-center gap-2 rounded-full border border-[#B89352]/65 bg-[#120E0B]/92 px-3 py-1 text-[10.5px] font-medium text-[#F4EBD8] shadow-[0_8px_20px_rgba(0,0,0,0.68)]"
-            >
-              <span className="truncate">
-                Mẹo nhanh: Bấm lá bài (phím 1–9) rồi chọn tướng sáng viền vàng · Nhấn E để kết thúc lượt
-              </span>
-              <button
-                type="button"
-                onClick={() => {
-                  writeDevicePreference('onboardingHints', false);
-                  setShowOnboardingHint(false);
-                }}
-                className="shrink-0 cursor-pointer rounded-full border border-[#E6BE6C]/70 bg-[#2C2115] px-2 py-0.5 text-[10px] font-bold text-[#FDE68A] transition-colors hover:bg-[#3F2F1E]"
-              >
-                Đã hiểu
-              </button>
-            </div>
-          ) : null;
-
-          const floatingBar = showNullification ? (
-            <div className="lkdf-dock-floating-bar lkdf-nullification-actions pointer-events-auto">
-              {renderActionSidebar()}
-            </div>
-          ) : showLocalReaction ? (
-            <div className="lkdf-dock-floating-bar lkdf-battle-reaction pointer-events-auto max-h-[32dvh] overflow-y-auto">
-              {!isPlayPhaseSelf && availableConverts.length > 0 ? (
-                <div className="flex flex-wrap items-center justify-center gap-1.5" role="group" aria-label="Kỹ năng phản ứng">
-                  {skillControls}
-                </div>
-              ) : null}
-              {renderActionSidebar()}
-            </div>
-          ) : discardRemaining > 0 ? (
-            <div className="lkdf-dock-floating-bar lkdf-command-bar pointer-events-auto">
-              <button
-                type="button"
-                disabled={selectedToDiscard.length !== discardRemaining}
-                onClick={() => submitDiscard([...stagedDiscardIds, ...selectedToDiscard.map((card) => card.id)])}
-                className="min-h-[38px] w-max max-w-full cursor-pointer rounded-lg border border-[#C83E37] bg-[#641C1B] px-4 py-1.5 text-xs font-bold text-[#FFF1EC] shadow-lg disabled:cursor-not-allowed disabled:opacity-75"
-              >
-                {selectedToDiscard.length === discardRemaining
-                  ? `Bỏ ${discardRemaining} lá đã chọn (${selectedToDiscard.length}/${discardRemaining})`
-                  : `Chọn ${discardRemaining} lá bài để bỏ (${selectedToDiscard.length}/${discardRemaining})`}
-              </button>
-            </div>
-          ) : isPlayPhaseSelf && !hasReaction ? (
-            <div className="lkdf-dock-floating-bar lkdf-command-bar pointer-events-auto">
-              {(availableSkills.length > 0 || availableConverts.length > 0) ? (
-                <div className="flex flex-wrap items-center justify-center gap-1.5" role="group" aria-label="Kỹ năng chủ động">
-                  {skillControls}
-                </div>
-              ) : null}
-              {renderActionSidebar()}
-            </div>
-          ) : null;
-
-          if (!transientPill && !floatingBar) return null;
-          return (
-            <div className="lkdf-dock-floating-stack">
-              {transientPill}
-              {floatingBar}
-            </div>
-          );
-        })()}
+        {(transientPill || floatingBar) ? (
+          <div className="lkdf-dock-floating-stack">
+            {transientPill}
+            {floatingBar}
+          </div>
+        ) : null}
 
         {/* Cột Trái: Khung Đôi Mẫu B (Hồ sơ Tướng + Huy hiệu kỹ năng | 4 Ô Trang Bị Ngửa 4 hàng rõ chữ) */}
-        <div className="lkdf-battle-player flex w-[var(--left-w,340px)] shrink-0 overflow-hidden rounded-[6px] border border-[#94A3B8]/38 bg-[#12161E] shadow-lg">
+        <div
+          data-faction={selfHero?.faction}
+          data-dying={!isHeroSelectPhase && selfPlayer?.alive && selfPlayer.hp <= 0 ? 'true' : undefined}
+          data-luoyi-active={isSelfLuoYiActive ? 'true' : undefined}
+          data-main-turn={
+            selfPlayer?.seatIndex === playerView.currentTurnSeat &&
+            !isHeroSelectPhase &&
+            playerView.turnPhase !== 'GAME_OVER'
+              ? 'true'
+              : undefined
+          }
+          data-reacting-seat={
+            selfPlayer?.seatIndex !== playerView.currentTurnSeat &&
+            prompt.isMyTurn &&
+            !isHeroSelectPhase &&
+            playerView.turnPhase !== 'GAME_OVER'
+              ? 'true'
+              : undefined
+          }
+          className="lkdf-battle-player flex w-[var(--left-w,340px)] shrink-0 rounded-[6px] border border-[#806345]/50 bg-[#211814] shadow-lg"
+        >
           {/* Nửa Trái: Hồ sơ Tướng bản thân (kèm huy hiệu kỹ năng bấm/rê chuột để xem chi tiết) */}
           {(() => {
             const selfHpImpact = selfPlayer ? hpImpacts[selfPlayer.seatIndex] ?? null : null;
             const selfSkillStamp = selfPlayer ? skillStampBySeat[selfPlayer.seatIndex] : undefined;
             return (
               <div
-                onClick={() => setInspector(null)}
+                onClick={() => {
+                  if (selfPlayer?.heroId) {
+                    handleInspectHero(selfPlayer.seatIndex);
+                  }
+                }}
                 data-motion-self={selfPlayer?.seatIndex}
+                data-inspected-trigger={
+                  inspector?.kind === 'hero' && inspector.seatIndex === selfPlayer?.seatIndex
+                    ? 'true'
+                    : undefined
+                }
                 data-hp-impact={selfHpImpact ? (selfHpImpact.delta < 0 ? 'damage' : 'heal') : undefined}
-                title="Bấm xem lại kỹ năng tướng của bạn"
-                className="lkdf-battle-profile relative flex w-[var(--prof-w,136px)] shrink-0 cursor-pointer flex-col justify-between overflow-hidden p-2"
+                title="Bấm để mở hồ sơ kỹ năng tướng của bạn"
+                className="lkdf-battle-profile relative flex min-h-0 w-[var(--prof-w,136px)] shrink-0 cursor-pointer flex-col justify-between p-2"
               >
                 <HeroCardWatermark
                   portraitUrl={!selfPhotoFailed ? selfPortraitUrl : null}
@@ -1347,7 +1697,7 @@ export function MatchArenaLayout({
                   opacityClass="opacity-90"
                 />
                 {selfSkillStamp ? (
-                  <span key={selfSkillStamp.id} className="lkdf-skill-stamp pointer-events-none absolute bottom-1 right-1.5 z-35 rounded border border-[#E6BE6C]/80 bg-[#14171A]/95 px-1.5 py-0.5 text-[10px] font-bold text-[#FDE68A] shadow-md">
+                  <span key={selfSkillStamp.id} className="lkdf-skill-stamp pointer-events-none absolute bottom-1 right-1.5 z-35 rounded border border-[#E6BE6C]/80 bg-[#18120E]/95 px-1.5 py-0.5 text-[10px] font-bold text-[#FDE68A] shadow-md">
                     {selfSkillStamp.label}
                   </span>
                 ) : null}
@@ -1368,14 +1718,14 @@ export function MatchArenaLayout({
                     </span>
                   </span>
                 ) : null}
-            <div className="relative z-10 flex min-h-0 flex-1 flex-col gap-1">
+            <div className="lkdf-battle-profile-body relative z-10 flex min-h-0 flex-1 flex-col gap-0.5">
               {selfPlayer ? (
                 <>
                   <div className="flex shrink-0 items-start gap-1.5 min-w-0">
                     {!selfPortraitUrl ? (
                       <div
                         className={[
-                          'relative flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded border bg-[#0B0E14] text-xs font-bold text-[#F3F4F6]',
+                          'relative flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded border bg-[#140F0C] text-xs font-bold text-[#F5EBD6]',
                           selfFaction ? selfFaction.borderClass : 'border-[#B89352]/55',
                         ].join(' ')}
                       >
@@ -1405,7 +1755,7 @@ export function MatchArenaLayout({
                         </span>
                         <span
                           title={`Thứ tự lượt theo chiều kim đồng hồ: Ghế #${selfPlayer.seatIndex + 1}`}
-                          className="font-mono-num shrink-0 rounded border border-[#475569]/60 bg-[#0B0E14]/85 px-1 text-[8.5px] font-bold text-[#E2E8F0]"
+                          className="font-mono-num shrink-0 rounded border border-[#806345]/60 bg-[#140F0C]/85 px-1 text-[8.5px] font-bold text-[#EDE3D2]"
                         >
                           #{selfPlayer.seatIndex + 1}
                         </span>
@@ -1419,35 +1769,76 @@ export function MatchArenaLayout({
                             </span>
                           </>
                         ) : (
-                          <span className="truncate text-[10px] text-[#9CA3AF]">Chưa chọn</span>
+                          <span className="truncate text-[10px] text-[#9CA3AF]">Đang chọn tướng…</span>
                         )}
                       </div>
                     </div>
                   </div>
 
-                  <div
-                    data-match-identity={selfPlayer.identity}
-                    className={`lkdf-match-identity lkdf-match-identity-self ${getIdentityBadgeClass(selfPlayer.identity)}`}
-                  >
-                    <span className="lkdf-match-identity-kicker">Thân phận</span>
-                    <strong>{getIdentityLabelVi(selfPlayer.identity)}</strong>
-                  </div>
+                  {isHeroSelectPhase &&
+                  ceremonyState.stage === 'IDENTITY_GACHA' &&
+                  !ceremonyState.identityRevealed ? (
+                    <div
+                      data-match-identity="UNKNOWN"
+                      className={`lkdf-match-identity lkdf-match-identity-self ${getIdentityBadgeClass('UNKNOWN')}`}
+                    >
+                      <span className="lkdf-match-identity-kicker">Thân phận</span>
+                      <strong>Đang mở…</strong>
+                    </div>
+                  ) : (
+                    <div
+                      data-match-identity={selfPlayer.identity}
+                      className={`lkdf-match-identity lkdf-match-identity-self ${getIdentityBadgeClass(selfPlayer.identity)}`}
+                    >
+                      <span className="lkdf-match-identity-kicker">Thân phận</span>
+                      <strong>{getIdentityLabelVi(selfPlayer.identity)}</strong>
+                    </div>
+                  )}
 
-                  {!isHeroSelectPhase && playerView.turnPhase !== 'GAME_OVER' && (playerView.currentTurnSeat === selfPlayer.seatIndex || prompt.isMyTurn || isFirstRoundPeaceful) ? (
+                  {!isHeroSelectPhase && playerView.turnPhase !== 'GAME_OVER' && (playerView.currentTurnSeat === selfPlayer.seatIndex || prompt.isMyTurn || isFirstRoundPeaceful || isSelfLuoYiActive || isSelfKongChengActive || isSelfQianXunActive) ? (
                     <div className="flex flex-wrap items-center gap-1">
                       {playerView.currentTurnSeat === selfPlayer.seatIndex ? (
                         <span
                           data-self-turn-badge="turn"
                           className="inline-flex items-center gap-0.5 rounded border border-[#FBBF24]/80 bg-[#D99B26]/25 px-1.5 py-0 text-[8.5px] leading-[13px] font-extrabold text-[#FEF08A]"
                         >
-                          🚩 Lượt chính của bạn
+                          <GameIcon name="ui:flag" size={9} />
+                          <span>Lượt chính</span>
                         </span>
                       ) : prompt.isMyTurn ? (
                         <span
                           data-self-turn-badge="reacting"
-                          className="inline-flex items-center gap-0.5 rounded border border-[#FB923C]/85 bg-[#9A3412]/70 px-1.5 py-0 text-[8.5px] leading-[13px] font-extrabold text-[#FFEDD5]"
+                          className="inline-flex items-center gap-0.5 rounded border border-[#38BDF8]/85 bg-[#0C4A6E]/85 px-1.5 py-0 text-[8.5px] leading-[13px] font-extrabold text-[#E0F2FE]"
                         >
-                          ⚡ Bạn đang phản ứng
+                          <GameIcon name="ui:zap" size={9} />
+                          <span>Phản ứng</span>
+                        </span>
+                      ) : null}
+                      {isSelfLuoYiActive ? (
+                        <span
+                          data-luoyi-active="true"
+                          className="inline-flex items-center gap-0.5 rounded border border-[#F59E0B]/85 bg-[#78350F]/85 px-1.5 py-0 text-[8.5px] leading-[13px] font-extrabold text-[#FEF3C7]"
+                        >
+                          <GameIcon name="broadsword" size={9} />
+                          <span>Lỏa Y +1 ST</span>
+                        </span>
+                      ) : null}
+                      {isSelfKongChengActive ? (
+                        <span
+                          data-kong-cheng="true"
+                          className="inline-flex items-center gap-0.5 rounded border border-[#38BDF8]/80 bg-[#0C4A6E]/80 px-1.5 py-0 text-[8.5px] leading-[13px] font-extrabold text-[#E0F2FE]"
+                        >
+                          <GameIcon name="bordered-shield" size={9} />
+                          <span>Không Thành</span>
+                        </span>
+                      ) : null}
+                      {isSelfQianXunActive ? (
+                        <span
+                          data-qian-xun="true"
+                          className="inline-flex items-center gap-0.5 rounded border border-[#34D399]/75 bg-[#064E3B]/80 px-1.5 py-0 text-[8.5px] leading-[13px] font-extrabold text-[#D1FAE5]"
+                        >
+                          <GameIcon name="shield" size={9} />
+                          <span>Khiêm Tốn</span>
                         </span>
                       ) : null}
                       {isFirstRoundPeaceful ? (
@@ -1455,14 +1846,23 @@ export function MatchArenaLayout({
                           data-self-peace-badge="true"
                           className="inline-flex items-center gap-0.5 rounded border border-[#34D399]/55 bg-[#064E3B]/75 px-1.5 py-0 text-[8.5px] leading-[13px] font-bold text-[#A7F3D0]"
                         >
-                          🕊️ V1 Hòa Bình
+                          <GameIcon name="ui:feather" size={9} />
+                          <span>V1 Hòa Bình</span>
                         </span>
                       ) : null}
                     </div>
                   ) : null}
 
                   <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1">
-                    <HpJadeMeter hp={selfPlayer.hp} maxHp={selfPlayer.maxHp} size="md" />
+                    {isHeroSelectPhase && selfPlayer.maxHp <= 0 ? (
+                      <span className="inline-flex items-center gap-1 rounded border border-[#806345]/45 bg-[#140F0C]/85 px-1.5 py-0.5 text-[10px] font-medium text-[#E8DCC8]">
+                        {selfHero || playerView.heroDraft?.mySelectedHero
+                          ? 'Đã chốt tướng'
+                          : 'Đang chọn tướng…'}
+                      </span>
+                    ) : (
+                      <HpJadeMeter hp={selfPlayer.hp} maxHp={selfPlayer.maxHp} size="md" />
+                    )}
                     {!selfPlayer.alive ? (
                       <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-[#FCA5A5]">
                         <GameIcon name="death-skull" size={11} />
@@ -1479,9 +1879,14 @@ export function MatchArenaLayout({
                         <button
                           key={skill.id}
                           type="button"
+                          data-inspected-trigger={
+                            inspector?.kind === 'hero' && inspector.seatIndex === selfPlayer.seatIndex
+                              ? 'true'
+                              : undefined
+                          }
                           data-hover-name={skill.nameVi}
                           data-hover-description={skill.descriptionVi}
-                          data-passive-skill={/^(pao_xiao|kong_cheng|ma_shu|ji_zhi|qi_cai|jiu_yuan|ying_zi|qian_xun|lian_ying|xiao_ji|wu_shuang|bi_yue)$/.test(skill.id) || undefined}
+                          data-passive-skill={isPassiveSkillId(skill.id) || undefined}
                           onClick={() => handleInspectHero(selfPlayer.seatIndex)}
                           className="lkdf-hero-skill-label cursor-pointer transition-colors hover:border-[#E6BE6C]"
                         >
@@ -1491,9 +1896,11 @@ export function MatchArenaLayout({
                     </div>
                   ) : null}
                   {prompt.isMyTurn ? (
-                    <FuseTimer key={phaseDeadlineAt ?? 'paused'} deadline={phaseDeadlineAt}
-                      paused={isTimerPaused} pausedRemainingMs={pausedRemainingMs}
-                      totalSeconds={actionSeconds} />
+                    <div className="mt-auto shrink-0 pt-0.5">
+                      <FuseTimer key={phaseDeadlineAt ?? 'paused'} deadline={phaseDeadlineAt}
+                        paused={isTimerPaused} pausedRemainingMs={pausedRemainingMs}
+                        totalSeconds={actionSeconds} />
+                    </div>
                   ) : null}
                 </>
               ) : (
@@ -1505,10 +1912,10 @@ export function MatchArenaLayout({
           })()}
 
           {/* Nửa Phải Cột Trái: 4 Ô Trang Bị Ngửa xếp 4 hàng rộng rãi (đủ tên đầy đủ) */}
-          <div className="lkdf-battle-equip flex min-h-0 min-w-0 flex-1 flex-col gap-1 border-l border-[#94A3B8]/25 bg-[#0B0E14]/90 p-1.5">
+          <div className="lkdf-battle-equip flex min-h-0 min-w-0 flex-1 flex-col gap-1 border-l border-[#806345]/40 bg-[#1B1512] p-1.5">
             <div className="flex shrink-0 items-center justify-between text-[9.5px] font-bold tracking-wide text-[#B89352] uppercase">
               <span className="truncate">Trang bị</span>
-              <span className="shrink-0 text-[9px] font-normal normal-case text-[#94A3B8]">4 ô</span>
+              <span className="shrink-0 text-[9px] font-normal normal-case text-[#B8A48C]">4 ô</span>
             </div>
 
             <div className="lkdf-battle-grid min-w-0">
@@ -1524,7 +1931,7 @@ export function MatchArenaLayout({
                         'flex min-h-0 flex-1 items-center gap-1.5 rounded border px-1.5 text-[clamp(10px,0.88cqw,11px)] font-medium transition-colors',
                         isDropTargetSlot
                           ? 'border-[#E6BE6C] bg-[#E6BE6C]/16 text-[#FDE68A]'
-                          : 'border-[#94A3B8]/18 bg-[#12161E]/70 text-[#8B949E]',
+                          : 'border-[#806345]/30 bg-[#231A14]/70 text-[#A89984]',
                       ].join(' ')}
                     >
                       <GameIcon name={iconName} size={12} className="shrink-0 opacity-75" />
@@ -1536,31 +1943,53 @@ export function MatchArenaLayout({
                 const artUrl = getCardArtUrl(card.cardKey);
                 const sid = `self:${slotKey}`;
                 const isSelectedEquip = selection.selectedCardIds.includes(card.id);
+                const red = isCardRed(card);
+                const isRedEquipReaction = Boolean(
+                  prompt.isMyTurn &&
+                    interrupt &&
+                    red &&
+                    ((selfPlayer?.heroId === 'guan_yu' &&
+                      (interrupt.kind === 'WAIT_DUEL_SAT' ||
+                        interrupt.kind === 'WAIT_AOE_SAT' ||
+                        interrupt.kind === 'WAIT_COLLATERAL_SAT' ||
+                        interrupt.kind === 'WAIT_JI_JIANG' ||
+                        interrupt.kind === 'ASK_THANH_LONG')) ||
+                      (selfPlayer?.heroId === 'hua_tuo' &&
+                        !isPlayPhaseSelf &&
+                        interrupt.kind === 'WAIT_PEACH_RESCUE')),
+                );
+                const isConvertModeOnEquip =
+                  selection.activeConvertMode === 'wu_sheng' ||
+                  selection.activeConvertMode === 'ky_tap' ||
+                  selection.activeConvertMode === 'quoc_sac' ||
+                  selection.activeConvertMode === 'cuu_vien';
+                const isEquipValidForActiveConvert = selection.activeConvertMode
+                  ? isConvertModeOnEquip && isCardValidForConvertMode(card, selection.activeConvertMode)
+                  : true;
+                const isEquipDimmed = Boolean(selection.activeConvertMode && !isEquipValidForActiveConvert);
                 const canToggleEquip = Boolean(
                   selfPlayer?.alive &&
-                    (selection.activeConvertMode === 'wu_sheng' ||
-                      selection.activeConvertMode === 'ky_tap' ||
-                      selection.activeConvertMode === 'quoc_sac' ||
-                      selection.activeConvertMode === 'cuu_vien' ||
-                      (isPlayPhaseSelf &&
-                        (selection.activeSkillMode === 'zhi_heng' ||
-                          selection.activeSkillMode === 'li_jian')) ||
-                      (prompt.isMyTurn &&
-                        interrupt &&
-                        (interrupt.kind === 'ASK_LIU_LI' ||
-                          (interrupt.kind === 'ASK_QUAN_THACH_PHU' && slotKey !== 'weapon') ||
-                          (interrupt.kind === 'WAIT_PEACH_RESCUE' &&
-                            !isPlayPhaseSelf &&
-                            selfPlayer.heroId === 'hua_tuo')))),
+                    (selection.activeConvertMode
+                      ? isEquipValidForActiveConvert
+                      : isRedEquipReaction ||
+                        (isPlayPhaseSelf &&
+                          (selection.activeSkillMode === 'zhi_heng' ||
+                            selection.activeSkillMode === 'li_jian')) ||
+                        (prompt.isMyTurn &&
+                          interrupt &&
+                          (interrupt.kind === 'ASK_LIU_LI' ||
+                            (interrupt.kind === 'ASK_QUAN_THACH_PHU' && slotKey !== 'weapon')))),
                 );
                 const active =
                   isSelectedEquip || (inspector?.kind === 'card' && inspector.sourceId === sid);
-                const red = isCardRed(card);
 
                 return (
                   <button
                     key={slotKey}
                     type="button"
+                    data-inspected-trigger={
+                      inspector?.kind === 'card' && inspector.sourceId === sid ? 'true' : undefined
+                    }
                     aria-pressed={canToggleEquip ? isSelectedEquip : undefined}
                     onClick={() =>
                       canToggleEquip
@@ -1569,12 +1998,13 @@ export function MatchArenaLayout({
                     }
                     {...cardHover(card)}
                     className={[
-                      'flex min-h-0 w-full flex-1 cursor-pointer items-center gap-1.5 rounded border px-1.5 text-left transition-colors',
+                      'flex min-h-0 w-full flex-1 cursor-pointer items-center gap-1.5 rounded border px-1.5 text-left transition-[colors,opacity]',
+                      isEquipDimmed ? 'opacity-35 saturate-50' : '',
                       active
                         ? 'border-[#FDE68A] bg-[#E6BE6C]/22 ring-1 ring-[#FDE68A]/55'
                         : canToggleEquip
-                          ? 'border-[#E6BE6C]/70 bg-[#1B212C] hover:border-[#FDE68A]'
-                          : 'border-[#B89352]/55 bg-[#161B23] hover:border-[#E6BE6C]',
+                          ? 'border-[#E6BE6C]/70 bg-[#2A1F17] hover:border-[#FDE68A]'
+                          : 'border-[#B89352]/55 bg-[#231A14] hover:border-[#E6BE6C]',
                     ].join(' ')}
                   >
                     {artUrl ? (
@@ -1613,6 +2043,7 @@ export function MatchArenaLayout({
                         return (
                           <button
                             key={s.id}
+                            data-inspected-trigger={active ? 'true' : undefined}
                             {...cardHover(s)}
                             type="button"
                             onClick={(e) => {
@@ -1642,35 +2073,151 @@ export function MatchArenaLayout({
 
         {/* Hàng bài giữ nguyên chiều cao và căn giữa trên toàn bộ phần còn lại của thanh đáy. */}
         <div className="relative flex min-h-0 min-w-0 flex-1 flex-col justify-center">
-          {/* Dải bài neo đáy cố định (0px giật bài khi thanh lệnh bật/tắt) */}
-          <div className="lkdf-battle-hand lkdf-scroll flex min-h-0 flex-1 items-end justify-center overflow-x-auto overflow-y-hidden px-1">
+          {selfPlayer?.alive && fullHand.length > 1 && !handIsFaceDown ? (
+            <button
+              type="button"
+              aria-pressed={reorderingHand}
+              onClick={() => setReorderingHand((value) => !value)}
+              className={[
+                'absolute top-0 right-1 z-25 inline-flex h-[20px] cursor-pointer items-center gap-1 rounded border px-2 py-0 text-[10px] leading-none font-semibold shadow-sm transition-colors',
+                reorderingHand
+                  ? 'border-[#FBBF24] bg-[#4D3012] text-[#FEF08A]'
+                  : 'border-[#B89352]/60 bg-[#17130E]/95 text-[#FDE68A] hover:border-[#E6BE6C]',
+              ].join(' ')}
+            >
+              {reorderingHand ? (
+                <>
+                  <GameIcon name="ui:check" size={11} />
+                  <span>Xong · kéo hoặc ← → đổi chỗ [Esc]</span>
+                </>
+              ) : (
+                <>
+                  <GameIcon name="ui:layers" size={11} />
+                  <span>Sắp xếp bài tay</span>
+                </>
+              )}
+            </button>
+          ) : null}
+          {/* Dải bài neo đáy cố định (0px giật bài khi thanh lệnh bật/tắt; chừa 22px đỉnh cho nhô bài khi rê/chọn) */}
+          <div className="lkdf-battle-hand lkdf-scroll flex h-full min-h-0 flex-1 items-end justify-center overflow-x-auto overflow-y-hidden px-1 pt-[22px] pb-1">
             {handIsFaceDown ? (
               <div className="mx-auto flex items-end gap-1" aria-label="Bài tay đang úp">
                 {Array.from({ length: selfPlayer?.handCount ?? 0 }, (_, index) => <CardBack key={index} size="md" />)}
               </div>
             ) : handCards.length === 0 ? (
-              <div className="flex h-full w-full items-center justify-center rounded-xl border border-dashed border-[#A68042]/30 text-[12px] text-[#9CA3AF]">
-                Không còn lá bài nào trên tay
-              </div>
+              isHeroSelectPhase ? (
+                <div className="flex h-full w-full items-center justify-center rounded-xl border border-dashed border-[#A68042]/40 bg-[#1B1410]/55 px-4 text-center text-[12px] font-medium text-[#E8DCC8]">
+                  {playerView.heroDraft?.stage === 'COMPLETED'
+                    ? 'Tất cả đã chốt tướng — Chờ chia bài…'
+                    : selfHero || playerView.heroDraft?.mySelectedHero
+                      ? 'Đã chốt tướng — Chờ người chơi khác để chia bài…'
+                      : 'Đang chọn tướng — Chờ chia 4 lá mở màn…'}
+                </div>
+              ) : (
+                <div className="flex h-full w-full items-center justify-center rounded-xl border border-dashed border-[#A68042]/30 text-[12px] text-[#9CA3AF]">
+                  Không còn lá bài nào trên tay
+                </div>
+              )
             ) : (
-              <div className="lkdf-hand-row mx-auto flex h-full items-end">
+              <div
+                data-reordering={reorderingHand ? 'true' : undefined}
+                className={[
+                  'lkdf-hand-row mx-auto flex h-full items-end rounded-lg transition-colors',
+                  reorderingHand ? 'ring-1 ring-[#FBBF24]/55 bg-[#2A1D10]/35 px-1.5' : '',
+                ].join(' ')}
+              >
                 {handCards.map((card, index) => {
                   const isCardSelected = selection.selectedCardIds.includes(card.id);
-                  return (
-                  <div
-                    key={card.id}
-                    data-selected-card={isCardSelected ? 'true' : undefined}
-                    className={
-                      index === 0
-                        ? ''
+                  const isBeingDragged = reorderingHand && reorderDraggingId === card.id;
+                  const isDropTarget =
+                    reorderingHand &&
+                    reorderOverId === card.id &&
+                    reorderDraggingId !== null &&
+                    reorderDraggingId !== card.id;
+                  const overlapClass =
+                    index === 0
+                      ? ''
+                      : handCards.length >= 13
+                        ? '-ml-7'
                         : handCards.length >= 10
-                          ? '-ml-6'
+                          ? '-ml-5'
                           : handCards.length >= 8
                             ? '-ml-4'
                             : handCards.length >= 6
                               ? '-ml-1.5'
-                              : 'ml-1.5'
-                    }
+                              : 'ml-1.5';
+                  return (
+                  <div
+                    key={card.id}
+                    data-hand-card-id={card.id}
+                    draggable={reorderingHand}
+                    aria-label={reorderingHand ? `Đổi vị trí ${card.nameVi} (← →)` : undefined}
+                    onDragStart={(event) => {
+                      if (!reorderingHand) return;
+                      draggedHandCard.current = card.id;
+                      setReorderDraggingId(card.id);
+                      setReorderOverId(null);
+                      event.dataTransfer.setData('text/plain', card.id);
+                      event.dataTransfer.effectAllowed = 'move';
+                    }}
+                    onDragEnd={() => {
+                      draggedHandCard.current = null;
+                      setReorderDraggingId(null);
+                      setReorderOverId(null);
+                    }}
+                    onDragOver={(event) => {
+                      if (!reorderingHand) return;
+                      event.preventDefault();
+                      if (reorderOverId !== card.id) {
+                        setReorderOverId(card.id);
+                      }
+                    }}
+                    onDragLeave={() => {
+                      if (reorderOverId === card.id) {
+                        setReorderOverId(null);
+                      }
+                    }}
+                    onDrop={(event) => {
+                      if (!reorderingHand || !draggedHandCard.current) return;
+                      event.preventDefault();
+                      moveHandCard(draggedHandCard.current, card.id);
+                      draggedHandCard.current = null;
+                      setReorderDraggingId(null);
+                      setReorderOverId(null);
+                    }}
+                    onKeyDown={(event) => {
+                      if (!reorderingHand) return;
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        return;
+                      }
+                      if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+                      event.preventDefault();
+                      event.stopPropagation();
+                      const neighbor = handCards[index + (event.key === 'ArrowLeft' ? -1 : 1)];
+                      if (neighbor) {
+                        moveHandCard(card.id, neighbor.id);
+                        const movedId = card.id;
+                        requestAnimationFrame(() => {
+                          arenaRef.current
+                            ?.querySelector<HTMLElement>(`[data-hand-card-id="${movedId}"] button`)
+                            ?.focus();
+                        });
+                      }
+                    }}
+                    data-selected-card={isCardSelected ? 'true' : undefined}
+                    data-reorder-target={isDropTarget ? 'true' : undefined}
+                    className={[
+                      'relative transition-[opacity,transform] duration-150',
+                      overlapClass,
+                      selection.activeConvertMode &&
+                      !isCardValidForConvertMode(card, selection.activeConvertMode)
+                        ? 'opacity-35 saturate-50'
+                        : '',
+                      isBeingDragged ? 'opacity-45 scale-95' : '',
+                      isDropTarget ? 'rounded-[6px] ring-2 ring-[#FBBF24]' : '',
+                    ].join(' ')}
                   >
                     <HandCardItem
                       card={card}
@@ -1681,9 +2228,9 @@ export function MatchArenaLayout({
                       compact={handCards.length > 7}
                       fanIndex={index}
                       fanCount={handCards.length}
-                      onToggle={handleCardToggleFromUi}
-                      onDoubleClickCard={handleDoubleClickCard}
-                      onPointerDownCard={handleStartCardPointerDown}
+                      onToggle={reorderingHand ? () => undefined : handleHandClick}
+                      onDoubleClickCard={reorderingHand || directReaction ? undefined : handleDoubleClickCard}
+                      onPointerDownCard={reorderingHand ? undefined : handleStartCardPointerDown}
                     />
                   </div>
                   );
@@ -1695,6 +2242,22 @@ export function MatchArenaLayout({
 
 
       </div>
+      {inspector ? (
+        <div className="pointer-events-auto absolute right-2.5 bottom-[calc(var(--dock-h,196px)+8px)] z-40 flex max-h-[min(310px,50cqh)] w-[clamp(268px,26cqw,308px)] flex-col">
+          <MatchInspectorBox
+            inspector={inspector}
+            selfPlayer={selfPlayer}
+            players={playerView.players}
+            onClose={() => setInspector(null)}
+            onResetToSelf={
+              selfPlayer?.heroId &&
+              !(inspector.kind === 'hero' && inspector.seatIndex === selfPlayer.seatIndex)
+                ? () => setInspector({ kind: 'hero', seatIndex: selfPlayer.seatIndex })
+                : undefined
+            }
+          />
+        </div>
+      ) : null}
       <MatchHoverTooltip />
     </div>
   );

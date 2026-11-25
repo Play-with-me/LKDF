@@ -1,0 +1,323 @@
+/* ==========================================================================
+   Guofeng 4-Layer 60fps VFX & Flipbook Motion Styles
+   Imported cleanly into apps/desktop/src/main.tsx after index.css & studio-theme.css
+   ========================================================================== */
+
+:root {
+  --lkdf-vfx-fire-loop: url('../assets/vfx/vfx-dying-fire-loop.webp');
+  --lkdf-vfx-turn-seal-loop: url('../assets/vfx/vfx-turn-seal-loop.webp');
+}
+
+/* Layer 1: Staggered Arc Draw Flight (.lkdf-draw-flight) */
+.lkdf-draw-flight {
+  z-index: 26;
+  width: 44px;
+  height: 62px;
+  overflow: hidden;
+  border: 1.5px solid #e6be6c;
+  border-radius: 5px;
+  background: radial-gradient(ellipse, #2b3c58, #141d2e 70%);
+  box-shadow:
+    inset 0 0 0 3px #1c283d,
+    0 6px 16px rgba(0, 0, 0, 0.72),
+    0 0 12px rgba(230, 190, 108, 0.4);
+  transform-style: preserve-3d;
+  backface-visibility: visible;
+  will-change: transform, opacity;
+}
+
+.lkdf-draw-flight img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Layer 2: Equip Steal / Dismantle / Delayed Scroll Flight (.lkdf-equip-flight) */
+.lkdf-equip-flight {
+  z-index: 27;
+  width: 46px;
+  height: 64px;
+  overflow: hidden;
+  border: 1.5px solid #fde68a;
+  border-radius: 5px;
+  background: #1b140f;
+  box-shadow:
+    0 8px 20px rgba(0, 0, 0, 0.78),
+    0 0 14px rgba(251, 191, 36, 0.45);
+  will-change: transform, opacity;
+}
+
+.lkdf-equip-flight[data-flight-kind='dismantle'] {
+  border-color: #ef4444;
+  box-shadow:
+    0 8px 20px rgba(0, 0, 0, 0.78),
+    0 0 16px rgba(220, 38, 38, 0.55);
+}
+
+.lkdf-equip-flight[data-flight-kind='scroll'] {
+  border-color: #c084fc;
+  box-shadow:
+    0 8px 20px rgba(0, 0, 0, 0.78),
+    0 0 16px rgba(192, 132, 252, 0.52);
+}
+
+.lkdf-equip-flight img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Layer 3: 4-Faction Guofeng Skill Seal Ribbon (.lkdf-skill-stamp)
+   CRITICAL CONTRACT: keep ::before / ::after content empty ('') so innerText.trim()
+   always equals exact canonical skill name. */
+.lkdf-arena-stage .lkdf-skill-stamp {
+  --stamp-accent: #e6be6c;
+  --stamp-bg-1: rgba(66, 28, 14, 0.96);
+  --stamp-bg-2: rgba(24, 14, 10, 0.98);
+  --stamp-glow: rgba(230, 190, 108, 0.55);
+  position: absolute;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 10px;
+  border: 1.5px solid var(--stamp-accent);
+  border-radius: 4px;
+  background: linear-gradient(135deg, var(--stamp-bg-1) 0%, var(--stamp-bg-2) 100%);
+  color: #fff6db;
+  font-family: var(--lkdf-font-serif, 'Noto Serif', Georgia, serif);
+  font-size: 13.5px;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 245, 214, 0.25),
+    0 4px 14px rgba(0, 0, 0, 0.85),
+    0 0 16px var(--stamp-glow);
+  animation: lkdf-guofeng-stamp-ribbon 1350ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.lkdf-arena-stage .lkdf-skill-stamp::before,
+.lkdf-arena-stage .lkdf-skill-stamp::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 5px;
+  height: 5px;
+  border: 1px solid var(--stamp-accent);
+  background: var(--stamp-accent);
+  transform: translateY(-50%) rotate(45deg);
+  pointer-events: none;
+}
+
+.lkdf-arena-stage .lkdf-skill-stamp::before {
+  left: -3px;
+}
+
+.lkdf-arena-stage .lkdf-skill-stamp::after {
+  right: -3px;
+}
+
+.lkdf-arena-stage [data-faction='SHU'] .lkdf-skill-stamp {
+  --stamp-accent: #f87171;
+  --stamp-bg-1: rgba(127, 29, 29, 0.96);
+  --stamp-bg-2: rgba(36, 11, 11, 0.98);
+  --stamp-glow: rgba(239, 68, 68, 0.62);
+}
+
+.lkdf-arena-stage [data-faction='WEI'] .lkdf-skill-stamp {
+  --stamp-accent: #60a5fa;
+  --stamp-bg-1: rgba(23, 55, 99, 0.96);
+  --stamp-bg-2: rgba(12, 22, 42, 0.98);
+  --stamp-glow: rgba(56, 189, 248, 0.58);
+}
+
+.lkdf-arena-stage [data-faction='WU'] .lkdf-skill-stamp {
+  --stamp-accent: #34d399;
+  --stamp-bg-1: rgba(15, 76, 58, 0.96);
+  --stamp-bg-2: rgba(9, 31, 24, 0.98);
+  --stamp-glow: rgba(52, 211, 153, 0.56);
+}
+
+.lkdf-arena-stage [data-faction='QUN'] .lkdf-skill-stamp {
+  --stamp-accent: #fbbf24;
+  --stamp-bg-1: rgba(84, 58, 16, 0.96);
+  --stamp-bg-2: rgba(28, 20, 8, 0.98);
+  --stamp-glow: rgba(251, 191, 36, 0.62);
+}
+
+@keyframes lkdf-guofeng-stamp-ribbon {
+  0% {
+    opacity: 0;
+    transform: translateY(6px) scale(0.84);
+  }
+  16% {
+    opacity: 1;
+    transform: translateY(-2px) scale(1.06);
+  }
+  26% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  82% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.95);
+  }
+}
+
+/* Layer 4: Turn Handoff Imperial Banner (.lkdf-turn-banner) & Continuous Loop Auras */
+.lkdf-turn-banner {
+  left: 50%;
+  top: 43%;
+  z-index: 36;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  max-width: min(320px, 86vw);
+  padding: 8px 22px;
+  border: 1.5px solid #fde68a;
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(84, 42, 16, 0.95) 0%, rgba(22, 15, 11, 0.97) 55%, rgba(84, 42, 16, 0.95) 100%);
+  color: #fef08a;
+  font-family: var(--lkdf-font-serif, 'Noto Serif', Georgia, serif);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+  text-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.95),
+    0 0 14px rgba(251, 191, 36, 0.7);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 248, 220, 0.35),
+    0 12px 32px rgba(0, 0, 0, 0.82),
+    0 0 28px rgba(230, 190, 108, 0.55);
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+.lkdf-turn-banner::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 136px;
+  height: 136px;
+  transform: translate(-50%, -50%);
+  z-index: -1;
+  background-image: var(--lkdf-vfx-turn-seal-loop);
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  mix-blend-mode: screen;
+  opacity: 0.9;
+  pointer-events: none;
+}
+
+.lkdf-turn-banner svg {
+  color: #fbbf24;
+  flex-shrink: 0;
+  filter: drop-shadow(0 0 6px rgba(251, 191, 36, 0.7));
+}
+
+/* Dying & Lỏa Y Red Cliffs Ember Fire Loop */
+.lkdf-battle-player[data-dying='true'],
+.lkdf-battle-player[data-luoyi-active='true'] {
+  position: relative;
+}
+
+.lkdf-battle-seat[data-dying='true']::after,
+.lkdf-battle-seat[data-luoyi-active='true']::after,
+.lkdf-battle-player[data-dying='true']::after,
+.lkdf-battle-player[data-luoyi-active='true']::after,
+.lkdf-battle-profile[data-dying='true']::after,
+.lkdf-battle-profile[data-luoyi-active='true']::after {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: inherit;
+  z-index: 3;
+  background-image: var(--lkdf-vfx-fire-loop);
+  background-size: 100% 100%;
+  background-position: center;
+  background-repeat: no-repeat;
+  mix-blend-mode: screen;
+  opacity: 0.92;
+  pointer-events: none;
+}
+
+.lkdf-battle-seat[data-luoyi-active='true']::after,
+.lkdf-battle-player[data-luoyi-active='true']::after,
+.lkdf-battle-profile[data-luoyi-active='true']::after {
+  filter: hue-rotate(-8deg) saturate(1.25) brightness(1.1);
+}
+
+/* Draw-Ready Imperial Gold Dragon Seal Loop */
+[data-motion-draw-pile][data-draw-ready='true'],
+[data-draw-ready='true'] {
+  position: relative;
+}
+
+[data-motion-draw-pile][data-draw-ready='true']::after,
+[data-motion-draw-pile]:has([data-draw-ready='true'])::after {
+  content: '';
+  position: absolute;
+  inset: -14px;
+  z-index: 1;
+  background-image: var(--lkdf-vfx-turn-seal-loop);
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  mix-blend-mode: screen;
+  opacity: 0.94;
+  pointer-events: none;
+}
+
+/* Reduced Motion Overrides (both app toggle and OS preference) */
+[data-lkdf-reduce-motion] .lkdf-draw-flight,
+[data-lkdf-reduce-motion] .lkdf-equip-flight,
+[data-lkdf-reduce-motion] .lkdf-turn-banner,
+[data-lkdf-reduce-motion] .lkdf-skill-stamp {
+  animation: none !important;
+}
+
+[data-lkdf-reduce-motion] .lkdf-turn-banner::before,
+[data-lkdf-reduce-motion] .lkdf-battle-seat[data-dying='true']::after,
+[data-lkdf-reduce-motion] .lkdf-battle-seat[data-luoyi-active='true']::after,
+[data-lkdf-reduce-motion] .lkdf-battle-player[data-dying='true']::after,
+[data-lkdf-reduce-motion] .lkdf-battle-player[data-luoyi-active='true']::after,
+[data-lkdf-reduce-motion] .lkdf-battle-profile[data-dying='true']::after,
+[data-lkdf-reduce-motion] .lkdf-battle-profile[data-luoyi-active='true']::after,
+[data-lkdf-reduce-motion] [data-motion-draw-pile][data-draw-ready='true']::after,
+[data-lkdf-reduce-motion] [data-motion-draw-pile]:has([data-draw-ready='true'])::after {
+  display: none !important;
+  background-image: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lkdf-draw-flight,
+  .lkdf-equip-flight,
+  .lkdf-turn-banner,
+  .lkdf-skill-stamp {
+    animation: none !important;
+  }
+
+  .lkdf-turn-banner::before,
+  .lkdf-battle-seat[data-dying='true']::after,
+  .lkdf-battle-seat[data-luoyi-active='true']::after,
+  .lkdf-battle-player[data-dying='true']::after,
+  .lkdf-battle-player[data-luoyi-active='true']::after,
+  .lkdf-battle-profile[data-dying='true']::after,
+  .lkdf-battle-profile[data-luoyi-active='true']::after,
+  [data-motion-draw-pile][data-draw-ready='true']::after,
+  [data-motion-draw-pile]:has([data-draw-ready='true'])::after {
+    display: none !important;
+    background-image: none !important;
+  }
+}
