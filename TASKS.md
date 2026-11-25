@@ -190,3 +190,30 @@
 - [x] **BOT-04** — Nhịp chờ và trạng thái suy nghĩ của Máy.
 - [x] **BOT-05** — Chơi lại, xác nhận về menu và hủy quyết định đang chờ.
 - [x] **BOT-06** — Kiểm thử logic, ván Electron 4 và 8 ghế chặn mạng, kiểm tra hồi quy online và đóng gói Windows. Bộ cài thử ở `apps/desktop/release/TamQuocSat-Offline-Preview-1.0.0.exe`.
+
+## Phản hồi chơi thử — Nhịp trận và quyền thao tác
+
+- [x] Mở thân phận, chọn tướng rồi cùng đếm ba giây; chủ lượt, ghế phản ứng và ba giai đoạn hiển thị riêng.
+- [x] Phán xét công khai, rút bài nối tiếp, cứu nguy/tử trận/thưởng và thao tác sắp xếp tay.
+- [x] Kiểm chứng Quá Hà/Kỳ Tập hủy lá Phán xét, Lạc Thần tuần tự, Tập Trí hai loại cẩm nang và luồng hiển thị Phản Gián.
+- [x] Vô Giải 8 giây và preset phản ứng tối thiểu 15 giây. Kiểm hồi quy luật, kết nối và 40 kỹ năng.
+- [ ] Chơi thử thủ công với nhóm người thật trên môi trường phát hành.
+
+## 2026-11-24 · Đợt 0–2
+
+- [x] Đợt 0–2 · Bàn giao bản thử Windows cho offline, chọn tướng, lượt chính và sắp bài.
+- [ ] Chủ dự án chơi thử và duyệt đợt 3.
+
+## 2026-11-25 · Nâng cấp Giao diện & Trải nghiệm Studio 9.4+ (Phương án A · Chặng 1–3)
+
+- [x] **Chặng 1:** Đóng gói phông Việt offline (`Noto Serif`, `Be Vietnam Pro`, `JetBrains Mono`), dựng `GuofengModalShell` & `GuofengPillSelect`, bỏ emoji OS (`GameIcon`), làm mới Cổng Vào / Sảnh / Phòng Chờ / Thống Kê / Cập Nhật, thêm thanh HUD đồng 1 chạm góc trên phải bàn đấu và tối ưu bài giữa bàn `56×78px` ở `960×600`.
+- [x] **Chặng 2:** Chuẩn hóa Khoang Soi Tướng/Bài nổi (`MatchInspectorBox` + `Esc` giữ chọn bài + ẩn Tooltip đè), rút gọn 2 tầng giữa bàn, chuyển 5 hộp thoại trận về `GuofengModalShell`, làm mới `Tra cứu` & `Hồ sơ`.
+- [x] **Chặng 3:** Xóa cuộn dọc ở `HeroSelectPanel` 5 ứng viên Chủ Công, `GuanXingPlanner`, `YiJiDistributor` trên cả `960×600` & `1280×720`, thay nút `Tay #` thô bằng `<BlindHandCardFan>` quạt `<CardBack>`, đồng bộ nền Gỗ Mun & Đồng Cổ, cập nhật `DESIGN.md`; vượt qua `typecheck`, `build`, `107/107` unit, `500/500` fuzz, `26/26` integration, `40` kỹ năng (`480` lượt), `assets:check` và QA Electron live.
+- [ ] Chủ dự án nghiệm thu bản giao diện mới trên Windows, `commit` & phát hành bản cài đặt kế tiếp.
+
+## 2026-11-25 · Đợt Hoàn Thiện Luật Hủy/Lấy, Rút Bài & 6 Bộ VFX Quốc Phong
+
+- [x] **Lõi luật & Nhật ký 25 Tướng (`packages/shared`, `RULES_STANDARD.md`):** Khóa hoàn toàn Khu Phán Xét (`DELAYED`) khỏi mọi lá bài/kỹ năng Hủy & Lấy bài (`Quá Hà Sái Cầu`, `Kỳ Tập`, `Thuận Thủ Khiên Dương`, `Phản Quỷ`, `Đột Tập`), chặn chọn mục tiêu có `0` bài tay + `0` trang bị, chuẩn hóa log tiếng Việt `♠ Bích / ♥ Cơ / ♣ Chuồn / ♦ Rô` cho *Phản Gián* và đủ 40 kỹ năng.
+- [x] **UX Bàn Đấu (`apps/desktop/src/features/match/`, `index.css`):** Xóa thanh cuộn ngang cắt lá bài thứ 3 giữa bàn ở `DRAW`, thêm Cuộn Lệnh Kỳ `ĐẾN LƯỢT BẠN` + nút `Rút X lá đầu lượt [Enter / Space]`, tự động nhận diện bài chuyển hóa khi phản ứng (`Võ Thánh`, `Long Đảm`, `Khuynh Quốc`, `Cấp Cứu`), làm mờ bài sai màu, đưa `Hàn Băng Kiếm` lên bảng giữa bàn, gắn tiền tố `Vũ khí / Giáp / Ngựa +1 / Ngựa -1` và bỏ hoàn toàn vùng `Phán xét` khỏi bộ chọn.
+- [x] **VFX Quốc Phong 60fps + 6 Flipbook/Animated WebP (`scripts/generate-vfx-flipbooks.mjs`, `assets/vfx/*`, `MatchVfxCanvas.tsx`, `useMatchMotion.ts`):** Chế tác 6 bộ ảnh động 8-bit alpha (`239.97 KB`), hỗ trợ cả `.gif` đặt thêm vào `assets/vfx/`, bay bài rút theo vòng cung 3D, chém hủy/cướp trang bị, Đại Ấn 4 Phe & viền lửa Xích Bích. Cài đặt lên `Tam Quoc Sat.exe` cục bộ và đã commit/push sạch lên `origin/main`.
+- [ ] Đồng bộ Render & phát hành tag `v1.1.0` trên GitHub Actions, sau đó cập nhật link tải `README.md`.

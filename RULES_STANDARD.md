@@ -153,8 +153,8 @@ Khi giải quyết 1 lá **Sát** (hoặc nguồn sát thương bất kỳ):
 | Tên lá | SL | Chất & Số | Luật & Edge Cases khi viết code |
 | :--- | :---: | :--- | :--- |
 | **Vô Trung Sinh Hữu** | 4 | `7♥, 8♥, 9♥, J♥` | Dùng lên bản thân ở pha Đánh. Nếu không bị *Vô Giải* -> rút ngay `2` lá. |
-| **Thuận Thủ Khiên Dương** | 5 | `3♠, 4♠, J♠, 3♦, 4♦` | Chọn `1` người chơi khác có bài (ở tay / trang bị / khu phán xét) và thỏa `distance <= 1` (Hoàng Nguyệt Anh bỏ qua khoảng cách; miễn nhiễm Lục Tốn). Lấy `1` lá vào tay mình (tay chọn 1 vị trí úp sau khi chủ bài xác nhận; trang bị & phán xét chỉ định). |
-| **Quá Hà Sái Cầu** | 6 | `3♠, 4♠, Q♠, Q♥, 3♣, 4♣` | Chọn `1` người chơi khác có ít nhất `1` lá ở tay / trang bị / khu phán xét (**không giới hạn khoảng cách**). Hủy `1` lá đó đưa vào chồng bài bỏ. |
+| **Thuận Thủ Khiên Dương** | 5 | `3♠, 4♠, J♠, 3♦, 4♦` | Chọn `1` người chơi khác có bài (từ tay hoặc khu trang bị) và thỏa `distance <= 1` (Hoàng Nguyệt Anh bỏ qua khoảng cách; miễn nhiễm Lục Tốn). Lấy `1` lá vào tay mình (tay chọn 1 vị trí úp sau khi chủ bài xác nhận; trang bị chỉ định trực tiếp). |
+| **Quá Hà Sái Cầu** | 6 | `3♠, 4♠, Q♠, Q♥, 3♣, 4♣` | Chọn `1` người chơi khác có ít nhất `1` lá từ tay hoặc khu trang bị (**không giới hạn khoảng cách**). Hủy `1` lá đó đưa vào chồng bài bỏ. |
 | **Quyết Đấu** | 3 | `A♠, A♣, A♦` | Chọn `1` người chơi khác (miễn nhiễm Gia Cát *Không Thành*). **Mục tiêu đánh ra 1 Sát trước**, rồi luân phiên 2 bên. Bên nào không đánh ra `Sát` chịu `1` sát thương từ bên kia (Lữ Bố ép đối phương đánh `2` Sát mỗi lần). *(Lưu ý: chỉ có 1 cửa sổ Vô Giải lúc bắt đầu Quyết Đấu).* |
 | **Tá Đao Sát Nhân** | 2 | `Q♣, K♣` | Chọn `(A, B)`: `A !== self`, `A` đang **lắp Vũ khí**, `B` nằm trong tầm đánh của `A` (`B` không bị *Không Thành*, được phép `B === self`). Nếu không bị *Vô Giải*: `A` phải đánh ra `1` lá `Sát` vào `B` (tính như `A` dùng *Sát*, được kích hoạt kỹ năng vũ khí như *Thanh Công / Quán Thạch / Hàn Băng* nhưng **không** tính vào giới hạn `1` Sát/lượt của `A` và không được dùng khi không phải lượt `A` nếu không có *Võ Thánh/Long Đảm*), hoặc `A` giao lá Vũ khí đang cầm vào tay bạn. |
 | **Nam Man Nhập Xâm** | 3 | `7♠, K♠, 7♣` | Lần lượt từng người còn sống khác (bắt đầu từ ghế kế tiếp người dùng): hỏi *Vô Giải* riêng cho người đó -> nếu không bị *Vô Giải*, buộc đánh ra `1 Sát` hoặc chịu `1` sát thương từ người dùng. |
@@ -209,13 +209,13 @@ Khi giải quyết 1 lá **Sát** (hoặc nguồn sát thương bất kỳ):
    - **Mã Thuật** *(Khóa):* Khoảng cách từ bạn tới mọi người khác luôn `-1`.
    - **Thiết Kỵ** *(Khi đánh `Sát` chọn mục tiêu):* Lật `1` lá phán xét; nếu là **màu Đỏ (`♥ / ♦`)**, lá *Sát* này **không thể bị né bằng `Thiểm`** (chạy trước bước né của mục tiêu; vẫn bị *Nhân Vương Thuẫn* chặn nếu Sát là màu Đen!).
 7. **Hoàng Nguyệt Anh (`3` máu · Nữ):**
-   - **Tập Trí** *(Khi dùng Cẩm nang thường):* Ngay tại thời điểm sử dụng `1` lá **Cẩm nang thường** (tuyên bố dùng, **trước** khi kiểm tra *Vô Giải* — tức dù bị *Vô Giải* vẫn được rút!), rút ngay **`1` lá**. *(Không kích hoạt cho Cẩm nang thời gian như Lạc/Thiểm Điện).*
+   - **Tập Trí** *(Luật dự án đã duyệt):* Khi dùng **Cẩm nang thường hoặc Cẩm nang thời gian**, rút ngay **`1` lá**. Với Cẩm nang thường, rút ở thời điểm tuyên bố dùng, trước khi kiểm tra *Vô Giải*.
    - **Kỳ Tài** *(Khóa):* Sử dụng Cẩm nang **không bị giới hạn khoảng cách** (*Thuận Thủ Khiên Dương* chọn được bất kỳ ai).
 
 ### 4.2. Thế lực NGỤY (`7` Tướng)
 
 8. **Tào Tháo (`4` máu · Nam · Chủ Công):**
-   - **Gian Hùng** *(Sau khi chịu sát thương):* Nếu nguồn gây sát thương là **lá bài** (hoặc nhiều lá như *Trượng Bát Xà Mâu*), lấy các lá đó về tay (không áp dụng cho sát thương từ kỹ năng không kèm bài như *Ly Gián/Phản Gián/Cương Liệt* hay *Thiểm Điện*).
+   - **Gian Hùng** *(Sau khi chịu sát thương):* Nếu nguồn gây sát thương là **lá bài** (hoặc nhiều lá như *Trượng Bát Xà Mâu*), lấy các lá đó về tay (không áp dụng cho sát thương từ kỹ năng không kèm bài như *Ly Gián/Phản Gián/Cương Liệt*). Nếu sống sót sau Thiểm Điện, có thể nhận lá Thiểm Điện vật lý.
    - **Hộ Giá** *(Chủ Công · Phản ứng):* Khi cần dùng hoặc đánh ra *Thiểm* (bị *Sát* hoặc *Vạn Tiễn*), hỏi lần lượt các tướng **Ngụy khác** theo vòng ghế đánh ra `1 Thiểm` giúp bạn (nếu gặp *Lữ Bố Vô Song*, hỏi đủ 2 lần).
 9. **Tư Mã Ý (`3` máu · Nam):**
    - **Phản Quỷ** *(Sau khi chịu sát thương):* Nếu có `sourceSeat` (và `sourceSeat` có bài trên tay hoặc trang bị), được chọn `1` vị trí úp trên tay hoặc chọn `1` lá trang bị của nguồn sát thương về tay mình (**`1` lần/lượt sát thương**, bất kể `1` hay `2` máu).
@@ -225,7 +225,7 @@ Khi giải quyết 1 lá **Sát** (hoặc nguồn sát thương bất kỳ):
 11. **Trương Liêu (`4` máu · Nam):**
     - **Đột Tập** *(Pha `DRAW`):* Có quyền **bỏ qua việc rút `2` lá** từ chồng bài rút, thay bằng chọn `1` hoặc `2` người chơi khác đang có bài trên tay, lấy từ tay mỗi người đó **`1` lá úp**, giải quyết lần lượt theo trình tự dưới đây.
 12. **Hứa Chử (`4` máu · Nam):**
-    - **Lỏa Y** *(Pha `DRAW`):* Có quyền **rút ít hơn `1` lá** (chỉ rút `1` lá); đổi lại cho tới hết lượt, mọi lá **`Sát`** hoặc **`Quyết Đấu`** mà Hứa Chử là người gây sát thương đều **`+1` sát thương**.
+    - **Lỏa Y** *(Pha rút):* Rút lá đầu bằng cách bấm chồng bài. Bấm lần nữa để rút lá thứ hai và bỏ qua Lỏa Y; bắt đầu ra bài hoặc kết thúc pha đánh sau lá đầu sẽ chốt Lỏa Y. đổi lại cho tới hết lượt, mọi lá **`Sát`** hoặc **`Quyết Đấu`** mà Hứa Chử là người gây sát thương đều **`+1` sát thương**.
 13. **Quách Gia (`3` máu · Nam):**
     - **Thiên Đố** *(Ngay sau khi lá Phán xét của bản thân có hiệu lực):* Thu lấy lá phán xét đó về tay (áp dụng cho cả *Lạc Bất Tư Thục, Thiểm Điện, Bát Quái Trận, Cương Liệt*).
     - **Di Kế** *(Sau khi chịu sát thương — tính theo TỪNG `1` điểm máu mất):* Mất `N` máu kích hoạt **`N` lần**; mỗi lần rút `2` lá từ chồng bài rút rồi tự giữ hoặc chia tùy ý từng lá vào tay những người còn sống.
@@ -298,8 +298,8 @@ Phần đối chiếu thực tế giữa [packages/shared/src](./packages/shared
    - `Khổ Nhục` đưa `KU_ROU_DRAW` vào hàng đợi trước `applyDamage`: nếu Hoàng Cái tự hạ về `0` máu rồi được cứu Đào vẫn rút đủ 2 lá.
    - `Phản Gián` đoán sai chất sẽ chịu 1 sát thương (và mở Cầu Đào nếu `0` máu) **trước khi** nhận lá bài rút về tay (`FAN_JIAN_RECEIVE`).
 5. **✅ [Đã vá chuẩn] `Tư Mã Ý — Phản Quỷ`, `Đại Kiều — Quốc Sắc / Lưu Ly`, `Tôn Thượng Hương — Kiêu Cơ` & `Lục Tốn — Liên Doanh` (`combat.ts`, `deck.ts`, `winCondition.ts`):**
-   - `Phản Quỷ` chỉ được lấy từ tay hoặc trang bị (`allowDelayed: false`), cấm lấy vùng Phán Xét (`DELAYED`).
-   - `Quốc Sắc` lưu `physicalCard` để khi bị *Thuận Thủ / Quá Hà* lấy về tay hoặc đưa ra chồng bài bỏ sẽ khôi phục nguyên lá bài gốc (không biến thành `Lạc Bất Tư Thục` thật).
+   - `Phản Quỷ`, `Thuận Thủ Khiên Dương` và `Quá Hà Sái Cầu` chỉ được lấy/hủy từ tay hoặc khu trang bị (`allowDelayed: false`), cấm chọn vùng Phán Xét (`DELAYED`).
+   - `Quốc Sắc` lưu `physicalCard` để khi kết thúc phán xét đưa ra chồng bài bỏ hoặc khôi phục qua `restorePhysicalCard` sẽ giữ nguyên lá bài gốc (không biến thành `Lạc Bất Tư Thục` thật).
    - `Lưu Ly` cấm chuyển `Sát` sang người đã nằm trong danh sách mục tiêu của *Phương Thiên Họa Kích*.
    - Chủ Công giết nhầm Trung Thần mất sạch tay + trang bị vẫn kích hoạt `Liên Doanh` (Lục Tốn) và `Kiêu Cơ` (Tôn Thượng Hương).
 6. **✅ [Đã vá chuẩn] Chủ Công `Kích Tướng` (Lưu Bị) & `Hộ Giá` (Tào Tháo) (`combat.ts`, `combatCore.ts`):**

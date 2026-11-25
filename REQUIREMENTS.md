@@ -116,7 +116,7 @@ Người dùng tải bộ cài đặt Windows (`.exe`/`.msi`) 1 lần duy nhất
 - **Quy tắc hỏi *Vô Giải Khả Kích* chống lộ bài:**
   - Khi một lá Cẩm nang chuẩn bị phát huy tác dụng lên 1 mục tiêu, hệ thống **luôn mở nhịp chờ phản ứng *Vô Giải Khả Kích* toàn bàn**:
     - Những người thực sự có *Vô Giải Khả Kích* trên tay (và chưa bật nút `[☑️ Tự bỏ qua Vô Giải lượt này]`) sẽ thấy nút đánh *Vô Giải* hoặc `[⏭️ Bỏ qua]`.
-    - Mỗi cửa sổ phản ứng trực tuyến dùng cùng hạn chờ `3,5 giây`, kể cả cửa sổ chặn một lá *Vô Giải* vừa được đánh. Bỏ qua được xác nhận riêng cho người bấm và không làm cửa sổ đóng sớm. Khi một lá *Vô Giải* được đánh, lá đó được công khai và mở cửa sổ phản ứng mới.
+    - Mỗi cửa sổ phản ứng trực tuyến dùng cùng hạn chờ `8 giây`, kể cả cửa sổ chặn một lá *Vô Giải* vừa được đánh. Bỏ qua được xác nhận riêng cho người bấm và không làm cửa sổ đóng sớm. Khi một lá *Vô Giải* được đánh, lá đó được công khai và mở cửa sổ phản ứng mới.
 
 ---
 
@@ -228,7 +228,7 @@ Phiên bản đầu (v1) chỉ được xác nhận hoàn thành khi đạt **t�
 - [ ] **AC-3 (Đánh thức Cloud 0đ & Phòng 4–8 người thật):** Hiển thị đúng màn hình chờ đánh thức máy chủ (`~30–60s`) khi máy chủ đang ngủ; chặn bắt đầu khi phòng có dưới 4 người thật; bắt đầu ván thành công ở các mốc từ 4 đến 8 người thật.
 - [ ] **AC-4 (Chia Thân Phận, Máu Chủ Công & Chia 25 Tướng):** Chia đúng tỷ lệ Thân Phận cho cả 5 mốc (`4: 1-0-2-1`, `5: 1-1-2-1`, `6: 1-1-3-1`, `7: 1-2-3-1`, `8: 1-2-3-2`), Chủ Công luôn được `+1 máu tối đa` ở mọi mốc 4–8 người; Chủ Công được chọn 1/5 tướng (có đủ *Lưu Bị, Tào Tháo, Tôn Quyền*), những người còn lại được chọn 1/3 tướng từ bộ 25 tướng chuẩn.
 - [ ] **AC-5 (Độ chính xác Luật 108 lá, 25 Tướng & 2 Nội Gián):** Bộ kiểm thử tự động giả lập tối thiểu **100 ván cho mỗi mốc 4, 5, 6, 7, 8 người** vượt qua 100% với **0 lỗi treo lượt**; kiểm tra đúng luật ở bàn 8 người khi Chủ Công chết mà cả 2 Nội Gián còn sống thì xử **Phản Tặc thắng**.
-- [ ] **AC-6 (Chống lộ bài *Vô Giải Khả Kích*):** Cả bàn thấy cùng hạn chờ `3,5 giây` mỗi cửa sổ. Khi cả bàn bỏ qua, hiệu ứng tiếp tục đúng hạn như trường hợp không có ai được phản ứng.
+- [ ] **AC-6 (Chống lộ bài *Vô Giải Khả Kích*):** Cả bàn thấy cùng hạn chờ `8 giây` mỗi cửa sổ. Khi cả bàn bỏ qua, hiệu ứng tiếp tục đúng hạn như trường hợp không có ai được phản ứng.
 - [ ] **AC-7 (Khôi phục rớt mạng, Khởi động lại Server & Trọng Tài 4 nút + Chuyển quyền 30s):**
   - Tắt ngang ứng dụng của 1 người chơi đang trong ván → ghế đó chuyển sang Máy đánh hộ tạm thời → mở lại ứng dụng tự vào đúng ghế và tay bài cũ.
   - Ngắt mạng của Chủ phòng quá 30 giây → quyền Trọng Tài 4 nút tự động chuyển sang người chơi thật đang online kế tiếp → Chủ phòng kết nối lại được trả lại quyền.

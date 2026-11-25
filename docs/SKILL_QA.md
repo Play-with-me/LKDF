@@ -91,3 +91,8 @@ Trong cửa sổ kiểm thử, chọn kỹ năng, góc nhìn và bấm **Phát t
 - Các ca Lưu Ly, Kết Hôn, Ly Gián và Thanh Nang không chọn âm Đào/Thiểm khi chỉ bỏ bài làm phí. Long Đảm, Khuynh Quốc, Hộ Giá, Cấp Cứu và Cứu Viện vẫn chọn đúng tín hiệu.
 - Dấu kỹ năng dùng tên trong danh mục, hiện cả ở ghế mình và ghế khác. Kiểm tra 10 kỹ năng ở 12 cấu hình mỗi kỹ năng, gồm Giảm chuyển động.
 - Typecheck, 68 bài luật và 480 lượt phát lại đạt. Bộ phát lại kiểm tra loại âm được chọn; chưa nghe thử bản phối trên loa.
+
+## Hồi quy nhịp trận sau phản hồi Windows
+
+- Ca phát lại 40 kỹ năng tiếp tục đi qua ba góc nhìn, hai kích thước và Giảm chuyển động. Các bài kiểm tra mới bao phủ Tập Trí khi đặt Lạc Bất Tư Thục hoặc Thiểm Điện và Quá Hà/Kỳ Tập hủy lá Phán xét duy nhất.
+- Ca thao tác Electron dùng chuột mô phỏng để đổi chỗ bài, bấm lá Phán xét để hủy và kích hoạt Lạc Thần một lần cho chuỗi đen–đen–đỏ. Bài tích hợp máy chủ kiểm tra cả trạng thái đã chốt tướng, chưa chia bài và chuyển combat sau đếm ngược.

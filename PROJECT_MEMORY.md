@@ -406,3 +406,28 @@ Lớp hiệu ứng bàn chính đã nối các thay đổi xác nhận được 
 
 - Hoàn tất ma trận [40 kỹ năng](docs/SKILL_QA.md): 68/68 bài luật khi trích xuất, 480 lượt phát Electron, không phát hiện bài riêng bị đưa sang ghế khác hoặc tràn ở cấp trang. Kỹ năng được kiểm tra bằng ca đại diện, chưa bao phủ thao tác trực tiếp và mọi nhánh.
 - Ưu tiên sửa cảnh báo sai tên Phản Quỷ/Đột Tập và phản hồi chuyển bài Nhân Đức/Di Kế. Bước này bổ sung công cụ kiểm thử và tài liệu.
+
+## 2026-11-23 — Phản hồi chơi thử bàn đấu
+
+- Đã thêm nhịp khai trận sau chọn tướng, dấu chủ lượt, ba giai đoạn, phán xét công khai, rút tuần tự, sắp xếp tay, tín hiệu cứu và tử trận, phản hồi Phản Gián và sửa luồng hiển thị Quá Hà. Quyền dừng Lạc Thần vẫn dùng hành động luật cũ, các lá đen tự lật tiếp.
+- Bằng chứng: typecheck/build, 104 unit, 26 integration, 500 ván fuzz và 480 lượt phát kỹ năng. Electron 960×600 kiểm tra kéo đổi thứ tự, đếm thật sau chọn tướng, bấm Quá Hà hủy khu Phán xét và một lần kích hoạt Lạc Thần cho chuỗi đen–đen–đỏ. Còn nghiệm thu nhóm online trên môi trường phát hành.
+
+## 2026-11-24 · Đợt 0–2
+
+Neon Medium điều phối 9 Hydrogen High. 40 ca UI, 107 unit và 500 ván mô phỏng đạt theo báo cáo. Leader xác minh build, typecheck, 26/26 integration, cài bản thử và đo cửa sổ 2560×1600.
+
+## 2026-11-25 · Nâng cấp UI/UX chuẩn Studio 9.4+ (Phương án A · Chặng 1–3)
+
+- **Triển khai qua Swarm 4 Agent `gemini-4-hydrogen-xhigh` (3 đợt, tách vùng file hoàn toàn — chỉ sửa `apps/desktop/**`, `package*.json` và `DESIGN.md`, giữ nguyên `packages/shared/**` & `apps/server/**`):**
+  - **Đợt 1:** Đóng gói offline font Việt hóa (`@fontsource/noto-serif`, `@fontsource/be-vietnam-pro`, `@fontsource/jetbrains-mono`), tạo `GuofengModalShell.tsx` & `GuofengPillSelect.tsx`, mở rộng vector `GameIcon.tsx` bỏ color emoji OS, làm mới `ServerWakeScreen` / `LoginScreen` / `HomeLobbyHub` / `WaitingRoomScreen` / `OfflineMatchSetup` / `StatsPage` / `UpdateModal`, gắn thanh HUD đồng 1 chạm góc trên phải bàn đấu và tối ưu bài giữa bàn `56×78px` cho `960×600`.
+  - **Đợt 2:** Nâng cấp Khoang Soi `ⓘ` (`MatchInspectorBox`, `MatchHoverTooltip` tránh đè & `Esc` giữ nguyên bài chọn), rút gọn 2 tầng `MatchCenterBoard`, đưa 5 hộp thoại trong trận (`ActionLog`, `RulesHotkeys`, `RefereePanel`, `GameOverSummaryModal`, thoát offline) về `GuofengModalShell`, làm mới `Tra cứu` (tiểu sử tướng sticky) và `Hồ sơ`.
+  - **Đợt 3:** Dọn cuộn dọc ở `HeroSelectPanel` 5 ứng viên Chủ Công + `GuanXingPlanner` + `YiJiDistributor` tại cả `960×600` & `1280×720`, trích `<BlindHandCardFan>` quạt `<CardBack>` thay nút `Tay #` thô ở `PICK_TARGET_CARD`/`RESPOND_HAN_BANG_KIEM`, đồng bộ nền Gỗ Mun & Đồng Cổ (`#140F0C`) trên toàn bộ khung chọn tướng/thanh lệnh và cập nhật `DESIGN.md`.
+- **Bằng chứng kiểm chứng sau sửa cuối:** `npm.cmd run typecheck` (**0 lỗi**), `npm.cmd run build` (`vite 2430 modules` + Electron **exit 0**), `npm.cmd run test:unit` (**12 files · 107/107**), `npm.cmd run test:fuzz` (**6/6 · 500/500 ván**), `npm.cmd run test:integration` (**7 files · 26/26**), `npx.cmd electron apps/desktop/tests/skill-qa/electron.cjs` (**40 kỹ năng · 480 lượt · 0 vi phạm**), `npm.cmd run assets:check` (`25/25` tướng · `32/32` bài · `53` âm thanh · `2.50 MB`), kiểm tra Electron live ở `960×600` & `1280×720` đạt `0` lỗi console/HTTP/tràn khung. Hiện thay đổi đang ở working tree cục bộ (chưa commit/phát hành bản cài mới).
+
+## 2026-11-25 · Đợt Hoàn Thiện Luật Hủy/Lấy, UX Rút Bài / 25 Tướng & 6 Bộ VFX Quốc Phong
+
+- **Triển khai qua Swarm 4 Agent `gemini-4-hydrogen-xhigh` + 1 Monitor (đã giải thể sạch, giữ nguyên `apps/server/**`):**
+  - **Lõi luật & Nhật ký (`packages/shared`, `RULES_STANDARD.md`):** Khóa hoàn toàn vùng Phán Xét (`DELAYED`) khỏi *Quá Hà Sái Cầu*, *Kỳ Tập*, *Thuận Thủ Khiên Dương*, *Phản Quỷ*, *Đột Tập*, chặn chọn mục tiêu `0` bài tay + `0` trang bị (`TARGET_HAS_NO_CARDS` / `DELAYED_ZONE_NOT_ALLOWED`), sửa log *Phản Gián* dùng `♠ Bích / ♥ Cơ / ♣ Chuồn / ♦ Rô` và chuẩn hóa log tiếng Việt cho đủ 40 kỹ năng + hành động cướp/hủy trang bị.
+  - **UX Bàn đấu & Phản ứng (`apps/desktop/src/features/match/`, `index.css`):** Mở rộng `.lkdf-battle-center` / `.lkdf-battle-card-line` xóa triệt để thanh cuộn ngang & lỗi cắt lá thứ 3 giữa bàn; thêm nút `[Rút X lá đầu lượt (Enter / Space)]` + nhãn `ĐẾN LƯỢT BẠN` + `Lỏa Y` lá thứ 2; tự động nhận diện bài chuyển hóa khi phản ứng (`Võ Thánh`, `Long Đảm`, `Khuynh Quốc`, `Cấp Cứu`), làm mờ bài sai màu, gắn huy hiệu `Lỏa Y +1 ST` / `Không Thành` / `Khiêm Tốn`, đưa `Hàn Băng Kiếm` lên bảng giữa bàn, hiện tiền tố `Vũ khí / Giáp / Ngựa +1 (Thủ) / Ngựa -1 (Công)` và bỏ `DELAYED` khỏi UI.
+  - **6 Bộ Ảnh Động Quốc Phong + 4 Lớp Animation (`scripts/generate-vfx-flipbooks.mjs`, `assets/vfx/*`, `vfxAssetCatalog.ts`, `MatchVfxCanvas.tsx`, `useMatchMotion.ts`, `vfx-motion.css`):** Chế tác 6 asset trong suốt 8-bit (`vfx-ink-slash.webp`, `vfx-peach-bloom.webp`, `vfx-bagua-seal.webp`, `vfx-thunder-strike.webp`, `vfx-dying-fire-loop.webp`, `vfx-turn-seal-loop.webp`, tổng `239.97 KB`, hỗ trợ `.gif` tùy chọn) kết hợp bay bài rút 3D, chém hủy/cướp trang bị, Đại Ấn 4 Phe và Cuộn Lệnh Kỳ Đến Lượt.
+- **Bằng chứng kiểm chứng sau sửa cuối & Cài đặt máy:** `typecheck` (0 lỗi), `build` (`vite 2438 modules`, `928ms`), `test:unit` (**12 files · 112/112**), `test:fuzz` (**6/6 · 500/500 ván**), `test:integration` (**7 files · 26/26**), `capture.test.ts` (**79/79**), `skill-qa/electron.cjs` (**40 kỹ năng · 480 lượt · 0 vi phạm**), `assets:check` (`25/25` tướng, `32/32` bài, `53` âm thanh), QA Electron live `960×600` & `1280×720` (`QA_PASS`), đã đóng gói + cài đặt `TamQuocSat-Setup-0.1.0.exe` lên máy Windows cục bộ và chia **3 atomic commits đẩy lên `origin/main`** (chờ đồng bộ Render + phát hành tag `v1.1.0`).

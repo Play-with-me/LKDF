@@ -33,6 +33,14 @@ Vì bạn là người mới và không lập trình, bạn **không cần đọ
 
 ## 2. Lộ Trình Từ Đầu Đến Cuối & Các Câu Lệnh "Copy – Dán" Cho Bạn
 
+**2026-11-25 · ✅ ĐÃ XONG & Đẩy GitHub (`origin/main`) toàn bộ Nâng cấp Studio 9.4+, Khóa Phán Xét & 6 VFX Quốc Phong.** 👉 BẠN ĐANG Ở ĐÂY · Đồng bộ máy chủ Render và đóng gói bản phát hành `v1.1.0` trên GitHub Actions (*"Đẩy tag v1.1.0 để GitHub Actions tự đóng gói bản phát hành cho tôi"*).
+
+**2026-11-25 · ✅ ĐÃ XONG Chuẩn hóa Luật Hủy/Lấy, Rút bài & Đến Lượt, UX 25 Kỹ năng & 6 Bộ Ảnh Động Quốc Phong (WebP Flipbook + 60fps Canvas).** 👉 Đã kiểm tra, cài đặt cục bộ và đồng bộ lên `origin/main`.
+
+**2026-11-25 · ✅ ĐÃ XONG Nâng cấp Giao diện & Trải nghiệm Studio 9.4+ (Phương án A · Chặng 1–3).** 👉 BẠN ĐANG Ở ĐÂY · Chạy kiểm tra bằng mắt trên máy Windows (`npm run dev --workspace=@lkdf/desktop` hoặc đóng gói bản thử `.exe`) để duyệt diện mạo mới từ Cổng Vào Xích Bích, Sảnh/Tra cứu/Hồ sơ tới Bàn đấu 4–8 ghế & Chơi với Máy; khi ưng ý thì nhắn *"Commit, push và đóng gói phát hành bản mới cho tôi"*.
+
+**2026-11-24 · ✅ ĐÃ XONG đợt 0–2.** 👉 BẠN ĐANG Ở ĐÂY · Chơi với Máy, chốt tướng và chơi thử. Nếu đạt, gửi “Duyệt đợt 3 — phản ứng và ra bài”.
+
 > **📌 Trạng thái hiện tại của bạn (AI tự động cập nhật sau mỗi bước):**
 > - ✅ **ĐÃ XONG BOT-01–BOT-06:** Có bản cài thử **Chơi với Máy** cho Windows. Vào **Chơi với Máy → Bắt đầu ván** để chơi offline.
 > - 👉 **BẠN ĐANG Ở ĐÂY — Chơi thử nhịp Máy:** `Tôi đã thử bàn 4 và 8 ghế, hãy cùng tôi chốt nhịp Máy trước khi phát hành.`
@@ -306,3 +314,8 @@ Hãy gọi kèm `/honest-advisor` và `/ultrathinking` như bạn đã dùng r�
 - Bước 4.1: Âm Xích Bích được tải và giải mã trước qua Web Audio, phát AudioBuffer ngay khi hover, nhấn chuột và nhận tín hiệu trận. Chuột phát lúc pointerdown, click bàn phím vẫn phát, không lặp click chuột. Electron đo thời gian từ sự kiện đến gọi start: nhấn 0,4 ms, hover 0,2 ms, xác nhận âm lượt và tắt tiếng. Đây là thời gian phần mềm; chưa đo loa Windows.
 
 - Bước 4.1: Cài đặt tách Nhạc nền và Hiệu ứng âm thanh. Máy chủ lưu music_enabled riêng; hồ sơ cũ lấy trạng thái cũ khi chưa thiết lập. Electron thử 4 tổ hợp bật/tắt, tích hợp xác nhận lưu sau khởi động lại. Bàn giao: triển khai máy chủ và desktop cùng bản.
+
+## Bản thử nhịp trận trên Windows
+
+- ✅ **ĐÃ XONG:** Bản thử bổ sung đếm sau chốt tướng, phán xét công khai, sắp xếp tay và các bản sửa kỹ năng theo lượt chơi thử.
+- 👉 **BẠN ĐANG Ở ĐÂY:** Thử trong **Chơi với Máy** trước. Chặng online cần nghiệm thu với Desktop và máy chủ cùng bản.
