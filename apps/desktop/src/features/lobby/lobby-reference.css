@@ -198,8 +198,7 @@
   height: 170px;
   background:
     linear-gradient(0deg, #161210 1%, #16121014 60%, #09080720),
-    linear-gradient(90deg, #161210 2%, #16121038 60%, color-mix(in srgb, var(--faction-color) 38%, transparent)),
-    url('../../assets/art/ui/camp-zhanhuo.webp') var(--faction-crop) 58% / cover no-repeat;
+    linear-gradient(90deg, #161210 2%, #16121038 60%, color-mix(in srgb, var(--faction-color) 38%, transparent));
   clip-path: polygon(
     0 calc(78% * var(--faction-art-remainder)),
     30% calc(62% * var(--faction-art-remainder)),
@@ -331,14 +330,12 @@
   background:
     linear-gradient(90deg, #14161c 0%, #14161c42 60%, #25263a91),
     repeating-linear-gradient(90deg, transparent 0 48px, #e6be6c43 49px 51px, transparent 52px 79px),
-    linear-gradient(0deg, #14161c, transparent 72%),
-    url('../../assets/art/ui/lobby-banner.webp') center 48% / cover no-repeat;
+    linear-gradient(0deg, #14161c, transparent 72%);
 }
 .lkdf-faction-scene[data-scene="river"] .lkdf-faction-scene-art::before {
   background:
     linear-gradient(90deg, #14161c 0%, #14161c58 51%, #0e504043),
-    linear-gradient(0deg, #14161c, transparent 72%),
-    url('../../assets/art/ui/camp-zhanhuo.webp') 88% 63% / cover no-repeat;
+    linear-gradient(0deg, #14161c, transparent 72%);
   transform: translate(calc(35px * var(--faction-art-remainder)), calc(12px * var(--faction-art-remainder)));
 }
 .lkdf-hero-dossier-header img { animation: lkdf-dossier-ink 230ms ease-out; }
@@ -493,7 +490,7 @@
   transform: translateX(calc(-55px * var(--faction-art-remainder)));
 }
 [data-scene="river"] .lkdf-faction-foreground {
-  background: url('./red-cliffs/red-cliffs-piece-distant-boat.webp') 90% 80% / auto 60px no-repeat;
+  background: radial-gradient(ellipse at 90% 80%, rgba(110, 175, 155, 0.25) 0%, transparent 55%);
   opacity: calc(.8 - .55 * var(--faction-art-remainder));
   transform: translateX(calc(105px * var(--faction-art-remainder)));
 }
@@ -505,9 +502,7 @@
   padding: 14px;
   border: 1px solid rgba(128, 99, 69, 0.65);
   border-radius: 6px;
-  background:
-    linear-gradient(125deg, rgba(28, 21, 17, 0.94) 25%, rgba(20, 15, 12, 0.86)),
-    url('../../assets/art/ui/tex-ink-base.webp') right top / cover;
+  background: linear-gradient(125deg, rgba(28, 21, 17, 0.94) 25%, rgba(20, 15, 12, 0.86));
 }
 .lkdf-card-chapter { margin-top: 12px; }
 .lkdf-card-chapter h3 {

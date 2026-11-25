@@ -1,6 +1,6 @@
-appId: com.lkdf.tamquocsat
-productName: Tam Quoc Sat
-artifactName: TamQuocSat-Setup-${version}.${ext}
+appId: com.cuuchauankiem.game
+productName: Blades of the Nine Realms
+artifactName: BladesOfTheNineRealms-Setup-${version}.${ext}
 electronVersion: 45.3.3
 asar: true
 npmRebuild: false
@@ -24,8 +24,5 @@ nsis:
   allowElevation: false
   createDesktopShortcut: true
   createStartMenuShortcut: true
-  shortcutName: Tam Quoc Sat
+  shortcutName: Blades of the Nine Realms
   deleteAppDataOnUninstall: false
-publish:
-  provider: generic
-  url: https://update.lkdf.invalid/api/update/

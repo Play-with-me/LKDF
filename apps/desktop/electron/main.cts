@@ -3,7 +3,59 @@ import { readFileSync } from 'node:fs';
 import fs from 'node:fs/promises';
 import http from 'node:http';
 import path from 'node:path';
+import { initSteamBridge, type SteamRuntimeStatus } from './steamBridge.cjs';
 import { createDesktopUpdaterController } from './updater.cjs';
+
+interface DesktopBrandConfig {
+  readonly steamAppId: number;
+  readonly artifactPrefix: string;
+  readonly emblem: string;
+  readonly title: {
+    readonly vi: string;
+    readonly en: string;
+  };
+}
+
+const DEFAULT_BRAND_CONFIG: DesktopBrandConfig = {
+  steamAppId: 480,
+  artifactPrefix: 'BladesOfTheNineRealms',
+  emblem: '劍',
+  title: {
+    vi: 'Cửu Châu Ẩn Kiếm',
+    en: 'Blades of the Nine Realms',
+  },
+};
+
+function loadBrandConfig(): DesktopBrandConfig {
+  const candidates = [
+    path.join(__dirname, '..', 'assets', 'game.brand.json'),
+    path.join(__dirname, '..', '..', '..', 'config', 'game.brand.json'),
+  ];
+  for (const candidate of candidates) {
+    try {
+      const parsed = JSON.parse(readFileSync(candidate, 'utf8')) as Partial<DesktopBrandConfig>;
+      if (parsed?.title?.vi && parsed?.title?.en) {
+        return {
+          steamAppId: typeof parsed.steamAppId === 'number' ? parsed.steamAppId : 480,
+          artifactPrefix: parsed.artifactPrefix || DEFAULT_BRAND_CONFIG.artifactPrefix,
+          emblem: parsed.emblem || DEFAULT_BRAND_CONFIG.emblem,
+          title: parsed.title,
+        };
+      }
+    } catch {
+      // Thử đường dẫn kế tiếp
+    }
+  }
+  return DEFAULT_BRAND_CONFIG;
+}
+
+const BRAND_CONFIG = loadBrandConfig();
+const BUILD_TARGET: 'steam' | 'standalone' =
+  process.env['BUILD_TARGET'] === 'standalone' ? 'standalone' : 'steam';
+const STEAM_STATUS: SteamRuntimeStatus = initSteamBridge(
+  BRAND_CONFIG.steamAppId,
+  BUILD_TARGET === 'steam',
+);
 
 interface PersistedClientState {
   readonly serverUrl: string;
@@ -188,7 +240,7 @@ async function startLocalAuthCallbackServer(): Promise<{ readonly port: number }
       res.end(
         renderSafeCallbackHtml(
           'Thiếu thông tin đăng nhập',
-          'Yêu cầu không hợp lệ. Vui lòng thử đăng nhập lại từ ứng dụng Tam Quốc Sát.',
+          `Yêu cầu không hợp lệ. Vui lòng thử đăng nhập lại từ ứng dụng ${BRAND_CONFIG.title.vi}.`,
         ),
       );
       return;
@@ -208,8 +260,8 @@ async function startLocalAuthCallbackServer(): Promise<{ readonly port: number }
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
     res.end(
       renderSafeCallbackHtml(
-        'Đăng nhập Tam Quốc Sát thành công',
-        'Đã đồng bộ đăng nhập về ứng dụng Tam Quốc Sát. Bạn có thể đóng tab này.',
+        `Đăng nhập ${BRAND_CONFIG.title.vi} thành công`,
+        `Đã đồng bộ đăng nhập về ứng dụng ${BRAND_CONFIG.title.vi}. Bạn có thể đóng tab này.`,
       ),
     );
 
@@ -247,21 +299,23 @@ function getTargetDisplay(): Electron.Display {
 function createMainWindow(): BrowserWindow {
   allowForceClose = false;
 
+  const steamWindowMode = process.env['STEAM_WINDOW_MODE']?.trim().toLowerCase();
+  const isWindowedOverlayTest = steamWindowMode === 'windowed';
   const initialDisplay = getTargetDisplay();
   const { x, y, width, height } = initialDisplay.bounds;
 
   const win = new BrowserWindow({
-    x,
-    y,
-    width,
-    height,
+    x: isWindowedOverlayTest ? undefined : x,
+    y: isWindowedOverlayTest ? undefined : y,
+    width: isWindowedOverlayTest ? 1280 : width,
+    height: isWindowedOverlayTest ? 720 : height,
     minWidth: 960,
     minHeight: 600,
     fullscreenable: true,
     show: false,
-    frame: false,
+    frame: isWindowedOverlayTest,
     backgroundColor: '#090807',
-    title: 'Tam Quốc Sát',
+    title: `${BRAND_CONFIG.title.vi} — ${BRAND_CONFIG.title.en}`,
     autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
@@ -291,11 +345,13 @@ function createMainWindow(): BrowserWindow {
     if (win.isDestroyed()) {
       return;
     }
-    const activeDisplay =
-      screen.getAllDisplays().find((d) => d.id === initialDisplay.id) ??
-      getTargetDisplay();
-    win.setBounds(activeDisplay.bounds);
-    win.setFullScreen(true);
+    if (!isWindowedOverlayTest) {
+      const activeDisplay =
+        screen.getAllDisplays().find((d) => d.id === initialDisplay.id) ??
+        getTargetDisplay();
+      win.setBounds(activeDisplay.bounds);
+      win.setFullScreen(true);
+    }
     win.show();
   });
 
@@ -315,7 +371,7 @@ function createMainWindow(): BrowserWindow {
     void dialog
       .showMessageBox(win, {
         type: 'warning',
-        title: 'Xác nhận thoát ván đấu Tam Quốc Sát',
+        title: `Xác nhận thoát ván đấu ${BRAND_CONFIG.title.vi}`,
         message: offlineMatchCloseGuard
           ? 'Ván tập sẽ kết thúc nếu bạn đóng ứng dụng. Bạn muốn thoát ván?'
           : 'Bạn đang trong ván đấu. Nếu thoát bây giờ, Máy sẽ đánh hộ tạm thời cho đến khi bạn mở lại ứng dụng. Bạn có chắc muốn đóng cửa sổ?',
@@ -354,6 +410,14 @@ function createMainWindow(): BrowserWindow {
 
 ipcMain.handle('app:getVersion', () => {
   return app.getVersion();
+});
+
+ipcMain.handle('app:getBuildTarget', () => {
+  return BUILD_TARGET;
+});
+
+ipcMain.handle('steam:getStatus', () => {
+  return STEAM_STATUS;
 });
 
 ipcMain.handle('window:flashTaskbarFrame', (_event, flash: boolean) => {
@@ -408,6 +472,8 @@ ipcMain.handle(
 const updaterController = createDesktopUpdaterController({
   getMainWindow: () => mainWindow,
   sanitizeServerUrl,
+  enabled: BUILD_TARGET === 'standalone',
+  defaultSetupName: `${BRAND_CONFIG.artifactPrefix}-Setup`,
   prepareForAutoRestart: () => {
     matchCloseGuardActive = false;
     allowForceClose = true;

@@ -62,53 +62,53 @@ interface ToneStep {
 
 const CUE_CONFIG_BY_EVENT: Readonly<Record<MatchSoundEvent, CueConfig>> = {
   // Nhóm 1: Giao diện & Phòng chờ
-  PANEL_OPEN: { stem: 'tqs-panel_open', bus: 'ui', defaultGain: 0.68, cooldownMs: 90 },
-  PANEL_CLOSE: { stem: 'tqs-panel_close', bus: 'ui', defaultGain: 0.64, cooldownMs: 90 },
-  UI_ERROR: { stem: 'tqs-ui_error', bus: 'alert', defaultGain: 0.78, cooldownMs: 110 },
-  ROOM_JOIN: { stem: 'tqs-room_join', bus: 'ui', defaultGain: 0.76, cooldownMs: 110 },
-  ROOM_LEAVE: { stem: 'tqs-room_leave', bus: 'ui', defaultGain: 0.70, cooldownMs: 110 },
-  READY_ON: { stem: 'tqs-ready_on', bus: 'ui', defaultGain: 0.80, cooldownMs: 100 },
-  HERO_LOCK: { stem: 'tqs-hero_lock', bus: 'sfx', defaultGain: 0.88, cooldownMs: 110, duckMusicMs: 550 },
-  COUNTDOWN_START: { stem: 'tqs-countdown_start', bus: 'alert', defaultGain: 0.88, cooldownMs: 250, duckMusicMs: 1200 },
-  CARD_LIFT: { stem: 'tqs-card_lift', bus: 'ui', defaultGain: 0.44, cooldownMs: 65, pitchJitter: 0.035 },
-  TARGET_LOCK: { stem: 'tqs-target_lock', bus: 'ui', defaultGain: 0.48, cooldownMs: 75, pitchJitter: 0.025 },
+  PANEL_OPEN: { stem: 'sfx-panel_open', bus: 'ui', defaultGain: 0.68, cooldownMs: 90 },
+  PANEL_CLOSE: { stem: 'sfx-panel_close', bus: 'ui', defaultGain: 0.64, cooldownMs: 90 },
+  UI_ERROR: { stem: 'sfx-ui_error', bus: 'alert', defaultGain: 0.78, cooldownMs: 110 },
+  ROOM_JOIN: { stem: 'sfx-room_join', bus: 'ui', defaultGain: 0.76, cooldownMs: 110 },
+  ROOM_LEAVE: { stem: 'sfx-room_leave', bus: 'ui', defaultGain: 0.70, cooldownMs: 110 },
+  READY_ON: { stem: 'sfx-ready_on', bus: 'ui', defaultGain: 0.80, cooldownMs: 100 },
+  HERO_LOCK: { stem: 'sfx-hero_lock', bus: 'sfx', defaultGain: 0.88, cooldownMs: 110, duckMusicMs: 550 },
+  COUNTDOWN_START: { stem: 'sfx-countdown_start', bus: 'alert', defaultGain: 0.88, cooldownMs: 250, duckMusicMs: 1200 },
+  CARD_LIFT: { stem: 'sfx-card_lift', bus: 'ui', defaultGain: 0.44, cooldownMs: 65, pitchJitter: 0.035 },
+  TARGET_LOCK: { stem: 'sfx-target_lock', bus: 'ui', defaultGain: 0.48, cooldownMs: 75, pitchJitter: 0.025 },
 
   // Nhóm 2: Cẩm nang đặc trưng & Cao trào
-  NULLIFICATION: { stem: 'tqs-nullification', bus: 'sfx', defaultGain: 0.90, cooldownMs: 110, duckMusicMs: 700 },
-  DUEL: { stem: 'tqs-duel', bus: 'sfx', defaultGain: 0.92, cooldownMs: 110, duckMusicMs: 850 },
-  TABLE_SKILL: { stem: 'tqs-table_skill', bus: 'sfx', defaultGain: 0.80, cooldownMs: 110, duckMusicMs: 750 },
-  STEAL_DISMANTLE: { stem: 'tqs-steal_dismantle', bus: 'sfx', defaultGain: 0.78, cooldownMs: 100, pitchJitter: 0.035 },
-  LIGHTNING: { stem: 'tqs-lightning', bus: 'sfx', defaultGain: 0.96, cooldownMs: 150, duckMusicMs: 1100 },
-  CONTROL_SCROLL: { stem: 'tqs-control_scroll', bus: 'sfx', defaultGain: 0.82, cooldownMs: 110 },
-  DYING: { stem: 'tqs-dying', bus: 'alert', defaultGain: 0.92, cooldownMs: 200, duckMusicMs: 1050 },
-  TIMER_TICK: { stem: 'tqs-timer_tick', bus: 'alert', defaultGain: 0.72, cooldownMs: 110, pitchJitter: 0.035 },
-  DEFEAT: { stem: 'tqs-defeat', bus: 'alert', defaultGain: 0.90, cooldownMs: 300, duckMusicMs: 1400 },
+  NULLIFICATION: { stem: 'sfx-nullification', bus: 'sfx', defaultGain: 0.90, cooldownMs: 110, duckMusicMs: 700 },
+  DUEL: { stem: 'sfx-duel', bus: 'sfx', defaultGain: 0.92, cooldownMs: 110, duckMusicMs: 850 },
+  TABLE_SKILL: { stem: 'sfx-table_skill', bus: 'sfx', defaultGain: 0.80, cooldownMs: 110, duckMusicMs: 750 },
+  STEAL_DISMANTLE: { stem: 'sfx-steal_dismantle', bus: 'sfx', defaultGain: 0.78, cooldownMs: 100, pitchJitter: 0.035 },
+  LIGHTNING: { stem: 'sfx-lightning', bus: 'sfx', defaultGain: 0.96, cooldownMs: 150, duckMusicMs: 1100 },
+  CONTROL_SCROLL: { stem: 'sfx-control_scroll', bus: 'sfx', defaultGain: 0.82, cooldownMs: 110 },
+  DYING: { stem: 'sfx-dying', bus: 'alert', defaultGain: 0.92, cooldownMs: 200, duckMusicMs: 1050 },
+  TIMER_TICK: { stem: 'sfx-timer_tick', bus: 'alert', defaultGain: 0.72, cooldownMs: 110, pitchJitter: 0.035 },
+  DEFEAT: { stem: 'sfx-defeat', bus: 'alert', defaultGain: 0.90, cooldownMs: 300, duckMusicMs: 1400 },
 
   // Nhóm 3: Bàn đấu & Trang bị
-  DEAL_OPENING: { stem: 'tqs-deal_opening', bus: 'sfx', defaultGain: 0.70, cooldownMs: 150 },
-  DEAL: { stem: 'tqs-deal', bus: 'sfx', defaultGain: 0.56, cooldownMs: 65, pitchJitter: 0.035 },
-  SHUFFLE: { stem: 'tqs-shuffle', bus: 'sfx', defaultGain: 0.68, cooldownMs: 150 },
-  CARD_PLAY: { stem: 'tqs-card_play', bus: 'sfx', defaultGain: 0.60, cooldownMs: 65, pitchJitter: 0.035 },
-  SAT: { stem: 'tqs-sat', bus: 'sfx', defaultGain: 0.78, cooldownMs: 85, pitchJitter: 0.035 },
-  THIEM: { stem: 'tqs-thiem', bus: 'sfx', defaultGain: 0.70, cooldownMs: 85, pitchJitter: 0.035 },
-  DAO: { stem: 'tqs-dao', bus: 'sfx', defaultGain: 0.72, cooldownMs: 110 },
-  HEAL: { stem: 'tqs-heal', bus: 'sfx', defaultGain: 0.66, cooldownMs: 110 },
-  WEAPON: { stem: 'tqs-weapon', bus: 'sfx', defaultGain: 0.74, cooldownMs: 110 },
-  ARMOR: { stem: 'tqs-armor', bus: 'sfx', defaultGain: 0.72, cooldownMs: 110 },
-  MOUNT_PLUS: { stem: 'tqs-mount_plus', bus: 'sfx', defaultGain: 0.70, cooldownMs: 110 },
-  MOUNT_MINUS: { stem: 'tqs-mount_minus', bus: 'sfx', defaultGain: 0.70, cooldownMs: 110 },
-  JUDGE: { stem: 'tqs-judge', bus: 'sfx', defaultGain: 0.76, cooldownMs: 110 },
-  HERO_SKILL: { stem: 'tqs-hero_skill', bus: 'sfx', defaultGain: 0.66, cooldownMs: 110, pitchJitter: 0.025 },
-  TURN_START: { stem: 'tqs-turn_start', bus: 'alert', defaultGain: 0.76, cooldownMs: 110 },
-  ACTION_PROMPT: { stem: 'tqs-action_prompt', bus: 'alert', defaultGain: 0.76, cooldownMs: 110 },
-  DAMAGE: { stem: 'tqs-damage', bus: 'sfx', defaultGain: 0.84, cooldownMs: 80, pitchJitter: 0.035 },
-  ELIMINATION: { stem: 'tqs-elimination', bus: 'sfx', defaultGain: 0.94, cooldownMs: 180, duckMusicMs: 1150 },
-  VICTORY: { stem: 'tqs-victory', bus: 'alert', defaultGain: 0.92, cooldownMs: 300, duckMusicMs: 1400 },
+  DEAL_OPENING: { stem: 'sfx-deal_opening', bus: 'sfx', defaultGain: 0.70, cooldownMs: 150 },
+  DEAL: { stem: 'sfx-deal', bus: 'sfx', defaultGain: 0.56, cooldownMs: 65, pitchJitter: 0.035 },
+  SHUFFLE: { stem: 'sfx-shuffle', bus: 'sfx', defaultGain: 0.68, cooldownMs: 150 },
+  CARD_PLAY: { stem: 'sfx-card_play', bus: 'sfx', defaultGain: 0.60, cooldownMs: 65, pitchJitter: 0.035 },
+  SAT: { stem: 'sfx-sat', bus: 'sfx', defaultGain: 0.78, cooldownMs: 85, pitchJitter: 0.035 },
+  THIEM: { stem: 'sfx-thiem', bus: 'sfx', defaultGain: 0.70, cooldownMs: 85, pitchJitter: 0.035 },
+  DAO: { stem: 'sfx-dao', bus: 'sfx', defaultGain: 0.72, cooldownMs: 110 },
+  HEAL: { stem: 'sfx-heal', bus: 'sfx', defaultGain: 0.66, cooldownMs: 110 },
+  WEAPON: { stem: 'sfx-weapon', bus: 'sfx', defaultGain: 0.74, cooldownMs: 110 },
+  ARMOR: { stem: 'sfx-armor', bus: 'sfx', defaultGain: 0.72, cooldownMs: 110 },
+  MOUNT_PLUS: { stem: 'sfx-mount_plus', bus: 'sfx', defaultGain: 0.70, cooldownMs: 110 },
+  MOUNT_MINUS: { stem: 'sfx-mount_minus', bus: 'sfx', defaultGain: 0.70, cooldownMs: 110 },
+  JUDGE: { stem: 'sfx-judge', bus: 'sfx', defaultGain: 0.76, cooldownMs: 110 },
+  HERO_SKILL: { stem: 'sfx-hero_skill', bus: 'sfx', defaultGain: 0.66, cooldownMs: 110, pitchJitter: 0.025 },
+  TURN_START: { stem: 'sfx-turn_start', bus: 'alert', defaultGain: 0.76, cooldownMs: 110 },
+  ACTION_PROMPT: { stem: 'sfx-action_prompt', bus: 'alert', defaultGain: 0.76, cooldownMs: 110 },
+  DAMAGE: { stem: 'sfx-damage', bus: 'sfx', defaultGain: 0.84, cooldownMs: 80, pitchJitter: 0.035 },
+  ELIMINATION: { stem: 'sfx-elimination', bus: 'sfx', defaultGain: 0.94, cooldownMs: 180, duckMusicMs: 1150 },
+  VICTORY: { stem: 'sfx-victory', bus: 'alert', defaultGain: 0.92, cooldownMs: 300, duckMusicMs: 1400 },
 };
 
 const INTERFACE_CONFIG = {
-  hover: { stem: 'tqs-hover', cooldownMs: 55, pitchJitter: 0.035, gain: 0.72 },
-  click: { stem: 'tqs-click', cooldownMs: 50, pitchJitter: 0.035, gain: 0.82 },
+  hover: { stem: 'sfx-hover', cooldownMs: 55, pitchJitter: 0.035, gain: 0.72 },
+  click: { stem: 'sfx-click', cooldownMs: 50, pitchJitter: 0.035, gain: 0.82 },
 } as const;
 
 interface MixerNodes {
@@ -125,11 +125,11 @@ interface MixerNodes {
 
 const MAX_CONCURRENT_SFX_VOICES = 8;
 const ROUND_ROBIN_VARIANTS: Readonly<Record<string, readonly string[]>> = {
-  'tqs-sat': ['tqs-sat', 'tqs-sat-v2', 'tqs-sat-v3'],
-  'tqs-thiem': ['tqs-thiem', 'tqs-thiem-v2', 'tqs-thiem-v3'],
-  'tqs-card_play': ['tqs-card_play', 'tqs-card_play-v2', 'tqs-card_play-v3'],
-  'tqs-deal': ['tqs-deal', 'tqs-deal-v2', 'tqs-deal-v3'],
-  'tqs-damage': ['tqs-damage', 'tqs-damage-v2', 'tqs-damage-v3'],
+  'sfx-sat': ['sfx-sat', 'sfx-sat-v2', 'sfx-sat-v3'],
+  'sfx-thiem': ['sfx-thiem', 'sfx-thiem-v2', 'sfx-thiem-v3'],
+  'sfx-card_play': ['sfx-card_play', 'sfx-card_play-v2', 'sfx-card_play-v3'],
+  'sfx-deal': ['sfx-deal', 'sfx-deal-v2', 'sfx-deal-v3'],
+  'sfx-damage': ['sfx-damage', 'sfx-damage-v2', 'sfx-damage-v3'],
 };
 
 let sharedMixer: MixerNodes | null = null;
@@ -547,8 +547,8 @@ function loadAmbientStem(ctx: AudioContext, stemKey: AmbientStemKey): Promise<Au
   if (existing) return existing;
   const stemName =
     stemKey === 'climax-drums'
-      ? 'xich-bich-climax-drums'
-      : `xich-bich-${stemKey}-music`;
+      ? 'bgm-climax-drums'
+      : `bgm-${stemKey}`;
   const url = getSfxUrl(stemName);
   if (!url) return Promise.reject(new Error(`Missing ambient URL: ${stemName}`));
   const promise = fetch(url)

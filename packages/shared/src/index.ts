@@ -1,3 +1,4 @@
+export * from './brand.js';
 export * from './types/index.js';
 export * from './cards/index.js';
 export * from './heroes/index.js';

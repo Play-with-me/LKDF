@@ -1,8 +1,8 @@
 {
   "name": "@lkdf/desktop",
   "version": "0.1.0",
-  "description": "Tam Quốc Sát — Ứng dụng Windows chơi bài trực tuyến 4–8 người",
-  "author": "Tam Quốc Sát",
+  "description": "Cửu Châu Ẩn Kiếm (Blades of the Nine Realms) — Chiến thuật thẻ bài võ hiệp 4–8 người",
+  "author": "Blades of the Nine Realms Studio",
   "private": true,
   "type": "module",
   "main": "dist-electron/main.cjs",
@@ -26,7 +26,8 @@
     "electron-updater": "^6.8.11",
     "lucide-react": "^1.74.0",
     "react": "^19.3.1",
-    "react-dom": "^19.3.1"
+    "react-dom": "^19.3.1",
+    "steamworks.js": "^0.4.0"
   },
   "devDependencies": {
     "@iconify-json/game-icons": "^1.2.4",

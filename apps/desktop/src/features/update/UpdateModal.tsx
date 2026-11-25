@@ -1,3 +1,4 @@
+import { GAME_BRAND } from '@lkdf/shared';
 import { GameIcon } from '../../components/icons/index.js';
 import { GuofengModalShell } from '../../components/ui/GuofengModalShell.js';
 import type { DesktopUpdateState } from '../../lib/types.js';
@@ -259,7 +260,7 @@ export function UpdateModal({
             />
             <span>
               {updateState.messageVi ??
-                'Đã tải xong 100%! Đang cài đặt và mở lại ứng dụng Tam Quốc Sát...'}
+                `Đã tải xong 100%! Đang cài đặt và mở lại ứng dụng ${GAME_BRAND.title.vi}...`}
             </span>
           </div>
         ) : null}

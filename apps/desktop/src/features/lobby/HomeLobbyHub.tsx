@@ -5,8 +5,9 @@ import { LiveLobbyProfile } from './LiveLobbyProfile.js';
 import { LobbySettings } from './LobbyProfile.js';
 import { LobbyReference } from './LobbyReference.js';
 import './lobby-camp.css';
-import { RedCliffsScene } from './red-cliffs/RedCliffsScene.js';
-import { TIMER_PRESETS } from '@lkdf/shared';
+import { GAME_BRAND, TIMER_PRESETS } from '@lkdf/shared';
+import { MartialBackdropScene } from './MartialBackdropScene.js';
+import { isSteamBuildTarget } from '../../lib/buildTarget.js';
 import { useEffect, useRef, useState, type ComponentType } from 'react';
 import { GameIcon } from '../../components/icons/index.js';
 import { ApiError } from '../../lib/api.js';
@@ -205,7 +206,11 @@ export function HomeLobbyHub({
     setCreateError(null);
     setJoinError(null);
     if (!sessionToken) {
-      setCreateError('Hãy đăng nhập để tạo phòng chơi.');
+      setCreateError(
+        isSteamBuildTarget()
+          ? 'Steam Lobby P2P đang chuẩn bị cho Phase 1 — hiện hãy chọn Chơi với Máy để trải nghiệm ngay.'
+          : 'Hãy đăng nhập để tạo phòng chơi.',
+      );
       return;
     }
     setIsCreatingRoom(true);
@@ -290,7 +295,7 @@ export function HomeLobbyHub({
     <section data-live-session={sessionToken ? true : undefined}
       className="lkdf-lobby-camp relative isolate flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto">
       <div aria-hidden="true" className="lkdf-lobby-camp-art">
-        <RedCliffsScene />
+        <MartialBackdropScene />
       </div>
       {justLoggedIn ? (
         <div role="status" className="lkdf-lobby-camp-welcome">
@@ -309,8 +314,8 @@ export function HomeLobbyHub({
             ) : null}
             {lobbyScreen === 'menu' ? (
               <>
-                <span className="lkdf-lobby-camp-seal font-serif-title" aria-hidden="true">殺</span>
-                <h1 className="lkdf-lobby-camp-title font-serif-title">Tam Quốc Sát</h1>
+                <span className="lkdf-lobby-camp-seal font-serif-title" aria-hidden="true">{GAME_BRAND.emblem}</span>
+                <h1 className="lkdf-lobby-camp-title font-serif-title">{GAME_BRAND.title.vi}</h1>
                 <nav ref={menuRef} aria-label="Menu chính" className="lkdf-lobby-camp-menu"
                   onKeyDown={event => {
                     const direction = event.key === 'ArrowDown' ? 1 : event.key === 'ArrowUp' ? -1 : 0;

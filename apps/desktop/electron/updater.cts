@@ -57,6 +57,8 @@ interface UpdaterControllerDeps {
   readonly getMainWindow: () => BrowserWindow | null;
   readonly sanitizeServerUrl: (raw: unknown) => string;
   readonly prepareForAutoRestart: () => void;
+  readonly enabled?: boolean;
+  readonly defaultSetupName?: string;
 }
 
 function normalizeCleanBaseUrl(
@@ -69,10 +71,10 @@ function normalizeCleanBaseUrl(
   return `${parsed.origin}${pathname}`;
 }
 
-function sanitizeSafeFileName(rawName: string): string {
+function sanitizeSafeFileName(rawName: string, fallbackName = 'Game-Setup.exe'): string {
   const base = path.basename(rawName.trim());
   const cleaned = base.replace(/[^A-Za-z0-9._-]/g, '_');
-  return cleaned || 'TamQuocSat-Setup.exe';
+  return cleaned || fallbackName;
 }
 
 function normalizeReleaseNotes(raw: unknown): string {
@@ -111,8 +113,9 @@ function translateUpdaterError(err: unknown): string {
 }
 
 export function createDesktopUpdaterController(deps: UpdaterControllerDeps) {
+  const updaterEnabled = deps.enabled !== false;
   let state: DesktopUpdateState = {
-    phase: 'IDLE',
+    phase: updaterEnabled ? 'IDLE' : 'UP_TO_DATE',
     currentVersion: app.getVersion(),
     latestVersion: null,
     releaseName: null,
@@ -125,9 +128,9 @@ export function createDesktopUpdaterController(deps: UpdaterControllerDeps) {
     transferredBytes: null,
     totalBytes: null,
     bytesPerSecond: null,
-    canAutoInstall: app.isPackaged,
+    canAutoInstall: updaterEnabled && app.isPackaged,
     manualDownloadSavedPath: null,
-    messageVi: null,
+    messageVi: updaterEnabled ? null : 'Bản Steam tự cập nhật qua Steam Client.',
   };
 
   let initialized = false;
@@ -221,6 +224,13 @@ export function createDesktopUpdaterController(deps: UpdaterControllerDeps) {
     rawServerUrl: string,
     forceRefresh: boolean,
   ): Promise<DesktopUpdateState> {
+    if (!updaterEnabled) {
+      return emitState({
+        phase: 'UP_TO_DATE',
+        canAutoInstall: false,
+        messageVi: 'Bản Steam tự cập nhật qua Steam Client.',
+      });
+    }
     ensureUpdaterConfigured();
     const baseUrl = normalizeCleanBaseUrl(rawServerUrl, deps.sanitizeServerUrl);
     lastFeedServerUrl = baseUrl;
@@ -355,7 +365,9 @@ export function createDesktopUpdaterController(deps: UpdaterControllerDeps) {
     }
 
     const safeFile = sanitizeSafeFileName(
-      state.installerName ?? `TamQuocSat-Setup-${state.latestVersion ?? 'latest'}.exe`,
+      state.installerName ??
+        `${deps.defaultSetupName ?? 'Game-Setup'}-${state.latestVersion ?? 'latest'}.exe`,
+      `${deps.defaultSetupName ?? 'Game-Setup'}.exe`,
     );
     const downloadsDir = app.getPath('downloads');
     const targetPath = path.join(downloadsDir, safeFile);
@@ -468,6 +480,13 @@ export function createDesktopUpdaterController(deps: UpdaterControllerDeps) {
   async function startOneClickUpdate(
     rawServerUrl: string,
   ): Promise<DesktopUpdateState> {
+    if (!updaterEnabled) {
+      return emitState({
+        phase: 'UP_TO_DATE',
+        canAutoInstall: false,
+        messageVi: 'Bản Steam tự cập nhật qua Steam Client.',
+      });
+    }
     if (updatePromise) {
       return updatePromise;
     }

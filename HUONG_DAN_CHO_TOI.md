@@ -33,7 +33,9 @@ Vì bạn là người mới và không lập trình, bạn **không cần đọ
 
 ## 2. Lộ Trình Từ Đầu Đến Cuối & Các Câu Lệnh "Copy – Dán" Cho Bạn
 
-**2026-11-25 · ✅ ĐÃ PHÁT HÀNH `v1.1.0` (`TamQuocSat-Setup-1.1.0.exe` — 133 MB) trên GitHub Releases & Render Update Proxy + Cập nhật `README.md`.** 👉 BẠN ĐANG Ở ĐÂY · Kiểm tra nhanh trên **Render** xem máy chủ trực tuyến đã triển khai commit `b3a234f` chưa, sau đó mở app chơi thử với hội bạn 4–8 người (bản `v1.0.0` cũ mở lên sẽ tự báo cập nhật lên `v1.1.0`!) và chốt nghiệm thu Bước 5.2!
+**2026-11-25 · ✅ ĐÃ XONG Phase 0 (`Cửu Châu Ẩn Kiếm` / `Blades of the Nine Realms` — IP Purge, BrandConfig SSOT, BuildTarget Steam & OfflineMatchScreen, Steamworks Electron 45 Spike).** 👉 BẠN ĐANG Ở ĐÂY · Kiểm tra nhanh bản chạy thử mới (0 ảnh AI cũ, tách sạch màn Chơi với Máy, giữ nguyên 148+1 tests đạt 100%) rồi nhắn tôi **`Bắt đầu Phase 1`** (tách lõi `ContentRegistry`, song ngữ Việt–Anh `i18next`, thiết kế 4 thế lực/4 vai/phá ma trận 108 lá & remix 8–10 tướng, dựng Vertical Slice 4P)!
+
+**2026-11-25 · ✅ ĐÃ PHÁT HÀNH `v1.1.0` (`TamQuocSat-Setup-1.1.0.exe` — 133 MB) trên GitHub Releases & Render Update Proxy + Cập nhật `README.md`.**
 
 **2026-11-25 · ✅ ĐÃ XONG Chuẩn hóa Luật Hủy/Lấy, Rút bài & Đến Lượt, UX 25 Kỹ năng & 6 Bộ Ảnh Động Quốc Phong (WebP Flipbook + 60fps Canvas).** 👉 Đã kiểm tra, cài đặt cục bộ và đồng bộ lên `origin/main`.
 

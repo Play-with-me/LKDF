@@ -3,7 +3,9 @@ import { useInterfaceSounds } from './lib/useInterfaceSounds.js';
 import { useBackNavigation } from './lib/useBackNavigation.js';
 import { prefersReducedMotion } from './lib/devicePreferences.js';
 import './features/lobby/lobby-online.css';
-import type { PlayerCount } from '@lkdf/shared';
+import { GAME_BRAND, type PlayerCount } from '@lkdf/shared';
+import { getBuildTarget } from './lib/buildTarget.js';
+import { createLocalSteamProfile } from './features/lobby/localSteamProfile.js';
 import {
   Suspense,
   lazy,
@@ -42,6 +44,12 @@ import type {
 const DevMatchPreviewLazy = lazy(() =>
   import('./features/match/DevMatchPreview.js').then((mod) => ({
     default: mod.DevMatchPreview,
+  })),
+);
+
+const OfflineMatchScreenLazy = lazy(() =>
+  import('./features/match/OfflineMatchScreen.js').then((mod) => ({
+    default: mod.OfflineMatchScreen,
   })),
 );
 
@@ -105,6 +113,9 @@ export function App() {
   const initialDevSeats = readDevPreviewSeatsFromUrl();
   const initialDevPreviewMode = readDevPreviewModeFromUrl();
   const isLobbyPreview = initialDevPreviewMode === 'home';
+  const buildTarget = getBuildTarget();
+  const isSteamMode =
+    buildTarget === 'steam' && initialDevSeats === null && initialDevPreviewMode === null;
   const [appVersion, setAppVersion] = useState<string>('0.1.0');
   const [screen, setScreen] = useState<AppScreen>(
     initialDevSeats !== null
@@ -113,7 +124,9 @@ export function App() {
         ? 'NICKNAME_SETUP'
         : initialDevPreviewMode === 'wake'
           ? 'WAKE'
-          : isLobbyPreview ? 'HOME' : 'BOOT',
+          : isLobbyPreview || isSteamMode
+            ? 'HOME'
+            : 'BOOT',
   );
   const [devPreviewSeats, setDevPreviewSeats] = useState<PlayerCount>(
     initialDevSeats ?? 8,
@@ -126,7 +139,11 @@ export function App() {
   const [sessionToken, setSessionToken] = useState<string | null>(null);
   const [health, setHealth] = useState<HealthCheckResponse | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(
-    initialDevPreviewMode === 'nickname' || isLobbyPreview ? LOBBY_PREVIEW_PROFILE : null,
+    initialDevPreviewMode === 'nickname' || isLobbyPreview
+      ? LOBBY_PREVIEW_PROFILE
+      : isSteamMode
+        ? createLocalSteamProfile()
+        : null,
   );
   const [offlineMode, setOfflineMode] = useState<PlayerCount | 'setup' | null>(null);
   const openOfflineSetup = useCallback(() => setOfflineMode('setup'), []);
@@ -160,6 +177,10 @@ export function App() {
   const api = useMemo(() => createApiClient(serverUrl), [serverUrl]);
 
   useEffect(() => {
+    document.title = `${GAME_BRAND.title.vi} — ${GAME_BRAND.title.en}`;
+  }, []);
+
+  useEffect(() => {
     let active = true;
     const bridge = window.lkdfDesktop;
 
@@ -174,6 +195,25 @@ export function App() {
         .catch(() => {
           // Giữ phiên bản mặc định nếu cầu IPC chưa phản hồi
         });
+
+      if (isSteamMode && bridge.getSteamStatus) {
+        void bridge
+          .getSteamStatus()
+          .then((steamStatus) => {
+            if (active && steamStatus?.personaName) {
+              setProfile((prev) =>
+                prev ? { ...prev, displayName: steamStatus.personaName! } : prev,
+              );
+            }
+          })
+          .catch(() => undefined);
+      }
+    }
+
+    if (isSteamMode) {
+      return () => {
+        active = false;
+      };
     }
 
     void loadInitialClientState()
@@ -311,7 +351,7 @@ export function App() {
   );
 
   useEffect(() => {
-    if (!health || screen === 'DEV_PREVIEW') {
+    if (isSteamMode || !health || screen === 'DEV_PREVIEW') {
       return;
     }
     if (checkedUpdateServerRef.current === serverUrl) {
@@ -518,10 +558,14 @@ export function App() {
   if (offlineMode !== null) {
     return (
       <main className="relative flex h-screen w-screen min-h-0 min-w-0 flex-col overflow-hidden bg-[#090807] text-[#EFE6D5]"
-        style={offlineMode === 'setup' ? { backgroundImage: `linear-gradient(#09080799, #090807df), url("${lobbyBannerUrl}")`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}>
+        style={offlineMode === 'setup' && lobbyBannerUrl ? { backgroundImage: `linear-gradient(#09080799, #090807df), url("${lobbyBannerUrl}")`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}>
         {offlineMode === 'setup' ? <OfflineMatchSetup onStart={setOfflineMode} onBack={closeOffline} /> : (
           <Suspense fallback={<div role="status" className="m-auto">Đang chuẩn bị ván tập…</div>}>
-            <DevMatchPreviewLazy offline initialPlayerCount={offlineMode} onExitPreview={closeOffline} />
+            <OfflineMatchScreenLazy
+              playerCount={offlineMode}
+              localPlayerName={profile?.displayName}
+              onExitMatch={closeOffline}
+            />
           </Suspense>
         )}
       </main>
@@ -571,15 +615,15 @@ export function App() {
         >
         <div className="flex items-center gap-3 min-w-0">
           <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-[5px] border border-[#D4A451]/75 bg-gradient-to-b from-[#B8332C] to-[#7D1A16] font-serif-title text-[13px] font-bold text-[#F8EFDF] shadow-inner">
-            殺
+            {GAME_BRAND.emblem}
           </span>
           {isHomeLobby ? (
             <span className="truncate font-serif-title text-base font-semibold tracking-wide text-[#F4EBD8]">
-              Tam Quốc Sát
+              {GAME_BRAND.title.vi}
             </span>
           ) : (
             <h1 className="truncate font-serif-title text-base font-semibold tracking-wide text-[#F4EBD8]">
-              Tam Quốc Sát
+              {GAME_BRAND.title.vi}
             </h1>
           )}
           {activeRoom && screen === 'WAITING_ROOM' ? (
@@ -597,20 +641,31 @@ export function App() {
             </span>
           ) : null}
 
-          <span
-            className={`inline-flex items-center gap-1.5 text-[11px] font-medium ${
-              health ? 'text-[#A7E3B9]' : 'text-[#FDE68A]'
-            }`}
-          >
+          {isSteamMode ? (
+            <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-[#A7E3B9]">
+              <span className="h-1.5 w-1.5 rounded-full bg-[#22C55E]" />
+              Steam Offline / P2P
+            </span>
+          ) : (
             <span
-              className={`h-1.5 w-1.5 rounded-full ${
-                health ? 'bg-[#22C55E]' : 'bg-[#D97706]'
+              className={`inline-flex items-center gap-1.5 text-[11px] font-medium ${
+                health ? 'text-[#A7E3B9]' : 'text-[#FDE68A]'
               }`}
-            />
-            {health ? 'Máy chủ sẵn sàng' : 'Đang kết nối'}
-          </span>
+            >
+              <span
+                className={`h-1.5 w-1.5 rounded-full ${
+                  health ? 'bg-[#22C55E]' : 'bg-[#D97706]'
+                }`}
+              />
+              {health ? 'Máy chủ sẵn sàng' : 'Đang kết nối'}
+            </span>
+          )}
 
-          {updateState.phase === 'AVAILABLE' && updateState.latestVersion ? (
+          {isSteamMode ? (
+            <span className="inline-flex items-center rounded-[5px] border border-[#94A3B8]/32 bg-[#12161E]/90 px-2.5 py-0.5 font-mono-num text-xs tabular-nums text-[#D8DEE9]">
+              v{appVersion}
+            </span>
+          ) : updateState.phase === 'AVAILABLE' && updateState.latestVersion ? (
             <button
               type="button"
               onClick={() => setIsUpdateModalOpen(true)}
@@ -653,7 +708,7 @@ export function App() {
               <span>
                 {isRestoringSession
                   ? 'Đang khôi phục phiên đăng nhập Google...'
-                  : 'Đang khởi động ứng dụng Tam Quốc Sát...'}
+                  : `Đang khởi động ứng dụng ${GAME_BRAND.title.vi}...`}
               </span>
             </div>
             <button
@@ -727,7 +782,7 @@ export function App() {
         />
       ) : null}
 
-      {(isHomeLobby || (screen === 'STATS' && statsReturnScreen === 'HOME')) && (sessionToken || isLobbyPreview) && profile ? (
+      {(isHomeLobby || (screen === 'STATS' && statsReturnScreen === 'HOME')) && (sessionToken || isLobbyPreview || isSteamMode) && profile ? (
         <div ref={lobbyRef} className={isHomeLobby ? "flex min-h-0 min-w-0 flex-1" : "hidden"}>
           <HomeLobbyHub
             navigationActive={isHomeLobby && !isUpdateModalOpen}

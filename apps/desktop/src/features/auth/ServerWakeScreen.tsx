@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { GAME_BRAND } from '@lkdf/shared';
 import { GameIcon } from '../../components/icons/index.js';
 import { getUiAssetUrl } from '../../lib/assetCatalog.js';
 import { ApiError, createApiClient, normalizeServerUrl } from '../../lib/api.js';
@@ -299,14 +300,14 @@ export function ServerWakeScreen({
               aria-hidden="true"
               className="tqs-stone-chop inline-flex h-11 w-10 shrink-0 items-center justify-center rounded-[3px] border border-[#F2CF84]/75 font-serif-title text-xl font-bold text-[#F9EED9]"
             >
-              殺
+              {GAME_BRAND.emblem}
             </span>
             <div className="min-w-0">
               <h2 className="font-serif-title text-xl font-bold tracking-wide text-[#F5EBD6] sm:text-2xl">
-                Tam Quốc Sát · Doanh Trại Xích Bích
+                {GAME_BRAND.title.vi}
               </h2>
               <p className="mt-0.5 text-xs text-[#D5C3A5]">
-                Chuẩn Yoka 108 lá · 25 Tướng kinh điển · Bàn 4–8 người
+                {GAME_BRAND.subtitle.vi} · Bàn 4–8 người
               </p>
             </div>
           </div>
@@ -321,7 +322,7 @@ export function ServerWakeScreen({
                       size={15}
                       className={reducedMotion ? 'shrink-0 text-[#E6BE6C]' : 'shrink-0 animate-spin text-[#E6BE6C]'}
                     />
-                    <span>Đang thắp lửa hiệu doanh trại Xích Bích…</span>
+                    <span>Đang đánh thức máy chủ phòng chơi…</span>
                   </p>
                   <span className="font-mono-num shrink-0 rounded border border-[#806345]/70 bg-[#120D0A] px-2 py-0.5 text-[11px] font-semibold text-[#E6BE6C] tabular-nums">
                     Lần dò #{attemptCount}

@@ -1,7 +1,7 @@
 import { prefersReducedMotion } from '../../lib/devicePreferences.js';
 import { TIMER_PRESETS } from '@lkdf/shared';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { RedCliffsScene } from './red-cliffs/RedCliffsScene.js';
+import { MartialBackdropScene } from './MartialBackdropScene.js';
 import './lobby-camp.css';
 import { GameIcon } from '../../components/icons/index.js';
 import { GuofengPillSelect } from '../../components/ui/GuofengPillSelect.js';
@@ -295,7 +295,7 @@ export function WaitingRoomScreen({
 
   return (
     <section className="lkdf-lobby-camp relative isolate flex min-h-0 min-w-0 flex-1 overflow-y-auto">
-      <div className="lkdf-lobby-camp-art"><RedCliffsScene /></div>
+      <div className="lkdf-lobby-camp-art"><MartialBackdropScene /></div>
       <div className="lkdf-lobby-camp-content">
         <div className="lkdf-lobby-camp-panel">
           <section className="lkdf-waiting-table lkdf-online-panel lkdf-online-room" aria-label="Phòng chờ">

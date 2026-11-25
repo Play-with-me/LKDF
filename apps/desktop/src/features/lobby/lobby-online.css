@@ -138,7 +138,7 @@
   z-index: 2;
   inset: 0;
   pointer-events: none;
-  background: url('./red-cliffs/red-cliffs-smoke.webp') center / 100% auto no-repeat;
+  background: linear-gradient(90deg, transparent, rgba(226, 200, 155, 0.14) 50%, transparent);
   animation: lkdf-online-crossing 220ms ease-out both;
 }
 @keyframes lkdf-online-enter {
@@ -235,9 +235,9 @@
   content: '';
   width: min(410px, 74%);
   margin-inline: auto;
-  background: url('../../assets/art/ui/table-ol-dragon.webp') center / 100% auto no-repeat;
+  background: radial-gradient(circle, rgba(200, 155, 75, 0.18) 0%, rgba(158, 43, 37, 0.08) 45%, transparent 72%);
   mask-image: radial-gradient(ellipse 50% 70% at center, #000 8%, #0008 58%, transparent 100%);
-  opacity: .38;
+  opacity: .5;
 }
 .lkdf-waiting-surface strong, .lkdf-waiting-surface small { display: block; }
 .lkdf-waiting-surface strong {

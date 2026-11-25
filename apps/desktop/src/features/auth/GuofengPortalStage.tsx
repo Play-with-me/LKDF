@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
+import { GAME_BRAND } from '@lkdf/shared';
 import { GameIcon } from '../../components/icons/index.js';
 import { getHeroPortraitUrl, getUiAssetUrl } from '../../lib/assetCatalog.js';
 import { prefersReducedMotion } from '../../lib/devicePreferences.js';
@@ -278,10 +279,10 @@ export function GuofengPortalStage({
               aria-hidden="true"
               className="tqs-stone-chop inline-flex h-9 w-7 items-center justify-center rounded-[2px] border border-[#F2CF84]/72 font-serif-title text-base font-bold text-[#F9EED9] sm:h-11 sm:w-[34px] sm:text-xl"
             >
-              殺
+              {GAME_BRAND.emblem}
             </span>
             <h1 className="font-serif-title text-[28px] font-bold tracking-[0.16em] text-[#FAF2E3] drop-shadow-[0_4px_24px_rgba(0,0,0,0.95)] sm:text-[38px] sm:tracking-[0.18em]">
-              TAM QUỐC SÁT
+              {GAME_BRAND.title.vi}
             </h1>
           </div>
 
@@ -291,7 +292,7 @@ export function GuofengPortalStage({
               className="h-px w-8 bg-gradient-to-r from-transparent to-[#D4A451]/75"
             />
             <span>
-              Bản Tiêu Chuẩn Yoka · {deckTotal} Lá · {heroCount} Tướng
+              {GAME_BRAND.title.en} · {deckTotal} Lá · {heroCount} Nhân vật
             </span>
             <span
               aria-hidden="true"

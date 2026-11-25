@@ -1,0 +1,14 @@
+THIRD-PARTY NOTICES — Blades of the Nine Realms (Cửu Châu Ẩn Kiếm)
+========================================================================
+
+1. Gameplay Vector Icons (46 icons)
+   - Source: Game-icons.net (@iconify-json/game-icons)
+   - Authors: Lorc, Delapouite, Skoll, Viscious Speed & contributors
+   - License: CC BY 3.0 (https://creativecommons.org/licenses/by/3.0/)
+
+2. UI Icons & Offline Typography
+   - Lucide React Icons — ISC License
+   - @fontsource/noto-serif, @fontsource/be-vietnam-pro, @fontsource/jetbrains-mono — SIL OFL 1.1
+
+3. Tracked Attributed Entries from assets-manifest.json
+   - [icons:game-icons-46] (CC-BY-3.0-ATTRIBUTED): 46 gameplay icons by Lorc, Delapouite, Skoll & contributors via Game-icons.net (CC BY 3.0)

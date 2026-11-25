@@ -35,6 +35,9 @@ const desktopBridge = {
     return () => { ipcRenderer.removeListener('window:navigate-back', listener); };
   },
   getAppVersion: (): Promise<string> => ipcRenderer.invoke('app:getVersion'),
+  getBuildTarget: (): Promise<'steam' | 'standalone'> =>
+    ipcRenderer.invoke('app:getBuildTarget'),
+  getSteamStatus: (): Promise<unknown> => ipcRenderer.invoke('steam:getStatus'),
   flashTaskbarFrame: (flash: boolean): Promise<void> =>
     ipcRenderer.invoke('window:flashTaskbarFrame', flash),
   setMatchCloseGuard: (active: boolean, offline?: boolean): Promise<void> =>

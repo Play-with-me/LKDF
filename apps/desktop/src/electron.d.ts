@@ -8,9 +8,21 @@ export interface LocalAuthCallbackPayload {
   readonly authSessionId: string;
 }
 
+export interface SteamRuntimeStatus {
+  readonly enabled: boolean;
+  readonly available: boolean;
+  readonly appId: number;
+  readonly overlayEnabled: boolean;
+  readonly steamId: string | null;
+  readonly personaName: string | null;
+  readonly error: string | null;
+}
+
 export interface LkdfDesktopBridge {
   onNavigateBack: (listener: () => void) => () => void;
   getAppVersion: () => Promise<string>;
+  getBuildTarget?: () => Promise<'steam' | 'standalone'>;
+  getSteamStatus?: () => Promise<SteamRuntimeStatus>;
   flashTaskbarFrame: (flash: boolean) => Promise<void>;
   setMatchCloseGuard: (active: boolean, offline?: boolean) => Promise<void>;
   openExternalUrl: (url: string) => Promise<void>;

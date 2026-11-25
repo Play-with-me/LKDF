@@ -1,0 +1,17 @@
+{
+  "id": "cuu-chau-an-kiem",
+  "appId": "com.cuuchauankiem.game",
+  "steamAppId": 480,
+  "productName": "Blades of the Nine Realms",
+  "artifactPrefix": "BladesOfTheNineRealms",
+  "codePrefix": "CCAK",
+  "emblem": "劍",
+  "title": {
+    "vi": "Cửu Châu Ẩn Kiếm",
+    "en": "Blades of the Nine Realms"
+  },
+  "subtitle": {
+    "vi": "Bộ Cơ Bản · 108 Lá · 25 Hiệp Khách",
+    "en": "Base Set · 108 Cards · 25 Heroes"
+  }
+}

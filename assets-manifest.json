@@ -1,0 +1,547 @@
+{
+  "version": 1,
+  "policy": "aiGenerated=false required for all runtime media",
+  "assets": [
+    {
+      "assetKey": "icons:game-icons-46",
+      "kind": "icon-pack",
+      "path": "apps/desktop/src/components/icons/gameIconsData.ts",
+      "license": "CC-BY-3.0-ATTRIBUTED",
+      "provenanceUrl": "https://github.com/game-icons/icons",
+      "aiGenerated": false,
+      "attributionText": "46 gameplay icons by Lorc, Delapouite, Skoll & contributors via Game-icons.net (CC BY 3.0)",
+      "sha256": "5a95fb9ab71135f5f39ed8781e89498254bb63a4d3300fc7759eb61af3d80db6"
+    },
+    {
+      "assetKey": "audio:bgm-battle",
+      "kind": "bgm",
+      "path": "apps/desktop/src/assets/sfx/bgm-battle.ogg",
+      "license": "PLACEHOLDER-REPLACE-PHASE2",
+      "provenanceUrl": "local://studio-generated",
+      "aiGenerated": false,
+      "sha256": "505d18d59c6aff6c7f6ebe2247cfc4013f488e3c2d274bdf13e438028d857dbc"
+    },
+    {
+      "assetKey": "audio:bgm-climax-drums",
+      "kind": "bgm",
+      "path": "apps/desktop/src/assets/sfx/bgm-climax-drums.ogg",
+      "license": "PLACEHOLDER-REPLACE-PHASE2",
+      "provenanceUrl": "local://studio-generated",
+      "aiGenerated": false,
+      "sha256": "a80b560464833c9f0f8def4c92d10e7fd21cf2b00ebff81687dc407e58b739e8"
+    },
+    {
+      "assetKey": "audio:bgm-lobby",
+      "kind": "bgm",
+      "path": "apps/desktop/src/assets/sfx/bgm-lobby.ogg",
+      "license": "PLACEHOLDER-REPLACE-PHASE2",
+      "provenanceUrl": "local://studio-generated",
+      "aiGenerated": false,
+      "sha256": "daa5606a9f4ae9c6dedd6c0e874902cf7675ffcbda03f6b4cfbe8e78ccc7339d"
+    },
+    {
+      "assetKey": "audio:sfx-action_prompt",
+      "kind": "sfx",
+      "path": "apps/desktop/src/assets/sfx/sfx-action_prompt.ogg",
+      "license": "STUDIO-ORIGINAL-EARSHOT",
+      "provenanceUrl": "local://studio-generated",
+      "aiGenerated": false,
+      "sha256": "1789fa05a4e98972444e083c98cb03917fc13593f9d3c381e03deac116fa4cda"
+    },
+    {
+      "assetKey": "audio:sfx-armor",
+      "kind": "sfx",
+      "path": "apps/desktop/src/assets/sfx/sfx-armor.ogg",
+      "license": "STUDIO-ORIGINAL-EARSHOT",
+      "provenanceUrl": "local://studio-generated",
+      "aiGenerated": false,
+      "sha256": "f0e9365df28568075eccbb2084884849006f3ab08fecaa93c7f8ffb92ef83c1a"
+    },
+    {
+      "assetKey": "audio:sfx-card_lift",
+      "kind": "sfx",
+      "path": "apps/desktop/src/assets/sfx/sfx-card_lift.ogg",
+      "license": "STUDIO-ORIGINAL-EARSHOT",
+      "provenanceUrl": "local://studio-generated",
+      "aiGenerated": false,
+      "sha256": "0923f250ecf77d81e19888d6d63a97584bbab6505febf40a6d6375723ac542d2"
+    },
+    {
+      "assetKey": "audio:sfx-card_play-v2",
+      "kind": "sfx",
+      "path": "apps/desktop/src/assets/sfx/sfx-card_play-v2.ogg",
+      "license": "STUDIO-ORIGINAL-EARSHOT",
+      "provenanceUrl": "local://studio-generated",
+      "aiGenerated": false,
+      "sha256": "fcadb8032281a6fe786a673911c26f097b84b9e96a25f1f712ba5fc465a32f2d"
+    },
+    {
+      "assetKey": "audio:sfx-card_play-v3",
+      "kind": "sfx",
+      "path": "apps/desktop/src/assets/sfx/sfx-card_play-v3.ogg",
+      "license": "STUDIO-ORIGINAL-EARSHOT",
+      "provenanceUrl": "local://studio-generated",
+      "aiGenerated": false,
+      "sha256": "a912965abf074cf0785f27e53add72cc35afa368f9c17dcdee723dde1a6d64c3"
+    },
+    {
+      "assetKey": "audio:sfx-card_play",
+      "kind": "sfx",
+      "path": "apps/desktop/src/assets/sfx/sfx-card_play.ogg",
+      "license": "STUDIO-ORIGINAL-EARSHOT",
+      "provenanceUrl": "local://studio-generated",
+      "aiGenerated": false,
+      "sha256": "3ab4a8f09a09587b5824d62f2722fa8871a97c83661747491a703298f05a7850"
+    },
+    {
+      "assetKey": "audio:sfx-click",
+      "kind": "sfx",
+      "path": "apps/desktop/src/assets/sfx/sfx-click.ogg",
+      "license": "STUDIO-ORIGINAL-EARSHOT",
+      "provenanceUrl": "local://studio-generated",
+      "aiGenerated": false,
+      "sha256": "d9d02276ebd0050c3842637166220cbb773e89071353028855e9922dadbd86d0"
+    },
+    {
+      "assetKey": "audio:sfx-control_scroll",
+      "kind": "sfx",
+      "path": "apps/desktop/src/assets/sfx/sfx-control_scroll.ogg",
+      "license": "STUDIO-ORIGINAL-EARSHOT",
+      "provenanceUrl": "local://studio-generated",
+      "aiGenerated": false,
+      "sha256": "7bb188ee68e2fa524c131439cd742aa17ee83c8eec3a5317dacaa1023c0d41fb"
+    },
+    {
+      "assetKey": "audio:sfx-countdown_start",
+      "kind": "sfx",
+      "path": "apps/desktop/src/assets/sfx/sfx-countdown_start.ogg",
+      "license": "STUDIO-ORIGINAL-EARSHOT",
+      "provenanceUrl": "local://studio-generated",
+      "aiGenerated": false,
+      "sha256": "b7465198bb9709d77b8c421112f9b8ffaaab7809224d3880243bccef922cf7e7"
+    },
+    {
+      "assetKey": "audio:sfx-damage-v2",
+      "kind": "sfx",
+      "path": "apps/desktop/src/assets/sfx/sfx-damage-v2.ogg",
+      "license": "STUDIO-ORIGINAL-EARSHOT",
+      "provenanceUrl": "local://studio-generated",
+      "aiGenerated": false,
+      "sha256": "90bb6dbad0848e5668bb24f97721032aacac33aaf9c6d6331866faeaa31d5149"
+    },
+    {
+      "assetKey": "audio:sfx-damage-v3",
+      "kind": "sfx",
+      "path": "apps/desktop/src/assets/sfx/sfx-damage-v3.ogg",
+      "license": "STUDIO-ORIGINAL-EARSHOT",
+      "provenanceUrl": "local://studio-generated",
+      "aiGenerated": false,
+      "sha256": "9c3d6b6aa3d341b9f3e811249d331042f9420842eda175c5a0765507f75ea1a5"
+    },
+    {
+      "assetKey": "audio:sfx-damage",
+      "kind": "sfx",
+      "path": "apps/desktop/src/assets/sfx/sfx-damage.ogg",
+      "license": "STUDIO-ORIGINAL-EARSHOT",
+      "provenanceUrl": "local://studio-generated",
+      "aiGenerated": false,
+      "sha256": "f330f0dacc5af6dc015762f5b70b361277dc2e27c46135f7f8e6ed1d810d100f"
+    },
+    {
+      "assetKey": "audio:sfx-dao",
+      "kind": "sfx",
+      "path": "apps/desktop/src/assets/sfx/sfx-dao.ogg",
+      "license": "STUDIO-ORIGINAL-EARSHOT",
+      "provenanceUrl": "local://studio-generated",
+      "aiGenerated": false,
+      "sha256": "b2de2321550d19bacf8bb7d7ff509fe54101cfb3466a2915148ad1e09640fb10"
+    },
+    {
+      "assetKey": "audio:sfx-deal_opening",
+      "kind": "sfx",
+      "path": "apps/desktop/src/assets/sfx/sfx-deal_opening.ogg",
+      "license": "STUDIO-ORIGINAL-EARSHOT",
+      "provenanceUrl": "local://studio-generated",
+      "aiGenerated": false,
+      "sha256": "c751daaf88392c89e087e2f6049c4443100684238a2fb5649fbd6f9c29ab1468"
+    },
+    {
+      "assetKey": "audio:sfx-deal-v2",
+      "kind": "sfx",
+      "path": "apps/desktop/src/assets/sfx/sfx-deal-v2.ogg",
+      "license": "STUDIO-ORIGINAL-EARSHOT",
+      "provenanceUrl": "local://studio-generated",
+      "aiGenerated": false,
+      "sha256": "ea8d752f40dff973eaeacec5e679efd1094e68823b9c8b6071fe69111e2c323c"
+    },
+    {
+      "assetKey": "audio:sfx-deal-v3",
+      "kind": "sfx",
+      "path": "apps/desktop/src/assets/sfx/sfx-deal-v3.ogg",
+      "license": "STUDIO-ORIGINAL-EARSHOT",
+      "provenanceUrl": "local://studio-generated",
+      "aiGenerated": false,
+      "sha256": "c7de18367e6c2ccd9caae4cd69d54ffbfe655341c35dbc3cb8729411d37a34e7"
+    },
+    {
+      "assetKey": "audio:sfx-deal",
+      "kind": "sfx",
+      "path": "apps/desktop/src/assets/sfx/sfx-deal.ogg",
+      "license": "STUDIO-ORIGINAL-EARSHOT",
+      "provenanceUrl": "local://studio-generated",
+      "aiGenerated": false,
+      "sha256": "4d0838c1aec25e3ce8c0c143bd6a1033dbb3392e7f14e3c487fbd34a0aad792c"
+    },
+    {
+      "assetKey": "audio:sfx-defeat",
+      "kind": "sfx",
+      "path": "apps/desktop/src/assets/sfx/sfx-defeat.ogg",
+      "license": "STUDIO-ORIGINAL-EARSHOT",
+      "provenanceUrl": "local://studio-generated",
+      "aiGenerated": false,
+      "sha256": "13fcb0acbaf0d0b65b688f9e930cfdbd96c0aa75dd886f1a5bbac6896b598d5c"
+    },
+    {
+      "assetKey": "audio:sfx-duel",
+      "kind": "sfx",
+      "path": "apps/desktop/src/assets/sfx/sfx-duel.ogg",
+      "license": "STUDIO-ORIGINAL-EARSHOT",
+      "provenanceUrl": "local://studio-generated",
+      "aiGenerated": false,
+      "sha256": "e19872265298a63574dce8d88a2b76950b75385566a35fa69e960f4793dfcc68"
+    },
+    {
+      "assetKey": "audio:sfx-dying",
+      "kind": "sfx",
+      "path": "apps/desktop/src/assets/sfx/sfx-dying.ogg",
+      "license": "STUDIO-ORIGINAL-EARSHOT",
+      "provenanceUrl": "local://studio-generated",
+      "aiGenerated": false,
+      "sha256": "1a18ac0dab27b76e952794e2f975093943cd6713b5313d1549221a1b1cad51a6"
+    },
+    {
+      "assetKey": "audio:sfx-elimination",
+      "kind": "sfx",
+      "path": "apps/desktop/src/assets/sfx/sfx-elimination.ogg",
+      "license": "STUDIO-ORIGINAL-EARSHOT",
+      "provenanceUrl": "local://studio-generated",
+      "aiGenerated": false,
+      "sha256": "1777051d56292c627495826cdbc8ac2a26e7e73cfd094b72d95eeed88d4e12dc"
+    },
+    {
+      "assetKey": "audio:sfx-heal",
+      "kind": "sfx",
+      "path": "apps/desktop/src/assets/sfx/sfx-heal.ogg",
+      "license": "STUDIO-ORIGINAL-EARSHOT",
+      "provenanceUrl": "local://studio-generated",
+      "aiGenerated": false,
+      "sha256": "3db6a6b9f0d6ac5d7044bf51a12583c8cf8d4da61ecc0c57c06ae11fbad32111"
+    },
+    {
+      "assetKey": "audio:sfx-hero_lock",
+      "kind": "sfx",
+      "path": "apps/desktop/src/assets/sfx/sfx-hero_lock.ogg",
+      "license": "STUDIO-ORIGINAL-EARSHOT",
+      "provenanceUrl": "local://studio-generated",
+      "aiGenerated": false,
+      "sha256": "883ed2d43ce7ab6ef640de0193786c63099d44799c60dfde7cb5ee1d1cb484cd"
+    },
+    {
+      "assetKey": "audio:sfx-hero_skill",
+      "kind": "sfx",
+      "path": "apps/desktop/src/assets/sfx/sfx-hero_skill.ogg",
+      "license": "STUDIO-ORIGINAL-EARSHOT",
+      "provenanceUrl": "local://studio-generated",
+      "aiGenerated": false,
+      "sha256": "ed3a7e62b14d8fcb580b06c9dd76d5f16d6f4affc2d6850912304f9174cafac0"
+    },
+    {
+      "assetKey": "audio:sfx-hover",
+      "kind": "sfx",
+      "path": "apps/desktop/src/assets/sfx/sfx-hover.ogg",
+      "license": "STUDIO-ORIGINAL-EARSHOT",
+      "provenanceUrl": "local://studio-generated",
+      "aiGenerated": false,
+      "sha256": "0d5bb4ed414c3d736ca523cb46e7669a44b0e00d71f1e60af448c59c3c4742f9"
+    },
+    {
+      "assetKey": "audio:sfx-judge",
+      "kind": "sfx",
+      "path": "apps/desktop/src/assets/sfx/sfx-judge.ogg",
+      "license": "STUDIO-ORIGINAL-EARSHOT",
+      "provenanceUrl": "local://studio-generated",
+      "aiGenerated": false,
+      "sha256": "ed0672f35f51796f7f0f1b08bef3a050a7687c3a10a45f2ad514a83ee2386581"
+    },
+    {
+      "assetKey": "audio:sfx-lightning",
+      "kind": "sfx",
+      "path": "apps/desktop/src/assets/sfx/sfx-lightning.ogg",
+      "license": "STUDIO-ORIGINAL-EARSHOT",
+      "provenanceUrl": "local://studio-generated",
+      "aiGenerated": false,
+      "sha256": "71f10e08b7b307fbcc870d0c5e49ab4c704a402f8493416526a7fe435fa6c2cf"
+    },
+    {
+      "assetKey": "audio:sfx-mount_minus",
+      "kind": "sfx",
+      "path": "apps/desktop/src/assets/sfx/sfx-mount_minus.ogg",
+      "license": "STUDIO-ORIGINAL-EARSHOT",
+      "provenanceUrl": "local://studio-generated",
+      "aiGenerated": false,
+      "sha256": "8a18dbdcd8c6cdda1983242cf782fcfd0dec08c7efd282febd88978e5aec68d5"
+    },
+    {
+      "assetKey": "audio:sfx-mount_plus",
+      "kind": "sfx",
+      "path": "apps/desktop/src/assets/sfx/sfx-mount_plus.ogg",
+      "license": "STUDIO-ORIGINAL-EARSHOT",
+      "provenanceUrl": "local://studio-generated",
+      "aiGenerated": false,
+      "sha256": "3d5dcdf7eea3b90e331049744bc68a162dfcfcd92e637c5a56b5ef58d86e3ec0"
+    },
+    {
+      "assetKey": "audio:sfx-nullification",
+      "kind": "sfx",
+      "path": "apps/desktop/src/assets/sfx/sfx-nullification.ogg",
+      "license": "STUDIO-ORIGINAL-EARSHOT",
+      "provenanceUrl": "local://studio-generated",
+      "aiGenerated": false,
+      "sha256": "0f4feb069bbf653ded2d19a63c1bed44b15547e629ef0ce7b50a1391de4f338d"
+    },
+    {
+      "assetKey": "audio:sfx-panel_close",
+      "kind": "sfx",
+      "path": "apps/desktop/src/assets/sfx/sfx-panel_close.ogg",
+      "license": "STUDIO-ORIGINAL-EARSHOT",
+      "provenanceUrl": "local://studio-generated",
+      "aiGenerated": false,
+      "sha256": "f3abdc3eb1cd7555f2e5e74d6f50df34d1509af62e27d539756e5cead2fb9c90"
+    },
+    {
+      "assetKey": "audio:sfx-panel_open",
+      "kind": "sfx",
+      "path": "apps/desktop/src/assets/sfx/sfx-panel_open.ogg",
+      "license": "STUDIO-ORIGINAL-EARSHOT",
+      "provenanceUrl": "local://studio-generated",
+      "aiGenerated": false,
+      "sha256": "d3f41bc1793c28e8d14837623d2b06d69e34313413b476c0218789b158d585d4"
+    },
+    {
+      "assetKey": "audio:sfx-ready_on",
+      "kind": "sfx",
+      "path": "apps/desktop/src/assets/sfx/sfx-ready_on.ogg",
+      "license": "STUDIO-ORIGINAL-EARSHOT",
+      "provenanceUrl": "local://studio-generated",
+      "aiGenerated": false,
+      "sha256": "d4ae9409b3bccd54ea4f20c19b6cfd90af348c48c18e6b13214fa2b818cb021e"
+    },
+    {
+      "assetKey": "audio:sfx-room_join",
+      "kind": "sfx",
+      "path": "apps/desktop/src/assets/sfx/sfx-room_join.ogg",
+      "license": "STUDIO-ORIGINAL-EARSHOT",
+      "provenanceUrl": "local://studio-generated",
+      "aiGenerated": false,
+      "sha256": "fc299ecaec9476c16647643e80565d1a607251dbab9d8647e1c0bbc1d831d11b"
+    },
+    {
+      "assetKey": "audio:sfx-room_leave",
+      "kind": "sfx",
+      "path": "apps/desktop/src/assets/sfx/sfx-room_leave.ogg",
+      "license": "STUDIO-ORIGINAL-EARSHOT",
+      "provenanceUrl": "local://studio-generated",
+      "aiGenerated": false,
+      "sha256": "48501922deedfea4a8b5867b90cc2e4d70785d9940df2841dc886a770908e064"
+    },
+    {
+      "assetKey": "audio:sfx-sat-v2",
+      "kind": "sfx",
+      "path": "apps/desktop/src/assets/sfx/sfx-sat-v2.ogg",
+      "license": "STUDIO-ORIGINAL-EARSHOT",
+      "provenanceUrl": "local://studio-generated",
+      "aiGenerated": false,
+      "sha256": "111c8c433f4873d81ed0c4f1078cfeebb88727eb285cd155db459484ad71acd2"
+    },
+    {
+      "assetKey": "audio:sfx-sat-v3",
+      "kind": "sfx",
+      "path": "apps/desktop/src/assets/sfx/sfx-sat-v3.ogg",
+      "license": "STUDIO-ORIGINAL-EARSHOT",
+      "provenanceUrl": "local://studio-generated",
+      "aiGenerated": false,
+      "sha256": "accf69939e1f218492fdfda9b3e96178284bce8cca6dbb45490fec70ac839784"
+    },
+    {
+      "assetKey": "audio:sfx-sat",
+      "kind": "sfx",
+      "path": "apps/desktop/src/assets/sfx/sfx-sat.ogg",
+      "license": "STUDIO-ORIGINAL-EARSHOT",
+      "provenanceUrl": "local://studio-generated",
+      "aiGenerated": false,
+      "sha256": "9d7723ad7dd00c2f0a35aff35723b68c45634dafaf73023d5a89aced1ce15792"
+    },
+    {
+      "assetKey": "audio:sfx-shuffle",
+      "kind": "sfx",
+      "path": "apps/desktop/src/assets/sfx/sfx-shuffle.ogg",
+      "license": "STUDIO-ORIGINAL-EARSHOT",
+      "provenanceUrl": "local://studio-generated",
+      "aiGenerated": false,
+      "sha256": "5d2d2e81a259d48f788787a7abad343f6dd80d77a23cad3c236e097bb2ba42fc"
+    },
+    {
+      "assetKey": "audio:sfx-steal_dismantle",
+      "kind": "sfx",
+      "path": "apps/desktop/src/assets/sfx/sfx-steal_dismantle.ogg",
+      "license": "STUDIO-ORIGINAL-EARSHOT",
+      "provenanceUrl": "local://studio-generated",
+      "aiGenerated": false,
+      "sha256": "b9edda43a3c2fc45d3fcf471f0198515fafb6a1c1ca6c4974a4698a0cd6eec78"
+    },
+    {
+      "assetKey": "audio:sfx-table_skill",
+      "kind": "sfx",
+      "path": "apps/desktop/src/assets/sfx/sfx-table_skill.ogg",
+      "license": "STUDIO-ORIGINAL-EARSHOT",
+      "provenanceUrl": "local://studio-generated",
+      "aiGenerated": false,
+      "sha256": "947cb7042154bcae25e3dabaedc4add84536f4191d6ee4fc20a80011c6f70819"
+    },
+    {
+      "assetKey": "audio:sfx-target_lock",
+      "kind": "sfx",
+      "path": "apps/desktop/src/assets/sfx/sfx-target_lock.ogg",
+      "license": "STUDIO-ORIGINAL-EARSHOT",
+      "provenanceUrl": "local://studio-generated",
+      "aiGenerated": false,
+      "sha256": "2848bfabc320f45bd3c973bcb7547e04ff17bd09c97fce8b90175d1899534548"
+    },
+    {
+      "assetKey": "audio:sfx-thiem-v2",
+      "kind": "sfx",
+      "path": "apps/desktop/src/assets/sfx/sfx-thiem-v2.ogg",
+      "license": "STUDIO-ORIGINAL-EARSHOT",
+      "provenanceUrl": "local://studio-generated",
+      "aiGenerated": false,
+      "sha256": "8ed5da6776669ccc1c303908bcf2895295e4fdf1266898a7a09487089c380d64"
+    },
+    {
+      "assetKey": "audio:sfx-thiem-v3",
+      "kind": "sfx",
+      "path": "apps/desktop/src/assets/sfx/sfx-thiem-v3.ogg",
+      "license": "STUDIO-ORIGINAL-EARSHOT",
+      "provenanceUrl": "local://studio-generated",
+      "aiGenerated": false,
+      "sha256": "e8ea559ebbd356e77ea10031bb56214f6a38937f951bd14e8c139e38785836a7"
+    },
+    {
+      "assetKey": "audio:sfx-thiem",
+      "kind": "sfx",
+      "path": "apps/desktop/src/assets/sfx/sfx-thiem.ogg",
+      "license": "STUDIO-ORIGINAL-EARSHOT",
+      "provenanceUrl": "local://studio-generated",
+      "aiGenerated": false,
+      "sha256": "7f60ef336b2e0303e10a53c95efb4274f617806ce28f6a796b1818d9aaccbef7"
+    },
+    {
+      "assetKey": "audio:sfx-timer_tick",
+      "kind": "sfx",
+      "path": "apps/desktop/src/assets/sfx/sfx-timer_tick.ogg",
+      "license": "STUDIO-ORIGINAL-EARSHOT",
+      "provenanceUrl": "local://studio-generated",
+      "aiGenerated": false,
+      "sha256": "3be181efb6845de11da2fd2373e2abe605d738eaa4247ce65abbc37626adf25d"
+    },
+    {
+      "assetKey": "audio:sfx-turn_start",
+      "kind": "sfx",
+      "path": "apps/desktop/src/assets/sfx/sfx-turn_start.ogg",
+      "license": "STUDIO-ORIGINAL-EARSHOT",
+      "provenanceUrl": "local://studio-generated",
+      "aiGenerated": false,
+      "sha256": "94d2636016252389f4c33197f8f83881c435edb8b5b3a319b97fe93aa7e25ded"
+    },
+    {
+      "assetKey": "audio:sfx-ui_error",
+      "kind": "sfx",
+      "path": "apps/desktop/src/assets/sfx/sfx-ui_error.ogg",
+      "license": "STUDIO-ORIGINAL-EARSHOT",
+      "provenanceUrl": "local://studio-generated",
+      "aiGenerated": false,
+      "sha256": "9b65dbe75112f946d9afaca46a967e7da9101efbd81877b32a0da8fe7ecc81ad"
+    },
+    {
+      "assetKey": "audio:sfx-victory",
+      "kind": "sfx",
+      "path": "apps/desktop/src/assets/sfx/sfx-victory.ogg",
+      "license": "STUDIO-ORIGINAL-EARSHOT",
+      "provenanceUrl": "local://studio-generated",
+      "aiGenerated": false,
+      "sha256": "e1250cce28fc658b013a7d9cc7a3bd4e1c68c3fc9e04803414c75d9f22b5b9e2"
+    },
+    {
+      "assetKey": "audio:sfx-weapon",
+      "kind": "sfx",
+      "path": "apps/desktop/src/assets/sfx/sfx-weapon.ogg",
+      "license": "STUDIO-ORIGINAL-EARSHOT",
+      "provenanceUrl": "local://studio-generated",
+      "aiGenerated": false,
+      "sha256": "3712168d36c9b8860b9e8540cdf179d3a0e7edcfbf8537475e047c664634e210"
+    },
+    {
+      "assetKey": "vfx:vfx-bagua-seal",
+      "kind": "vfx-flipbook",
+      "path": "apps/desktop/src/assets/vfx/vfx-bagua-seal.webp",
+      "license": "STUDIO-ORIGINAL",
+      "provenanceUrl": "local://studio-generated",
+      "aiGenerated": false,
+      "sha256": "46cc4f47e2bc46ca7b4399628b8ef408e7a18f30a29f98e7e3df6d20ab811561"
+    },
+    {
+      "assetKey": "vfx:vfx-dying-fire-loop",
+      "kind": "vfx-flipbook",
+      "path": "apps/desktop/src/assets/vfx/vfx-dying-fire-loop.webp",
+      "license": "STUDIO-ORIGINAL",
+      "provenanceUrl": "local://studio-generated",
+      "aiGenerated": false,
+      "sha256": "8780f1d61211da5ee525bbaf4a5c1c283c4145a896f7e91b9f20050bf8fe547c"
+    },
+    {
+      "assetKey": "vfx:vfx-ink-slash",
+      "kind": "vfx-flipbook",
+      "path": "apps/desktop/src/assets/vfx/vfx-ink-slash.webp",
+      "license": "STUDIO-ORIGINAL",
+      "provenanceUrl": "local://studio-generated",
+      "aiGenerated": false,
+      "sha256": "8f465b5e63de542a0f90e3dedcaac3fd9ab37553d495af344400b9877726b2a7"
+    },
+    {
+      "assetKey": "vfx:vfx-peach-bloom",
+      "kind": "vfx-flipbook",
+      "path": "apps/desktop/src/assets/vfx/vfx-peach-bloom.webp",
+      "license": "STUDIO-ORIGINAL",
+      "provenanceUrl": "local://studio-generated",
+      "aiGenerated": false,
+      "sha256": "d53f95406922c4f43ec9c506e8bdfff95c02e2bf454e72e43a4223751fc93a10"
+    },
+    {
+      "assetKey": "vfx:vfx-thunder-strike",
+      "kind": "vfx-flipbook",
+      "path": "apps/desktop/src/assets/vfx/vfx-thunder-strike.webp",
+      "license": "STUDIO-ORIGINAL",
+      "provenanceUrl": "local://studio-generated",
+      "aiGenerated": false,
+      "sha256": "6e43149b0c5f494b2b75bb0a446de023ebc49a0d9f4e7e5a5a9d153224a1cb33"
+    },
+    {
+      "assetKey": "vfx:vfx-turn-seal-loop",
+      "kind": "vfx-flipbook",
+      "path": "apps/desktop/src/assets/vfx/vfx-turn-seal-loop.webp",
+      "license": "STUDIO-ORIGINAL",
+      "provenanceUrl": "local://studio-generated",
+      "aiGenerated": false,
+      "sha256": "d1fef2425370055dc78c166a3e363523506b14c11bd716f13e439fd5311cf088"
+    }
+  ]
+}
