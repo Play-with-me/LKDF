@@ -2,24 +2,20 @@
 
 - **Ngày cập nhật:** 2026-11-26
 - **Trạng thái hiện tại:**
-  - **Phase 0 (`77d925a`), Phase 1 (`c9944d0`), Phase 2A (`4facc12`), Phase 2B (`120faa9`), Bước 1–3 (`f3d1c45`):** Đều đã commit sạch trên `main`.
-  - **Bước 4 (Playwright Electron E2E Đa Cửa Sổ LAN & Song Ngữ VI/EN) ✅ HOÀN THÀNH (giữ uncommitted trong working tree):** Thiết lập `playwright.config.ts`, `tsconfig.e2e.json`, `e2e/helpers/electronHarness.ts`, `e2e/bilingual-offline-responsive.spec.ts` (`960×600` & `1280×720`) và `e2e/multi-window-lan.spec.ts` (4 cửa sổ Electron độc lập nối phòng LAN, kiểm `<4P` guard, chuỗi mời `IP:Port#Mã` & tách mã + IP, chọn tướng 4P, kiểm đúng `112` lá `Deck: 96`, Trọng Tài Pause/Resume, và đóng/mở lại 1 cửa sổ giữa trận tự động nối lại đúng ghế). Vá 2 lỗi thực tế do E2E phát hiện (`App.tsx` tự khôi phục phiên LAN khi mở lại `.exe` + đồng bộ tức thì `'Hiệp Khách'` <-> `'Wanderer'` bằng `useMemo`, và `main.cts` mở `allowForceClose` khi `before-quit`), đồng thời làm mới gói `BladesOfTheNineRealms-Portable-0.1.0.zip`.
-- **Lộ trình còn lại đã chốt (6 bước):** Còn **Bước 5** (Sản xuất 64 tranh Cửu Châu `25 tướng + 36 bài + 3 nền` + 3 BGM dài chuẩn `-20 LUFS`) -> **Bước 6** (Đưa lên Steam Phase 4–5; hoãn đại phẫu `InterruptFrame`/`matchTypes.ts` sang DLC 1).
+  - **Phase 0 (`77d925a`), Phase 1 (`c9944d0`), Phase 2A (`4facc12`), Phase 2B (`120faa9`), Bước 1–3 (`f3d1c45`), Bước 4 (`0de6589`):** Đều đã commit sạch trên `main`.
+  - **Bước 5 (64 Tranh Minh Họa Cửu Châu `0% AI` & 3 BGM Chuẩn `-20.0 LUFS`) ✅ HOÀN THÀNH (giữ uncommitted trong working tree):** Swarm 3 Agent tạo trọn bộ `25/25` chân dung hiệp khách (`scripts/generate-hero-portraits.mjs`, `411 KB` WebP), `36/36` tranh mặt bài + `3/3` cảnh nền & lưng bài (`scripts/generate-cards-and-ui-art.mjs`, `287 KB` WebP) và `3/3` bản nhạc nền dài chuẩn `-20.0 LUFS` (`scripts/generate-cuu-chau-bgm.py`, `80s` sảnh + `53.33s` đôi khóa mẫu `108 BPM`, `3.01 MB` OGG), đồng bộ `assets-manifest.json` (`124` mục · `0 AI` · `4.60 MB` tổng media) + `THIRD_PARTY_NOTICES.txt`, vượt `5/5` kịch bản Playwright Electron E2E và xuất bản `BladesOfTheNineRealms-Portable-0.1.0.zip` (`171.02 MB`).
+- **Lộ trình còn lại đã chốt (6 bước):** Bản độc lập & đa máy trên PC (`Bước 1–5`) đã **HOÀN THÀNH 100%**! Chỉ còn **Bước 6** (Đưa lên Steam Phase 4–5: `SteamLobbyP2PTransport`, `Steam Cloud`, `Achievements`, `DLC check`, Store Capsules, Trailer & `SteamPipe`) khi Sếp sẵn sàng phát hành lên Steam.
 
-## Bằng chứng kiểm chứng Bước 4 sau lần sửa cuối (`2026-11-26`)
-- `npm.cmd run typecheck` (gồm `tsconfig.e2e.json`) & `npm.cmd run build`: `0` lỗi (`2413` Vite modules, `0` cảnh báo chunk >500kB).
-- `npm.cmd run test:unit`: **17/17 files · 154/154 tests PASS**.
-- `npm.cmd run test:fuzz`: **2/2 files · 12/12 tests = 1.000/1.000 ván PASS** (`0` deadlock, `0` rò rỉ).
-- `npm.cmd run test:integration`: **9/9 files · 31/31 tests PASS**.
-- `vitest run` (`offlineBot.test.ts` + `i18nParity.test.ts`): **2/2 files · 7/7 tests PASS**.
-- `npm.cmd run assets:check`: **PASS** (`0/25` tướng, `0/36` bài, `0/3` nền, `59` runtime / `60` manifest / `0` AI, `1.15 MB`).
-- `npm.cmd run test:e2e`: **2/2 files · 5/5 kịch bản Playwright Electron E2E PASS** (`960×600` & `1280×720`, VI & EN, `0` lỗi console, `0` lỗi tài nguyên, `0` tràn khung).
-- Windows Portable `.zip`: `apps/desktop/release/BladesOfTheNineRealms-Portable-0.1.0.zip` (đã đóng gói lại kèm bản vá tự nối lại phiên LAN).
+## Bằng chứng kiểm chứng Bước 5 sau lần sửa cuối (`2026-11-26`)
+- `npm.cmd run assets:check`: **PASS** (`25/25` tướng, `36/36` bài, `3/3` nền, `6` VFX, `53` âm thanh, `123` tệp runtime / `124` mục manifest / **`0 AI`**, tổng media **`4.60 MB`**).
+- Đo kiểm âm học 3 BGM (`48 kHz` Stereo OGG Vorbis): `bgm-lobby` **`-20.00 LUFS`** (`80.00s`, `-6.90 dBTP`), `bgm-battle` **`-20.01 LUFS`** (`53.33s`, `2.560.000` mẫu, `-6.96 dBTP`), `bgm-climax-drums` **`-19.99 LUFS`** (`53.33s`, `2.560.000` mẫu, `-3.21 dBTP`), trộn Cao trào `-18.70 LUFS` / `-5.35 dBTP` (`0` nổ mối nối, `0` lệch nhịp).
+- `npm.cmd run typecheck` & `npm.cmd run build`: `0` lỗi (`2.477` Vite modules, `0` cảnh báo chunk >500kB).
+- `npm.cmd run test:e2e`: **2/2 files · 5/5 kịch bản Playwright Electron E2E PASS** (`960×600` & `1280×720`, VI & EN, `0` lỗi tải ảnh/âm thanh, `0` lỗi console, `0px` tràn khung).
+- Windows Portable `.zip`: `apps/desktop/release/BladesOfTheNineRealms-Portable-0.1.0.zip` (`171.02 MB`, tạo lúc `2026-11-26 22:26:39`).
 
-## Ghi chú bàn giao kỹ thuật cho Bước kế tiếp (Bước 5 Handoff Notes)
-- **Mục tiêu Bước 5:** Commit Bước 4 sau khi Sếp duyệt, sản xuất đồng bộ **64 tranh minh họa Cửu Châu** (`25` chân dung hiệp khách + `36` tranh mặt bài gồm 5 lá mới `pha_giap_tram`, `chan_khi_ho_the`, `kinh_loi_chan`, `hoan_anh_giap`, `tu_khi_hoan` + `3` cảnh nền) tối ưu nén `.webp` qua `scripts/assets-pipeline.mjs`, và **3 bản nhạc nền dài chuẩn `-20 LUFS`** (`bgm-lobby`, `bgm-battle`, `bgm-climax-drums`) kèm cập nhật `assets-manifest.json` (`aiGenerated` phản ánh trung thực nguồn tạo để phục vụ khai báo Steam ở Bước 6).
-- **Cổng kiểm tra bắt buộc sau Bước 5:** Chạy `npm.cmd run assets:check` (xác nhận `25/25` tướng, `36/36` bài, `3/3` nền, tổng dung lượng nhẹ, không vỡ ảnh) + `npm.cmd run test:e2e` (`5/5` kịch bản Electron E2E bảo vệ bố cục `960×600` & `1280×720` khi có tranh thật tràn viền).
-- **Móc E2E & LAN cần giữ nguyên:** Biến môi trường `LKDF_USER_DATA_DIR`, `LKDF_E2E_HEADLESS=1`, `LKDF_E2E_WIDTH`, `LKDF_E2E_HEIGHT` trong `apps/desktop/electron/main.cts`; khôi phục ngầm `sessionToken` trong `App.tsx`; và ánh xạ 2 chiều ID Cửu Châu <-> ID slot cũ trong `apps/desktop/src/lib/assetCatalog.ts`.
+## Ghi chú bàn giao kỹ thuật cho Bước kế tiếp (Commit Bước 5 & Bước 6 Steam Handoff Notes)
+- **Mục tiêu kế tiếp:** Commit Bước 5 khi Sếp duyệt; Sếp có thể chép ngay `BladesOfTheNineRealms-Portable-0.1.0.zip` (`171.02 MB`) sang các máy khác chơi LAN / Radmin VPN / Tailscale hoặc Offline với đầy đủ 64 tranh & 3 BGM. Khi Sếp yêu cầu **Bước 6 (Steam)**: triển khai `SteamLobbyP2PTransport` qua `IMatchTransport` (`apps/desktop/src/lib/transport.ts`), `Steam Cloud` đồng bộ `lkdf-client-state.json`, `Achievements`, `BIsDlcInstalled` nối `ContentRegistry`, bộ ảnh Steam Store Capsules + Trailer và kịch bản `SteamPipe` (lưu ý toàn bộ 124 mục runtime đều `aiGenerated: false` nên **không cần khai báo AI-Generated Content trên Steam**).
+- **3 script dựng tài nguyên tái lập 100% vừa tạo:** `scripts/generate-hero-portraits.mjs` (`25` tướng), `scripts/generate-cards-and-ui-art.mjs` (`36` bài + `3` UI), và `scripts/generate-cuu-chau-bgm.py` (chạy bằng `C:\Users\kyuu4\.earshot-venv\Scripts\python.exe`), sau đó chạy `npm.cmd run assets:check` và `node scripts/assets-pipeline.mjs notices`.
 - **Quy ước quan trọng cần giữ:** `MasterGameState.actionLog` giữ chuỗi tiếng Việt gốc để không làm gãy regex trong `useMatchMotion.ts` & `matchSounds.ts`; mọi dịch hiển thị (EN + Cửu Châu) đi qua `formatCuuChauDisplayText()` trong `matchTypes.ts`.
 - **Tên mặc định Steam Offline:** `App.tsx` tự chuyển đổi `'Hiệp Khách'` <-> `'Wanderer'` khi đổi ngôn ngữ `VI`/`EN` cho `steam_local_player`.
 - **Lệnh Windows/PowerShell 5.1:** Luôn dùng `npm.cmd`/`npx.cmd`, kiểm tra `if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }`, và chạy Electron audit từ `.\node_modules\.bin\electron.cmd`.

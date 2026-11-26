@@ -16,9 +16,9 @@
 | **Phase 2A** | Đưa 10 bộ chiêu remix + 5 lá bài mới Cửu Châu vào Engine & Bot AI, 100% VI/EN (`i18nParity`) & Cổng 500 ván Fuzz 112 lá | Repo + Electron Audit | ✅ Hoàn thành & Commit (`4facc12`) |
 | **Phase 2B** | Remix nốt 15 bộ chiêu tướng còn lại (25/25 độc bản) + đo cân bằng 500 ván & Portable `.zip` | Windows Portable `.zip` | ✅ Hoàn thành & Commit (`120faa9`) |
 | **Bước 1–3 (Đa Máy)** | Đồng bộ 112 lá Online = Offline, Mở phòng LAN/VPN 1 chạm (`Guest Auth` + `jsonStore`), 56 icon 36 mặt bài, Sổ Tay 3 Tab giữa ván & Credits `CC BY 3.0` | Windows Portable `.zip` | ✅ Hoàn thành & Commit (`f3d1c45`) |
-| **Bước 4 (Cổng E2E)** | Khóa cổng kiểm thử tự động Playwright Electron E2E đa cửa sổ LAN (4P) + song ngữ VI/EN ở `960×600` & `1280×720` + tự nối lại ván khi đóng mở app | Playwright Electron + `.zip` | ✅ Hoàn thành & Đã kiểm chứng (`5/5` E2E specs PASS) |
-| **Bước 5 (Art & BGM)** | Sản xuất 64 tranh minh họa Cửu Châu (`25` hiệp khách + `36` lá bài + `3` cảnh nền) + 3 bản nhạc nền dài chuẩn `-20 LUFS` | Windows Portable `.zip` | 👉 Kế tiếp |
-| **Bước 6 (Steam)** | Hoàn thiện Steamworks (Lobby P2P, Cloud Save, Achievements, DLC), Store Capsules, Trailer & Xuất bản Steam | Steam Build + `.exe` | ⬜ Chờ |
+| **Bước 4 (Cổng E2E)** | Khóa cổng kiểm thử tự động Playwright Electron E2E đa cửa sổ LAN (4P) + song ngữ VI/EN ở `960×600` & `1280×720` + tự nối lại ván khi đóng mở app | Playwright Electron + `.zip` | ✅ Hoàn thành & Commit (`0de6589`) |
+| **Bước 5 (Art & BGM)** | Sản xuất 64 tranh minh họa Cửu Châu (`25` hiệp khách + `36` lá bài + `3` cảnh nền, `0% AI`) + 3 bản nhạc nền dài chuẩn `-20.0 LUFS` | Windows Portable `.zip` (`171.02 MB`) | ✅ Hoàn thành & Đã kiểm chứng (`25/25 · 36/36 · 3/3 · 5/5 E2E`) |
+| **Bước 6 (Steam)** | Hoàn thiện Steamworks (Lobby P2P, Cloud Save, Achievements, DLC), Store Capsules, Trailer & Xuất bản Steam | Steam Build + `.exe` | 👉 Kế tiếp (Khi Sếp sẵn sàng đưa lên Steam) |
 
 ### Chi Tiết Phase 1–2B & Bước 1–4 — Hoàn Thành & Kiểm Chứng Thực Tế (`2026-11-26`)
 - [x] **Phase 1A — Nền tảng mở rộng & Song ngữ:** Tạo `utils/shuffle.ts`, `GameEvent`, `ContentRegistry`, 8 primitive phản ứng (`primitives.ts`), `actionDescriptor.ts`, `IMatchTransport`, tích hợp `i18next` + `LanguageToggle` (`VI`/`EN`) và script `package:win:zip`.
@@ -32,6 +32,9 @@
   - Thiết lập `playwright.config.ts`, `tsconfig.e2e.json`, `e2e/helpers/electronHarness.ts`, `e2e/bilingual-offline-responsive.spec.ts` và `e2e/multi-window-lan.spec.ts` (`npm run test:e2e`).
   - Vá 2 điểm thực tế do E2E phát hiện: đồng bộ tức thì tên mặc định `'Hiệp Khách'` <-> `'Wanderer'` trên thanh đầu trang khi chuyển ngôn ngữ `VI`/`EN` và tự khôi phục phiên phòng LAN khi đóng/mở lại ứng dụng giữa ván (`App.tsx`), kèm giải phóng khóa đóng cửa sổ khi thoát tiến trình (`main.cts`).
   - Đã kiểm chứng thực tế: `typecheck` `0` lỗi, `test:unit` **17/17 files · 154/154 tests**, `test:fuzz` **1.000/1.000 ván**, `test:integration` **9/9 files · 31/31 tests**, `offlineBot` + `i18nParity` **7/7 tests**, `assets:check` **PASS**, và `npm run test:e2e` **5/5 kịch bản Playwright Electron E2E PASS (`0` lỗi console, `0` tràn khung, `0` dấu tiếng Việt lọt EN)** + làm mới `BladesOfTheNineRealms-Portable-0.1.0.zip`.
+- [x] **Bước 5 — Sản Xuất Trọn Bộ 64 Tranh Minh Họa Cửu Châu (`0% AI`) & 3 Bản Nhạc Nền Chuẩn `-20.0 LUFS`:**
+  - Chạy Swarm 3 Agent tạo `scripts/generate-hero-portraits.mjs` (`25/25` chân dung hiệp khách `400×520` WebP), `scripts/generate-cards-and-ui-art.mjs` (`36/36` tranh mặt bài `320×260` WebP + `3/3` cảnh nền & lưng bài `table-bg`, `lobby-banner`, `card-back`), và `scripts/generate-cuu-chau-bgm.py` (`3/3` bản nhạc nền dài `48 kHz` OGG Vorbis: `bgm-lobby` `80.0s` `-20.00 LUFS`, `bgm-battle` `53.33s` `-20.01 LUFS` & `bgm-climax-drums` `53.33s` `-19.99 LUFS` khóa cứng mẫu `108 BPM`).
+  - Đã kiểm chứng thực tế: `assets:check` **PASS** (`25/25 · 36/36 · 3/3 · 123 tệp runtime · 124 mục manifest · 0 AI · 4.60 MB`), `typecheck` & `build` **`0` lỗi** (`2.477` modules), `test:e2e` **5/5 kịch bản PASS** (`960×600` & `1280×720`, VI & EN), và đóng gói `BladesOfTheNineRealms-Portable-0.1.0.zip` (`171.02 MB`).
 
 ---
 

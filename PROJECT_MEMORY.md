@@ -2,9 +2,25 @@
 
 > **Dự án:** Cửu Châu Ẩn Kiếm / Blades of the Nine Realms (Windows Standalone Portable + Lộ trình lên Steam ở Bước 6)
 > **Ngày cập nhật:** 2026-11-26
-> **Trạng thái hiện tại:** Đã commit **Phase 2B (`120faa9`)** + **Bước 1–3 (`f3d1c45`)**, và vừa hoàn thành **Bước 4** *(Khóa cổng tự động Playwright Electron E2E đa cửa sổ LAN + song ngữ VI/EN ở `960×600` & `1280×720`, vá tự khôi phục phiên LAN khi đóng/mở lại `.exe` giữa ván & đồng bộ tức thì tên mặc định trên thanh đầu trang, làm mới `BladesOfTheNineRealms-Portable-0.1.0.zip`, giữ sạch trong working tree để Sếp kiểm tra)*. Bước kế tiếp là **Bước 5** (64 tranh `25+36+3` + 3 BGM chuẩn) -> **Bước 6** (Đưa lên Steam).
+> **Trạng thái hiện tại:** Đã commit **Phase 2B (`120faa9`)** + **Bước 1–3 (`f3d1c45`)** + **Bước 4 (`0de6589`)**, và vừa hoàn thành **Bước 5** *(Swarm 3 Agent sản xuất trọn bộ **64 tranh minh họa Cửu Châu `0% AI`** gồm `25/25` hiệp khách + `36/36` mặt bài + `3/3` cảnh nền & lưng bài, cùng **3 bản nhạc nền dài chuẩn `-20.0 LUFS`** đồng bộ mẫu `108 BPM`, vượt `assets:check` `4.60 MB` + `5/5` Playwright Electron E2E và xuất bản **`BladesOfTheNineRealms-Portable-0.1.0.zip` `171.02 MB`**, giữ sạch trong working tree để Sếp nghiệm thu)*. Toàn bộ bản chơi độc lập & đa máy trên PC (`Bước 1–5`) đã hoàn chỉnh 100%; chỉ còn **Bước 6** (Đưa lên Steam) khi Sếp sẵn sàng.
 
-## 0. Bằng Chứng Kiểm Chứng Mới Nhất — Bước 4: Playwright Electron E2E Đa Cửa Sổ LAN & Song Ngữ (`2026-11-26`)
+## 0. Bằng Chứng Kiểm Chứng Mới Nhất — Bước 5: 64 Tranh Minh Họa Cửu Châu (`0% AI`) & 3 BGM Chuẩn `-20 LUFS` (`2026-11-26` · Swarm 3 Agent)
+- **Commit nền:** `[main 0de6589]` (Bước 4 — 14 files). Thay đổi Bước 5 đang giữ sạch trong working tree.
+- **Mỹ thuật Cửu Châu Thủy Mặc Khoáng Sắc (`0% AI` · `STUDIO-ORIGINAL-PROCEDURAL` / `CC-BY-3.0-ATTRIBUTED`):**
+  - `portrait-artist` (`scripts/generate-hero-portraits.mjs`): Dựng đủ **25/25 chân dung hiệp khách** (`800×1040` PNG gốc -> `400×520` WebP chỉ **`411.2 KB`**) phân tách rõ 4 tông môn (`Thanh Vân` 雲 ngọc bích, `Huyền Thiết` 鐵 lam thép, `Xích Diễm` 炎 chu sa hỏa kim, `U Minh` 影 tử tinh), 25 dáng vẻ/mũ miện/vũ khí riêng, căn vùng an toàn `object-[50%_18%]` và phủ nền tối 3 nấc bảo đảm tương phản chữ trắng ngọc `>= 7:1` WCAG AAA.
+  - `card-backdrop-artist` (`scripts/generate-cards-and-ui-art.mjs`): Dựng đủ **36/36 tranh mặt bài Cửu Châu** (`640×520` PNG -> `320×260` WebP **`220.0 KB`**, độ sáng góc trái trên `<= 11.9/255` bảo vệ cột Số+Chất) và **3/3 cảnh nền & lưng bài** (`table-bg.webp` `1920×1080`, `lobby-banner.webp` `1280×720`, `card-back.webp` `320×440`, tổng **`67.1 KB`**).
+- **Âm nhạc Quốc Phong Vật Lý Học & Chuẩn Hóa Âm Học (`audio-composer` · `scripts/generate-cuu-chau-bgm.py`):**
+  - Phối khí bằng mô hình dây/ống Đông Á (Cổ cầm, Cổ tranh, Tỳ bà, Tiêu trúc, Địch, Nhị hồ, Biên chung, Trống đại chiến) kết hợp âm sắc học từ bản thu miền công cộng của `earshot`, lặp vòng tròn FFT không tiếng nổ mối nối (`seam_delta <= 0.0012`):
+    - `bgm-lobby.ogg`: **`80.000s`** (`72 BPM`, `3.840.000` mẫu, **`-20.00 LUFS`**, `LRA = 12.47 LU`, True Peak `-6.90 dBTP`, `1.20 MB`).
+    - `bgm-battle.ogg`: **`53.333s`** (`108 BPM`, `2.560.000` mẫu, **`-20.01 LUFS`**, `LRA = 9.56 LU`, True Peak `-6.96 dBTP`, khuyết nhẹ `-2.6 dB` vùng `2 kHz` nhường dải tần cho SFX lá bài/kiếm, `982 KB`).
+    - `bgm-climax-drums.ogg`: **`53.333s`** (`108 BPM`, đúng **`2.560.000` mẫu** khóa cứng từng sample với `bgm-battle.ogg`, **`-19.99 LUFS`**, True Peak `-3.21 dBTP`, bản trộn Cao trào `1.05×battle + 0.52×climax` đạt `-18.70 LUFS` / `-5.35 dBTP` không méo tiếng, `899 KB`).
+- **Kết quả kiểm chứng thực tế sau lần sửa cuối:**
+  - `npm.cmd run assets:check`: **PASS** (`25/25` tướng, `36/36` bài, `3/3` nền, `6` VFX, `53` âm thanh, `123` tệp runtime · `124` mục manifest · **`0 AI`**, tổng media runtime chỉ **`4.60 MB`**) + làm mới `THIRD_PARTY_NOTICES.txt` (`51` dòng).
+  - `npm.cmd run typecheck` & `npm.cmd run build`: **`0` lỗi** (`2.477` Vite modules, `0` cảnh báo chunk >500kB).
+  - `npm.cmd run test:e2e`: **2/2 files · 5/5 kịch bản Playwright Electron E2E PASS** (`960×600` & `1280×720`, VI & EN, Offline + 4 cửa sổ LAN + tự kết nối lại, `0` lỗi tải ảnh/nhạc, `0` lỗi console, `0px` tràn khung).
+  - **Portable `.zip` Hoàn Chỉnh Mới:** `C:\Tam quốc sát\apps\desktop\release\BladesOfTheNineRealms-Portable-0.1.0.zip` (**`171.02 MB`**, tạo lúc `2026-11-26 22:26:39`).
+
+## 0-Step4. Bằng Chứng Kiểm Chứng Bước 4: Playwright Electron E2E Đa Cửa Sổ LAN & Song Ngữ (`2026-11-26` · Đã Commit `0de6589`)
 - **Commit nền:** `[main f3d1c45]` (Bước 1–3 — 47 files). Thay đổi Bước 4 đang giữ sạch trong working tree.
 - **Khung kiểm thử Playwright Electron E2E (`playwright.config.ts`, `tsconfig.e2e.json`, `e2e/`):**
   - `e2e/helpers/electronHarness.ts`: Khởi chạy nhân Electron `45.3.3` thật với thư mục `LKDF_USER_DATA_DIR` cô lập cho từng cửa sổ, ghim kích thước CDP chuẩn điểm ảnh (`960×600` & `1280×720`), tự động giám sát `console.error`, `pageerror`, lỗi mạng và kiểm toán không tràn khung (`100vh`) + không rò rỉ chữ Tam Quốc/nhãn giả + không sót dấu tiếng Việt khi bật chế độ `EN`.

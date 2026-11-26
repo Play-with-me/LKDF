@@ -13,31 +13,887 @@
       "sha256": "b26352c35961b68c9d2f62daa3101f9d3c26d34e7c40db1d9c3635703893d7c3"
     },
     {
+      "assetKey": "hero:bach_cam_y",
+      "kind": "hero-portrait",
+      "path": "apps/desktop/src/assets/art/heroes/bach_cam_y.webp",
+      "license": "STUDIO-ORIGINAL-PROCEDURAL",
+      "provenanceUrl": "local://studio-generated",
+      "aiGenerated": false,
+      "safeZone": {
+        "fit": "cover",
+        "position": "top"
+      },
+      "sha256": "82aa5ec2cce6378c83d87c6e79e38000fab8ee9df730fa622ae366384962ec6b"
+    },
+    {
+      "assetKey": "hero:bach_ngoc_thanh",
+      "kind": "hero-portrait",
+      "path": "apps/desktop/src/assets/art/heroes/bach_ngoc_thanh.webp",
+      "license": "STUDIO-ORIGINAL-PROCEDURAL",
+      "provenanceUrl": "local://studio-generated",
+      "aiGenerated": false,
+      "safeZone": {
+        "fit": "cover",
+        "position": "top"
+      },
+      "sha256": "254fa7b289c93416b19e975799277cb876ba0f43077afdf92fc28f0ba26bafd6"
+    },
+    {
+      "assetKey": "hero:cam_da_sat",
+      "kind": "hero-portrait",
+      "path": "apps/desktop/src/assets/art/heroes/cam_da_sat.webp",
+      "license": "STUDIO-ORIGINAL-PROCEDURAL",
+      "provenanceUrl": "local://studio-generated",
+      "aiGenerated": false,
+      "safeZone": {
+        "fit": "cover",
+        "position": "top"
+      },
+      "sha256": "d54fcf0705e0ff001c5887f55f3d853aaa97455120ad414e6a51e9880213e412"
+    },
+    {
+      "assetKey": "hero:co_huyen_co",
+      "kind": "hero-portrait",
+      "path": "apps/desktop/src/assets/art/heroes/co_huyen_co.webp",
+      "license": "STUDIO-ORIGINAL-PROCEDURAL",
+      "provenanceUrl": "local://studio-generated",
+      "aiGenerated": false,
+      "safeZone": {
+        "fit": "cover",
+        "position": "top"
+      },
+      "sha256": "729e8b0b4aa1fc06a3323dfa7a7a977790ed7bd0687bc3c408a0cf1642766f39"
+    },
+    {
+      "assetKey": "hero:da_vo_ngan",
+      "kind": "hero-portrait",
+      "path": "apps/desktop/src/assets/art/heroes/da_vo_ngan.webp",
+      "license": "STUDIO-ORIGINAL-PROCEDURAL",
+      "provenanceUrl": "local://studio-generated",
+      "aiGenerated": false,
+      "safeZone": {
+        "fit": "cover",
+        "position": "top"
+      },
+      "sha256": "765ce9afd211bdee2fa60530a9984f064aa521560ccba3134202b397b8122135"
+    },
+    {
+      "assetKey": "hero:duoc_vo_uu",
+      "kind": "hero-portrait",
+      "path": "apps/desktop/src/assets/art/heroes/duoc_vo_uu.webp",
+      "license": "STUDIO-ORIGINAL-PROCEDURAL",
+      "provenanceUrl": "local://studio-generated",
+      "aiGenerated": false,
+      "safeZone": {
+        "fit": "cover",
+        "position": "top"
+      },
+      "sha256": "a71bcf3453505fc7bc41a4874508fc9ef4ed3c0f690433ddd3013f8e4d23d7cc"
+    },
+    {
+      "assetKey": "hero:ha_tuyet_nghi",
+      "kind": "hero-portrait",
+      "path": "apps/desktop/src/assets/art/heroes/ha_tuyet_nghi.webp",
+      "license": "STUDIO-ORIGINAL-PROCEDURAL",
+      "provenanceUrl": "local://studio-generated",
+      "aiGenerated": false,
+      "safeZone": {
+        "fit": "cover",
+        "position": "top"
+      },
+      "sha256": "8671d4b95759ca153cdfc3b6860e818b6b8f1616022a2aab8209d70f207e35c9"
+    },
+    {
+      "assetKey": "hero:han_thiet_phong",
+      "kind": "hero-portrait",
+      "path": "apps/desktop/src/assets/art/heroes/han_thiet_phong.webp",
+      "license": "STUDIO-ORIGINAL-PROCEDURAL",
+      "provenanceUrl": "local://studio-generated",
+      "aiGenerated": false,
+      "safeZone": {
+        "fit": "cover",
+        "position": "top"
+      },
+      "sha256": "d96a8dbf0dbf698f86517ad9d011d81ecd380ef373d0d7e0a1c14a008321a0a3"
+    },
+    {
+      "assetKey": "hero:hoang_bat_dich",
+      "kind": "hero-portrait",
+      "path": "apps/desktop/src/assets/art/heroes/hoang_bat_dich.webp",
+      "license": "STUDIO-ORIGINAL-PROCEDURAL",
+      "provenanceUrl": "local://studio-generated",
+      "aiGenerated": false,
+      "safeZone": {
+        "fit": "cover",
+        "position": "top"
+      },
+      "sha256": "d54c03abe6f1a5ecee2050c4ab3d7034570e124ec67d4b0f59e44067e0b123c7"
+    },
+    {
+      "assetKey": "hero:khuong_vo_ta",
+      "kind": "hero-portrait",
+      "path": "apps/desktop/src/assets/art/heroes/khuong_vo_ta.webp",
+      "license": "STUDIO-ORIGINAL-PROCEDURAL",
+      "provenanceUrl": "local://studio-generated",
+      "aiGenerated": false,
+      "safeZone": {
+        "fit": "cover",
+        "position": "top"
+      },
+      "sha256": "76343dd02d1d5a5f67cee7e99cf453130e0ee31cc0ea8c9e5d78c2ff6d8cdf32"
+    },
+    {
+      "assetKey": "hero:lam_thanh_vu",
+      "kind": "hero-portrait",
+      "path": "apps/desktop/src/assets/art/heroes/lam_thanh_vu.webp",
+      "license": "STUDIO-ORIGINAL-PROCEDURAL",
+      "provenanceUrl": "local://studio-generated",
+      "aiGenerated": false,
+      "safeZone": {
+        "fit": "cover",
+        "position": "top"
+      },
+      "sha256": "ad119f374e50f2d4ccd8e7cd070e556fffab2bee54e2cf853d46900720651db5"
+    },
+    {
+      "assetKey": "hero:loi_chan_son",
+      "kind": "hero-portrait",
+      "path": "apps/desktop/src/assets/art/heroes/loi_chan_son.webp",
+      "license": "STUDIO-ORIGINAL-PROCEDURAL",
+      "provenanceUrl": "local://studio-generated",
+      "aiGenerated": false,
+      "safeZone": {
+        "fit": "cover",
+        "position": "top"
+      },
+      "sha256": "538b7c80e465040309ab8d6af2a65f845b8c4f94bbb7f0bb6aa54f61c558b143"
+    },
+    {
+      "assetKey": "hero:luc_tram_an",
+      "kind": "hero-portrait",
+      "path": "apps/desktop/src/assets/art/heroes/luc_tram_an.webp",
+      "license": "STUDIO-ORIGINAL-PROCEDURAL",
+      "provenanceUrl": "local://studio-generated",
+      "aiGenerated": false,
+      "safeZone": {
+        "fit": "cover",
+        "position": "top"
+      },
+      "sha256": "c7a49a520920ac9df415d6adbc662168b2710bd6a69f4c14f2bea1c59059d266"
+    },
+    {
+      "assetKey": "hero:ly_tri_vi",
+      "kind": "hero-portrait",
+      "path": "apps/desktop/src/assets/art/heroes/ly_tri_vi.webp",
+      "license": "STUDIO-ORIGINAL-PROCEDURAL",
+      "provenanceUrl": "local://studio-generated",
+      "aiGenerated": false,
+      "safeZone": {
+        "fit": "cover",
+        "position": "top"
+      },
+      "sha256": "d8085511a5d5c5006d37e742938c271bf1e9afda0773eecfa604c807902afd8d"
+    },
+    {
+      "assetKey": "hero:mo_dung_tuyet",
+      "kind": "hero-portrait",
+      "path": "apps/desktop/src/assets/art/heroes/mo_dung_tuyet.webp",
+      "license": "STUDIO-ORIGINAL-PROCEDURAL",
+      "provenanceUrl": "local://studio-generated",
+      "aiGenerated": false,
+      "safeZone": {
+        "fit": "cover",
+        "position": "top"
+      },
+      "sha256": "3b12050347a6db54c013b6ba7cd55a9bc0436a087325354df35ce3054a2b9198"
+    },
+    {
+      "assetKey": "hero:nghiem_cuong",
+      "kind": "hero-portrait",
+      "path": "apps/desktop/src/assets/art/heroes/nghiem_cuong.webp",
+      "license": "STUDIO-ORIGINAL-PROCEDURAL",
+      "provenanceUrl": "local://studio-generated",
+      "aiGenerated": false,
+      "safeZone": {
+        "fit": "cover",
+        "position": "top"
+      },
+      "sha256": "91d2dba4800349ac1e718e09e7789e378a50b7f4573c0620127ccd7b3390e041"
+    },
+    {
+      "assetKey": "hero:thach_pha_thien",
+      "kind": "hero-portrait",
+      "path": "apps/desktop/src/assets/art/heroes/thach_pha_thien.webp",
+      "license": "STUDIO-ORIGINAL-PROCEDURAL",
+      "provenanceUrl": "local://studio-generated",
+      "aiGenerated": false,
+      "safeZone": {
+        "fit": "cover",
+        "position": "top"
+      },
+      "sha256": "0897cbfe037323c37fc2e7e1bc6565787ff186620f818592077ea8a258cf54c2"
+    },
+    {
+      "assetKey": "hero:tham_mac_ngon",
+      "kind": "hero-portrait",
+      "path": "apps/desktop/src/assets/art/heroes/tham_mac_ngon.webp",
+      "license": "STUDIO-ORIGINAL-PROCEDURAL",
+      "provenanceUrl": "local://studio-generated",
+      "aiGenerated": false,
+      "safeZone": {
+        "fit": "cover",
+        "position": "top"
+      },
+      "sha256": "aac1885951058994d7ecba3b018263ed849363a67eb83ae4481183332c5ddd19"
+    },
+    {
+      "assetKey": "hero:tham_tinh_ha",
+      "kind": "hero-portrait",
+      "path": "apps/desktop/src/assets/art/heroes/tham_tinh_ha.webp",
+      "license": "STUDIO-ORIGINAL-PROCEDURAL",
+      "provenanceUrl": "local://studio-generated",
+      "aiGenerated": false,
+      "safeZone": {
+        "fit": "cover",
+        "position": "top"
+      },
+      "sha256": "6e8b8d07f0f7bf8bb9d9be3213947cfcaf930adac725cd10942aa097b260eba6"
+    },
+    {
+      "assetKey": "hero:thuy_u_linh",
+      "kind": "hero-portrait",
+      "path": "apps/desktop/src/assets/art/heroes/thuy_u_linh.webp",
+      "license": "STUDIO-ORIGINAL-PROCEDURAL",
+      "provenanceUrl": "local://studio-generated",
+      "aiGenerated": false,
+      "safeZone": {
+        "fit": "cover",
+        "position": "top"
+      },
+      "sha256": "9bd64668d0963eac2d053ac4b9ec82b414ce6db76a46c7a74b1c0c3ff89fcb71"
+    },
+    {
+      "assetKey": "hero:tieu_viem_lang",
+      "kind": "hero-portrait",
+      "path": "apps/desktop/src/assets/art/heroes/tieu_viem_lang.webp",
+      "license": "STUDIO-ORIGINAL-PROCEDURAL",
+      "provenanceUrl": "local://studio-generated",
+      "aiGenerated": false,
+      "safeZone": {
+        "fit": "cover",
+        "position": "top"
+      },
+      "sha256": "773556574c69726ec22d17f604f5f93eaa74397a460b9d2768b0dc7afe440766"
+    },
+    {
+      "assetKey": "hero:to_mong_dao",
+      "kind": "hero-portrait",
+      "path": "apps/desktop/src/assets/art/heroes/to_mong_dao.webp",
+      "license": "STUDIO-ORIGINAL-PROCEDURAL",
+      "provenanceUrl": "local://studio-generated",
+      "aiGenerated": false,
+      "safeZone": {
+        "fit": "cover",
+        "position": "top"
+      },
+      "sha256": "2c49dca36a2578f242b8c9a52147a323bb2bae84f828060d9ad266c9100025ae"
+    },
+    {
+      "assetKey": "hero:trieu_thien_hanh",
+      "kind": "hero-portrait",
+      "path": "apps/desktop/src/assets/art/heroes/trieu_thien_hanh.webp",
+      "license": "STUDIO-ORIGINAL-PROCEDURAL",
+      "provenanceUrl": "local://studio-generated",
+      "aiGenerated": false,
+      "safeZone": {
+        "fit": "cover",
+        "position": "top"
+      },
+      "sha256": "abf0b506f0bee00f25738ec990146490c67ac8b144791b61dc4a858b6dccaced"
+    },
+    {
+      "assetKey": "hero:truong_huy_dieu",
+      "kind": "hero-portrait",
+      "path": "apps/desktop/src/assets/art/heroes/truong_huy_dieu.webp",
+      "license": "STUDIO-ORIGINAL-PROCEDURAL",
+      "provenanceUrl": "local://studio-generated",
+      "aiGenerated": false,
+      "safeZone": {
+        "fit": "cover",
+        "position": "top"
+      },
+      "sha256": "62e279a9b123e59c8236e602f36db9bbc7937cebe754b09f189e7f8ec5f8e338"
+    },
+    {
+      "assetKey": "hero:viem_liet_vuong",
+      "kind": "hero-portrait",
+      "path": "apps/desktop/src/assets/art/heroes/viem_liet_vuong.webp",
+      "license": "STUDIO-ORIGINAL-PROCEDURAL",
+      "provenanceUrl": "local://studio-generated",
+      "aiGenerated": false,
+      "safeZone": {
+        "fit": "cover",
+        "position": "top"
+      },
+      "sha256": "65c7eed7e6bf92bfa127e47947a86bc528eff13fc743db6b6b315640901ae5ab"
+    },
+    {
+      "assetKey": "card:bat_quai_tran",
+      "kind": "card-art",
+      "path": "apps/desktop/src/assets/art/cards/bat_quai_tran.webp",
+      "license": "CC-BY-3.0-ATTRIBUTED",
+      "provenanceUrl": "https://github.com/game-icons/icons",
+      "aiGenerated": false,
+      "attributionText": "Procedural dark-jade Guofeng card illustration compositing Game-icons.net vector focal paths (CC BY 3.0 — Lorc, Delapouite, Skoll, Viscious Speed, Caro Asercion, sbed & contributors)",
+      "safeZone": {
+        "fit": "cover",
+        "position": "centre"
+      },
+      "sha256": "7ebaa690577ab73d8433163a0266267f614e0a2a9b733b83e4177c0511650ee9"
+    },
+    {
+      "assetKey": "card:chan_khi_ho_the",
+      "kind": "card-art",
+      "path": "apps/desktop/src/assets/art/cards/chan_khi_ho_the.webp",
+      "license": "CC-BY-3.0-ATTRIBUTED",
+      "provenanceUrl": "https://github.com/game-icons/icons",
+      "aiGenerated": false,
+      "attributionText": "Procedural dark-jade Guofeng card illustration compositing Game-icons.net vector focal paths (CC BY 3.0 — Lorc, Delapouite, Skoll, Viscious Speed, Caro Asercion, sbed & contributors)",
+      "safeZone": {
+        "fit": "cover",
+        "position": "centre"
+      },
+      "sha256": "32e81e23eb09472d8c9671b260fa3317723061bb6527cd22d0a1a9a75075e9b8"
+    },
+    {
+      "assetKey": "card:dai_uyen",
+      "kind": "card-art",
+      "path": "apps/desktop/src/assets/art/cards/dai_uyen.webp",
+      "license": "CC-BY-3.0-ATTRIBUTED",
+      "provenanceUrl": "https://github.com/game-icons/icons",
+      "aiGenerated": false,
+      "attributionText": "Procedural dark-jade Guofeng card illustration compositing Game-icons.net vector focal paths (CC BY 3.0 — Lorc, Delapouite, Skoll, Viscious Speed, Caro Asercion, sbed & contributors)",
+      "safeZone": {
+        "fit": "cover",
+        "position": "centre"
+      },
+      "sha256": "c9886dac6f0531b2f74fddbf01576b6349cbe70ac4897a3bb8a4ab81a521a9c4"
+    },
+    {
+      "assetKey": "card:dao",
+      "kind": "card-art",
+      "path": "apps/desktop/src/assets/art/cards/dao.webp",
+      "license": "CC-BY-3.0-ATTRIBUTED",
+      "provenanceUrl": "https://github.com/game-icons/icons",
+      "aiGenerated": false,
+      "attributionText": "Procedural dark-jade Guofeng card illustration compositing Game-icons.net vector focal paths (CC BY 3.0 — Lorc, Delapouite, Skoll, Viscious Speed, Caro Asercion, sbed & contributors)",
+      "safeZone": {
+        "fit": "cover",
+        "position": "centre"
+      },
+      "sha256": "c38c7b9c13c80429f1fe285dd7795878c8de53b53e865a5e64476ded11ef2d50"
+    },
+    {
+      "assetKey": "card:dao_vien_ket_nghia",
+      "kind": "card-art",
+      "path": "apps/desktop/src/assets/art/cards/dao_vien_ket_nghia.webp",
+      "license": "CC-BY-3.0-ATTRIBUTED",
+      "provenanceUrl": "https://github.com/game-icons/icons",
+      "aiGenerated": false,
+      "attributionText": "Procedural dark-jade Guofeng card illustration compositing Game-icons.net vector focal paths (CC BY 3.0 — Lorc, Delapouite, Skoll, Viscious Speed, Caro Asercion, sbed & contributors)",
+      "safeZone": {
+        "fit": "cover",
+        "position": "centre"
+      },
+      "sha256": "c7c2c6fdb66c6dd0bb25269ab8999588c8a143dbb89c567dc39fddf36b213485"
+    },
+    {
+      "assetKey": "card:dich_lo",
+      "kind": "card-art",
+      "path": "apps/desktop/src/assets/art/cards/dich_lo.webp",
+      "license": "CC-BY-3.0-ATTRIBUTED",
+      "provenanceUrl": "https://github.com/game-icons/icons",
+      "aiGenerated": false,
+      "attributionText": "Procedural dark-jade Guofeng card illustration compositing Game-icons.net vector focal paths (CC BY 3.0 — Lorc, Delapouite, Skoll, Viscious Speed, Caro Asercion, sbed & contributors)",
+      "safeZone": {
+        "fit": "cover",
+        "position": "centre"
+      },
+      "sha256": "03c2178239f1831b0e0953fd11291d509eab0c042427f1cea77df75518b8f087"
+    },
+    {
+      "assetKey": "card:gia_cat_lien_no",
+      "kind": "card-art",
+      "path": "apps/desktop/src/assets/art/cards/gia_cat_lien_no.webp",
+      "license": "CC-BY-3.0-ATTRIBUTED",
+      "provenanceUrl": "https://github.com/game-icons/icons",
+      "aiGenerated": false,
+      "attributionText": "Procedural dark-jade Guofeng card illustration compositing Game-icons.net vector focal paths (CC BY 3.0 — Lorc, Delapouite, Skoll, Viscious Speed, Caro Asercion, sbed & contributors)",
+      "safeZone": {
+        "fit": "cover",
+        "position": "centre"
+      },
+      "sha256": "fe2b1ea0e89f6515d4b2133a336aceff4062b0832a2160ff63d4685f0cf692f1"
+    },
+    {
+      "assetKey": "card:han_bang_kiem",
+      "kind": "card-art",
+      "path": "apps/desktop/src/assets/art/cards/han_bang_kiem.webp",
+      "license": "CC-BY-3.0-ATTRIBUTED",
+      "provenanceUrl": "https://github.com/game-icons/icons",
+      "aiGenerated": false,
+      "attributionText": "Procedural dark-jade Guofeng card illustration compositing Game-icons.net vector focal paths (CC BY 3.0 — Lorc, Delapouite, Skoll, Viscious Speed, Caro Asercion, sbed & contributors)",
+      "safeZone": {
+        "fit": "cover",
+        "position": "centre"
+      },
+      "sha256": "a88e38f7524eca3ca26ef6749d968ed3a8b1fa5cc4a045c5565ac87400867f1c"
+    },
+    {
+      "assetKey": "card:hoan_anh_giap",
+      "kind": "card-art",
+      "path": "apps/desktop/src/assets/art/cards/hoan_anh_giap.webp",
+      "license": "CC-BY-3.0-ATTRIBUTED",
+      "provenanceUrl": "https://github.com/game-icons/icons",
+      "aiGenerated": false,
+      "attributionText": "Procedural dark-jade Guofeng card illustration compositing Game-icons.net vector focal paths (CC BY 3.0 — Lorc, Delapouite, Skoll, Viscious Speed, Caro Asercion, sbed & contributors)",
+      "safeZone": {
+        "fit": "cover",
+        "position": "centre"
+      },
+      "sha256": "4f44dedae896adfd826bf530fa3cef8c87a21b3849d3b85a73c078951a5689c4"
+    },
+    {
+      "assetKey": "card:kinh_loi_chan",
+      "kind": "card-art",
+      "path": "apps/desktop/src/assets/art/cards/kinh_loi_chan.webp",
+      "license": "CC-BY-3.0-ATTRIBUTED",
+      "provenanceUrl": "https://github.com/game-icons/icons",
+      "aiGenerated": false,
+      "attributionText": "Procedural dark-jade Guofeng card illustration compositing Game-icons.net vector focal paths (CC BY 3.0 — Lorc, Delapouite, Skoll, Viscious Speed, Caro Asercion, sbed & contributors)",
+      "safeZone": {
+        "fit": "cover",
+        "position": "centre"
+      },
+      "sha256": "364edc86b380e2cb3492e746246e0ac68c35dfde44b0f3b4971eafd85e035924"
+    },
+    {
+      "assetKey": "card:ky_lan_cung",
+      "kind": "card-art",
+      "path": "apps/desktop/src/assets/art/cards/ky_lan_cung.webp",
+      "license": "CC-BY-3.0-ATTRIBUTED",
+      "provenanceUrl": "https://github.com/game-icons/icons",
+      "aiGenerated": false,
+      "attributionText": "Procedural dark-jade Guofeng card illustration compositing Game-icons.net vector focal paths (CC BY 3.0 — Lorc, Delapouite, Skoll, Viscious Speed, Caro Asercion, sbed & contributors)",
+      "safeZone": {
+        "fit": "cover",
+        "position": "centre"
+      },
+      "sha256": "5853e7d448faf42b856b359a582d872714faeb9657fa20a737836458f0eb5374"
+    },
+    {
+      "assetKey": "card:lac_bat_tu_thuc",
+      "kind": "card-art",
+      "path": "apps/desktop/src/assets/art/cards/lac_bat_tu_thuc.webp",
+      "license": "CC-BY-3.0-ATTRIBUTED",
+      "provenanceUrl": "https://github.com/game-icons/icons",
+      "aiGenerated": false,
+      "attributionText": "Procedural dark-jade Guofeng card illustration compositing Game-icons.net vector focal paths (CC BY 3.0 — Lorc, Delapouite, Skoll, Viscious Speed, Caro Asercion, sbed & contributors)",
+      "safeZone": {
+        "fit": "cover",
+        "position": "centre"
+      },
+      "sha256": "53e8451613943c1f27009abab009f991a59dc0f11343e5802982e50b0fced68a"
+    },
+    {
+      "assetKey": "card:nam_man_nhap_xam",
+      "kind": "card-art",
+      "path": "apps/desktop/src/assets/art/cards/nam_man_nhap_xam.webp",
+      "license": "CC-BY-3.0-ATTRIBUTED",
+      "provenanceUrl": "https://github.com/game-icons/icons",
+      "aiGenerated": false,
+      "attributionText": "Procedural dark-jade Guofeng card illustration compositing Game-icons.net vector focal paths (CC BY 3.0 — Lorc, Delapouite, Skoll, Viscious Speed, Caro Asercion, sbed & contributors)",
+      "safeZone": {
+        "fit": "cover",
+        "position": "centre"
+      },
+      "sha256": "b37e7f1c35ea1f8f76a989851d956c6d15bf9abb06e47f785d11175bd6596f97"
+    },
+    {
+      "assetKey": "card:ngu_coc_phong_dang",
+      "kind": "card-art",
+      "path": "apps/desktop/src/assets/art/cards/ngu_coc_phong_dang.webp",
+      "license": "CC-BY-3.0-ATTRIBUTED",
+      "provenanceUrl": "https://github.com/game-icons/icons",
+      "aiGenerated": false,
+      "attributionText": "Procedural dark-jade Guofeng card illustration compositing Game-icons.net vector focal paths (CC BY 3.0 — Lorc, Delapouite, Skoll, Viscious Speed, Caro Asercion, sbed & contributors)",
+      "safeZone": {
+        "fit": "cover",
+        "position": "centre"
+      },
+      "sha256": "e7dcbf87a9f419677d881330ce4b5677d5880676660aba6411088c1ee96bf01d"
+    },
+    {
+      "assetKey": "card:pha_giap_tram",
+      "kind": "card-art",
+      "path": "apps/desktop/src/assets/art/cards/pha_giap_tram.webp",
+      "license": "CC-BY-3.0-ATTRIBUTED",
+      "provenanceUrl": "https://github.com/game-icons/icons",
+      "aiGenerated": false,
+      "attributionText": "Procedural dark-jade Guofeng card illustration compositing Game-icons.net vector focal paths (CC BY 3.0 — Lorc, Delapouite, Skoll, Viscious Speed, Caro Asercion, sbed & contributors)",
+      "safeZone": {
+        "fit": "cover",
+        "position": "centre"
+      },
+      "sha256": "117e78e3f8cd2a9cf48a4f32248540e7cbd9145c6a01fb90f90cf51ff6917d29"
+    },
+    {
+      "assetKey": "card:phuong_thien_hoa_kich",
+      "kind": "card-art",
+      "path": "apps/desktop/src/assets/art/cards/phuong_thien_hoa_kich.webp",
+      "license": "CC-BY-3.0-ATTRIBUTED",
+      "provenanceUrl": "https://github.com/game-icons/icons",
+      "aiGenerated": false,
+      "attributionText": "Procedural dark-jade Guofeng card illustration compositing Game-icons.net vector focal paths (CC BY 3.0 — Lorc, Delapouite, Skoll, Viscious Speed, Caro Asercion, sbed & contributors)",
+      "safeZone": {
+        "fit": "cover",
+        "position": "centre"
+      },
+      "sha256": "a31a9bae744adedf620b2461bc7521144cc6cf9122718852817357572312de68"
+    },
+    {
+      "assetKey": "card:qua_ha_sai_cau",
+      "kind": "card-art",
+      "path": "apps/desktop/src/assets/art/cards/qua_ha_sai_cau.webp",
+      "license": "CC-BY-3.0-ATTRIBUTED",
+      "provenanceUrl": "https://github.com/game-icons/icons",
+      "aiGenerated": false,
+      "attributionText": "Procedural dark-jade Guofeng card illustration compositing Game-icons.net vector focal paths (CC BY 3.0 — Lorc, Delapouite, Skoll, Viscious Speed, Caro Asercion, sbed & contributors)",
+      "safeZone": {
+        "fit": "cover",
+        "position": "centre"
+      },
+      "sha256": "661a8531390ab184a2574c7d53523f6270b3d3da468f768d4f1393e26a688235"
+    },
+    {
+      "assetKey": "card:quan_thach_phu",
+      "kind": "card-art",
+      "path": "apps/desktop/src/assets/art/cards/quan_thach_phu.webp",
+      "license": "CC-BY-3.0-ATTRIBUTED",
+      "provenanceUrl": "https://github.com/game-icons/icons",
+      "aiGenerated": false,
+      "attributionText": "Procedural dark-jade Guofeng card illustration compositing Game-icons.net vector focal paths (CC BY 3.0 — Lorc, Delapouite, Skoll, Viscious Speed, Caro Asercion, sbed & contributors)",
+      "safeZone": {
+        "fit": "cover",
+        "position": "centre"
+      },
+      "sha256": "340fc516262cb7176689cd03fd206a034a0efe07d08dba58aaf06a60f2f07ba3"
+    },
+    {
+      "assetKey": "card:quyet_dau",
+      "kind": "card-art",
+      "path": "apps/desktop/src/assets/art/cards/quyet_dau.webp",
+      "license": "CC-BY-3.0-ATTRIBUTED",
+      "provenanceUrl": "https://github.com/game-icons/icons",
+      "aiGenerated": false,
+      "attributionText": "Procedural dark-jade Guofeng card illustration compositing Game-icons.net vector focal paths (CC BY 3.0 — Lorc, Delapouite, Skoll, Viscious Speed, Caro Asercion, sbed & contributors)",
+      "safeZone": {
+        "fit": "cover",
+        "position": "centre"
+      },
+      "sha256": "a765d491773355906ef6db741c701a829e713e431357e65216aa7619eefaf7cc"
+    },
+    {
+      "assetKey": "card:sat",
+      "kind": "card-art",
+      "path": "apps/desktop/src/assets/art/cards/sat.webp",
+      "license": "CC-BY-3.0-ATTRIBUTED",
+      "provenanceUrl": "https://github.com/game-icons/icons",
+      "aiGenerated": false,
+      "attributionText": "Procedural dark-jade Guofeng card illustration compositing Game-icons.net vector focal paths (CC BY 3.0 — Lorc, Delapouite, Skoll, Viscious Speed, Caro Asercion, sbed & contributors)",
+      "safeZone": {
+        "fit": "cover",
+        "position": "centre"
+      },
+      "sha256": "f9754136dfb83e50305aa4170b1b0077584c0b9f0e359c249f1db2861fc30fe4"
+    },
+    {
+      "assetKey": "card:ta_dao_sat_nhan",
+      "kind": "card-art",
+      "path": "apps/desktop/src/assets/art/cards/ta_dao_sat_nhan.webp",
+      "license": "CC-BY-3.0-ATTRIBUTED",
+      "provenanceUrl": "https://github.com/game-icons/icons",
+      "aiGenerated": false,
+      "attributionText": "Procedural dark-jade Guofeng card illustration compositing Game-icons.net vector focal paths (CC BY 3.0 — Lorc, Delapouite, Skoll, Viscious Speed, Caro Asercion, sbed & contributors)",
+      "safeZone": {
+        "fit": "cover",
+        "position": "centre"
+      },
+      "sha256": "ec47138e5057f32c8256b32a313d55bdaab7c711d101177f02edbffe9a16cc8d"
+    },
+    {
+      "assetKey": "card:thanh_cong_kiem",
+      "kind": "card-art",
+      "path": "apps/desktop/src/assets/art/cards/thanh_cong_kiem.webp",
+      "license": "CC-BY-3.0-ATTRIBUTED",
+      "provenanceUrl": "https://github.com/game-icons/icons",
+      "aiGenerated": false,
+      "attributionText": "Procedural dark-jade Guofeng card illustration compositing Game-icons.net vector focal paths (CC BY 3.0 — Lorc, Delapouite, Skoll, Viscious Speed, Caro Asercion, sbed & contributors)",
+      "safeZone": {
+        "fit": "cover",
+        "position": "centre"
+      },
+      "sha256": "f1f40fe539491ab33f1df54c6f38adc505b65d5cf457eadf81172b55aed12338"
+    },
+    {
+      "assetKey": "card:thanh_long_yen_nguyet_dao",
+      "kind": "card-art",
+      "path": "apps/desktop/src/assets/art/cards/thanh_long_yen_nguyet_dao.webp",
+      "license": "CC-BY-3.0-ATTRIBUTED",
+      "provenanceUrl": "https://github.com/game-icons/icons",
+      "aiGenerated": false,
+      "attributionText": "Procedural dark-jade Guofeng card illustration compositing Game-icons.net vector focal paths (CC BY 3.0 — Lorc, Delapouite, Skoll, Viscious Speed, Caro Asercion, sbed & contributors)",
+      "safeZone": {
+        "fit": "cover",
+        "position": "centre"
+      },
+      "sha256": "5e8c87320453a1a6b535274e9eba51d32a5b560e9ad250e3347c66b24e05ff78"
+    },
+    {
+      "assetKey": "card:thiem",
+      "kind": "card-art",
+      "path": "apps/desktop/src/assets/art/cards/thiem.webp",
+      "license": "CC-BY-3.0-ATTRIBUTED",
+      "provenanceUrl": "https://github.com/game-icons/icons",
+      "aiGenerated": false,
+      "attributionText": "Procedural dark-jade Guofeng card illustration compositing Game-icons.net vector focal paths (CC BY 3.0 — Lorc, Delapouite, Skoll, Viscious Speed, Caro Asercion, sbed & contributors)",
+      "safeZone": {
+        "fit": "cover",
+        "position": "centre"
+      },
+      "sha256": "6e390e688651b84d2012443edb5b176fa4cbf731a821558b99d669798afa07c2"
+    },
+    {
+      "assetKey": "card:thiem_dien",
+      "kind": "card-art",
+      "path": "apps/desktop/src/assets/art/cards/thiem_dien.webp",
+      "license": "CC-BY-3.0-ATTRIBUTED",
+      "provenanceUrl": "https://github.com/game-icons/icons",
+      "aiGenerated": false,
+      "attributionText": "Procedural dark-jade Guofeng card illustration compositing Game-icons.net vector focal paths (CC BY 3.0 — Lorc, Delapouite, Skoll, Viscious Speed, Caro Asercion, sbed & contributors)",
+      "safeZone": {
+        "fit": "cover",
+        "position": "centre"
+      },
+      "sha256": "64c1b95256f9a590bd426d19491ebe93c08f9efc8ac454fd44f62ee6f15b19fb"
+    },
+    {
+      "assetKey": "card:thuan_thu_khien_duong",
+      "kind": "card-art",
+      "path": "apps/desktop/src/assets/art/cards/thuan_thu_khien_duong.webp",
+      "license": "CC-BY-3.0-ATTRIBUTED",
+      "provenanceUrl": "https://github.com/game-icons/icons",
+      "aiGenerated": false,
+      "attributionText": "Procedural dark-jade Guofeng card illustration compositing Game-icons.net vector focal paths (CC BY 3.0 — Lorc, Delapouite, Skoll, Viscious Speed, Caro Asercion, sbed & contributors)",
+      "safeZone": {
+        "fit": "cover",
+        "position": "centre"
+      },
+      "sha256": "86fe832934d3c62e6849c266b175564cfee05b96803395dcb70469a0a54b5096"
+    },
+    {
+      "assetKey": "card:trao_hoang_phi_dien",
+      "kind": "card-art",
+      "path": "apps/desktop/src/assets/art/cards/trao_hoang_phi_dien.webp",
+      "license": "CC-BY-3.0-ATTRIBUTED",
+      "provenanceUrl": "https://github.com/game-icons/icons",
+      "aiGenerated": false,
+      "attributionText": "Procedural dark-jade Guofeng card illustration compositing Game-icons.net vector focal paths (CC BY 3.0 — Lorc, Delapouite, Skoll, Viscious Speed, Caro Asercion, sbed & contributors)",
+      "safeZone": {
+        "fit": "cover",
+        "position": "centre"
+      },
+      "sha256": "b87ce0e1c2b86abbe36c6082ca78ebd450ecdd7f4ff9442dfde33a3b82d7389b"
+    },
+    {
+      "assetKey": "card:truong_bat_xa_mau",
+      "kind": "card-art",
+      "path": "apps/desktop/src/assets/art/cards/truong_bat_xa_mau.webp",
+      "license": "CC-BY-3.0-ATTRIBUTED",
+      "provenanceUrl": "https://github.com/game-icons/icons",
+      "aiGenerated": false,
+      "attributionText": "Procedural dark-jade Guofeng card illustration compositing Game-icons.net vector focal paths (CC BY 3.0 — Lorc, Delapouite, Skoll, Viscious Speed, Caro Asercion, sbed & contributors)",
+      "safeZone": {
+        "fit": "cover",
+        "position": "centre"
+      },
+      "sha256": "cd81acdbe0d9cbd63b70c56931619016796b7ca453953878d18c7637c1551c53"
+    },
+    {
+      "assetKey": "card:tu_hung_song_co_kiem",
+      "kind": "card-art",
+      "path": "apps/desktop/src/assets/art/cards/tu_hung_song_co_kiem.webp",
+      "license": "CC-BY-3.0-ATTRIBUTED",
+      "provenanceUrl": "https://github.com/game-icons/icons",
+      "aiGenerated": false,
+      "attributionText": "Procedural dark-jade Guofeng card illustration compositing Game-icons.net vector focal paths (CC BY 3.0 — Lorc, Delapouite, Skoll, Viscious Speed, Caro Asercion, sbed & contributors)",
+      "safeZone": {
+        "fit": "cover",
+        "position": "centre"
+      },
+      "sha256": "31e3592387d8a756823ee247fda2c2b7c670b301864ed489ffbc4593ef3957db"
+    },
+    {
+      "assetKey": "card:tu_khi_hoan",
+      "kind": "card-art",
+      "path": "apps/desktop/src/assets/art/cards/tu_khi_hoan.webp",
+      "license": "CC-BY-3.0-ATTRIBUTED",
+      "provenanceUrl": "https://github.com/game-icons/icons",
+      "aiGenerated": false,
+      "attributionText": "Procedural dark-jade Guofeng card illustration compositing Game-icons.net vector focal paths (CC BY 3.0 — Lorc, Delapouite, Skoll, Viscious Speed, Caro Asercion, sbed & contributors)",
+      "safeZone": {
+        "fit": "cover",
+        "position": "centre"
+      },
+      "sha256": "27c7f584cf1a78662c3d6c1d9cd0aa8a331924e917c6da7da10c457b8fbb8f6f"
+    },
+    {
+      "assetKey": "card:tu_tinh",
+      "kind": "card-art",
+      "path": "apps/desktop/src/assets/art/cards/tu_tinh.webp",
+      "license": "CC-BY-3.0-ATTRIBUTED",
+      "provenanceUrl": "https://github.com/game-icons/icons",
+      "aiGenerated": false,
+      "attributionText": "Procedural dark-jade Guofeng card illustration compositing Game-icons.net vector focal paths (CC BY 3.0 — Lorc, Delapouite, Skoll, Viscious Speed, Caro Asercion, sbed & contributors)",
+      "safeZone": {
+        "fit": "cover",
+        "position": "centre"
+      },
+      "sha256": "caeae5bb7f6b7f66df208969ad80732e93c6df5ea27b7d40bf7537a468798a94"
+    },
+    {
+      "assetKey": "card:tuyet_anh",
+      "kind": "card-art",
+      "path": "apps/desktop/src/assets/art/cards/tuyet_anh.webp",
+      "license": "CC-BY-3.0-ATTRIBUTED",
+      "provenanceUrl": "https://github.com/game-icons/icons",
+      "aiGenerated": false,
+      "attributionText": "Procedural dark-jade Guofeng card illustration compositing Game-icons.net vector focal paths (CC BY 3.0 — Lorc, Delapouite, Skoll, Viscious Speed, Caro Asercion, sbed & contributors)",
+      "safeZone": {
+        "fit": "cover",
+        "position": "centre"
+      },
+      "sha256": "615c3c1275fe9a9515ab2c42fbfc63290c33d1312e481ac8003b79132ed6aace"
+    },
+    {
+      "assetKey": "card:van_tien_te_phat",
+      "kind": "card-art",
+      "path": "apps/desktop/src/assets/art/cards/van_tien_te_phat.webp",
+      "license": "CC-BY-3.0-ATTRIBUTED",
+      "provenanceUrl": "https://github.com/game-icons/icons",
+      "aiGenerated": false,
+      "attributionText": "Procedural dark-jade Guofeng card illustration compositing Game-icons.net vector focal paths (CC BY 3.0 — Lorc, Delapouite, Skoll, Viscious Speed, Caro Asercion, sbed & contributors)",
+      "safeZone": {
+        "fit": "cover",
+        "position": "centre"
+      },
+      "sha256": "363fe4e569929584ca352272c14b9980397c0f5084c6ef51821a7afdf1521b1b"
+    },
+    {
+      "assetKey": "card:vo_giai_kha_kich",
+      "kind": "card-art",
+      "path": "apps/desktop/src/assets/art/cards/vo_giai_kha_kich.webp",
+      "license": "CC-BY-3.0-ATTRIBUTED",
+      "provenanceUrl": "https://github.com/game-icons/icons",
+      "aiGenerated": false,
+      "attributionText": "Procedural dark-jade Guofeng card illustration compositing Game-icons.net vector focal paths (CC BY 3.0 — Lorc, Delapouite, Skoll, Viscious Speed, Caro Asercion, sbed & contributors)",
+      "safeZone": {
+        "fit": "cover",
+        "position": "centre"
+      },
+      "sha256": "677832ef441535a9d3f7ef9326ecbcc84f1b427391b1021df6c4704b3dc9fec9"
+    },
+    {
+      "assetKey": "card:vo_trung_sinh_huu",
+      "kind": "card-art",
+      "path": "apps/desktop/src/assets/art/cards/vo_trung_sinh_huu.webp",
+      "license": "CC-BY-3.0-ATTRIBUTED",
+      "provenanceUrl": "https://github.com/game-icons/icons",
+      "aiGenerated": false,
+      "attributionText": "Procedural dark-jade Guofeng card illustration compositing Game-icons.net vector focal paths (CC BY 3.0 — Lorc, Delapouite, Skoll, Viscious Speed, Caro Asercion, sbed & contributors)",
+      "safeZone": {
+        "fit": "cover",
+        "position": "centre"
+      },
+      "sha256": "afdb97a3f5b294a83e034cde1cf9bd7ae33c2df1d897eb2de8f8c63d5628813a"
+    },
+    {
+      "assetKey": "card:xich_tho",
+      "kind": "card-art",
+      "path": "apps/desktop/src/assets/art/cards/xich_tho.webp",
+      "license": "CC-BY-3.0-ATTRIBUTED",
+      "provenanceUrl": "https://github.com/game-icons/icons",
+      "aiGenerated": false,
+      "attributionText": "Procedural dark-jade Guofeng card illustration compositing Game-icons.net vector focal paths (CC BY 3.0 — Lorc, Delapouite, Skoll, Viscious Speed, Caro Asercion, sbed & contributors)",
+      "safeZone": {
+        "fit": "cover",
+        "position": "centre"
+      },
+      "sha256": "552c241e35b7fad2c8366b67495de53d332a793ba83d88adbd47398519b60cac"
+    },
+    {
+      "assetKey": "ui:card-back",
+      "kind": "ui-art",
+      "path": "apps/desktop/src/assets/art/ui/card-back.webp",
+      "license": "STUDIO-ORIGINAL-PROCEDURAL",
+      "provenanceUrl": "local://studio-generated",
+      "aiGenerated": false,
+      "sha256": "d203caa619891f30a65df4d9a768d25de62d07136f3b561a9b2609fecaf659de"
+    },
+    {
+      "assetKey": "ui:lobby-banner",
+      "kind": "ui-art",
+      "path": "apps/desktop/src/assets/art/ui/lobby-banner.webp",
+      "license": "STUDIO-ORIGINAL-PROCEDURAL",
+      "provenanceUrl": "local://studio-generated",
+      "aiGenerated": false,
+      "sha256": "77a7da5551bb4774de8b967c7eb443d6d5247df3a75225411f6cfb3bec2c14af"
+    },
+    {
+      "assetKey": "ui:table-bg",
+      "kind": "ui-art",
+      "path": "apps/desktop/src/assets/art/ui/table-bg.webp",
+      "license": "STUDIO-ORIGINAL-PROCEDURAL",
+      "provenanceUrl": "local://studio-generated",
+      "aiGenerated": false,
+      "sha256": "39ad98c68922930605d4336fa2903bae9b1f536b0622fee4673ab87323036312"
+    },
+    {
       "assetKey": "audio:bgm-battle",
       "kind": "bgm",
       "path": "apps/desktop/src/assets/sfx/bgm-battle.ogg",
-      "license": "PLACEHOLDER-REPLACE-PHASE2",
+      "license": "STUDIO-ORIGINAL-EARSHOT",
       "provenanceUrl": "local://studio-generated",
       "aiGenerated": false,
-      "sha256": "505d18d59c6aff6c7f6ebe2247cfc4013f488e3c2d274bdf13e438028d857dbc"
+      "sha256": "0bdd863658d8be591338410d2e2e5fed18bd1cf8272950b0284918acecf1f8da"
     },
     {
       "assetKey": "audio:bgm-climax-drums",
       "kind": "bgm",
       "path": "apps/desktop/src/assets/sfx/bgm-climax-drums.ogg",
-      "license": "PLACEHOLDER-REPLACE-PHASE2",
+      "license": "STUDIO-ORIGINAL-EARSHOT",
       "provenanceUrl": "local://studio-generated",
       "aiGenerated": false,
-      "sha256": "a80b560464833c9f0f8def4c92d10e7fd21cf2b00ebff81687dc407e58b739e8"
+      "sha256": "4593ff5e7db637e5f105eea45ef6bce98e7f55a74cfacc58fd2ef504c1f0cf0a"
     },
     {
       "assetKey": "audio:bgm-lobby",
       "kind": "bgm",
       "path": "apps/desktop/src/assets/sfx/bgm-lobby.ogg",
-      "license": "PLACEHOLDER-REPLACE-PHASE2",
+      "license": "STUDIO-ORIGINAL-EARSHOT",
       "provenanceUrl": "local://studio-generated",
       "aiGenerated": false,
-      "sha256": "daa5606a9f4ae9c6dedd6c0e874902cf7675ffcbda03f6b4cfbe8e78ccc7339d"
+      "sha256": "6a5af3281f35551185cad7eeb2a5b1b9c7d9cbdd2724f2b3b34b9ed582109763"
     },
     {
       "assetKey": "audio:sfx-action_prompt",
@@ -157,15 +1013,6 @@
       "sha256": "b2de2321550d19bacf8bb7d7ff509fe54101cfb3466a2915148ad1e09640fb10"
     },
     {
-      "assetKey": "audio:sfx-deal_opening",
-      "kind": "sfx",
-      "path": "apps/desktop/src/assets/sfx/sfx-deal_opening.ogg",
-      "license": "STUDIO-ORIGINAL-EARSHOT",
-      "provenanceUrl": "local://studio-generated",
-      "aiGenerated": false,
-      "sha256": "c751daaf88392c89e087e2f6049c4443100684238a2fb5649fbd6f9c29ab1468"
-    },
-    {
       "assetKey": "audio:sfx-deal-v2",
       "kind": "sfx",
       "path": "apps/desktop/src/assets/sfx/sfx-deal-v2.ogg",
@@ -191,6 +1038,15 @@
       "provenanceUrl": "local://studio-generated",
       "aiGenerated": false,
       "sha256": "4d0838c1aec25e3ce8c0c143bd6a1033dbb3392e7f14e3c487fbd34a0aad792c"
+    },
+    {
+      "assetKey": "audio:sfx-deal_opening",
+      "kind": "sfx",
+      "path": "apps/desktop/src/assets/sfx/sfx-deal_opening.ogg",
+      "license": "STUDIO-ORIGINAL-EARSHOT",
+      "provenanceUrl": "local://studio-generated",
+      "aiGenerated": false,
+      "sha256": "c751daaf88392c89e087e2f6049c4443100684238a2fb5649fbd6f9c29ab1468"
     },
     {
       "assetKey": "audio:sfx-defeat",

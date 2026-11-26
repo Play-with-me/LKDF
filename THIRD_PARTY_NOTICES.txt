@@ -1,14 +1,51 @@
 THIRD-PARTY NOTICES — Blades of the Nine Realms (Cửu Châu Ẩn Kiếm)
 ========================================================================
 
-1. Gameplay Vector Icons (46 icons)
+1. Gameplay Vector Icons (56 icons)
    - Source: Game-icons.net (@iconify-json/game-icons)
-   - Authors: Lorc, Delapouite, Skoll, Viscious Speed & contributors
+   - Authors: Lorc, Delapouite, Skoll, Viscious Speed, Caro Asercion, sbed & contributors
    - License: CC BY 3.0 (https://creativecommons.org/licenses/by/3.0/)
+   - Modification: Vector SVG paths extracted and recolored for dark-jade cards
 
 2. UI Icons & Offline Typography
    - Lucide React Icons — ISC License
    - @fontsource/noto-serif, @fontsource/be-vietnam-pro, @fontsource/jetbrains-mono — SIL OFL 1.1
 
 3. Tracked Attributed Entries from assets-manifest.json
-   - [icons:game-icons-46] (CC-BY-3.0-ATTRIBUTED): 46 gameplay icons by Lorc, Delapouite, Skoll & contributors via Game-icons.net (CC BY 3.0)
+   - [icons:game-icons-56] (CC-BY-3.0-ATTRIBUTED): 56 gameplay icons by Lorc, Delapouite, Skoll, Viscious Speed, Caro Asercion, sbed & contributors via Game-icons.net (CC BY 3.0) — vector SVG paths extracted and recolored for dark-jade cards
+   - [card:bat_quai_tran] (CC-BY-3.0-ATTRIBUTED): Procedural dark-jade Guofeng card illustration compositing Game-icons.net vector focal paths (CC BY 3.0 — Lorc, Delapouite, Skoll, Viscious Speed, Caro Asercion, sbed & contributors)
+   - [card:chan_khi_ho_the] (CC-BY-3.0-ATTRIBUTED): Procedural dark-jade Guofeng card illustration compositing Game-icons.net vector focal paths (CC BY 3.0 — Lorc, Delapouite, Skoll, Viscious Speed, Caro Asercion, sbed & contributors)
+   - [card:dai_uyen] (CC-BY-3.0-ATTRIBUTED): Procedural dark-jade Guofeng card illustration compositing Game-icons.net vector focal paths (CC BY 3.0 — Lorc, Delapouite, Skoll, Viscious Speed, Caro Asercion, sbed & contributors)
+   - [card:dao] (CC-BY-3.0-ATTRIBUTED): Procedural dark-jade Guofeng card illustration compositing Game-icons.net vector focal paths (CC BY 3.0 — Lorc, Delapouite, Skoll, Viscious Speed, Caro Asercion, sbed & contributors)
+   - [card:dao_vien_ket_nghia] (CC-BY-3.0-ATTRIBUTED): Procedural dark-jade Guofeng card illustration compositing Game-icons.net vector focal paths (CC BY 3.0 — Lorc, Delapouite, Skoll, Viscious Speed, Caro Asercion, sbed & contributors)
+   - [card:dich_lo] (CC-BY-3.0-ATTRIBUTED): Procedural dark-jade Guofeng card illustration compositing Game-icons.net vector focal paths (CC BY 3.0 — Lorc, Delapouite, Skoll, Viscious Speed, Caro Asercion, sbed & contributors)
+   - [card:gia_cat_lien_no] (CC-BY-3.0-ATTRIBUTED): Procedural dark-jade Guofeng card illustration compositing Game-icons.net vector focal paths (CC BY 3.0 — Lorc, Delapouite, Skoll, Viscious Speed, Caro Asercion, sbed & contributors)
+   - [card:han_bang_kiem] (CC-BY-3.0-ATTRIBUTED): Procedural dark-jade Guofeng card illustration compositing Game-icons.net vector focal paths (CC BY 3.0 — Lorc, Delapouite, Skoll, Viscious Speed, Caro Asercion, sbed & contributors)
+   - [card:hoan_anh_giap] (CC-BY-3.0-ATTRIBUTED): Procedural dark-jade Guofeng card illustration compositing Game-icons.net vector focal paths (CC BY 3.0 — Lorc, Delapouite, Skoll, Viscious Speed, Caro Asercion, sbed & contributors)
+   - [card:kinh_loi_chan] (CC-BY-3.0-ATTRIBUTED): Procedural dark-jade Guofeng card illustration compositing Game-icons.net vector focal paths (CC BY 3.0 — Lorc, Delapouite, Skoll, Viscious Speed, Caro Asercion, sbed & contributors)
+   - [card:ky_lan_cung] (CC-BY-3.0-ATTRIBUTED): Procedural dark-jade Guofeng card illustration compositing Game-icons.net vector focal paths (CC BY 3.0 — Lorc, Delapouite, Skoll, Viscious Speed, Caro Asercion, sbed & contributors)
+   - [card:lac_bat_tu_thuc] (CC-BY-3.0-ATTRIBUTED): Procedural dark-jade Guofeng card illustration compositing Game-icons.net vector focal paths (CC BY 3.0 — Lorc, Delapouite, Skoll, Viscious Speed, Caro Asercion, sbed & contributors)
+   - [card:nam_man_nhap_xam] (CC-BY-3.0-ATTRIBUTED): Procedural dark-jade Guofeng card illustration compositing Game-icons.net vector focal paths (CC BY 3.0 — Lorc, Delapouite, Skoll, Viscious Speed, Caro Asercion, sbed & contributors)
+   - [card:ngu_coc_phong_dang] (CC-BY-3.0-ATTRIBUTED): Procedural dark-jade Guofeng card illustration compositing Game-icons.net vector focal paths (CC BY 3.0 — Lorc, Delapouite, Skoll, Viscious Speed, Caro Asercion, sbed & contributors)
+   - [card:pha_giap_tram] (CC-BY-3.0-ATTRIBUTED): Procedural dark-jade Guofeng card illustration compositing Game-icons.net vector focal paths (CC BY 3.0 — Lorc, Delapouite, Skoll, Viscious Speed, Caro Asercion, sbed & contributors)
+   - [card:phuong_thien_hoa_kich] (CC-BY-3.0-ATTRIBUTED): Procedural dark-jade Guofeng card illustration compositing Game-icons.net vector focal paths (CC BY 3.0 — Lorc, Delapouite, Skoll, Viscious Speed, Caro Asercion, sbed & contributors)
+   - [card:qua_ha_sai_cau] (CC-BY-3.0-ATTRIBUTED): Procedural dark-jade Guofeng card illustration compositing Game-icons.net vector focal paths (CC BY 3.0 — Lorc, Delapouite, Skoll, Viscious Speed, Caro Asercion, sbed & contributors)
+   - [card:quan_thach_phu] (CC-BY-3.0-ATTRIBUTED): Procedural dark-jade Guofeng card illustration compositing Game-icons.net vector focal paths (CC BY 3.0 — Lorc, Delapouite, Skoll, Viscious Speed, Caro Asercion, sbed & contributors)
+   - [card:quyet_dau] (CC-BY-3.0-ATTRIBUTED): Procedural dark-jade Guofeng card illustration compositing Game-icons.net vector focal paths (CC BY 3.0 — Lorc, Delapouite, Skoll, Viscious Speed, Caro Asercion, sbed & contributors)
+   - [card:sat] (CC-BY-3.0-ATTRIBUTED): Procedural dark-jade Guofeng card illustration compositing Game-icons.net vector focal paths (CC BY 3.0 — Lorc, Delapouite, Skoll, Viscious Speed, Caro Asercion, sbed & contributors)
+   - [card:ta_dao_sat_nhan] (CC-BY-3.0-ATTRIBUTED): Procedural dark-jade Guofeng card illustration compositing Game-icons.net vector focal paths (CC BY 3.0 — Lorc, Delapouite, Skoll, Viscious Speed, Caro Asercion, sbed & contributors)
+   - [card:thanh_cong_kiem] (CC-BY-3.0-ATTRIBUTED): Procedural dark-jade Guofeng card illustration compositing Game-icons.net vector focal paths (CC BY 3.0 — Lorc, Delapouite, Skoll, Viscious Speed, Caro Asercion, sbed & contributors)
+   - [card:thanh_long_yen_nguyet_dao] (CC-BY-3.0-ATTRIBUTED): Procedural dark-jade Guofeng card illustration compositing Game-icons.net vector focal paths (CC BY 3.0 — Lorc, Delapouite, Skoll, Viscious Speed, Caro Asercion, sbed & contributors)
+   - [card:thiem] (CC-BY-3.0-ATTRIBUTED): Procedural dark-jade Guofeng card illustration compositing Game-icons.net vector focal paths (CC BY 3.0 — Lorc, Delapouite, Skoll, Viscious Speed, Caro Asercion, sbed & contributors)
+   - [card:thiem_dien] (CC-BY-3.0-ATTRIBUTED): Procedural dark-jade Guofeng card illustration compositing Game-icons.net vector focal paths (CC BY 3.0 — Lorc, Delapouite, Skoll, Viscious Speed, Caro Asercion, sbed & contributors)
+   - [card:thuan_thu_khien_duong] (CC-BY-3.0-ATTRIBUTED): Procedural dark-jade Guofeng card illustration compositing Game-icons.net vector focal paths (CC BY 3.0 — Lorc, Delapouite, Skoll, Viscious Speed, Caro Asercion, sbed & contributors)
+   - [card:trao_hoang_phi_dien] (CC-BY-3.0-ATTRIBUTED): Procedural dark-jade Guofeng card illustration compositing Game-icons.net vector focal paths (CC BY 3.0 — Lorc, Delapouite, Skoll, Viscious Speed, Caro Asercion, sbed & contributors)
+   - [card:truong_bat_xa_mau] (CC-BY-3.0-ATTRIBUTED): Procedural dark-jade Guofeng card illustration compositing Game-icons.net vector focal paths (CC BY 3.0 — Lorc, Delapouite, Skoll, Viscious Speed, Caro Asercion, sbed & contributors)
+   - [card:tu_hung_song_co_kiem] (CC-BY-3.0-ATTRIBUTED): Procedural dark-jade Guofeng card illustration compositing Game-icons.net vector focal paths (CC BY 3.0 — Lorc, Delapouite, Skoll, Viscious Speed, Caro Asercion, sbed & contributors)
+   - [card:tu_khi_hoan] (CC-BY-3.0-ATTRIBUTED): Procedural dark-jade Guofeng card illustration compositing Game-icons.net vector focal paths (CC BY 3.0 — Lorc, Delapouite, Skoll, Viscious Speed, Caro Asercion, sbed & contributors)
+   - [card:tu_tinh] (CC-BY-3.0-ATTRIBUTED): Procedural dark-jade Guofeng card illustration compositing Game-icons.net vector focal paths (CC BY 3.0 — Lorc, Delapouite, Skoll, Viscious Speed, Caro Asercion, sbed & contributors)
+   - [card:tuyet_anh] (CC-BY-3.0-ATTRIBUTED): Procedural dark-jade Guofeng card illustration compositing Game-icons.net vector focal paths (CC BY 3.0 — Lorc, Delapouite, Skoll, Viscious Speed, Caro Asercion, sbed & contributors)
+   - [card:van_tien_te_phat] (CC-BY-3.0-ATTRIBUTED): Procedural dark-jade Guofeng card illustration compositing Game-icons.net vector focal paths (CC BY 3.0 — Lorc, Delapouite, Skoll, Viscious Speed, Caro Asercion, sbed & contributors)
+   - [card:vo_giai_kha_kich] (CC-BY-3.0-ATTRIBUTED): Procedural dark-jade Guofeng card illustration compositing Game-icons.net vector focal paths (CC BY 3.0 — Lorc, Delapouite, Skoll, Viscious Speed, Caro Asercion, sbed & contributors)
+   - [card:vo_trung_sinh_huu] (CC-BY-3.0-ATTRIBUTED): Procedural dark-jade Guofeng card illustration compositing Game-icons.net vector focal paths (CC BY 3.0 — Lorc, Delapouite, Skoll, Viscious Speed, Caro Asercion, sbed & contributors)
+   - [card:xich_tho] (CC-BY-3.0-ATTRIBUTED): Procedural dark-jade Guofeng card illustration compositing Game-icons.net vector focal paths (CC BY 3.0 — Lorc, Delapouite, Skoll, Viscious Speed, Caro Asercion, sbed & contributors)
