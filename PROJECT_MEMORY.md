@@ -2,9 +2,27 @@
 
 > **Dự án:** Cửu Châu Ẩn Kiếm / Blades of the Nine Realms (Windows Standalone Portable + Lộ trình lên Steam ở Bước 6)
 > **Ngày cập nhật:** 2026-11-26
-> **Trạng thái hiện tại:** Đã commit **Phase 2B (`120faa9`)** và hoàn thành trọn vẹn **Bước 1 + Bước 2 + Bước 3** của lộ trình 6 bước *(Đồng bộ 112 lá Online = Offline, Mở khóa Đa máy LAN/VPN 1 chạm không cần Steam/Google OAuth, Sổ tra cứu 3 Tab giữa ván + Credits CC BY 3.0 + Pipeline 36 mặt bài, kèm gói `BladesOfTheNineRealms-Portable-0.1.0.zip` `167.61 MB`, giữ sạch trong working tree chưa commit để Sếp kiểm tra)*. Bước kế tiếp là **Bước 4** (Playwright Electron E2E & Playtest đa máy) -> **Bước 5** (64 tranh + 3 BGM) -> **Bước 6** (Đưa lên Steam).
+> **Trạng thái hiện tại:** Đã commit **Phase 2B (`120faa9`)** + **Bước 1–3 (`f3d1c45`)**, và vừa hoàn thành **Bước 4** *(Khóa cổng tự động Playwright Electron E2E đa cửa sổ LAN + song ngữ VI/EN ở `960×600` & `1280×720`, vá tự khôi phục phiên LAN khi đóng/mở lại `.exe` giữa ván & đồng bộ tức thì tên mặc định trên thanh đầu trang, làm mới `BladesOfTheNineRealms-Portable-0.1.0.zip`, giữ sạch trong working tree để Sếp kiểm tra)*. Bước kế tiếp là **Bước 5** (64 tranh `25+36+3` + 3 BGM chuẩn) -> **Bước 6** (Đưa lên Steam).
 
-## 0. Bằng Chứng Kiểm Chứng Mới Nhất — Bước 1, Bước 2 & Bước 3 (`2026-11-26` · Swarm 3 Agent)
+## 0. Bằng Chứng Kiểm Chứng Mới Nhất — Bước 4: Playwright Electron E2E Đa Cửa Sổ LAN & Song Ngữ (`2026-11-26`)
+- **Commit nền:** `[main f3d1c45]` (Bước 1–3 — 47 files). Thay đổi Bước 4 đang giữ sạch trong working tree.
+- **Khung kiểm thử Playwright Electron E2E (`playwright.config.ts`, `tsconfig.e2e.json`, `e2e/`):**
+  - `e2e/helpers/electronHarness.ts`: Khởi chạy nhân Electron `45.3.3` thật với thư mục `LKDF_USER_DATA_DIR` cô lập cho từng cửa sổ, ghim kích thước CDP chuẩn điểm ảnh (`960×600` & `1280×720`), tự động giám sát `console.error`, `pageerror`, lỗi mạng và kiểm toán không tràn khung (`100vh`) + không rò rỉ chữ Tam Quốc/nhãn giả + không sót dấu tiếng Việt khi bật chế độ `EN`.
+  - `e2e/bilingual-offline-responsive.spec.ts` (**4/4 kịch bản đạt** trên cả `960×600` & `1280×720`): Kiểm tra Sảnh VI/EN, hộp thoại `Credits & Licenses` (`CC BY 3.0`), Sổ Tra Cứu 36 mặt bài (đủ 5 lá Cửu Châu mới cả VI & EN), đổi Biệt danh lưu bền qua khởi động lại ứng dụng, và ván Offline 4P bộ 112 lá + Sổ Tay 3 Tab ngay trong trận.
+  - `e2e/multi-window-lan.spec.ts` (**1/1 kịch bản tổng lực 4 cửa sổ song song đạt**): Mở đồng thời 4 tiến trình Electron độc lập (`1280×720` VI + `960×600` EN + `960×600` VI + `1280×720` EN), bật máy chủ LAN 1 chạm, xác minh chặn bắt đầu khi `<4` người (`1/8`, `2/8`, `3/8`, chờ khách `Ready`), vào phòng bằng cả 2 cách (chuỗi mời `IP:Port#Mã` & tách riêng Mã 6 ký tự + `IP:Port`), chọn tướng đồng bộ 4 cửa sổ, vào bàn đấu 112 lá thật (`Deck: 96` + `16` lá trên tay = `112`), bấm Bảng Trọng Tài (`Tạm dừng` -> `Tiếp tục`), và đóng đột ngột cửa sổ Khách 3 giữa trận rồi mở lại xác nhận tự động nối thẳng vào ghế cũ giữ nguyên biệt danh & bài trên tay.
+- **2 cải tiến/vá lỗi thực tế phát hiện nhờ Playwright E2E:**
+  1. `apps/desktop/src/App.tsx`: Tự động khôi phục phiên phòng LAN từ `lkdf-client-state.json` ở chế độ độc lập (`isSteamMode`) khi mở lại `.exe` (nếu máy chủ LAN đã tắt thì tự dọn êm token cũ sau `<=2.5s` không báo lỗi), và suy diễn đồng bộ `'Hiệp Khách'` <-> `'Wanderer'` bằng `useMemo` ngay trong cùng nhịp render khi bấm đổi `VI`/`EN` (xóa hiện tượng trễ 1 frame trên `<header>`).
+  2. `apps/desktop/electron/main.cts`: Tích hợp cờ kiểm thử cô lập `LKDF_USER_DATA_DIR` + `LKDF_E2E_HEADLESS=1` + `useContentSize` và mở khóa `allowForceClose = true` trong `before-quit`.
+- **Kết quả kiểm chứng thực tế sau lần sửa cuối:**
+  - `npm.cmd run typecheck` (gồm cả `tsconfig.e2e.json`): **`0` lỗi**.
+  - `npm.cmd run test:unit`: **17/17 files · 154/154 tests passed**.
+  - `npm.cmd run test:fuzz`: **2/2 files · 12/12 tests = 1.000/1.000 ván passed**.
+  - `npm.cmd run test:integration`: **9/9 files · 31/31 tests passed**.
+  - `npx.cmd vitest run apps/desktop/src/features/match/offlineBot.test.ts apps/desktop/src/i18n/i18nParity.test.ts`: **2/2 files · 7/7 tests passed**.
+  - `npm.cmd run assets:check`: **PASS** (`0/25` tướng, `0/36` bài, `0/3` nền, `59` runtime / `60` manifest / `0` AI, `1.15 MB`).
+  - `npm.cmd run test:e2e`: **2/2 files · 5/5 kịch bản Playwright Electron E2E PASS (`0` lỗi console, `0` lỗi tải tài nguyên, `0` tràn khung)**.
+
+## 0A-Steps123. Bằng Chứng Kiểm Chứng Bước 1, Bước 2 & Bước 3 (`2026-11-26` · Đã Commit `f3d1c45`)
 - **Commit nền:** `[main 120faa9]` (Phase 2B — 20 files). Toàn bộ thay đổi Bước 1–3 đang giữ sạch trong working tree để Sếp chép bản Portable `.zip` sang máy khác trải nghiệm trước khi commit.
 - **Bước 1 — Đồng bộ Lõi Cửu Châu 112 Lá Toàn Hệ Thống (`engine-server`):**
   - `startMatchCombat` (`combat.ts`) tự chọn `createCuuChau112Deck` khi `isCuuChauRuleset(state)`; `RoomManager.startMatch` (`apps/server/src/rooms/index.ts`) bật mặc định `enabledPacks: ['cuu_chau_core']`; `wsSchemas.ts` mở `.max(112)`; đồng bộ `DevMatchPreview.tsx`.

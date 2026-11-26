@@ -13,19 +13,25 @@
 | :---: | :--- | :---: | :---: |
 | **Phase 0** | IP Purge, BrandConfig SSOT, BuildTarget & Steamworks Spike (`77d925a`) | N/A | ✅ Hoàn thành & Commit (`77d925a`) |
 | **Phase 1** | Core `ContentRegistry`, `i18next` VI/EN, `CUU_CHAU_CORE_PACK` (`4` tông môn, `25` hiệp khách, `112` lá `28×4`), Reskin UI & Vertical Slice 4P | Windows Portable `.zip` | ✅ Hoàn thành & Commit (`c9944d0`) |
-| **Phase 2A** | Đưa 10 bộ chiêu remix + 5 lá bài mới Cửu Châu vào Engine & Bot AI, 100% VI/EN (`i18nParity`) & Cổng 500 ván Fuzz 112 lá | Repo working tree + Electron Audit | ✅ Hoàn thành & Đã kiểm chứng (`1000` ván fuzz, `14/14` UI checks) |
-| **Phase 2B** | Remix nốt 15 bộ chiêu tướng còn lại + cân bằng chỉ số & Portable `.zip` mới | Windows Portable `.zip` | 👉 Kế tiếp |
-| **Phase 2C** | AI Art Factory: 25 chân dung + 32 tranh lá bài + 3 nền mới | Windows Portable `.zip` | ⬜ Chờ |
-| **Phase 3** | Audio Studio, Game Feel, Tái cấu trúc UI/UX + Chiến dịch cốt truyện | Windows Portable `.zip` | ⬜ Chờ |
-| **Phase 4** | Hoàn thiện Steamworks (Lobby P2P, Cloud Save, Achievements) + Xuất bản Steam | Steam Build + `.exe` | ⬜ Chờ |
-| **Phase 5** | Post-Launch LiveOps & Content Pack mở rộng | Steam Update | ⬜ Chờ |
+| **Phase 2A** | Đưa 10 bộ chiêu remix + 5 lá bài mới Cửu Châu vào Engine & Bot AI, 100% VI/EN (`i18nParity`) & Cổng 500 ván Fuzz 112 lá | Repo + Electron Audit | ✅ Hoàn thành & Commit (`4facc12`) |
+| **Phase 2B** | Remix nốt 15 bộ chiêu tướng còn lại (25/25 độc bản) + đo cân bằng 500 ván & Portable `.zip` | Windows Portable `.zip` | ✅ Hoàn thành & Commit (`120faa9`) |
+| **Bước 1–3 (Đa Máy)** | Đồng bộ 112 lá Online = Offline, Mở phòng LAN/VPN 1 chạm (`Guest Auth` + `jsonStore`), 56 icon 36 mặt bài, Sổ Tay 3 Tab giữa ván & Credits `CC BY 3.0` | Windows Portable `.zip` | ✅ Hoàn thành & Commit (`f3d1c45`) |
+| **Bước 4 (Cổng E2E)** | Khóa cổng kiểm thử tự động Playwright Electron E2E đa cửa sổ LAN (4P) + song ngữ VI/EN ở `960×600` & `1280×720` + tự nối lại ván khi đóng mở app | Playwright Electron + `.zip` | ✅ Hoàn thành & Đã kiểm chứng (`5/5` E2E specs PASS) |
+| **Bước 5 (Art & BGM)** | Sản xuất 64 tranh minh họa Cửu Châu (`25` hiệp khách + `36` lá bài + `3` cảnh nền) + 3 bản nhạc nền dài chuẩn `-20 LUFS` | Windows Portable `.zip` | 👉 Kế tiếp |
+| **Bước 6 (Steam)** | Hoàn thiện Steamworks (Lobby P2P, Cloud Save, Achievements, DLC), Store Capsules, Trailer & Xuất bản Steam | Steam Build + `.exe` | ⬜ Chờ |
 
-### Chi Tiết Phase 1 & Phase 2A — Hoàn Thành & Kiểm Chứng Thực Tế (`2026-11-26`)
+### Chi Tiết Phase 1–2B & Bước 1–4 — Hoàn Thành & Kiểm Chứng Thực Tế (`2026-11-26`)
 - [x] **Phase 1A — Nền tảng mở rộng & Song ngữ:** Tạo `utils/shuffle.ts`, `GameEvent`, `ContentRegistry`, 8 primitive phản ứng (`primitives.ts`), `actionDescriptor.ts`, `IMatchTransport`, tích hợp `i18next` + `LanguageToggle` (`VI`/`EN`) và script `package:win:zip`.
 - [x] **Phase 1B — Gói IP gốc `CUU_CHAU_CORE_PACK`, Reskin UI & Portable `.zip` (Commit `c9944d0`):** Hoàn thành 4 tông môn (`雲/鐵/炎/影`), 4 vai (`Minh Chủ/Hộ Pháp/Nghĩa Quân/Ám Ảnh`), 25 hiệp khách song ngữ, bộ bài 112 lá, `formatCuuChauDisplayText`, test `cuuChauPack.test.ts` (4/4) và đóng gói `BladesOfTheNineRealms-Portable-0.1.0.zip`.
-- [x] **Phase 2A — Gameplay Core Remix, 5 Lá Mới Cửu Châu, Song Ngữ 100% & Fuzz 500 Ván:**
+- [x] **Phase 2A — Gameplay Core Remix, 5 Lá Mới Cửu Châu, Song Ngữ 100% & Fuzz 500 Ván (Commit `4facc12`):**
   - Chạy thật 10 bộ chiêu remix Cửu Châu & 5 lá bài mới (`pha_giap_tram`, `chan_khi_ho_the`, `kinh_loi_chan`, `hoan_anh_giap`, `tu_khi_hoan`) trong `packages/shared` + Bot AI + Desktop UI; vá triệt để lỗi chọn trùng mục tiêu `ASK_LIU_LI` qua `excludedSeats`.
   - Hoàn thiện 100% song ngữ VI/EN mọi màn hình/hộp thoại (`i18nParity.test.ts` **3/3** đạt 0 dấu tiếng Việt lọt `EN`), kiểm chứng `typecheck` 0 lỗi, `build` thoát 0, `test:unit` **17/17 files · 137/137 tests**, `test:fuzz` **1.000/1.000 ván** (`500` chuẩn + `500` Cửu Châu 112 lá, 0 deadlock), `test:integration` **7/7 files · 26/26 tests**, `offlineBot.test.ts` **4/4**, `assets:check` **PASS**, và Electron `45.3.3` Live UI Audit **14/14 checks PASS** (`1280×720` & `960×600`).
+- [x] **Phase 2B — Hoàn tất 25/25 Bộ Chiêu Hiệp Khách Độc Bản & Đo Cân Bằng 500 Ván (Commit `120faa9`):** Remix đủ 15 tướng còn lại, vượt `153/153` unit tests và `1.000/1.000` ván fuzz.
+- [x] **Bước 1–3 — Đồng bộ 112 Lá Online = Offline, Mở Khóa Đa Máy LAN/VPN 1 Chạm & Sổ Tra Cứu Giữa Ván (Commit `f3d1c45`):** Bật mặc định `cuu_chau_core` 112 lá trên `apps/server`, nhúng máy chủ LAN lưu JSON thuần JS + `Guest Auth` gắn `clientDeviceId`, sao chép nhanh `IP:Port#MãPhòng`, 56 icon riêng cho 36 mặt bài, Sổ Tay 3 Tab trong trận, hộp thoại `CreditsLicensesModal` (`CC BY 3.0`) + `THIRD_PARTY_NOTICES.txt`.
+- [x] **Bước 4 — Khóa Cổng Kiểm Thử Tự Động Playwright Electron E2E Đa Cửa Sổ LAN & Song Ngữ (`960×600` & `1280×720`):**
+  - Thiết lập `playwright.config.ts`, `tsconfig.e2e.json`, `e2e/helpers/electronHarness.ts`, `e2e/bilingual-offline-responsive.spec.ts` và `e2e/multi-window-lan.spec.ts` (`npm run test:e2e`).
+  - Vá 2 điểm thực tế do E2E phát hiện: đồng bộ tức thì tên mặc định `'Hiệp Khách'` <-> `'Wanderer'` trên thanh đầu trang khi chuyển ngôn ngữ `VI`/`EN` và tự khôi phục phiên phòng LAN khi đóng/mở lại ứng dụng giữa ván (`App.tsx`), kèm giải phóng khóa đóng cửa sổ khi thoát tiến trình (`main.cts`).
+  - Đã kiểm chứng thực tế: `typecheck` `0` lỗi, `test:unit` **17/17 files · 154/154 tests**, `test:fuzz` **1.000/1.000 ván**, `test:integration` **9/9 files · 31/31 tests**, `offlineBot` + `i18nParity` **7/7 tests**, `assets:check` **PASS**, và `npm run test:e2e` **5/5 kịch bản Playwright Electron E2E PASS (`0` lỗi console, `0` tràn khung, `0` dấu tiếng Việt lọt EN)** + làm mới `BladesOfTheNineRealms-Portable-0.1.0.zip`.
 
 ---
 

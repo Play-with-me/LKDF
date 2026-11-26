@@ -223,16 +223,33 @@ export function App() {
   );
   const [lanHostStatus, setLanHostStatus] = useState<LanHostStatus | null>(null);
 
-  const { i18n } = useTranslation();
+  const { t: _subscribeLocale, i18n } = useTranslation();
+  void _subscribeLocale;
   const isEn = i18n.language === 'en';
   const [health, setHealth] = useState<HealthCheckResponse | null>(null);
-  const [profile, setProfile] = useState<UserProfile | null>(
+  const [rawProfile, setProfile] = useState<UserProfile | null>(
     initialDevPreviewMode === 'nickname' || isLobbyPreview
       ? LOBBY_PREVIEW_PROFILE
       : isSteamMode
         ? createLocalSteamProfile()
         : null,
   );
+  const profile = useMemo<UserProfile | null>(() => {
+    if (!rawProfile) return null;
+    if (
+      isSteamMode &&
+      !localDisplayName &&
+      rawProfile.userId === 'steam_local_player' &&
+      (rawProfile.displayName === 'Hiệp Khách' ||
+        rawProfile.displayName === 'Wanderer')
+    ) {
+      const localized = isEn ? 'Wanderer' : 'Hiệp Khách';
+      return rawProfile.displayName === localized
+        ? rawProfile
+        : { ...rawProfile, displayName: localized };
+    }
+    return rawProfile;
+  }, [isEn, isSteamMode, localDisplayName, rawProfile]);
   const [offlineMode, setOfflineMode] = useState<PlayerCount | 'setup' | null>(null);
   const offlineMatchStartRef = useRef<number>(Date.now());
   const offlineRecordedRef = useRef<boolean>(false);
@@ -273,20 +290,6 @@ export function App() {
       ? `${GAME_BRAND.title.en} — ${GAME_BRAND.subtitle.en}`
       : `${GAME_BRAND.title.vi} — ${GAME_BRAND.title.en}`;
   }, [isEn]);
-
-  useEffect(() => {
-    if (!isSteamMode || localDisplayNameRef.current) return;
-    setProfile((prev) => {
-      if (!prev || prev.userId !== 'steam_local_player') return prev;
-      if (prev.displayName !== 'Hiệp Khách' && prev.displayName !== 'Wanderer') {
-        return prev;
-      }
-      const localized = isEn ? 'Wanderer' : 'Hiệp Khách';
-      return prev.displayName === localized
-        ? prev
-        : { ...prev, displayName: localized };
-    });
-  }, [isEn, isSteamMode]);
 
   useEffect(() => {
     let active = true;
@@ -353,6 +356,23 @@ export function App() {
                 }
               })
               .catch(() => undefined);
+          }
+          if (initialState.sessionToken) {
+            const savedToken = initialState.sessionToken;
+            const savedClient = createApiClient(initialState.serverUrl);
+            void savedClient
+              .getMe(savedToken, AbortSignal.timeout(2500))
+              .then((remoteProfile) => {
+                if (!active) return;
+                setProfile(remoteProfile);
+                setSessionToken(savedToken);
+              })
+              .catch(() => {
+                if (!active) return;
+                void saveClientStatePatch({ sessionToken: null }).catch(
+                  () => undefined,
+                );
+              });
           }
           return;
         }

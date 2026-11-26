@@ -53,12 +53,17 @@ function loadBrandConfig(): DesktopBrandConfig {
   return DEFAULT_BRAND_CONFIG;
 }
 
+const customUserDataDir = process.env['LKDF_USER_DATA_DIR']?.trim();
+if (customUserDataDir) {
+  app.setPath('userData', path.resolve(customUserDataDir));
+}
+
 const BRAND_CONFIG = loadBrandConfig();
 const BUILD_TARGET: 'steam' | 'standalone' =
   process.env['BUILD_TARGET'] === 'standalone' ? 'standalone' : 'steam';
 const STEAM_STATUS: SteamRuntimeStatus = initSteamBridge(
   BRAND_CONFIG.steamAppId,
-  BUILD_TARGET === 'steam',
+  BUILD_TARGET === 'steam' && process.env['LKDF_E2E_HEADLESS'] !== '1',
 );
 
 type IdentityRoleKey = 'LORD' | 'LOYALIST' | 'REBEL' | 'SPY';
@@ -756,21 +761,29 @@ function getTargetDisplay(): Electron.Display {
 function createMainWindow(): BrowserWindow {
   allowForceClose = false;
 
+  const isHeadlessE2e = process.env['LKDF_E2E_HEADLESS'] === '1';
   const steamWindowMode = process.env['STEAM_WINDOW_MODE']?.trim().toLowerCase();
-  const isWindowedOverlayTest = steamWindowMode === 'windowed';
+  const isWindowedOverlayTest = steamWindowMode === 'windowed' || isHeadlessE2e;
+  const envWidth = Number(process.env['LKDF_E2E_WIDTH']);
+  const envHeight = Number(process.env['LKDF_E2E_HEIGHT']);
+  const windowedWidth =
+    Number.isInteger(envWidth) && envWidth >= 960 ? envWidth : 1280;
+  const windowedHeight =
+    Number.isInteger(envHeight) && envHeight >= 600 ? envHeight : 720;
   const initialDisplay = getTargetDisplay();
   const { x, y, width, height } = initialDisplay.bounds;
 
   const win = new BrowserWindow({
     x: isWindowedOverlayTest ? undefined : x,
     y: isWindowedOverlayTest ? undefined : y,
-    width: isWindowedOverlayTest ? 1280 : width,
-    height: isWindowedOverlayTest ? 720 : height,
+    width: isWindowedOverlayTest ? windowedWidth : width,
+    height: isWindowedOverlayTest ? windowedHeight : height,
+    useContentSize: isWindowedOverlayTest,
     minWidth: 960,
     minHeight: 600,
     fullscreenable: true,
     show: false,
-    frame: isWindowedOverlayTest,
+    frame: isWindowedOverlayTest && !isHeadlessE2e,
     backgroundColor: '#090807',
     title: `${BRAND_CONFIG.title.vi} — ${BRAND_CONFIG.title.en}`,
     autoHideMenuBar: true,
@@ -809,7 +822,9 @@ function createMainWindow(): BrowserWindow {
       win.setBounds(activeDisplay.bounds);
       win.setFullScreen(true);
     }
-    win.show();
+    if (!isHeadlessE2e) {
+      win.show();
+    }
   });
 
   win.on('app-command', (_event, command) => {
@@ -821,7 +836,7 @@ function createMainWindow(): BrowserWindow {
   });
 
   win.on('close', (event) => {
-    if (!matchCloseGuardActive || allowForceClose) {
+    if (!matchCloseGuardActive || allowForceClose || isHeadlessE2e) {
       return;
     }
     event.preventDefault();
@@ -975,6 +990,7 @@ app.whenReady().then(() => {
 });
 
 app.on('before-quit', () => {
+  allowForceClose = true;
   void stopLocalAuthCallbackServer();
   void stopEmbeddedLanServer();
 });

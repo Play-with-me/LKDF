@@ -20,6 +20,8 @@ out/
 *.log
 coverage/
 TestResults/
+test-results/
+playwright-report/
 
 # Raw unoptimized graphic source files (keep compressed .webp inside apps/desktop/src/assets)
 raw-assets/*
