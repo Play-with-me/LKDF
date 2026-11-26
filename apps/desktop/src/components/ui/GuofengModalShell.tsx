@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, type ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import { getUiAssetUrl } from '../../lib/assetCatalog.js';
 import { prefersReducedMotion } from '../../lib/devicePreferences.js';
 import { GameIcon, type GameIconName } from '../icons/index.js';
@@ -30,6 +31,8 @@ export function GuofengModalShell({
   footer,
   children,
 }: GuofengModalShellProps) {
+  const { i18n } = useTranslation();
+  const isEn = i18n.language === 'en';
   const dialogRef = useRef<HTMLDialogElement | null>(null);
   const generatedTitleId = useId();
   const titleId = ariaLabelledBy ?? generatedTitleId;
@@ -132,11 +135,11 @@ export function GuofengModalShell({
               <button
                 type="button"
                 onClick={onClose}
-                aria-label="Đóng hộp thoại"
+                aria-label={isEn ? 'Close dialog' : 'Đóng hộp thoại'}
                 className="inline-flex cursor-pointer items-center gap-1 rounded-md border border-[#806345]/80 bg-[#231A14] px-2.5 py-1 text-xs font-medium text-[#EFE6D5] transition-colors hover:border-[#E6BE6C] hover:text-[#FFF8ED] focus-visible:outline-2 focus-visible:outline-[#E6BE6C]"
               >
                 <GameIcon name="ui:x" size={12} />
-                <span>Đóng</span>
+                <span>{isEn ? 'Close' : 'Đóng'}</span>
               </button>
             ) : null}
           </div>

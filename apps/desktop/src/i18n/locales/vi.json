@@ -7,7 +7,12 @@
     "backToMenu": "Về menu",
     "backToMainMenu": "Về menu chính",
     "settings": "Cài đặt",
-    "language": "Ngôn ngữ"
+    "language": "Ngôn ngữ",
+    "clear": "Xóa"
+  },
+  "heroCollection": {
+    "clearSearch": "Xóa từ khóa",
+    "suggestionsAria": "Gợi ý tìm tướng"
   },
   "lobby": {
     "mainMenuAria": "Menu chính",

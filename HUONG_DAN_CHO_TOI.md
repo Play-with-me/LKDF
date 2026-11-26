@@ -33,9 +33,11 @@ Vì bạn là người mới và không lập trình, bạn **không cần đọ
 
 ## 2. Lộ Trình Từ Đầu Đến Cuối & Các Câu Lệnh "Copy – Dán" Cho Bạn
 
-**2026-11-25 · ✅ ĐÃ XONG Phase 1 (`Cửu Châu Ẩn Kiếm` / `Blades of the Nine Realms` — ContentRegistry, Song Ngữ Việt–Anh, Bộ Bài 112 Lá `28×4`, 25 Hiệp Khách Mới + 10 Bộ Chiêu Remix, Vertical Slice 4P & Bản Portable `.zip`).**
-- **File chơi thử trên mọi máy Windows (không cần cài, giải nén là chạy):** `apps/desktop/release/BladesOfTheNineRealms-Portable-0.1.0.zip` (**166.57 MB** — mở `Blades of the Nine Realms.exe` bên trong).
-- 👉 **BẠN ĐANG Ở ĐÂY — Kiểm tra bản Portable `.zip` trên máy Windows khác (Đấu với Máy 4–8 người, đổi nút VI/EN) rồi nhắn tôi:** `Bắt đầu Phase 2` *(tạo trọn bộ 25 chân dung hiệp khách + 32 tranh lá bài + 3 nền Cửu Châu Ẩn Kiếm sạch bản quyền và ra bản Portable `.zip` mới có hình ảnh hoàn chỉnh).*
+**2026-11-26 · ✅ ĐÃ XONG Phase 1 Commit (`c9944d0`) & Phase 2A (`Cửu Châu Ẩn Kiếm` — 10 Bộ Chiêu Remix, 5 Lá Bài Mới `112` Lá, Bot AI, Song Ngữ VI/EN 100% & 1.000 Ván Fuzz Test).**
+- **Vừa hoàn thành:** Đưa 10 bộ chiêu remix cùng 5 lá bài mới (*Phá Giáp Trảm, Chân Khí Hộ Thể, Kinh Lôi Chấn, Huyễn Ảnh Giáp, Tụ Khí Hoàn*) vào chạy thật trong engine & Bot AI, vá lỗi chọn mục tiêu trùng lặp của *Huyễn Mộng Chú* (`ASK_LIU_LI`), hoàn thiện 100% song ngữ VI/EN mọi màn hình, vượt cổng **500/500 ván Cửu Châu 112 lá + 500/500 ván chuẩn (1.000 ván, 0 treo)**, `17/17` unit files (`137/137`), `7/7` integration (`26/26`), `i18nParity` (`3/3`), `offlineBot` (`4/4`), `assets:check` và **14/14 kiểm thử UI Electron `45.3.3` ở `1280×720` & `960×600`** (`0` chữ Tam Quốc, `0` dấu tiếng Việt lọt sang EN). *(Phase 2A đang giữ nguyên trong working tree chưa commit theo đúng yêu cầu của bạn).*
+- 👉 **BẠN ĐANG Ở ĐÂY — Chơi thử bàn 4–8 ghế (VI/EN) hoặc mở đầu Phase 2B rồi nhắn tôi:** `Commit Phase 2A lại cho tôi, rồi bắt đầu Phase 2B: remix nốt 15 bộ chiêu tướng còn lại để 25/25 hiệp khách Cửu Châu có bản sắc riêng, chạy 500 ván fuzz test + đóng gói Portable .zip mới và báo cáo kiểu báo cáo sếp.`
+
+**2026-11-25 · ✅ ĐÃ XONG Phase 1 (`c9944d0` — `Cửu Châu Ẩn Kiếm` / `Blades of the Nine Realms` — ContentRegistry, Song Ngữ Việt–Anh, Bộ Bài 112 Lá `28×4`, 25 Hiệp Khách Mới, Vertical Slice 4P & Bản Portable `.zip`).**
 
 **2026-11-25 · ✅ ĐÃ XONG Phase 0 (`77d925a` — IP Purge, BrandConfig SSOT, BuildTarget Steam & OfflineMatchScreen, Steamworks Electron 45 Spike).**
 

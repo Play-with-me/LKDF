@@ -200,12 +200,18 @@ function FuseTimer({ deadline, paused, pausedRemainingMs, totalSeconds }: {
   pausedRemainingMs: number | null;
   totalSeconds: number;
 }) {
+  const { i18n } = useTranslation();
+  const isEn = i18n.language === 'en';
   const remaining = paused ? pausedRemainingMs : deadline ? Date.parse(deadline) - Date.now() : null;
   if (remaining === null || !Number.isFinite(remaining) || totalSeconds <= 0) return null;
   const total = totalSeconds * 1000;
   const progress = Math.min(100, Math.max(0, remaining / total * 100));
   return (
-    <div className="lkdf-timer-fuse" role="img" aria-label={paused ? 'Đồng hồ đang dừng' : 'Thời gian còn lại'}>
+    <div
+      className="lkdf-timer-fuse"
+      role="img"
+      aria-label={paused ? (isEn ? 'Timer paused' : 'Đồng hồ đang dừng') : (isEn ? 'Time remaining' : 'Thời gian còn lại')}
+    >
       <div className="lkdf-timer-fuel" data-burning={!paused && progress > 0}
         style={{ width: progress + '%', animationDuration: Math.max(0, remaining) + 'ms' }}>
         <span className="lkdf-timer-spark" />
@@ -713,7 +719,10 @@ export function MatchArenaLayout({
         return;
       }
       const intent: DragDropIntent = onDropDiscardCard
-        ? { kind: 'toggle_select', promptVi: 'Thả bài xuống bàn để bỏ' }
+        ? {
+            kind: 'toggle_select',
+            promptVi: locale === 'en' ? 'Drop card to discard' : 'Thả bài xuống bàn để bỏ',
+          }
         : buildCardDragDropIntent(playerView, card, selection);
       if (intent.kind === 'blocked' && !intent.reasonVi) return;
       dragSessionRef.current = {
@@ -919,7 +928,11 @@ export function MatchArenaLayout({
           onToggleCard(card.id);
         }
         onToggleTarget(hover.nextSeatIdx);
-        setDragFeedbackVi('Đã chọn người cầm Vũ khí — hãy bấm chọn tiếp nạn nhân trong tầm đánh!');
+        setDragFeedbackVi(
+          locale === 'en'
+            ? 'Weapon holder selected — now click a victim within their range!'
+            : 'Đã chọn người cầm Vũ khí — hãy bấm chọn tiếp nạn nhân trong tầm đánh!',
+        );
         return;
       }
 
@@ -964,6 +977,7 @@ export function MatchArenaLayout({
     selection.selectedCardIds,
   ]);
 
+  const isEn = locale === 'en';
   const selfSlots: ReadonlyArray<{
     readonly slotKey: EquipmentSlotKey;
     readonly iconName: Parameters<typeof GameIcon>[0]['name'];
@@ -974,29 +988,29 @@ export function MatchArenaLayout({
     {
       slotKey: 'weapon',
       iconName: 'broadsword',
-      emptyLabel: 'Vũ khí (Tầm 1)',
-      shortLabel: 'Vũ khí',
+      emptyLabel: isEn ? 'Weapon (Range 1)' : 'Vũ khí (Tầm 1)',
+      shortLabel: isEn ? 'Weapon' : 'Vũ khí',
       card: selfPlayer?.equipments.weapon ?? null,
     },
     {
       slotKey: 'armor',
       iconName: 'bordered-shield',
-      emptyLabel: 'Giáp · Trống',
-      shortLabel: 'Giáp',
+      emptyLabel: isEn ? 'Armor · Empty' : 'Giáp · Trống',
+      shortLabel: isEn ? 'Armor' : 'Giáp',
       card: selfPlayer?.equipments.armor ?? null,
     },
     {
       slotKey: 'plusOne',
       iconName: 'horse-head',
-      emptyLabel: 'Ngựa +1 · Trống',
-      shortLabel: 'Ngựa +1',
+      emptyLabel: isEn ? 'Footwork +1 · Empty' : 'Ngựa +1 · Trống',
+      shortLabel: isEn ? 'Steed +1' : 'Ngựa +1',
       card: selfPlayer?.equipments.plusOneHorse ?? null,
     },
     {
       slotKey: 'minusOne',
       iconName: 'cavalry',
-      emptyLabel: 'Ngựa -1 · Trống',
-      shortLabel: 'Ngựa -1',
+      emptyLabel: isEn ? 'Steed -1 · Empty' : 'Ngựa -1 · Trống',
+      shortLabel: isEn ? 'Steed -1' : 'Ngựa -1',
       card: selfPlayer?.equipments.minusOneHorse ?? null,
     },
   ];
@@ -1021,9 +1035,13 @@ export function MatchArenaLayout({
     const dragHovered = dragEligible && dragState?.hoverSeatIdx === opp.seatIndex;
     const dragHoverLabel =
       dragState?.intent.kind === 'seat'
-        ? `Thả để ${dragState.intent.actionVerbVi}!`
+        ? isEn
+          ? `Drop to ${dragState.intent.actionVerbVi}!`
+          : `Thả để ${dragState.intent.actionVerbVi}!`
         : dragState?.intent.kind === 'seat_pair_step1'
-          ? 'Thả chọn người cầm Vũ khí!'
+          ? isEn
+            ? 'Drop to pick Weapon holder!'
+            : 'Thả chọn người cầm Vũ khí!'
           : undefined;
 
     const isTopBand = coord.topPct <= 24;
@@ -1079,7 +1097,7 @@ export function MatchArenaLayout({
         />
         {thinkingSeat === opp.seatIndex ? (
           <span role="status" className="pointer-events-none absolute right-1 top-full z-10 mt-0.5 whitespace-nowrap rounded border border-[#C89B4B]/70 bg-[#14100D] px-1.5 text-[10px] font-semibold leading-4 text-[#F5EBD6]">
-            Đang suy nghĩ…
+            {isEn ? 'Thinking…' : 'Đang suy nghĩ…'}
           </span>
         ) : null}
         {(prompt.actorSeat === opp.seatIndex || (playerView.activeInterrupt === null && isCurrentTurnOwner)) &&
@@ -1225,7 +1243,9 @@ export function MatchArenaLayout({
       <GameIcon name="archery-target" size={12} className="shrink-0 text-[#FBBF24]" />
       <span>
         {dragState.intent.kind === 'seat'
-          ? `Kéo thả thẳng lên 1 ghế sáng viền vàng để ${dragState.intent.actionVerbVi}`
+          ? isEn
+            ? `Drag onto a gold-highlighted seat to ${dragState.intent.actionVerbVi}`
+            : `Kéo thả thẳng lên 1 ghế sáng viền vàng để ${dragState.intent.actionVerbVi}`
           : dragState.intent.actionLabelVi}
       </span>
     </div>
@@ -1246,7 +1266,9 @@ export function MatchArenaLayout({
       className="pointer-events-auto flex w-max max-w-full items-center gap-2 rounded-full border border-[#B89352]/65 bg-[#120E0B]/92 px-3 py-1 text-[10.5px] font-medium text-[#F4EBD8] shadow-[0_8px_20px_rgba(0,0,0,0.68)]"
     >
       <span className="truncate">
-        Mẹo nhanh: Bấm lá bài (phím 1–9) rồi chọn tướng sáng viền vàng · Nhấn E để kết thúc lượt
+        {isEn
+          ? 'Tip: Click a card (keys 1–9) then pick a gold-highlighted seat · Press E to end turn'
+          : 'Mẹo nhanh: Bấm lá bài (phím 1–9) rồi chọn tướng sáng viền vàng · Nhấn E để kết thúc lượt'}
       </span>
       <button
         type="button"
@@ -1256,7 +1278,7 @@ export function MatchArenaLayout({
         }}
         className="shrink-0 cursor-pointer rounded-full border border-[#E6BE6C]/70 bg-[#2C2115] px-2 py-0.5 text-[10px] font-bold text-[#FDE68A] transition-colors hover:bg-[#3F2F1E]"
       >
-        Đã hiểu
+        {isEn ? 'Got it' : 'Đã hiểu'}
       </button>
     </div>
   ) : null;
@@ -1269,7 +1291,7 @@ export function MatchArenaLayout({
   ) : showLocalReaction ? (
     <div className="lkdf-dock-floating-bar lkdf-battle-reaction lkdf-scroll pointer-events-auto max-h-[min(140px,28dvh)] overflow-y-auto">
       {!isPlayPhaseSelf && availableConverts.length > 0 ? (
-        <div className="flex flex-wrap items-center justify-center gap-1.5" role="group" aria-label="Kỹ năng phản ứng">
+        <div className="flex flex-wrap items-center justify-center gap-1.5" role="group" aria-label={isEn ? 'Reaction skills' : 'Kỹ năng phản ứng'}>
           {skillControls}
         </div>
       ) : null}
@@ -1287,8 +1309,12 @@ export function MatchArenaLayout({
         <GameIcon name="card-discard" size={14} />
         <span>
           {isDiscardReady
-            ? `Bỏ ${discardRemaining} lá đã chọn (${selectedToDiscard.length}/${discardRemaining})`
-            : `Chọn ${discardRemaining} lá bài để bỏ (${selectedToDiscard.length}/${discardRemaining})`}
+            ? isEn
+              ? `Discard ${discardRemaining} selected (${selectedToDiscard.length}/${discardRemaining})`
+              : `Bỏ ${discardRemaining} lá đã chọn (${selectedToDiscard.length}/${discardRemaining})`
+            : isEn
+              ? `Select ${discardRemaining} to discard (${selectedToDiscard.length}/${discardRemaining})`
+              : `Chọn ${discardRemaining} lá bài để bỏ (${selectedToDiscard.length}/${discardRemaining})`}
         </span>
         {isDiscardReady ? <kbd className="font-mono-num text-[10px] opacity-80">[Enter]</kbd> : null}
       </button>
@@ -1299,12 +1325,12 @@ export function MatchArenaLayout({
           className="inline-flex min-h-[38px] cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-[#806345]/75 bg-[#231A14] px-3 py-1.5 text-xs font-semibold text-[#EDE3D2] hover:border-[#D99B26] hover:bg-[#2C2017]"
         >
           <GameIcon name="ui:undo" size={13} />
-          <span>Hủy chọn</span>
+          <span>{isEn ? 'Clear' : 'Hủy chọn'}</span>
           <kbd className="font-mono-num text-[10px] opacity-75">[Esc]</kbd>
         </button>
       ) : null}
       {stagedDiscardCards.length > 0 ? (
-        <div className="flex flex-wrap items-center justify-center gap-1" role="group" aria-label="Bài đã kéo chờ bỏ">
+        <div className="flex flex-wrap items-center justify-center gap-1" role="group" aria-label={isEn ? 'Staged discard cards' : 'Bài đã kéo chờ bỏ'}>
                       {stagedDiscardCards.map((card) => {
                         const cardName = getCuuChauCardDisplay(card.cardKey, locale, card.nameVi).name;
                         return (
@@ -1326,7 +1352,7 @@ export function MatchArenaLayout({
               onClick={() => setStagedDiscardIds([])}
               className="inline-flex min-h-[30px] cursor-pointer items-center rounded border border-[#6E7889]/70 bg-[#1B2028] px-2 py-0.5 text-[11px] font-semibold text-[#E2E8F0] hover:border-[#E6BE6C]"
             >
-              Hoàn tác hết
+              {isEn ? 'Undo All' : 'Hoàn tác hết'}
             </button>
           ) : null}
         </div>
@@ -1430,8 +1456,12 @@ export function MatchArenaLayout({
             <GameIcon name={connectionLost ? 'ui:wifi-off' : 'ui:bot'} size={14} className="shrink-0" />
             <span className="truncate">
               {connectionLost
-                ? 'Mất kết nối mạng — Đang tự động kết nối lại... Ghế của bạn đang được Máy đánh hộ tạm thời'
-                : 'Bạn vừa quá giờ thao tác — Ghế của bạn đang được Máy đánh hộ tạm thời'}
+                ? isEn
+                  ? 'Connection lost — Reconnecting automatically... Bot is temporarily playing your seat'
+                  : 'Mất kết nối mạng — Đang tự động kết nối lại... Ghế của bạn đang được Máy đánh hộ tạm thời'
+                : isEn
+                  ? 'Turn timed out — Bot is temporarily playing your seat'
+                  : 'Bạn vừa quá giờ thao tác — Ghế của bạn đang được Máy đánh hộ tạm thời'}
             </span>
           </span>
           <button
@@ -1440,7 +1470,13 @@ export function MatchArenaLayout({
             className="inline-flex shrink-0 cursor-pointer items-center gap-1 rounded border border-[#D99B26] bg-[#18120E] px-2.5 py-0.5 text-[11px] font-bold text-[#FBBF24] hover:bg-[#281E17]"
           >
             <GameIcon name="ui:refresh" size={12} />
-            {connectionLost ? 'Kết nối lại ngay' : 'Lấy lại điều khiển'}
+            {connectionLost
+              ? isEn
+                ? 'Reconnect Now'
+                : 'Kết nối lại ngay'
+              : isEn
+                ? 'Resume Control'
+                : 'Lấy lại điều khiển'}
           </button>
         </div>
       ) : null}
@@ -1516,18 +1552,22 @@ export function MatchArenaLayout({
                 className="flex w-full max-w-[min(430px,calc(100%-2rem))] flex-col items-center gap-2 rounded-2xl border border-[#CA9A48]/75 bg-[#16110E]/95 px-5 py-4 text-center shadow-[0_20px_56px_rgba(0,0,0,0.85)]"
               >
                 <h2 className="font-serif-title text-[18px] font-bold text-[#FDE68A] sm:text-xl">
-                  Tất cả đã chốt tướng
+                  {isEn ? 'All Generals Locked In' : 'Tất cả đã chốt tướng'}
                 </h2>
                 <span
                   key={openingSeconds}
                   className="lkdf-countdown-num font-serif-title tabular-nums text-5xl font-black text-[#FEF08A] sm:text-6xl"
                 >
-                  {openingSeconds > 0 ? openingSeconds : 'Khai trận'}
+                  {openingSeconds > 0 ? openingSeconds : isEn ? 'Begin!' : 'Khai trận'}
                 </span>
                 <p className="text-[12px] font-medium text-[#CBD5E1]">
                   {openingSeconds > 0
-                    ? 'Chuẩn bị chia 4 lá bài mở màn…'
-                    : 'Đang chia bài vào trận…'}
+                    ? isEn
+                      ? 'Preparing to deal 4 opening cards…'
+                      : 'Chuẩn bị chia 4 lá bài mở màn…'
+                    : isEn
+                      ? 'Dealing cards into the arena…'
+                      : 'Đang chia bài vào trận…'}
                 </p>
                 <div className="mt-1 flex flex-wrap items-center justify-center gap-1.5">
                   {playerView.players.map((p) => {
@@ -1538,7 +1578,9 @@ export function MatchArenaLayout({
                         className="inline-flex items-center gap-1 rounded border border-[#CA9A48]/40 bg-[#120D0A]/90 px-2 py-0.5 text-[10.5px] font-semibold text-[#F4EFE6]"
                       >
                         <span className="text-[#94A3B8]">{p.displayName}:</span>
-                        <span className="text-[#FDE68A]">{heroDef?.nameVi ?? '…'}</span>
+                        <span className="text-[#FDE68A]">
+                          {p.heroId ? (getCuuChauHeroDisplay(p.heroId, locale)?.name ?? heroDef?.nameVi ?? '…') : '…'}
+                        </span>
                         {p.maxHp > 0 ? (
                           <span className="font-mono-num inline-flex items-center gap-0.5 text-[#FCA5A5]">
                             ({p.maxHp}
@@ -1562,7 +1604,7 @@ export function MatchArenaLayout({
                     <div className="flex items-center justify-between gap-3">
                       <div className="inline-flex items-center gap-1.5 rounded-full border border-[#CA9A48]/55 bg-[#1B130E]/90 px-3 py-1 text-[11px] font-bold tracking-wider text-[#FDE68A] uppercase">
                         <GameIcon name="drama-masks" size={13} className="text-[#E6BE6C]" />
-                        <span>Rút Thân Phận</span>
+                        <span>{isEn ? 'Draw Allegiance' : 'Rút Thân Phận'}</span>
                       </div>
                       <button
                         type="button"
@@ -1570,7 +1612,7 @@ export function MatchArenaLayout({
                         onClick={handleSkipOpeningCeremony}
                         className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[#CA9A48]/65 bg-[#1F1712]/95 px-3 py-1.5 text-xs font-bold text-[#FDE68A] transition-colors hover:border-[#FDE68A] hover:bg-[#2A2018]"
                       >
-                        <span>Bỏ qua hiệu ứng</span>
+                        <span>{isEn ? 'Skip Animation' : 'Bỏ qua hiệu ứng'}</span>
                         <GameIcon name="ui:skip" size={13} />
                       </button>
                     </div>
@@ -1580,9 +1622,13 @@ export function MatchArenaLayout({
                         <div className="flex flex-col items-center gap-3">
                           <div className="flex h-44 w-36 flex-col items-center justify-center gap-2 rounded-xl border-2 border-[#CA9A48]/80 bg-[radial-gradient(circle_at_top,#2B1E14_0%,#140F0C_85%)] p-4 shadow-[0_0_32px_rgba(202,154,72,0.28)]">
                             <span className="font-serif-title text-4xl font-black text-[#E6BE6C]">令</span>
-                            <span className="text-xs font-bold tracking-widest text-[#E6BE6C] uppercase">Thân Phận</span>
+                            <span className="text-xs font-bold tracking-widest text-[#E6BE6C] uppercase">
+                              {isEn ? 'Allegiance' : 'Thân Phận'}
+                            </span>
                           </div>
-                          <p className="text-sm font-semibold text-[#FDE68A]">Đang mở ấn lệnh Thân Phận của bạn...</p>
+                          <p className="text-sm font-semibold text-[#FDE68A]">
+                            {isEn ? 'Revealing your Allegiance seal...' : 'Đang mở ấn lệnh Thân Phận của bạn...'}
+                          </p>
                         </div>
                       ) : (
                         <div className="flex flex-col items-center gap-3">
@@ -1593,22 +1639,24 @@ export function MatchArenaLayout({
                             ].join(' ')}
                           >
                             <span className="text-[11px] font-bold tracking-[0.18em] text-[#E2E8F0] uppercase">
-                              Thân Phận Của Bạn
+                              {isEn ? 'Your Allegiance' : 'Thân Phận Của Bạn'}
                             </span>
                             <strong className="font-serif-title text-2xl font-black tracking-wide text-[#FEF08A]">
-                              {getIdentityLabelVi(selfPlayer?.identity ?? 'UNKNOWN')}
+                              {getIdentityLabelVi(selfPlayer?.identity ?? 'UNKNOWN', locale)}
                             </strong>
                             <p className="text-xs leading-relaxed text-[#F3F4F6]">
-                              {getIdentityMissionVi(selfPlayer?.identity ?? 'UNKNOWN')}
+                              {getIdentityMissionVi(selfPlayer?.identity ?? 'UNKNOWN', locale)}
                             </p>
                           </div>
-                          <p className="text-xs text-[#CBD5E1]">Đang mở danh sách Tướng chiêu mộ...</p>
+                          <p className="text-xs text-[#CBD5E1]">
+                            {isEn ? 'Opening General recruitment roster...' : 'Đang mở danh sách Tướng chiêu mộ...'}
+                          </p>
                         </div>
                       )}
                     </div>
 
                     <div className="text-center text-[11px] text-[#94A3B8]">
-                      Mở thân phận → Chọn tướng → Khai trận
+                      {isEn ? 'Reveal Allegiance → Draft General → Begin Battle' : 'Mở thân phận → Chọn tướng → Khai trận'}
                     </div>
                   </section>
                 ) : (
@@ -1751,7 +1799,11 @@ export function MatchArenaLayout({
                           {selfPlayer.displayName}
                         </span>
                         <span
-                          title={`Thứ tự lượt theo chiều kim đồng hồ: Ghế #${selfPlayer.seatIndex + 1}`}
+                          title={
+                            isEn
+                              ? `Clockwise turn order: Seat #${selfPlayer.seatIndex + 1}`
+                              : `Thứ tự lượt theo chiều kim đồng hồ: Ghế #${selfPlayer.seatIndex + 1}`
+                          }
                           className="font-mono-num shrink-0 rounded border border-[#806345]/60 bg-[#140F0C]/85 px-1 text-[8.5px] font-bold text-[#EDE3D2]"
                         >
                           #{selfPlayer.seatIndex + 1}
@@ -1779,16 +1831,16 @@ export function MatchArenaLayout({
                       data-match-identity="UNKNOWN"
                       className={`lkdf-match-identity lkdf-match-identity-self ${getIdentityBadgeClass('UNKNOWN')}`}
                     >
-                      <span className="lkdf-match-identity-kicker">Thân phận</span>
-                      <strong>Đang mở…</strong>
+                      <span className="lkdf-match-identity-kicker">{isEn ? 'Role' : 'Thân phận'}</span>
+                      <strong>{isEn ? 'Revealing…' : 'Đang mở…'}</strong>
                     </div>
                   ) : (
                     <div
                       data-match-identity={selfPlayer.identity}
                       className={`lkdf-match-identity lkdf-match-identity-self ${getIdentityBadgeClass(selfPlayer.identity)}`}
                     >
-                      <span className="lkdf-match-identity-kicker">Thân phận</span>
-                      <strong>{getIdentityLabelVi(selfPlayer.identity)}</strong>
+                      <span className="lkdf-match-identity-kicker">{isEn ? 'Role' : 'Thân phận'}</span>
+                      <strong>{getIdentityLabelVi(selfPlayer.identity, locale)}</strong>
                     </div>
                   )}
 
@@ -1800,7 +1852,7 @@ export function MatchArenaLayout({
                           className="inline-flex items-center gap-0.5 rounded border border-[#FBBF24]/80 bg-[#D99B26]/25 px-1.5 py-0 text-[8.5px] leading-[13px] font-extrabold text-[#FEF08A]"
                         >
                           <GameIcon name="ui:flag" size={9} />
-                          <span>Lượt chính</span>
+                          <span>{isEn ? 'Your Turn' : 'Lượt chính'}</span>
                         </span>
                       ) : prompt.isMyTurn ? (
                         <span
@@ -1808,7 +1860,7 @@ export function MatchArenaLayout({
                           className="inline-flex items-center gap-0.5 rounded border border-[#38BDF8]/85 bg-[#0C4A6E]/85 px-1.5 py-0 text-[8.5px] leading-[13px] font-extrabold text-[#E0F2FE]"
                         >
                           <GameIcon name="ui:zap" size={9} />
-                          <span>Phản ứng</span>
+                          <span>{isEn ? 'Responding' : 'Phản ứng'}</span>
                         </span>
                       ) : null}
                       {isSelfLuoYiActive ? (
@@ -1844,7 +1896,7 @@ export function MatchArenaLayout({
                           className="inline-flex items-center gap-0.5 rounded border border-[#34D399]/55 bg-[#064E3B]/75 px-1.5 py-0 text-[8.5px] leading-[13px] font-bold text-[#A7F3D0]"
                         >
                           <GameIcon name="ui:feather" size={9} />
-                          <span>V1 Hòa Bình</span>
+                          <span>{isEn ? 'R1 Peace' : 'V1 Hòa Bình'}</span>
                         </span>
                       ) : null}
                     </div>
@@ -1854,8 +1906,12 @@ export function MatchArenaLayout({
                     {isHeroSelectPhase && selfPlayer.maxHp <= 0 ? (
                       <span className="inline-flex items-center gap-1 rounded border border-[#806345]/45 bg-[#140F0C]/85 px-1.5 py-0.5 text-[10px] font-medium text-[#E8DCC8]">
                         {selfHero || playerView.heroDraft?.mySelectedHero
-                          ? 'Đã chốt tướng'
-                          : 'Đang chọn tướng…'}
+                          ? isEn
+                            ? 'General locked'
+                            : 'Đã chốt tướng'
+                          : isEn
+                            ? 'Selecting general…'
+                            : 'Đang chọn tướng…'}
                       </span>
                     ) : (
                       <HpJadeMeter hp={selfPlayer.hp} maxHp={selfPlayer.maxHp} size="md" />
@@ -1863,7 +1919,7 @@ export function MatchArenaLayout({
                     {!selfPlayer.alive ? (
                       <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-[#FCA5A5]">
                         <GameIcon name="death-skull" size={11} />
-                        Tử trận
+                        {isEn ? 'Fallen' : 'Tử trận'}
                         </span>
                       ) : null}
                   </div>
@@ -1906,7 +1962,9 @@ export function MatchArenaLayout({
                   ) : null}
                 </>
               ) : (
-                <div className="text-[11px] text-[#9CA3AF]">Đang tải thông tin ghế...</div>
+                <div className="text-[11px] text-[#9CA3AF]">
+                  {isEn ? 'Loading seat details...' : 'Đang tải thông tin ghế...'}
+                </div>
               )}
             </div>
           </div>
@@ -1916,8 +1974,10 @@ export function MatchArenaLayout({
           {/* Nửa Phải Cột Trái: 4 Ô Trang Bị Ngửa xếp 4 hàng rộng rãi (đủ tên đầy đủ) */}
           <div className="lkdf-battle-equip flex min-h-0 min-w-0 flex-1 flex-col gap-1 border-l border-[#806345]/40 bg-[#1B1512] p-1.5">
             <div className="flex shrink-0 items-center justify-between text-[9.5px] font-bold tracking-wide text-[#B89352] uppercase">
-              <span className="truncate">Trang bị</span>
-              <span className="shrink-0 text-[9px] font-normal normal-case text-[#B8A48C]">4 ô</span>
+              <span className="truncate">{isEn ? 'Equipment' : 'Trang bị'}</span>
+              <span className="shrink-0 text-[9px] font-normal normal-case text-[#B8A48C]">
+                {isEn ? '4 slots' : '4 ô'}
+              </span>
             </div>
 
             <div className="lkdf-battle-grid min-w-0">
@@ -1996,7 +2056,7 @@ export function MatchArenaLayout({
                     onClick={() =>
                       canToggleEquip
                         ? onToggleCard(card.id)
-                        : handleInspectCard(card, sid, 'Trang bị của bạn')
+                        : handleInspectCard(card, sid, isEn ? 'Your Equipment' : 'Trang bị của bạn')
                     }
                     {...cardHover(card)}
                     className={[
@@ -2036,7 +2096,7 @@ export function MatchArenaLayout({
             </div>
             {selfPlayer ? (
               <div className="lkdf-battle-judgment text-[10px]">
-                <strong>Phán xét</strong>
+                <strong>{isEn ? 'Judgment' : 'Phán xét'}</strong>
                 <div className="lkdf-scroll flex max-h-10 flex-wrap items-center gap-1 overflow-y-auto">
                     {selfPlayer.delayedScrolls.length > 0 ? (
                       selfPlayer.delayedScrolls.map((s) => {
@@ -2050,7 +2110,7 @@ export function MatchArenaLayout({
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleInspectCard(s, sid, 'Khu phán xét của bạn');
+                              handleInspectCard(s, sid, isEn ? 'Your Judgment Zone' : 'Khu phán xét của bạn');
                             }}
                             className={[
                               'inline-flex cursor-pointer items-center gap-0.5 rounded border px-1 py-0 text-[9.5px] font-bold',
@@ -2060,12 +2120,12 @@ export function MatchArenaLayout({
                             ].join(' ')}
                           >
                             <GameIcon name="ui:clock" size={10} />
-                            {s.cardKey === 'lac_bat_tu_thuc' ? 'Lạc Bất Tư' : s.nameVi}
+                            {getCuuChauCardDisplay(s.cardKey, locale, s.nameVi).name}
                           </button>
                         );
                       })
                     ) : (
-                      <span>Trống</span>
+                      <span>{isEn ? 'Empty' : 'Trống'}</span>
                     )}
                 </div>
               </div>
@@ -2090,12 +2150,12 @@ export function MatchArenaLayout({
               {reorderingHand ? (
                 <>
                   <GameIcon name="ui:check" size={11} />
-                  <span>Xong · kéo hoặc ← → đổi chỗ [Esc]</span>
+                  <span>{isEn ? 'Done · drag or ← → swap [Esc]' : 'Xong · kéo hoặc ← → đổi chỗ [Esc]'}</span>
                 </>
               ) : (
                 <>
                   <GameIcon name="ui:layers" size={11} />
-                  <span>Sắp xếp bài tay</span>
+                  <span>{isEn ? 'Sort Hand' : 'Sắp xếp bài tay'}</span>
                 </>
               )}
             </button>
@@ -2103,21 +2163,27 @@ export function MatchArenaLayout({
           {/* Dải bài neo đáy cố định (0px giật bài khi thanh lệnh bật/tắt; chừa 22px đỉnh cho nhô bài khi rê/chọn) */}
           <div className="lkdf-battle-hand lkdf-scroll flex h-full min-h-0 flex-1 items-end justify-center overflow-x-auto overflow-y-hidden px-1 pt-[22px] pb-1">
             {handIsFaceDown ? (
-              <div className="mx-auto flex items-end gap-1" aria-label="Bài tay đang úp">
+              <div className="mx-auto flex items-end gap-1" aria-label={isEn ? 'Hand cards face-down' : 'Bài tay đang úp'}>
                 {Array.from({ length: selfPlayer?.handCount ?? 0 }, (_, index) => <CardBack key={index} size="md" />)}
               </div>
             ) : handCards.length === 0 ? (
               isHeroSelectPhase ? (
                 <div className="flex h-full w-full items-center justify-center rounded-xl border border-dashed border-[#A68042]/40 bg-[#1B1410]/55 px-4 text-center text-[12px] font-medium text-[#E8DCC8]">
                   {playerView.heroDraft?.stage === 'COMPLETED'
-                    ? 'Tất cả đã chốt tướng — Chờ chia bài…'
+                    ? isEn
+                      ? 'All generals locked — Dealing opening cards…'
+                      : 'Tất cả đã chốt tướng — Chờ chia bài…'
                     : selfHero || playerView.heroDraft?.mySelectedHero
-                      ? 'Đã chốt tướng — Chờ người chơi khác để chia bài…'
-                      : 'Đang chọn tướng — Chờ chia 4 lá mở màn…'}
+                      ? isEn
+                        ? 'General locked — Waiting for other players…'
+                        : 'Đã chốt tướng — Chờ người chơi khác để chia bài…'
+                      : isEn
+                        ? 'Selecting general — Waiting to deal 4 opening cards…'
+                        : 'Đang chọn tướng — Chờ chia 4 lá mở màn…'}
                 </div>
               ) : (
                 <div className="flex h-full w-full items-center justify-center rounded-xl border border-dashed border-[#A68042]/30 text-[12px] text-[#9CA3AF]">
-                  Không còn lá bài nào trên tay
+                  {isEn ? 'No cards left in hand' : 'Không còn lá bài nào trên tay'}
                 </div>
               )
             ) : (
@@ -2153,7 +2219,13 @@ export function MatchArenaLayout({
                     key={card.id}
                     data-hand-card-id={card.id}
                     draggable={reorderingHand}
-                    aria-label={reorderingHand ? `Đổi vị trí ${card.nameVi} (← →)` : undefined}
+                    aria-label={
+                      reorderingHand
+                        ? isEn
+                          ? `Move ${getCuuChauCardDisplay(card.cardKey, locale, card.nameVi).name} (← →)`
+                          : `Đổi vị trí ${getCuuChauCardDisplay(card.cardKey, locale, card.nameVi).name} (← →)`
+                        : undefined
+                    }
                     onDragStart={(event) => {
                       if (!reorderingHand) return;
                       draggedHandCard.current = card.id;

@@ -354,6 +354,7 @@ export type InterruptFrame =
       readonly strikeCards: readonly CardInstance[];
       readonly isCollateralStrike: boolean;
       readonly isFangTianMultiTarget: boolean;
+      readonly excludedSeats?: readonly number[];
     }
   | {
       readonly id: string;
@@ -460,6 +461,7 @@ export interface PublicInterruptView {
   readonly requiredCount?: number;
   readonly dodgedSoFar?: number;
   readonly damageCards?: readonly CardInstance[];
+  readonly excludedSeats?: readonly number[];
 }
 
 export type JudgmentPurpose =

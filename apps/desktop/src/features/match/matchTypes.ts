@@ -1,4 +1,5 @@
 import {
+  CUU_CHAU_DECK_TEMPLATES,
   CUU_CHAU_HEROES,
   HERO_CATALOG,
   STANDARD_DECK_TEMPLATES,
@@ -142,8 +143,11 @@ export function getFactionStyle(faction: HeroFaction): FactionVisualStyle {
   };
 }
 
-export function getIdentityLabelVi(identity: IdentityRole | 'UNKNOWN'): string {
-  const locale = i18n.language === 'en' ? 'en' : 'vi';
+export function getIdentityLabelVi(
+  identity: IdentityRole | 'UNKNOWN',
+  localeOverride?: 'vi' | 'en',
+): string {
+  const locale = localeOverride ?? (i18n.language === 'en' ? 'en' : 'vi');
   return getCuuChauRoleDisplay(identity, locale).name;
 }
 
@@ -558,6 +562,7 @@ export function getRequiredTargetSpec(
   view: PlayerViewState,
   selection: MatchSelectionState,
 ): TargetSelectionSpec {
+  const en = i18n.language === 'en';
   const viewer = view.players.find((p) => p.seatIndex === view.viewerSeatIndex);
   if (!viewer || !viewer.alive) {
     return { minTargets: 0, maxTargets: 0, eligibleSeats: [], promptVi: '' };
@@ -574,7 +579,9 @@ export function getRequiredTargetSpec(
       minTargets: 1,
       maxTargets: 2,
       eligibleSeats: aliveOthers.filter((p) => p.handCount > 0).map((p) => p.seatIndex),
-      promptVi: 'Đột Tập: chọn 1 đến 2 đối thủ còn bài trên tay',
+      promptVi: en
+        ? 'Ration Raid: choose 1–2 opponents who hold hand cards'
+        : 'Đột Tập: chọn 1 đến 2 đối thủ còn bài trên tay',
     };
   }
 
@@ -583,6 +590,7 @@ export function getRequiredTargetSpec(
     view.activeInterrupt.targetSeat === view.viewerSeatIndex
   ) {
     const sourceSeat = view.activeInterrupt.sourceSeat;
+    const excluded = new Set(view.activeInterrupt.excludedSeats ?? []);
     return {
       minTargets: 1,
       maxTargets: 1,
@@ -590,11 +598,14 @@ export function getRequiredTargetSpec(
         .filter(
           (p) =>
             p.seatIndex !== sourceSeat &&
+            !excluded.has(p.seatIndex) &&
             isInAttackRange(view, view.viewerSeatIndex, p.seatIndex) &&
             !isKongChengProtected(p),
         )
         .map((p) => p.seatIndex),
-      promptVi: 'Lưu Ly: chọn 1 người khác trong tầm đánh để chuyển Sát',
+      promptVi: en
+        ? 'Flowing Mirage: choose 1 other fighter in range to redirect the Strike'
+        : 'Chuyển Hoa Ảnh: chọn 1 người khác trong tầm đánh để chuyển Kiếm Trảm',
     };
   }
 
@@ -605,7 +616,9 @@ export function getRequiredTargetSpec(
           minTargets: 1,
           maxTargets: 1,
           eligibleSeats: aliveOthers.map((p) => p.seatIndex),
-          promptVi: 'Hãy bấm chọn 1 người chơi để giao bài (Tặng Đan)',
+          promptVi: en
+            ? 'Select 1 ally to gift hand cards (Cloud Favor)'
+            : 'Hãy bấm chọn 1 người chơi để giao bài (Thanh Vân Độ)',
         };
       case 'ji_jiang':
         if (view.turnPhase === 'PLAY' && view.peacefulFirstRound && view.roundNumber === 1) {
@@ -613,7 +626,9 @@ export function getRequiredTargetSpec(
             minTargets: 1,
             maxTargets: 1,
             eligibleSeats: [],
-            promptVi: 'Vòng 1 Hòa Bình: chưa được đánh Kiếm Trảm ở vòng đầu tiên.',
+            promptVi: en
+              ? 'Peaceful Round 1: Strikes are disabled on the opening round.'
+              : 'Vòng 1 Hòa Bình: chưa được đánh Kiếm Trảm ở vòng đầu tiên.',
           };
         }
         return {
@@ -626,7 +641,9 @@ export function getRequiredTargetSpec(
                 !isKongChengProtected(p),
             )
             .map((p) => p.seatIndex),
-          promptVi: 'Hãy bấm chọn 1 mục tiêu trong tầm đánh để Vân Lệnh',
+          promptVi: en
+            ? 'Select 1 target within attack range for Cloud Command'
+            : 'Hãy bấm chọn 1 mục tiêu trong tầm đánh để Vân Lệnh',
         };
       case 'zhi_heng':
       case 'ku_rou':
@@ -636,7 +653,9 @@ export function getRequiredTargetSpec(
           minTargets: 1,
           maxTargets: 1,
           eligibleSeats: aliveOthers.map((p) => p.seatIndex),
-          promptVi: 'Hãy bấm chọn 1 đối thủ để phát động Đoán Tâm Mưu',
+          promptVi: en
+            ? 'Select 1 opponent for Mind Gambit'
+            : 'Hãy bấm chọn 1 đối thủ để phát động Đoán Tâm Mưu',
         };
       case 'jie_yin':
         return {
@@ -650,7 +669,9 @@ export function getRequiredTargetSpec(
                 getHeroDefinition(p.heroId).gender === 'MALE',
             )
             .map((p) => p.seatIndex),
-          promptVi: 'Hãy bấm chọn 1 nam hiệp khách đang bị thương (Hợp Đan)',
+          promptVi: en
+            ? 'Select 1 wounded male fighter (Shared Oath)'
+            : 'Hãy bấm chọn 1 nam hiệp khách đang bị thương (Hợp Đan)',
         };
       case 'qing_nang':
         return {
@@ -659,7 +680,9 @@ export function getRequiredTargetSpec(
           eligibleSeats: view.players
             .filter((p) => p.alive && p.hp < p.maxHp)
             .map((p) => p.seatIndex),
-          promptVi: 'Hãy bấm chọn 1 người đang bị thương để hồi 1 sinh lực (Dược Nang)',
+          promptVi: en
+            ? 'Select 1 wounded fighter to heal 1 HP (Herbal Satchel)'
+            : 'Hãy bấm chọn 1 người đang bị thương để hồi 1 sinh lực (Dược Nang)',
         };
       case 'li_jian':
         return {
@@ -677,8 +700,12 @@ export function getRequiredTargetSpec(
             .map((p) => p.seatIndex),
           promptVi:
             selection.selectedTargets.length === 0
-              ? 'Hãy bấm chọn 2 nam hiệp khách khác nhau để Sinh Tử Lôi Đài (Ly Tâm Kế)'
-              : 'Chọn thêm 1 nam hiệp khách nữa để hoàn tất Ly Tâm Kế',
+              ? (en
+                  ? 'Select 2 different male fighters for Shadow Discord duel'
+                  : 'Hãy bấm chọn 2 nam hiệp khách khác nhau để Sinh Tử Lôi Đài (Ly Tâm Kế)')
+              : (en
+                  ? 'Select 1 more male fighter to finish Shadow Discord'
+                  : 'Chọn thêm 1 nam hiệp khách nữa để hoàn tất Ly Tâm Kế'),
         };
     }
   }
@@ -691,13 +718,16 @@ export function getRequiredTargetSpec(
   }
 
   switch (effectiveKey) {
-    case 'sat': {
+    case 'sat':
+    case 'pha_giap_tram': {
       if (view.turnPhase === 'PLAY' && view.peacefulFirstRound && view.roundNumber === 1) {
         return {
           minTargets: 1,
           maxTargets: 1,
           eligibleSeats: [],
-          promptVi: 'Vòng 1 Hòa Bình: chưa được đánh Sát ở vòng đầu tiên.',
+          promptVi: en
+            ? 'Peaceful Round 1: Strikes are disabled on the opening round.'
+            : 'Vòng 1 Hòa Bình: chưa được đánh Kiếm Trảm ở vòng đầu tiên.',
         };
       }
       const isLastHandCard =
@@ -719,8 +749,23 @@ export function getRequiredTargetSpec(
         maxTargets: hasFangTian ? 3 : 1,
         eligibleSeats: eligible,
         promptVi: hasFangTian
-          ? 'Phương Thiên Họa Kích: chọn 1 đến 3 mục tiêu trong tầm đánh'
-          : 'Hãy bấm chọn 1 mục tiêu sáng viền vàng trên bàn',
+          ? (en
+              ? 'Sky-Piercer Halberd: choose 1–3 targets within attack range'
+              : 'Phương Thiên Họa Kích: chọn 1 đến 3 mục tiêu trong tầm đánh')
+          : (en
+              ? 'Click a gold-highlighted target within attack range'
+              : 'Hãy bấm chọn 1 mục tiêu sáng viền vàng trên bàn'),
+      };
+    }
+    case 'kinh_loi_chan': {
+      const eligible = aliveOthers.map((p) => p.seatIndex);
+      return {
+        minTargets: 1,
+        maxTargets: 1,
+        eligibleSeats: eligible,
+        promptVi: en
+          ? 'Choose 1 opponent for Thunderclap Pulse'
+          : 'Hãy bấm chọn 1 đối thủ để dùng Kinh Lôi Chấn',
       };
     }
     case 'thuan_thu_khien_duong': {
@@ -738,8 +783,12 @@ export function getRequiredTargetSpec(
         eligibleSeats: eligible,
         promptVi:
           viewer.heroId === 'huang_yue_ying'
-            ? 'Cơ Xảo: chọn bất kỳ mục tiêu có bài để Thám Nang Thủ (không giới hạn khoảng cách)'
-            : 'Hãy bấm chọn 1 mục tiêu trong khoảng cách 1 để Thám Nang Thủ',
+            ? (en
+                ? 'Arcane Craft: pick any opponent with cards (no distance limit)'
+                : 'Cơ Xảo: chọn bất kỳ mục tiêu có bài để Thám Nang Thủ (không giới hạn khoảng cách)')
+            : (en
+                ? 'Choose 1 target within distance 1 for Sleight of Hand'
+                : 'Hãy bấm chọn 1 mục tiêu trong khoảng cách 1 để Thám Nang Thủ'),
       };
     }
     case 'qua_ha_sai_cau': {
@@ -750,7 +799,9 @@ export function getRequiredTargetSpec(
         minTargets: 1,
         maxTargets: 1,
         eligibleSeats: eligible,
-        promptVi: 'Hãy bấm chọn 1 mục tiêu có bài để Phá Trận Chưởng',
+        promptVi: en
+          ? 'Choose 1 opponent with cards for Break Formation'
+          : 'Hãy bấm chọn 1 mục tiêu có bài để Phá Trận Chưởng',
       };
     }
     case 'quyet_dau': {
@@ -761,7 +812,9 @@ export function getRequiredTargetSpec(
         minTargets: 1,
         maxTargets: 1,
         eligibleSeats: eligible,
-        promptVi: 'Hãy bấm chọn 1 mục tiêu để Sinh Tử Lôi Đài',
+        promptVi: en
+          ? 'Choose 1 opponent for Trial by Combat'
+          : 'Hãy bấm chọn 1 mục tiêu để Sinh Tử Lôi Đài',
       };
     }
     case 'ta_dao_sat_nhan': {
@@ -788,7 +841,9 @@ export function getRequiredTargetSpec(
           minTargets: 2,
           maxTargets: 2,
           eligibleSeats: eligibleAttackers,
-          promptVi: 'Bước 1/2: Chọn 1 người chơi đang cầm Vũ khí',
+          promptVi: en
+            ? 'Step 1/2: Select an opponent holding a Weapon'
+            : 'Bước 1/2: Chọn 1 người chơi đang cầm Binh khí',
         };
       }
       const attackerSeat = selection.selectedTargets[0]!;
@@ -809,7 +864,9 @@ export function getRequiredTargetSpec(
         minTargets: 2,
         maxTargets: 2,
         eligibleSeats: eligibleVictims,
-        promptVi: 'Bước 2/2: Chọn thêm 1 mục tiêu nằm trong tầm đánh của họ',
+        promptVi: en
+          ? 'Step 2/2: Select a victim inside their attack range'
+          : 'Bước 2/2: Chọn thêm 1 mục tiêu nằm trong tầm đánh của họ',
       };
     }
     case 'lac_bat_tu_thuc': {
@@ -820,7 +877,9 @@ export function getRequiredTargetSpec(
         minTargets: 1,
         maxTargets: 1,
         eligibleSeats: eligible,
-        promptVi: 'Hãy bấm chọn 1 mục tiêu để đặt Điểm Huyệt Phong Mạch',
+        promptVi: en
+          ? 'Choose 1 opponent to seal with Acupoint Seal'
+          : 'Hãy bấm chọn 1 mục tiêu để đặt Điểm Huyệt Phong Mạch',
       };
     }
     default:
@@ -848,10 +907,12 @@ export function describePendingActorPrompt(view: PlayerViewState): TurnActorProm
   const viewer = view.players.find((p) => p.seatIndex === viewerSeat);
   const interrupt = view.activeInterrupt;
 
+  const en = i18n.language === 'en';
+
   if (view.turnPhase === 'GAME_OVER') {
     return {
-      headlineVi: 'Ván đấu đã kết thúc',
-      detailVi: 'Đã lật toàn bộ Thân Phận và tổng kết phe chiến thắng.',
+      headlineVi: en ? 'Match Ended' : 'Ván đấu đã kết thúc',
+      detailVi: en ? 'All roles are revealed and the winning faction is decided.' : 'Đã lật toàn bộ Thân Phận và tổng kết phe chiến thắng.',
       actorSeat: null,
       actorNameVi: null,
       isMyTurn: false,
@@ -863,8 +924,8 @@ export function describePendingActorPrompt(view: PlayerViewState): TurnActorProm
     const draft = view.heroDraft;
     if (!draft) {
       return {
-        headlineVi: 'Đang chuẩn bị chọn Tướng...',
-        detailVi: 'Hệ thống đang chia danh sách Tướng cho từng ghế.',
+        headlineVi: en ? 'Preparing Warrior Draft...' : 'Đang chuẩn bị chọn Hiệp Khách...',
+        detailVi: en ? 'Distributing candidate warriors to each seat.' : 'Hệ thống đang chia danh sách Hiệp Khách cho từng ghế.',
         actorSeat: null,
         actorNameVi: null,
         isMyTurn: false,
@@ -923,8 +984,9 @@ export function describePendingActorPrompt(view: PlayerViewState): TurnActorProm
           readonly originalTargetSeat?: number;
           readonly nullifyDepth?: number;
         };
-        const origName =
-          nullifyInterrupt.originalScrollNameVi ?? interrupt.scrollNameVi ?? 'Cẩm nang';
+        const rawOrigName =
+          nullifyInterrupt.originalScrollNameVi ?? interrupt.scrollNameVi ?? (en ? 'Scroll' : 'Bí kíp');
+        const origName = formatCuuChauDisplayText(rawOrigName, en ? 'en' : 'vi');
         const origTargetSeat = nullifyInterrupt.originalTargetSeat ?? interrupt.targetSeat;
         const origTargetName = getPlayerSeatLabel(view.players, origTargetSeat);
         const depth = nullifyInterrupt.nullifyDepth ?? 0;
@@ -934,18 +996,18 @@ export function describePendingActorPrompt(view: PlayerViewState): TurnActorProm
         return {
           headlineVi: canRespond
             ? isCounter
-              ? `Phản Hóa Giải Chân Khí — Có chặn ${origName}?`
+              ? (en ? `Counter Qi Negation — Block ${origName}?` : `Phản Hóa Giải Chân Khí — Có chặn ${origName}?`)
               : targetsViewer
-                ? `⚠️ ${origName} nhắm vào BẠN — Đánh Hóa Giải Chân Khí?`
-                : `Có đánh Hóa Giải chặn ${origName} (${origTargetName})?`
+                ? (en ? `⚠️ ${origName} targets YOU — Play Qi Negation?` : `⚠️ ${origName} nhắm vào BẠN — Đánh Hóa Giải Chân Khí?`)
+                : (en ? `Play Qi Negation to block ${origName} (${origTargetName})?` : `Có đánh Hóa Giải chặn ${origName} (${origTargetName})?`)
             : isCounter
-              ? `Đang giải quyết phản Hóa Giải (${origName})...`
-              : `Đang giải quyết ${origName} → ${origTargetName}...`,
+              ? (en ? `Resolving Counter Qi Negation (${origName})...` : `Đang giải quyết phản Hóa Giải (${origName})...`)
+              : (en ? `Resolving ${origName} → ${origTargetName}...` : `Đang giải quyết ${origName} → ${origTargetName}...`),
           detailVi: canRespond
             ? isCounter
-              ? `${origName} → ${origTargetName}. Phản Hóa Giải sẽ giữ bí kíp gốc tiếp tục hiệu lực.`
-              : `Bí kíp sắp có hiệu lực lên ${origTargetName}. Chọn Đánh Hóa Giải hoặc Cho qua.`
-            : `${origName} nhắm vào ${origTargetName}.`,
+              ? (en ? `${origName} → ${origTargetName}. Countering keeps the original scroll active.` : `${origName} → ${origTargetName}. Phản Hóa Giải sẽ giữ bí kíp gốc tiếp tục hiệu lực.`)
+              : (en ? `Scroll is about to resolve on ${origTargetName}. Play Qi Negation or Pass.` : `Bí kíp sắp có hiệu lực lên ${origTargetName}. Chọn Đánh Hóa Giải hoặc Cho qua.`)
+            : (en ? `${origName} targeting ${origTargetName}.` : `${origName} nhắm vào ${origTargetName}.`),
           actorSeat: null,
           actorNameVi: null,
           isMyTurn: canRespond,
@@ -956,9 +1018,9 @@ export function describePendingActorPrompt(view: PlayerViewState): TurnActorProm
         return {
           headlineVi:
             interrupt.targetSeat === viewerSeat
-              ? 'Song Cổ Đoản Kiếm — Chọn bỏ 1 lá hoặc cho đối thủ rút 1 lá'
-              : `Đang chờ ${targetName} chọn hiệu ứng Song Cổ Đoản Kiếm...`,
-          detailVi: `${sourceName} đánh Kiếm Trảm khác giới vào ${targetName}.`,
+              ? (en ? 'Frostheart Twinblades — Discard 1 card or let attacker draw 1' : 'Hàn Tâm Song Kiếm — Chọn bỏ 1 lá hoặc cho đối thủ rút 1 lá')
+              : (en ? `Waiting for ${targetName} (Frostheart Twinblades)...` : `Đang chờ ${targetName} chọn hiệu ứng Hàn Tâm Song Kiếm...`),
+          detailVi: en ? `${sourceName} struck ${targetName}.` : `${sourceName} đánh Kiếm Trảm khác giới vào ${targetName}.`,
           actorSeat: interrupt.targetSeat,
           actorNameVi: targetName,
           isMyTurn: interrupt.targetSeat === viewerSeat,
@@ -967,16 +1029,16 @@ export function describePendingActorPrompt(view: PlayerViewState): TurnActorProm
       case 'WAIT_DODGE': {
         const req = interrupt.requiredCount ?? 1;
         const dodged = interrupt.dodgedSoFar ?? 0;
-        const voSongHint = req >= 2 ? ' (Bá Thể — Cửu Diện Vô Song)' : '';
+        const voSongHint = req >= 2 ? (en ? ' (Ninefold Unrivaled)' : ' (Bá Thể — Cửu Diện Vô Song)') : '';
         return {
           headlineVi:
             interrupt.targetSeat === viewerSeat
-              ? `Bạn bị đánh Kiếm Trảm${voSongHint} — Cần ${req} lá Thân Pháp (đã né ${dodged})`
-              : `Đang chờ ${targetName} đánh ${req} lá Thân Pháp né đòn...`,
+              ? (en ? `Incoming Strike${voSongHint} — Need ${req} Shadow Step (${dodged} played)` : `Bạn bị đánh Kiếm Trảm${voSongHint} — Cần ${req} lá Thân Pháp (đã né ${dodged})`)
+              : (en ? `Waiting for ${targetName} to play ${req} Shadow Step...` : `Đang chờ ${targetName} đánh ${req} lá Thân Pháp né đòn...`),
           detailVi:
             req >= 2
-              ? `Nguồn sát thương: ${sourceName} (Bá Thể: phải đánh đủ ${req} lá Thân Pháp).`
-              : `Nguồn sát thương: ${sourceName}.`,
+              ? (en ? `Source: ${sourceName} (requires ${req} Shadow Steps).` : `Nguồn sát thương: ${sourceName} (Bá Thể: phải đánh đủ ${req} lá Thân Pháp).`)
+              : (en ? `Source: ${sourceName}.` : `Nguồn sát thương: ${sourceName}.`),
           actorSeat: interrupt.targetSeat,
           actorNameVi: targetName,
           isMyTurn: interrupt.targetSeat === viewerSeat,
@@ -987,9 +1049,9 @@ export function describePendingActorPrompt(view: PlayerViewState): TurnActorProm
         return {
           headlineVi:
             interrupt.sourceSeat === viewerSeat
-              ? 'Phá Sơn Phủ — Bỏ 2 lá bài để ép Kiếm Trảm trúng?'
-              : `Đang chờ ${sourceName} quyết định kích hoạt Phá Sơn Phủ...`,
-          detailVi: `Kiếm Trảm vào ${targetName} vừa bị né bằng Thân Pháp.`,
+              ? (en ? 'Shatterpeak Axe — Discard 2 cards to force Strike hit?' : 'Phá Sơn Phủ — Bỏ 2 lá bài để ép Kiếm Trảm trúng?')
+              : (en ? `Waiting for ${sourceName} (Shatterpeak Axe)...` : `Đang chờ ${sourceName} quyết định kích hoạt Phá Sơn Phủ...`),
+          detailVi: en ? `Strike on ${targetName} was dodged.` : `Kiếm Trảm vào ${targetName} vừa bị né bằng Thân Pháp.`,
           actorSeat: interrupt.sourceSeat ?? null,
           actorNameVi: sourceName,
           isMyTurn: interrupt.sourceSeat === viewerSeat,
@@ -999,9 +1061,9 @@ export function describePendingActorPrompt(view: PlayerViewState): TurnActorProm
         return {
           headlineVi:
             interrupt.sourceSeat === viewerSeat
-              ? 'Trấn Hải Đao — Đánh tiếp 1 lá Kiếm Trảm?'
-              : `Đang chờ ${sourceName} quyết định truy kích Trấn Hải Đao...`,
-          detailVi: `Mục tiêu: ${targetName}.`,
+              ? (en ? 'Sea-Calming Sabre — Follow up with another Strike?' : 'Trấn Hải Đao — Đánh tiếp 1 lá Kiếm Trảm?')
+              : (en ? `Waiting for ${sourceName} (Sea-Calming Sabre)...` : `Đang chờ ${sourceName} quyết định truy kích Trấn Hải Đao...`),
+          detailVi: en ? `Target: ${targetName}.` : `Mục tiêu: ${targetName}.`,
           actorSeat: interrupt.sourceSeat ?? null,
           actorNameVi: sourceName,
           isMyTurn: interrupt.sourceSeat === viewerSeat,
@@ -1011,9 +1073,9 @@ export function describePendingActorPrompt(view: PlayerViewState): TurnActorProm
         return {
           headlineVi:
             interrupt.sourceSeat === viewerSeat
-              ? 'Băng Phách Kiếm — Hủy tối đa 2 lá thay cho sát thương?'
-              : `Đang chờ ${sourceName} quyết định dùng Băng Phách Kiếm...`,
-          detailVi: `Mục tiêu: ${targetName}.`,
+              ? (en ? 'Glacier Blade — Discard up to 2 opponent cards instead of damage?' : 'Băng Phách Kiếm — Hủy tối đa 2 lá thay cho sát thương?')
+              : (en ? `Waiting for ${sourceName} (Glacier Blade)...` : `Đang chờ ${sourceName} quyết định dùng Băng Phách Kiếm...`),
+          detailVi: en ? `Target: ${targetName}.` : `Mục tiêu: ${targetName}.`,
           actorSeat: interrupt.sourceSeat ?? null,
           actorNameVi: sourceName,
           isMyTurn: interrupt.sourceSeat === viewerSeat,
@@ -1023,9 +1085,9 @@ export function describePendingActorPrompt(view: PlayerViewState): TurnActorProm
         return {
           headlineVi:
             interrupt.sourceSeat === viewerSeat
-              ? 'Truy Phong Cung — Chọn hủy 1 lá Thú cưỡi của mục tiêu?'
-              : `Đang chờ ${sourceName} chọn Thú cưỡi để hủy (Truy Phong Cung)...`,
-          detailVi: `Mục tiêu: ${targetName}.`,
+              ? (en ? 'Gale Recurve — Discard 1 mount/footwork card of the target?' : 'Truy Phong Cung — Chọn hủy 1 lá Thú cưỡi của mục tiêu?')
+              : (en ? `Waiting for ${sourceName} (Gale Recurve)...` : `Đang chờ ${sourceName} chọn Thú cưỡi để hủy (Truy Phong Cung)...`),
+          detailVi: en ? `Target: ${targetName}.` : `Mục tiêu: ${targetName}.`,
           actorSeat: interrupt.sourceSeat ?? null,
           actorNameVi: sourceName,
           isMyTurn: interrupt.sourceSeat === viewerSeat,
@@ -1033,16 +1095,16 @@ export function describePendingActorPrompt(view: PlayerViewState): TurnActorProm
         };
       case 'WAIT_DUEL_SAT': {
         const req = interrupt.requiredCount ?? 1;
-        const voSongHint = req >= 2 ? ' (Bá Thể — Cửu Diện Vô Song)' : '';
+        const voSongHint = req >= 2 ? (en ? ' (Ninefold Unrivaled)' : ' (Bá Thể — Cửu Diện Vô Song)') : '';
         return {
           headlineVi:
             interrupt.targetSeat === viewerSeat
-              ? `Sinh Tử Lôi Đài${voSongHint} — Cần đánh ${req} lá Kiếm Trảm`
-              : `Đang chờ ${targetName} đánh ${req} lá Kiếm Trảm trong Sinh Tử Lôi Đài...`,
+              ? (en ? `Trial by Combat${voSongHint} — Play ${req} Strike(s)` : `Sinh Tử Lôi Đài${voSongHint} — Cần đánh ${req} lá Kiếm Trảm`)
+              : (en ? `Waiting for ${targetName} to play ${req} Strike(s) in Trial by Combat...` : `Đang chờ ${targetName} đánh ${req} lá Kiếm Trảm trong Sinh Tử Lôi Đài...`),
           detailVi:
             req >= 2
-              ? `Bá Thể: cần đủ ${req} lá Kiếm Trảm, nếu thiếu sẽ chịu 1 sát thương.`
-              : 'Ai không đánh đủ Kiếm Trảm sẽ chịu 1 sát thương.',
+              ? (en ? `Need ${req} Blade Strikes or suffer 1 damage.` : `Bá Thể: cần đủ ${req} lá Kiếm Trảm, nếu thiếu sẽ chịu 1 sát thương.`)
+              : (en ? 'Failure to play a Strike inflicts 1 damage.' : 'Ai không đánh đủ Kiếm Trảm sẽ chịu 1 sát thương.'),
           actorSeat: interrupt.targetSeat,
           actorNameVi: targetName,
           isMyTurn: interrupt.targetSeat === viewerSeat,
@@ -1053,9 +1115,9 @@ export function describePendingActorPrompt(view: PlayerViewState): TurnActorProm
         return {
           headlineVi:
             interrupt.attackerSeat === viewerSeat
-              ? `Tá Kiếm Trảm Phong — Đánh Kiếm Trảm vào ${targetName} hoặc giao Binh khí`
-              : `Đang chờ ${attackerName} phản ứng Tá Kiếm Trảm Phong...`,
-          detailVi: `Người dùng bí kíp: ${sourceName} · Mục tiêu: ${targetName}.`,
+              ? (en ? `Borrowed Edge — Strike ${targetName} or surrender your Weapon` : `Tá Kiếm Trảm Phong — Đánh Kiếm Trảm vào ${targetName} hoặc giao Binh khí`)
+              : (en ? `Waiting for ${attackerName} (Borrowed Edge)...` : `Đang chờ ${attackerName} phản ứng Tá Kiếm Trảm Phong...`),
+          detailVi: en ? `Caster: ${sourceName} · Victim: ${targetName}.` : `Người dùng bí kíp: ${sourceName} · Mục tiêu: ${targetName}.`,
           actorSeat: interrupt.attackerSeat ?? null,
           actorNameVi: attackerName,
           isMyTurn: interrupt.attackerSeat === viewerSeat,
@@ -1065,9 +1127,9 @@ export function describePendingActorPrompt(view: PlayerViewState): TurnActorProm
         return {
           headlineVi:
             interrupt.targetSeat === viewerSeat
-              ? 'Thú Triều Công Thành — Cần đánh 1 lá Kiếm Trảm hoặc chịu 1 sinh lực'
-              : `Đang chờ ${targetName} phản ứng Thú Triều Công Thành...`,
-          detailVi: `Nguồn: ${sourceName}.`,
+              ? (en ? 'Thousand Blades — Play 1 Blade Strike or take 1 damage' : 'Vạn Kiếm Quy Tông — Cần đánh 1 lá Kiếm Trảm hoặc chịu 1 sinh lực')
+              : (en ? `Waiting for ${targetName} to answer Thousand Blades...` : `Đang chờ ${targetName} phản ứng Vạn Kiếm Quy Tông...`),
+          detailVi: en ? `Source: ${sourceName}.` : `Nguồn: ${sourceName}.`,
           actorSeat: interrupt.targetSeat,
           actorNameVi: targetName,
           isMyTurn: interrupt.targetSeat === viewerSeat,
@@ -1077,9 +1139,9 @@ export function describePendingActorPrompt(view: PlayerViewState): TurnActorProm
         return {
           headlineVi:
             interrupt.targetSeat === viewerSeat
-              ? 'Mưa Tên Bão Vũ — Cần đánh 1 lá Thân Pháp hoặc chịu 1 sinh lực'
-              : `Đang chờ ${targetName} phản ứng Mưa Tên Bão Vũ...`,
-          detailVi: `Nguồn: ${sourceName}.`,
+              ? (en ? 'Skyfall Volley — Play 1 Shadow Step or take 1 damage' : 'Loạn Tiễn Xuyên Vân — Cần đánh 1 lá Thân Pháp hoặc chịu 1 sinh lực')
+              : (en ? `Waiting for ${targetName} to answer Skyfall Volley...` : `Đang chờ ${targetName} phản ứng Loạn Tiễn Xuyên Vân...`),
+          detailVi: en ? `Source: ${sourceName}.` : `Nguồn: ${sourceName}.`,
           actorSeat: interrupt.targetSeat,
           actorNameVi: targetName,
           isMyTurn: interrupt.targetSeat === viewerSeat,
@@ -1089,9 +1151,9 @@ export function describePendingActorPrompt(view: PlayerViewState): TurnActorProm
         return {
           headlineVi:
             interrupt.targetSeat === viewerSeat
-              ? 'Khai Kho Tàng Lương — Hãy chọn 1 lá bài ở giữa bàn'
-              : `Đang chờ ${targetName} chọn bài Khai Kho Tàng Lương...`,
-          detailVi: `Còn ${view.harvestPool.length} lá trên bàn.`,
+              ? (en ? 'Vault of Relics — Pick 1 revealed card from center' : 'Thiên Bảo Xuất Thế — Hãy chọn 1 lá bài ở giữa bàn')
+              : (en ? `Waiting for ${targetName} to pick a relic...` : `Đang chờ ${targetName} chọn bài Thiên Bảo Xuất Thế...`),
+          detailVi: en ? `${view.harvestPool.length} card(s) left.` : `Còn ${view.harvestPool.length} lá trên bàn.`,
           actorSeat: interrupt.targetSeat,
           actorNameVi: targetName,
           isMyTurn: interrupt.targetSeat === viewerSeat,
@@ -1103,17 +1165,17 @@ export function describePendingActorPrompt(view: PlayerViewState): TurnActorProm
           const actorSeat = preparing ? interrupt.targetSeat : interrupt.sourceSeat ?? null;
           const actorNameVi = preparing ? targetName : sourceName;
           return {
-            headlineVi: preparing ? 'Chuẩn bị bài úp' : 'Chọn bài úp',
-            detailVi: actorSeat === viewerSeat ? 'Đến lượt bạn.' : `Đang chờ ${actorNameVi}.`,
+            headlineVi: preparing ? (en ? 'Arrange Hand Cards' : 'Chuẩn bị bài úp') : (en ? 'Pick Face-Down Card' : 'Chọn bài úp'),
+            detailVi: actorSeat === viewerSeat ? (en ? 'Your turn.' : 'Đến lượt bạn.') : (en ? `Waiting for ${actorNameVi}.` : `Đang chờ ${actorNameVi}.`),
             actorSeat, actorNameVi, isMyTurn: actorSeat === viewerSeat, isAllTableWait: false,
           };
         }
         return {
           headlineVi:
             interrupt.sourceSeat === viewerSeat
-              ? `Hãy chọn 1 khu bài của ${targetName} để ${interrupt.stealing ? 'lấy 1 lá về tay' : 'hủy bỏ 1 lá'}`
-              : `Đang chờ ${sourceName} ${interrupt.stealing ? 'lấy' : 'hủy'} bài từ ${targetName}...`,
-          detailVi: 'Chọn từ Tay bài hoặc khu Trang bị ở trung tâm bàn.',
+              ? (en ? `Choose a zone on ${targetName} to ${interrupt.stealing ? 'take 1 card' : 'discard 1 card'}` : `Hãy chọn 1 khu bài của ${targetName} để ${interrupt.stealing ? 'lấy 1 lá về tay' : 'hủy bỏ 1 lá'}`)
+              : (en ? `Waiting for ${sourceName} to ${interrupt.stealing ? 'take from' : 'discard from'} ${targetName}...` : `Đang chờ ${sourceName} ${interrupt.stealing ? 'lấy' : 'hủy'} bài từ ${targetName}...`),
+          detailVi: en ? 'Pick Hand or Equipment zone at center.' : 'Chọn từ Tay bài hoặc khu Trang bị ở trung tâm bàn.',
           actorSeat: interrupt.sourceSeat ?? null,
           actorNameVi: sourceName,
           isMyTurn: interrupt.sourceSeat === viewerSeat,
@@ -1123,9 +1185,9 @@ export function describePendingActorPrompt(view: PlayerViewState): TurnActorProm
         return {
           headlineVi:
             interrupt.responderSeat === viewerSeat
-              ? `${targetName} đang hấp hối (0 máu) — Dùng Đào cứu?`
-              : `Đang chờ ${responderName} cứu ${targetName} đang hấp hối...`,
-          detailVi: 'Mỗi lá Đào hồi 1 máu cho người đang hấp hối.',
+              ? (en ? `${targetName} is Near Death (0 HP) — Use Elixir Pill to rescue?` : `${targetName} đang hấp hối (0 sinh lực) — Dùng Hồi Xuân Đan cứu?`)
+              : (en ? `Waiting for ${responderName} to rescue ${targetName}...` : `Đang chờ ${responderName} cứu ${targetName} đang hấp hối...`),
+          detailVi: en ? 'Each Elixir Pill restores 1 HP.' : 'Mỗi lá Hồi Xuân Đan hồi 1 sinh lực cho người đang hấp hối.',
           actorSeat: interrupt.responderSeat ?? null,
           actorNameVi: responderName,
           isMyTurn: interrupt.responderSeat === viewerSeat,
@@ -1135,9 +1197,9 @@ export function describePendingActorPrompt(view: PlayerViewState): TurnActorProm
         return {
           headlineVi:
             interrupt.targetSeat === viewerSeat
-              ? 'Quan Tinh — Sắp xếp các lá bài lên đầu hoặc xuống đáy chồng bài'
-              : `Đang chờ ${targetName} sắp xếp Quan Tinh...`,
-          detailVi: 'Dùng các nút ở trung tâm bàn để xếp thứ tự rồi xác nhận.',
+              ? (en ? 'Celestial Gaze — Arrange cards top/bottom of deck' : 'Quan Tinh — Sắp xếp các lá bài lên đầu hoặc xuống đáy chồng bài')
+              : (en ? `Waiting for ${targetName} (Celestial Gaze)...` : `Đang chờ ${targetName} sắp xếp Quan Tinh...`),
+          detailVi: en ? 'Use center deck controls then confirm.' : 'Dùng các nút ở trung tâm bàn để xếp thứ tự rồi xác nhận.',
           actorSeat: interrupt.targetSeat,
           actorNameVi: targetName,
           isMyTurn: interrupt.targetSeat === viewerSeat,
@@ -1147,9 +1209,9 @@ export function describePendingActorPrompt(view: PlayerViewState): TurnActorProm
         return {
           headlineVi:
             interrupt.targetSeat === viewerSeat
-              ? 'Lạc Thần — Phán xét lấy bài chất Đen?'
-              : `Đang chờ ${targetName} quyết định Lạc Thần...`,
-          detailVi: 'Mỗi lá phán xét chất Đen thu về tay cho đến khi ra Đỏ.',
+              ? (en ? 'Ink Veil — Flip Judgment for Black cards?' : 'Lạc Thần — Phán xét lấy bài chất Đen?')
+              : (en ? `Waiting for ${targetName} (Ink Veil)...` : `Đang chờ ${targetName} quyết định Lạc Thần...`),
+          detailVi: en ? 'Keep claiming Black cards until Red appears.' : 'Mỗi lá phán xét chất Đen thu về tay cho đến khi ra Đỏ.',
           actorSeat: interrupt.targetSeat,
           actorNameVi: targetName,
           isMyTurn: interrupt.targetSeat === viewerSeat,
@@ -1159,9 +1221,9 @@ export function describePendingActorPrompt(view: PlayerViewState): TurnActorProm
         return {
           headlineVi:
             interrupt.targetSeat === viewerSeat
-              ? 'Đột Tập — Chọn tối đa 2 đối thủ để lấy mỗi người 1 lá (hoặc bỏ qua)'
-              : `Đang chờ ${targetName} thực hiện Đột Tập...`,
-          detailVi: 'Bỏ qua pha rút bài thông thường nếu chọn ít nhất 1 mục tiêu.',
+              ? (en ? 'Ration Raid — Choose up to 2 opponents to take 1 card each (or pass)' : 'Đột Tập — Chọn tối đa 2 đối thủ để lấy mỗi người 1 lá (hoặc bỏ qua)')
+              : (en ? `Waiting for ${targetName} (Ration Raid)...` : `Đang chờ ${targetName} thực hiện Đột Tập...`),
+          detailVi: en ? 'Replaces normal Draw phase if at least 1 target is picked.' : 'Bỏ qua pha rút bài thông thường nếu chọn ít nhất 1 mục tiêu.',
           actorSeat: interrupt.targetSeat,
           actorNameVi: targetName,
           isMyTurn: interrupt.targetSeat === viewerSeat,
@@ -1171,9 +1233,9 @@ export function describePendingActorPrompt(view: PlayerViewState): TurnActorProm
         return {
           headlineVi:
             interrupt.targetSeat === viewerSeat
-              ? 'Phá Giáp — Rút ít hơn 1 lá để tăng +1 sát thương lượt này?'
-              : `Đang chờ ${targetName} quyết định Phá Giáp...`,
-          detailVi: 'Tăng +1 sát thương cho Kiếm Trảm và Sinh Tử Lôi Đài trong lượt.',
+              ? (en ? 'Armor Piercing — Draw 1 fewer card for +1 Strike/Duel damage?' : 'Phá Giáp — Rút ít hơn 1 lá để tăng +1 sát thương lượt này?')
+              : (en ? `Waiting for ${targetName} (Armor Piercing)...` : `Đang chờ ${targetName} quyết định Phá Giáp...`),
+          detailVi: en ? 'Grants +1 damage to Strikes and Trial by Combat this turn.' : 'Tăng +1 sát thương cho Kiếm Trảm và Sinh Tử Lôi Đài trong lượt.',
           actorSeat: interrupt.targetSeat,
           actorNameVi: targetName,
           isMyTurn: interrupt.targetSeat === viewerSeat,
@@ -1183,9 +1245,9 @@ export function describePendingActorPrompt(view: PlayerViewState): TurnActorProm
         return {
           headlineVi:
             interrupt.targetSeat === viewerSeat
-              ? 'Tĩnh Thủ — Bỏ qua pha Bỏ bài?'
-              : `Đang chờ ${targetName} quyết định Tĩnh Thủ...`,
-          detailVi: 'Bạn chưa dùng hay đánh Kiếm Trảm trong lượt đánh chính.',
+              ? (en ? 'Still Guard — Skip Discard phase (and draw +1 under Nine Realms rules)?' : 'Tĩnh Thủ — Bỏ qua pha Bỏ bài?')
+              : (en ? `Waiting for ${targetName} (Still Guard)...` : `Đang chờ ${targetName} quyết định Tĩnh Thủ...`),
+          detailVi: en ? 'No Blade Strike was used during your action phase.' : 'Bạn chưa dùng hay đánh Kiếm Trảm trong lượt đánh chính.',
           actorSeat: interrupt.targetSeat,
           actorNameVi: targetName,
           isMyTurn: interrupt.targetSeat === viewerSeat,
@@ -1195,9 +1257,9 @@ export function describePendingActorPrompt(view: PlayerViewState): TurnActorProm
         return {
           headlineVi:
             interrupt.sourceSeat === viewerSeat
-              ? 'Thiết Kỵ Trảm — Phán xét khóa Thân Pháp của mục tiêu?'
-              : `Đang chờ ${sourceName} quyết định Thiết Kỵ Trảm...`,
-          detailVi: `Mục tiêu: ${targetName}.`,
+              ? (en ? 'Iron Cavalry — Flip Judgment to lock target dodge?' : 'Thiết Kỵ Trảm — Phán xét khóa Thân Pháp của mục tiêu?')
+              : (en ? `Waiting for ${sourceName} (Iron Cavalry)...` : `Đang chờ ${sourceName} quyết định Thiết Kỵ Trảm...`),
+          detailVi: en ? `Target: ${targetName}.` : `Mục tiêu: ${targetName}.`,
           actorSeat: interrupt.sourceSeat ?? null,
           actorNameVi: sourceName,
           isMyTurn: interrupt.sourceSeat === viewerSeat,
@@ -1207,9 +1269,9 @@ export function describePendingActorPrompt(view: PlayerViewState): TurnActorProm
         return {
           headlineVi:
             interrupt.targetSeat === viewerSeat
-              ? 'Chuyển Hoa Ảnh — Bỏ 1 lá để chuyển Kiếm Trảm sang người khác trong tầm?'
-              : `Đang chờ ${targetName} quyết định Chuyển Hoa Ảnh...`,
-          detailVi: `Người đánh Kiếm Trảm: ${sourceName}.`,
+              ? (en ? 'Flowing Mirage — Discard 1 card to redirect Strike to another fighter in range?' : 'Chuyển Hoa Ảnh — Bỏ 1 lá để chuyển Kiếm Trảm sang người khác trong tầm?')
+              : (en ? `Waiting for ${targetName} (Flowing Mirage)...` : `Đang chờ ${targetName} quyết định Chuyển Hoa Ảnh...`),
+          detailVi: en ? `Strike attacker: ${sourceName}.` : `Người đánh Kiếm Trảm: ${sourceName}.`,
           actorSeat: interrupt.targetSeat,
           actorNameVi: targetName,
           isMyTurn: interrupt.targetSeat === viewerSeat,
@@ -1219,11 +1281,13 @@ export function describePendingActorPrompt(view: PlayerViewState): TurnActorProm
         return {
           headlineVi:
             interrupt.targetSeat === viewerSeat
-              ? 'Đảo Mệnh — Đánh 1 lá trên tay thay thế lá phán xét?'
-              : `Đang chờ ${targetName} phản ứng Đảo Mệnh...`,
+              ? (en ? 'Fate Reversal — Play 1 hand card to replace Judgment?' : 'Đảo Mệnh — Đánh 1 lá trên tay thay thế lá phán xét?')
+              : (en ? `Waiting for ${targetName} (Fate Reversal)...` : `Đang chờ ${targetName} phản ứng Đảo Mệnh...`),
           detailVi: interrupt.judgeCard
-            ? `Lá phán xét: ${formatCardShort(interrupt.judgeCard)}${interrupt.judgePurpose ? ` (${interrupt.judgePurpose})` : ''}.`
-            : 'Có thể giữ nguyên hoặc thay thế lá phán xét.',
+            ? (en
+                ? `Judgment card: ${formatCardShort(interrupt.judgeCard)}${interrupt.judgePurpose ? ` (${interrupt.judgePurpose})` : ''}.`
+                : `Lá phán xét: ${formatCardShort(interrupt.judgeCard)}${interrupt.judgePurpose ? ` (${interrupt.judgePurpose})` : ''}.`)
+            : (en ? 'Keep or replace the Judgment card.' : 'Có thể giữ nguyên hoặc thay thế lá phán xét.'),
           actorSeat: interrupt.targetSeat,
           actorNameVi: targetName,
           isMyTurn: interrupt.targetSeat === viewerSeat,
@@ -1233,11 +1297,11 @@ export function describePendingActorPrompt(view: PlayerViewState): TurnActorProm
         return {
           headlineVi:
             interrupt.targetSeat === viewerSeat
-              ? 'Thiên Mệnh Thu — Thu lấy lá bài vừa phán xét?'
-              : `Đang chờ ${targetName} quyết định Thiên Mệnh Thu...`,
+              ? (en ? 'Heavenly Claim — Claim the resolved Judgment card?' : 'Thiên Mệnh Thu — Thu lấy lá bài vừa phán xét?')
+              : (en ? `Waiting for ${targetName} (Heavenly Claim)...` : `Đang chờ ${targetName} quyết định Thiên Mệnh Thu...`),
           detailVi: interrupt.judgeCard
-            ? `Lá phán xét: ${formatCardShort(interrupt.judgeCard)}.`
-            : 'Vũ Văn Mặc có thể thu lấy lá phán xét.',
+            ? (en ? `Judgment card: ${formatCardShort(interrupt.judgeCard)}.` : `Lá phán xét: ${formatCardShort(interrupt.judgeCard)}.`)
+            : (en ? 'Claim the resolved Judgment card.' : 'Có thể thu lấy lá phán xét.'),
           actorSeat: interrupt.targetSeat,
           actorNameVi: targetName,
           isMyTurn: interrupt.targetSeat === viewerSeat,
@@ -1248,11 +1312,11 @@ export function describePendingActorPrompt(view: PlayerViewState): TurnActorProm
         return {
           headlineVi:
             interrupt.targetSeat === viewerSeat
-              ? `Hấp Tinh Chiêu — Thu lấy ${dmgCardDesc ?? 'lá bài vừa gây sát thương'}?`
-              : `Đang chờ ${targetName} quyết định Hấp Tinh Chiêu...`,
+              ? (en ? `Iron Hegemon — Claim ${dmgCardDesc ?? 'damaging card(s)'}?` : `Hấp Tinh Chiêu — Thu lấy ${dmgCardDesc ?? 'lá bài vừa gây sát thương'}?`)
+              : (en ? `Waiting for ${targetName} (Iron Hegemon)...` : `Đang chờ ${targetName} quyết định Hấp Tinh Chiêu...`),
           detailVi: dmgCardDesc
-            ? `Bá Tông có thể thu về tay ${dmgCardDesc} vừa gây sát thương.`
-            : 'Bá Tông có thể thu về tay lá bài gây sát thương.',
+            ? (en ? `Claim ${dmgCardDesc} and draw +1 bonus card.` : `Bá Tông có thể thu về tay ${dmgCardDesc} vừa gây sát thương.`)
+            : (en ? 'Claim the damaging card(s) to hand.' : 'Bá Tông có thể thu về tay lá bài gây sát thương.'),
           actorSeat: interrupt.targetSeat,
           actorNameVi: targetName,
           isMyTurn: interrupt.targetSeat === viewerSeat,
@@ -1263,9 +1327,9 @@ export function describePendingActorPrompt(view: PlayerViewState): TurnActorProm
         return {
           headlineVi:
             interrupt.targetSeat === viewerSeat
-              ? `Hồi Hưởng — Lấy 1 lá bài từ ${sourceName}?`
-              : `Đang chờ ${targetName} quyết định Hồi Hưởng...`,
-          detailVi: `Nguồn sát thương: ${sourceName}.`,
+              ? (en ? `Retaliate — Take 1 card from ${sourceName}?` : `Hồi Hưởng — Lấy 1 lá bài từ ${sourceName}?`)
+              : (en ? `Waiting for ${targetName} (Retaliate)...` : `Đang chờ ${targetName} quyết định Hồi Hưởng...`),
+          detailVi: en ? `Damage source: ${sourceName}.` : `Nguồn sát thương: ${sourceName}.`,
           actorSeat: interrupt.targetSeat,
           actorNameVi: targetName,
           isMyTurn: interrupt.targetSeat === viewerSeat,
@@ -1275,9 +1339,9 @@ export function describePendingActorPrompt(view: PlayerViewState): TurnActorProm
         return {
           headlineVi:
             interrupt.targetSeat === viewerSeat
-              ? `Hàn Khí Phản — Phán xét phản công ${sourceName}?`
-              : `Đang chờ ${targetName} quyết định Hàn Khí Phản...`,
-          detailVi: 'Nếu phán xét không ra Cơ, nguồn sát thương phải bỏ 2 lá hoặc mất 1 sinh lực.',
+              ? (en ? `Fierce Counter — Judge to strike back at ${sourceName}?` : `Hàn Khí Phản — Phán xét phản công ${sourceName}?`)
+              : (en ? `Waiting for ${targetName} (Fierce Counter)...` : `Đang chờ ${targetName} quyết định Hàn Khí Phản...`),
+          detailVi: en ? 'Non-Heart forces attacker to discard 2 cards or take 1 damage.' : 'Nếu phán xét không ra Cơ, nguồn sát thương phải bỏ 2 lá hoặc mất 1 sinh lực.',
           actorSeat: interrupt.targetSeat,
           actorNameVi: targetName,
           isMyTurn: interrupt.targetSeat === viewerSeat,
@@ -1287,9 +1351,9 @@ export function describePendingActorPrompt(view: PlayerViewState): TurnActorProm
         return {
           headlineVi:
             interrupt.targetSeat === viewerSeat
-              ? 'Trúng Hàn Khí Phản — Bỏ 2 lá trên tay hoặc chịu 1 sát thương'
-              : `Đang chờ ${targetName} chọn hình phạt Hàn Khí Phản...`,
-          detailVi: `Từ Thiết Liệt (${sourceName}).`,
+              ? (en ? 'Fierce Counter Triggered — Discard 2 hand cards or take 1 damage' : 'Trúng Hàn Khí Phản — Bỏ 2 lá trên tay hoặc chịu 1 sát thương')
+              : (en ? `Waiting for ${targetName} to choose Fierce Counter penalty...` : `Đang chờ ${targetName} chọn hình phạt Hàn Khí Phản...`),
+          detailVi: en ? `From ${sourceName}.` : `Từ Thiết Liệt (${sourceName}).`,
           actorSeat: interrupt.targetSeat,
           actorNameVi: targetName,
           isMyTurn: interrupt.targetSeat === viewerSeat,
@@ -1299,9 +1363,9 @@ export function describePendingActorPrompt(view: PlayerViewState): TurnActorProm
         return {
           headlineVi:
             interrupt.targetSeat === viewerSeat
-              ? 'Tâm Kế — Chia 2 lá bài mới rút cho bản thân hoặc đồng đội'
-              : `Đang chờ ${targetName} chia bài Tâm Kế...`,
-          detailVi: 'Chọn người nhận cho từng lá ở khu trung tâm bàn.',
+              ? (en ? 'Lasting Stratagem — Distribute 2 drawn cards to any fighters' : 'Tâm Kế — Chia 2 lá bài mới rút cho bản thân hoặc đồng đội')
+              : (en ? `Waiting for ${targetName} to distribute Stratagem cards...` : `Đang chờ ${targetName} chia bài Tâm Kế...`),
+          detailVi: en ? 'Pick a recipient for each card in the center.' : 'Chọn người nhận cho từng lá ở khu trung tâm bàn.',
           actorSeat: interrupt.targetSeat,
           actorNameVi: targetName,
           isMyTurn: interrupt.targetSeat === viewerSeat,
@@ -1311,9 +1375,9 @@ export function describePendingActorPrompt(view: PlayerViewState): TurnActorProm
         return {
           headlineVi:
             interrupt.targetSeat === viewerSeat
-              ? `Đoán Tâm Mưu — Đoán chất bài trước khi rút từ ${sourceName}`
-              : `Đang chờ ${targetName} đoán chất Đoán Tâm Mưu...`,
-          detailVi: 'Chọn một trong 4 chất ♠ ♥ ♣ ♦.',
+              ? (en ? `Mind Gambit — Guess a suit before drawing from ${sourceName}` : `Đoán Tâm Mưu — Đoán chất bài trước khi rút từ ${sourceName}`)
+              : (en ? `Waiting for ${targetName} to guess suit...` : `Đang chờ ${targetName} đoán chất Đoán Tâm Mưu...`),
+          detailVi: en ? 'Choose one of the 4 suits ♠ ♥ ♣ ♦.' : 'Chọn một trong 4 chất ♠ ♥ ♣ ♦.',
           actorSeat: interrupt.targetSeat,
           actorNameVi: targetName,
           isMyTurn: interrupt.targetSeat === viewerSeat,
@@ -1323,9 +1387,9 @@ export function describePendingActorPrompt(view: PlayerViewState): TurnActorProm
         return {
           headlineVi:
             interrupt.responderSeat === viewerSeat
-              ? `Vân Lệnh — Đánh Kiếm Trảm giúp Minh Chủ ${targetName}?`
-              : `Đang chờ ${responderName} hưởng ứng Vân Lệnh...`,
-          detailVi: `Minh Chủ Thanh Vân: ${targetName}.`,
+              ? (en ? `Cloud Command — Play a Blade Strike for Sovereign ${targetName}?` : `Vân Lệnh — Đánh Kiếm Trảm giúp Minh Chủ ${targetName}?`)
+              : (en ? `Waiting for ${responderName} (Cloud Command)...` : `Đang chờ ${responderName} hưởng ứng Vân Lệnh...`),
+          detailVi: en ? `Azure Cloud Sovereign: ${targetName}.` : `Minh Chủ Thanh Vân: ${targetName}.`,
           actorSeat: interrupt.responderSeat ?? null,
           actorNameVi: responderName,
           isMyTurn: interrupt.responderSeat === viewerSeat,
@@ -1335,9 +1399,9 @@ export function describePendingActorPrompt(view: PlayerViewState): TurnActorProm
         return {
           headlineVi:
             interrupt.responderSeat === viewerSeat
-              ? `Huyền Giáp Vệ — Đánh Thân Pháp giúp Minh Chủ ${targetName}?`
-              : `Đang chờ ${responderName} hưởng ứng Huyền Giáp Vệ...`,
-          detailVi: `Minh Chủ Huyền Thiết: ${targetName}.`,
+              ? (en ? `Iron Aegis — Play Shadow Step for Sovereign ${targetName}?` : `Huyền Giáp Vệ — Đánh Thân Pháp giúp Minh Chủ ${targetName}?`)
+              : (en ? `Waiting for ${responderName} (Iron Aegis)...` : `Đang chờ ${responderName} hưởng ứng Huyền Giáp Vệ...`),
+          detailVi: en ? `Iron Order Sovereign: ${targetName}.` : `Minh Chủ Huyền Thiết: ${targetName}.`,
           actorSeat: interrupt.responderSeat ?? null,
           actorNameVi: responderName,
           isMyTurn: interrupt.responderSeat === viewerSeat,
@@ -1352,8 +1416,8 @@ export function describePendingActorPrompt(view: PlayerViewState): TurnActorProm
   switch (view.turnPhase) {
     case 'JUDGE':
       return {
-        headlineVi: `Pha Phán Xét — ${currentActorName}`,
-        detailVi: 'Đang kiểm tra các lá Bí kíp Thời gian.',
+        headlineVi: en ? `Judgment Phase — ${currentActorName}` : `Pha Phán Xét — ${currentActorName}`,
+        detailVi: en ? 'Resolving delayed seals.' : 'Đang kiểm tra các lá Bí kíp Thời gian.',
         actorSeat: view.currentTurnSeat,
         actorNameVi: currentActorName,
         isMyTurn: isSelfTurn,
@@ -1366,19 +1430,21 @@ export function describePendingActorPrompt(view: PlayerViewState): TurnActorProm
         (selfHeroId === 'zhou_yu' ? 3 : selfHeroId === 'xu_chu' ? 1 : 2);
       const skillTag =
         selfHeroId === 'zhou_yu'
-          ? ' — Tâm Nhãn (+1 lá)'
+          ? (en ? " — Mind's Eye (+1)" : ' — Tâm Nhãn (+1 lá)')
           : selfHeroId === 'xu_chu'
-            ? ' — Phá Giáp (rút 1 lá đầu)'
+            ? (en ? ' — Armor Piercing (draw 1 first)' : ' — Phá Giáp (rút 1 lá đầu)')
             : '';
       return {
         headlineVi: isSelfTurn
-          ? `ĐẾN LƯỢT BẠN — PHA RÚT BÀI (Rút ${drawCount} lá${skillTag})`
-          : `Pha Rút Bài — ${currentActorName}`,
+          ? (en ? `YOUR TURN — DRAW PHASE (Draw ${drawCount}${skillTag})` : `ĐẾN LƯỢT BẠN — PHA RÚT BÀI (Rút ${drawCount} lá${skillTag})`)
+          : (en ? `Draw Phase — ${currentActorName}` : `Pha Rút Bài — ${currentActorName}`),
         detailVi: isSelfTurn
-          ? selfHeroId === 'xu_chu'
-            ? 'Bấm nút Rút bài bên dưới hoặc chồng bài rút (Enter / Space) để rút 1 lá đầu lượt.'
-            : 'Bấm nút Rút bài bên dưới hoặc chồng bài rút (Enter / Space) để bắt đầu lượt.'
-          : 'Đang rút bài đầu lượt.',
+          ? (en
+              ? 'Click Draw Cards below or click the deck (Enter / Space) to draw.'
+              : selfHeroId === 'xu_chu'
+                ? 'Bấm nút Rút bài bên dưới hoặc chồng bài rút (Enter / Space) để rút 1 lá đầu lượt.'
+                : 'Bấm nút Rút bài bên dưới hoặc chồng bài rút (Enter / Space) để bắt đầu lượt.')
+          : (en ? 'Drawing cards at start of turn.' : 'Đang rút bài đầu lượt.'),
         actorSeat: view.currentTurnSeat,
         actorNameVi: currentActorName,
         isMyTurn: isSelfTurn,
@@ -1389,13 +1455,19 @@ export function describePendingActorPrompt(view: PlayerViewState): TurnActorProm
       const isSelfLuoYiDrawSecond = isSelfTurn && Boolean(view.turnFlags?.drawSecondAvailable);
       return {
         headlineVi: isSelfTurn
-          ? 'Lượt của bạn — Pha Ra Chiêu'
-          : `Đang chờ ${currentActorName} đánh bài...`,
+          ? (en ? 'Your Turn — Action Phase' : 'Lượt của bạn — Pha Ra Chiêu')
+          : (en ? `Waiting for ${currentActorName} to act...` : `Đang chờ ${currentActorName} đánh bài...`),
         detailVi: isSelfTurn
           ? isSelfLuoYiDrawSecond
-            ? 'Bạn có thể rút thêm lá thứ 2 (bỏ Phá Giáp) hoặc đánh Kiếm Trảm / Sinh Tử Lôi Đài ngay để +1 sát thương.'
-            : 'Chọn lá bài hoặc chiêu thức bên dưới rồi chọn mục tiêu nếu cần.'
-          : 'Bạn có thể bật "Tự bỏ qua Hóa Giải" nếu không muốn giữ nhịp chờ.',
+            ? (en
+                ? 'Draw your 2nd card (skip Armor Piercing) or play Strike / Trial by Combat for +1 damage.'
+                : 'Bạn có thể rút thêm lá thứ 2 (bỏ Phá Giáp) hoặc đánh Kiếm Trảm / Sinh Tử Lôi Đài ngay để +1 sát thương.')
+            : (en
+                ? 'Select a card or skill below, then choose a target if required.'
+                : 'Chọn lá bài hoặc chiêu thức bên dưới rồi chọn mục tiêu nếu cần.')
+          : (en
+              ? 'Enable "Auto-Pass Counter" if you do not want to pause on scrolls.'
+              : 'Bạn có thể bật "Tự bỏ qua Hóa Giải" nếu không muốn giữ nhịp chờ.'),
         actorSeat: view.currentTurnSeat,
         actorNameVi: currentActorName,
         isMyTurn: isSelfTurn,
@@ -1406,11 +1478,13 @@ export function describePendingActorPrompt(view: PlayerViewState): TurnActorProm
       const needDrop = Math.max(0, (viewer?.handCount ?? 0) - Math.max(0, viewer?.hp ?? 0));
       return {
         headlineVi: isSelfTurn
-          ? `Pha Bỏ Bài — Cần bỏ ${needDrop} lá bài`
-          : `Đang chờ ${currentActorName} bỏ bài cuối lượt...`,
+          ? (en ? `Discard Phase — Discard ${needDrop} card(s)` : `Pha Bỏ Bài — Cần bỏ ${needDrop} lá bài`)
+          : (en ? `Waiting for ${currentActorName} to discard...` : `Đang chờ ${currentActorName} bỏ bài cuối lượt...`),
         detailVi: isSelfTurn
-          ? `Giới hạn bài trên tay bằng máu hiện tại (${Math.max(0, viewer?.hp ?? 0)} lá).`
-          : 'Kết thúc pha bỏ bài sẽ chuyển lượt sang ghế kế tiếp.',
+          ? (en
+              ? `Hand limit equals your current HP (${Math.max(0, viewer?.hp ?? 0)} card(s)).`
+              : `Giới hạn bài trên tay bằng sinh lực hiện tại (${Math.max(0, viewer?.hp ?? 0)} lá).`)
+          : (en ? 'Turn advances after discarding excess cards.' : 'Kết thúc pha bỏ bài sẽ chuyển lượt sang ghế kế tiếp.'),
         actorSeat: view.currentTurnSeat,
         actorNameVi: currentActorName,
         isMyTurn: isSelfTurn,
@@ -1419,8 +1493,8 @@ export function describePendingActorPrompt(view: PlayerViewState): TurnActorProm
     }
     case 'END':
       return {
-        headlineVi: `Pha Kết Lượt — ${currentActorName}`,
-        detailVi: 'Đang hoàn tất kỹ năng cuối lượt.',
+        headlineVi: en ? `End Phase — ${currentActorName}` : `Pha Kết Lượt — ${currentActorName}`,
+        detailVi: en ? 'Resolving end-of-turn effects.' : 'Đang hoàn tất kỹ năng cuối lượt.',
         actorSeat: view.currentTurnSeat,
         actorNameVi: currentActorName,
         isMyTurn: isSelfTurn,
@@ -1516,17 +1590,18 @@ function isCardValidForPlayConvert(
   mode: ConvertCardMode | null,
 ): string | null {
   if (!mode || isCardValidForConvertMode(card, mode)) return null;
+  const en = i18n.language === 'en';
   switch (mode) {
     case 'wu_sheng':
-      return 'Thanh Long Trảm cần chọn lá chất Đỏ (Cơ/Rô).';
+      return en ? 'Azure Cleave requires a Red card (♥/♦).' : 'Thanh Long Trảm cần chọn lá chất Đỏ (Cơ/Rô).';
     case 'long_dan_sat':
-      return 'Ngân Thương Thế (chuyển Kiếm Trảm) cần lá Thân Pháp.';
+      return en ? 'Silver Spear (Strike conversion) requires a Shadow Step.' : 'Ngân Thương Thế (chuyển Kiếm Trảm) cần lá Thân Pháp.';
     case 'ky_tap':
-      return 'Dạ Tập Doanh cần chọn lá chất Đen (Bích/Chuồn).';
+      return en ? 'Night Raid requires a Black card (♠/♣).' : 'Dạ Tập Doanh cần chọn lá chất Đen (Bích/Chuồn).';
     case 'quoc_sac':
-      return 'Thiên Hương Phong cần chọn lá chất Rô.';
+      return en ? 'Celestial Seal requires a Diamond (♦) card.' : 'Thiên Hương Phong cần chọn lá chất Rô.';
     case 'cuu_vien':
-      return 'Cứu Tử Phù cần chọn lá chất Đỏ.';
+      return en ? 'Lifesaving Talisman requires a Red card (♥/♦).' : 'Cứu Tử Phù cần chọn lá chất Đỏ.';
     default:
       return null;
   }
@@ -1538,26 +1613,29 @@ export function buildCardDragDropIntent(
   card: CardInstance,
   selection: MatchSelectionState,
 ): DragDropIntent {
+  const en = i18n.language === 'en';
+  const locale = en ? 'en' : 'vi';
+  const cardName = getCuuChauCardDisplay(card.cardKey, locale, card.nameVi).name;
   const selfSeat = view.viewerSeatIndex;
   const selfPlayer = view.players.find((p) => p.seatIndex === selfSeat);
   if (!selfPlayer || !selfPlayer.alive) {
-    return { kind: 'blocked', reasonVi: 'Ghế của bạn hiện không thể đánh bài.' };
+    return { kind: 'blocked', reasonVi: en ? 'Your seat cannot play cards right now.' : 'Ghế của bạn hiện không thể đánh bài.' };
   }
 
   const interrupt = view.activeInterrupt;
   if (interrupt) {
     if (interrupt.kind === 'WAIT_NULLIFICATION') {
       if (!interrupt.canRespondNullification) {
-        return { kind: 'blocked', reasonVi: 'Đang chờ phản ứng Hóa Giải Chân Khí.' };
+        return { kind: 'blocked', reasonVi: en ? 'Waiting for Qi Negation response.' : 'Đang chờ phản ứng Hóa Giải Chân Khí.' };
       }
       if (card.cardKey === 'vo_giai_kha_kich') {
         return {
           kind: 'table',
-          actionLabelVi: 'Thả lên bàn để đánh Hóa Giải Chân Khí',
+          actionLabelVi: en ? 'Drop onto table to play Qi Negation' : 'Thả lên bàn để đánh Hóa Giải Chân Khí',
           action: { type: 'RESPOND_NULLIFICATION', seatIndex: selfSeat, cardId: card.id },
         };
       }
-      return { kind: 'blocked', reasonVi: 'Cần dùng lá Hóa Giải Chân Khí để hưởng ứng.' };
+      return { kind: 'blocked', reasonVi: en ? 'Play Qi Negation to counter.' : 'Cần dùng lá Hóa Giải Chân Khí để hưởng ứng.' };
     }
     if (
       (interrupt.kind === 'WAIT_DODGE' || interrupt.kind === 'WAIT_AOE_DODGE') &&
@@ -1569,7 +1647,7 @@ export function buildCardDragDropIntent(
       if (card.cardKey === 'thiem' || canLongDan || canThanhQuoc) {
         return {
           kind: 'table',
-          actionLabelVi: `Thả để đánh Thân Pháp (${card.nameVi}) né đòn`,
+          actionLabelVi: en ? `Drop to dodge (${cardName})` : `Thả để đánh Thân Pháp (${cardName}) né đòn`,
           action: {
             type: interrupt.kind === 'WAIT_AOE_DODGE' ? 'RESPOND_AOE_DODGE' : 'RESPOND_DODGE',
             seatIndex: selfSeat,
@@ -1577,7 +1655,7 @@ export function buildCardDragDropIntent(
           },
         };
       }
-      return { kind: 'blocked', reasonVi: 'Cần lá Thân Pháp để né đòn.' };
+      return { kind: 'blocked', reasonVi: en ? 'Shadow Step required to dodge.' : 'Cần lá Thân Pháp để né đòn.' };
     }
     if (
       interrupt.kind === 'WAIT_COLLATERAL_SAT'
@@ -1587,7 +1665,7 @@ export function buildCardDragDropIntent(
     ) {
       const canWuSheng = selfPlayer.heroId === 'guan_yu' && isRedSuit(card.suit);
       const canLongDan = selfPlayer.heroId === 'zhao_yun' && card.cardKey === 'thiem';
-      if (card.cardKey === 'sat' || canWuSheng || canLongDan) {
+      if (card.cardKey === 'sat' || card.cardKey === 'pha_giap_tram' || canWuSheng || canLongDan) {
         const actionType =
           interrupt.kind === 'WAIT_AOE_SAT'
             ? 'RESPOND_AOE_SAT'
@@ -1596,11 +1674,11 @@ export function buildCardDragDropIntent(
               : 'RESPOND_COLLATERAL_SAT';
         return {
           kind: 'table',
-          actionLabelVi: `Thả để đánh Kiếm Trảm (${card.nameVi})`,
+          actionLabelVi: en ? `Drop to Strike (${cardName})` : `Thả để đánh Kiếm Trảm (${cardName})`,
           action: { type: actionType, seatIndex: selfSeat, cardIds: [card.id] },
         };
       }
-      return { kind: 'blocked', reasonVi: 'Cần lá Kiếm Trảm để hưởng ứng.' };
+      return { kind: 'blocked', reasonVi: en ? 'Blade Strike required to answer.' : 'Cần lá Kiếm Trảm để hưởng ứng.' };
     }
     if (interrupt.kind === 'WAIT_PEACH_RESCUE' && interrupt.responderSeat === selfSeat) {
       const canJiu =
@@ -1610,26 +1688,26 @@ export function buildCardDragDropIntent(
       if (card.cardKey === 'dao' || canJiu) {
         return {
           kind: 'table',
-          actionLabelVi: `Thả để dùng ${card.nameVi} cứu nguy kịch`,
+          actionLabelVi: en ? `Drop to rescue (${cardName})` : `Thả để dùng ${cardName} cứu nguy kịch`,
           action: { type: 'RESPOND_PEACH_RESCUE', seatIndex: selfSeat, cardId: card.id },
         };
       }
-      return { kind: 'blocked', reasonVi: 'Cần lá Hồi Xuân Đan để cứu người nguy kịch.' };
+      return { kind: 'blocked', reasonVi: en ? 'Elixir Pill required to rescue.' : 'Cần lá Hồi Xuân Đan để cứu người nguy kịch.' };
     }
     if (interrupt.kind === 'WAIT_GUI_CAI' && interrupt.targetSeat === selfSeat) {
       return {
         kind: 'table',
-        actionLabelVi: `Thả ${card.nameVi} đổi lá phán xét (Đảo Mệnh)`,
+        actionLabelVi: en ? `Drop ${cardName} to replace Judgment (Fate Reversal)` : `Thả ${cardName} đổi lá phán xét (Đảo Mệnh)`,
         action: { type: 'RESPOND_GUI_CAI', seatIndex: selfSeat, cardId: card.id },
       };
     }
     if (interrupt.kind === 'WAIT_JI_JIANG' && interrupt.responderSeat === selfSeat) {
       const canWuSheng = selfPlayer.heroId === 'guan_yu' && isRedSuit(card.suit);
       const canLongDan = selfPlayer.heroId === 'zhao_yun' && card.cardKey === 'thiem';
-      if (card.cardKey === 'sat' || canWuSheng || canLongDan) {
+      if (card.cardKey === 'sat' || card.cardKey === 'pha_giap_tram' || canWuSheng || canLongDan) {
         return {
           kind: 'table',
-          actionLabelVi: `Thả ${card.nameVi} đánh Kiếm Trảm hộ Minh Chủ`,
+          actionLabelVi: en ? `Drop ${cardName} to Strike for Sovereign` : `Thả ${cardName} đánh Kiếm Trảm hộ Minh Chủ`,
           action: { type: 'RESPOND_JI_JIANG', seatIndex: selfSeat, cardIds: [card.id] },
         };
       }
@@ -1641,14 +1719,14 @@ export function buildCardDragDropIntent(
       if (card.cardKey === 'thiem' || canLongDan || canThanhQuoc) {
         return {
           kind: 'table',
-          actionLabelVi: `Thả ${card.nameVi} đánh Thân Pháp hộ Minh Chủ`,
+          actionLabelVi: en ? `Drop ${cardName} to Dodge for Sovereign` : `Thả ${cardName} đánh Thân Pháp hộ Minh Chủ`,
           action: { type: 'RESPOND_HU_JIA', seatIndex: selfSeat, cardId: card.id },
         };
       }
     }
     return {
       kind: 'blocked',
-      reasonVi: 'Hãy bấm nút phản ứng ở thanh lệnh phía trên dải bài.',
+      reasonVi: en ? 'Use the response action bar above your hand.' : 'Hãy bấm nút phản ứng ở thanh lệnh phía trên dải bài.',
     };
   }
 
@@ -1658,13 +1736,13 @@ export function buildCardDragDropIntent(
     if (discardNeeded <= 1) {
       return {
         kind: 'table',
-        actionLabelVi: `Thả lên bàn để bỏ ${card.nameVi}`,
+        actionLabelVi: en ? `Drop onto table to discard ${cardName}` : `Thả lên bàn để bỏ ${cardName}`,
         action: { type: 'DISCARD_CARDS', seatIndex: selfSeat, cardIds: [card.id] },
       };
     }
     return {
       kind: 'toggle_select',
-      promptVi: `Pha bỏ ${discardNeeded} lá — thả để chọn/bỏ chọn lá này`,
+      promptVi: en ? `Discard ${discardNeeded} cards — drop to toggle selection` : `Pha bỏ ${discardNeeded} lá — thả để chọn/bỏ chọn lá này`,
     };
   }
 
@@ -1672,7 +1750,7 @@ export function buildCardDragDropIntent(
     if (selection.activeConvertMode === 'truong_bat') {
       return {
         kind: 'toggle_select',
-        promptVi: 'Xà Ảnh Mâu cần chọn đủ 2 lá trên tay rồi chọn mục tiêu.',
+        promptVi: en ? 'Shadow Serpent Spear: pick 2 hand cards then choose target.' : 'Xà Ảnh Mâu cần chọn đủ 2 lá trên tay rồi chọn mục tiêu.',
       };
     }
     const convertErr = isCardValidForPlayConvert(card, selection.activeConvertMode);
@@ -1687,29 +1765,29 @@ export function buildCardDragDropIntent(
     };
     const effectiveKey = getEffectivePlayCardKey(hyp, selfPlayer.handCards ?? [card]);
     if (!effectiveKey) {
-      return { kind: 'blocked', reasonVi: 'Không thể dùng lá bài này lúc này.' };
+      return { kind: 'blocked', reasonVi: en ? 'Cannot play this card right now.' : 'Không thể dùng lá bài này lúc này.' };
     }
     if (effectiveKey === 'thiem') {
-      return { kind: 'blocked', reasonVi: 'Lá Thân Pháp chỉ dùng khi né Kiếm Trảm hoặc Mưa Tên Bão Vũ.' };
+      return { kind: 'blocked', reasonVi: en ? 'Shadow Step can only be played to dodge Strikes or Skyfall Volley.' : 'Lá Thân Pháp chỉ dùng khi né Kiếm Trảm hoặc Mưa Tên Bão Vũ.' };
     }
     if (effectiveKey === 'vo_giai_kha_kich') {
-      return { kind: 'blocked', reasonVi: 'Hóa Giải Chân Khí chỉ dùng khi Bí kíp sắp hiệu lực.' };
+      return { kind: 'blocked', reasonVi: en ? 'Qi Negation is only played when a scroll is about to resolve.' : 'Hóa Giải Chân Khí chỉ dùng khi Bí kíp sắp hiệu lực.' };
     }
     if (effectiveKey === 'dao' && selfPlayer.hp >= selfPlayer.maxHp) {
-      return { kind: 'blocked', reasonVi: 'Sinh lực đang đầy — chưa thể dùng Hồi Xuân Đan.' };
+      return { kind: 'blocked', reasonVi: en ? 'HP is already full.' : 'Sinh lực đang đầy — chưa thể dùng Hồi Xuân Đan.' };
     }
-    if (effectiveKey === 'sat') {
+    if (effectiveKey === 'sat' || effectiveKey === 'pha_giap_tram') {
       if (view.peacefulFirstRound && view.roundNumber === 1) {
         return {
           kind: 'blocked',
-          reasonVi: 'Vòng 1 Hòa Bình: chưa được đánh Kiếm Trảm ở vòng đầu tiên.',
+          reasonVi: en ? 'Peaceful Round 1: Strikes are disabled on the opening round.' : 'Vòng 1 Hòa Bình: chưa được đánh Kiếm Trảm ở vòng đầu tiên.',
         };
       }
       const unlimited =
         selfPlayer.heroId === 'zhang_fei' ||
         selfPlayer.equipments.weapon?.cardKey === 'gia_cat_lien_no';
       if (!unlimited && (view.turnFlags?.satUsedThisTurn ?? 0) >= 1) {
-        return { kind: 'blocked', reasonVi: 'Bạn đã dùng Kiếm Trảm trong lượt đánh này.' };
+        return { kind: 'blocked', reasonVi: en ? 'Strike limit reached for this turn.' : 'Bạn đã dùng Kiếm Trảm trong lượt đánh này.' };
       }
     }
 
@@ -1717,31 +1795,35 @@ export function buildCardDragDropIntent(
     const asCardKey = getConvertAsCardKey(selection.activeConvertMode);
     if (spec.minTargets === 2) {
       if (spec.eligibleSeats.length === 0) {
-        return { kind: 'blocked', reasonVi: 'Không có người cầm Binh khí thích hợp.' };
+        return { kind: 'blocked', reasonVi: en ? 'No opponent holds a Weapon.' : 'Không có người cầm Binh khí thích hợp.' };
       }
       return {
         kind: 'seat_pair_step1',
         card,
-        actionLabelVi: 'Thả vào người cầm Binh khí trước (Bước 1/2)',
+        actionLabelVi: en ? 'Drop onto Weapon holder first (Step 1/2)' : 'Thả vào người cầm Binh khí trước (Bước 1/2)',
         eligibleSeats: spec.eligibleSeats,
       };
     }
     if (spec.minTargets >= 1 && spec.maxTargets === 1) {
       if (spec.eligibleSeats.length === 0) {
-        return { kind: 'blocked', reasonVi: 'Không có mục tiêu hợp lệ trong tầm đánh.' };
+        return { kind: 'blocked', reasonVi: en ? 'No valid target in range.' : 'Không có mục tiêu hợp lệ trong tầm đánh.' };
       }
       const actionVerbVi =
         effectiveKey === 'sat'
-          ? 'đánh Kiếm Trảm'
-          : effectiveKey === 'quyet_dau'
-            ? 'Sinh Tử Lôi Đài'
-            : effectiveKey === 'thuan_thu_khien_duong'
-              ? 'Thám Nang Thủ'
-              : effectiveKey === 'qua_ha_sai_cau'
-                ? 'Phá Trận Chưởng'
-                : effectiveKey === 'lac_bat_tu_thuc'
-                  ? 'đặt Phong Mạch'
-                  : 'dùng lên';
+          ? (en ? 'Blade Strike' : 'đánh Kiếm Trảm')
+          : effectiveKey === 'pha_giap_tram'
+            ? (en ? 'Armor-Piercing Strike' : 'Phá Giáp Trảm')
+            : effectiveKey === 'kinh_loi_chan'
+              ? (en ? 'Thunderclap Pulse' : 'Kinh Lôi Chấn')
+              : effectiveKey === 'quyet_dau'
+                ? (en ? 'Trial by Combat' : 'Sinh Tử Lôi Đài')
+                : effectiveKey === 'thuan_thu_khien_duong'
+                  ? (en ? 'Sleight of Hand' : 'Thám Nang Thủ')
+                  : effectiveKey === 'qua_ha_sai_cau'
+                    ? (en ? 'Break Formation' : 'Phá Trận Chưởng')
+                    : effectiveKey === 'lac_bat_tu_thuc'
+                      ? (en ? 'Acupoint Seal' : 'đặt Phong Mạch')
+                      : (en ? 'use on' : 'dùng lên');
       return {
         kind: 'seat',
         card,
@@ -1765,8 +1847,8 @@ export function buildCardDragDropIntent(
     return {
       kind: 'table',
       actionLabelVi: highlightSlot
-        ? `Thả lên bàn để trang bị ${card.nameVi}`
-        : `Thả lên bàn để dùng ${card.nameVi}`,
+        ? (en ? `Drop onto table to equip ${cardName}` : `Thả lên bàn để trang bị ${cardName}`)
+        : (en ? `Drop onto table to use ${cardName}` : `Thả lên bàn để dùng ${cardName}`),
       ...(highlightSlot ? { highlightSlot } : {}),
       action: {
         type: 'PLAY_CARD',
@@ -1821,6 +1903,7 @@ const MATCH_ERROR_VI_MAP: Readonly<Record<string, string>> = {
   INVALID_DISMANTLE_TARGET: 'Không thể dùng Phá Trận Chưởng lên chính mình.',
   TARGET_HAS_NO_CARDS: 'Mục tiêu không có lá bài nào.',
   INVALID_DUEL_TARGET: 'Không thể Sinh Tử Lôi Đài với chính mình.',
+  INVALID_KINH_LOI_CHAN_TARGET: 'Không thể dùng Kinh Lôi Chấn lên chính mình.',
   INVALID_COLLATERAL_TARGETS: 'Mục tiêu Tá Kiếm Trảm Phong không hợp lệ.',
   TARGET_NOT_ALIVE: 'Mục tiêu đã ngã xuống.',
   NULLIFICATION_ALREADY_PASSED: 'Bạn đã bỏ qua Hóa Giải Chân Khí cho lượt này.',
@@ -1831,48 +1914,97 @@ const MATCH_ERROR_VI_MAP: Readonly<Record<string, string>> = {
   CARD_NOT_IN_HAND: 'Lá bài không còn trên tay.',
 };
 
-/** Chuyển mọi mã lỗi kỹ thuật từ engine/WS thành thông báo tiếng Việt dễ hiểu. */
+const MATCH_ERROR_EN_MAP: Readonly<Record<string, string>> = {
+  FIRST_ROUND_SAT_FORBIDDEN: 'Peaceful Round 1: Strikes are disabled on the opening round.',
+  SAT_LIMIT_REACHED: 'You have already used a Blade Strike this turn.',
+  HP_ALREADY_FULL: 'HP is already full — cannot use Elixir Pill.',
+  TARGET_OUT_OF_RANGE: 'Target is out of attack range.',
+  SNATCH_TARGET_OUT_OF_RANGE: 'Target is beyond distance 1.',
+  TARGET_IMMUNE_TO_CARD: 'Target is immune to this card.',
+  CANNOT_DISCARD_QUAN_THACH_PHU_SELF: 'Cannot discard Shatterpeak Axe itself.',
+  DELAYED_ZONE_NOT_ALLOWED: 'Cannot select cards in the Seal zone.',
+  SIMULATED_DELAY_CANNOT_BE_ANSWERED_BY_PLAYER: 'Holding short counter check window.',
+  INVALID_LIU_LI_TARGET: 'Flowing Mirage target must be another valid fighter in range.',
+  LIU_LI_REQUIRES_CARD_AND_TARGET: 'Flowing Mirage requires 1 card and 1 valid target in range.',
+  JI_JIANG_NOT_AVAILABLE: 'Cloud Command cannot be activated right now.',
+  NO_SHU_ALLIES_FOR_JI_JIANG: 'No Azure Cloud allies remain.',
+  HU_JIA_NOT_AVAILABLE: 'Iron Aegis cannot be activated right now.',
+  NO_WEI_ALLIES_FOR_HU_JIA: 'No Iron Order allies remain.',
+  BAGUA_NOT_AVAILABLE: 'Eight Trigrams Robe cannot be triggered right now.',
+  QUAN_THACH_PHU_REQUIRES_2_CARDS: 'Shatterpeak Axe requires discarding 2 cards.',
+  HAN_BANG_KIEM_MUST_PICK_1_OR_2_CARDS: 'Glacier Blade discards 1 or 2 target cards.',
+  INTERRUPT_PENDING: 'Another response must resolve first.',
+  NOT_IN_PLAY_PHASE: 'Not currently in Action phase.',
+  NOT_IN_DISCARD_PHASE: 'Not currently in Discard phase.',
+  DEAD_PLAYER_CANNOT_ACT: 'Fallen fighters cannot act.',
+  INVALID_TWO_CARD_COMBO: 'Select exactly 2 hand cards for Shadow Serpent Spear.',
+  INVALID_STRIKE_TARGET_COUNT: 'Invalid Strike target count.',
+  MUST_SELECT_ONE_CARD: 'Please select 1 card.',
+  NOT_A_SAT_CARD: 'Selected card cannot be used as Blade Strike.',
+  NOT_A_THIEM_CARD: 'Selected card cannot be used as Shadow Step.',
+  NOT_A_DAO_CARD: 'Selected card cannot be used as Elixir Pill.',
+  NOT_A_NULLIFICATION_CARD: 'Selected card is not Qi Negation.',
+  INVALID_DELAYED_TARGET: 'Invalid Seal target.',
+  TARGET_ALREADY_HAS_LAC: 'Target already has an Acupoint Seal.',
+  ALREADY_HAS_THIEM_DIEN: 'You already have a Sky Tribulation seal.',
+  INVALID_DISMANTLE_TARGET: 'Cannot target yourself with Break Formation.',
+  TARGET_HAS_NO_CARDS: 'Target has no cards.',
+  INVALID_DUEL_TARGET: 'Cannot challenge yourself to Trial by Combat.',
+  INVALID_KINH_LOI_CHAN_TARGET: 'Cannot target yourself with Thunderclap Pulse.',
+  INVALID_COLLATERAL_TARGETS: 'Invalid targets for Borrowed Edge.',
+  TARGET_NOT_ALIVE: 'Target has already fallen.',
+  NULLIFICATION_ALREADY_PASSED: 'You already passed Qi Negation for this window.',
+  NOT_ELIGIBLE_FOR_NULLIFICATION: 'Not eligible to play Qi Negation right now.',
+  INVALID_TU_XI_TARGETS: 'Invalid Ration Raid target(s).',
+  MATCH_ALREADY_FINISHED: 'Match has already ended.',
+  INVALID_SAT_CARD_COUNT: 'Invalid Strike card count.',
+  CARD_NOT_IN_HAND: 'Card is no longer in hand.',
+};
+
+/** Chuyển mọi mã lỗi kỹ thuật từ engine/WS thành thông báo dễ hiểu theo ngôn ngữ. */
 export function formatMatchErrorVi(
   err: unknown,
-  fallback = 'Thao tác chưa hợp lệ.',
+  fallback?: string,
 ): string {
+  const en = i18n.language === 'en';
+  const defaultFallback = fallback ?? (en ? 'Invalid action.' : 'Thao tác chưa hợp lệ.');
   const raw =
     err instanceof Error ? err.message : typeof err === 'string' ? err : '';
   const trimmed = raw.trim();
   if (!trimmed) {
-    return fallback;
+    return defaultFallback;
   }
-  const direct = MATCH_ERROR_VI_MAP[trimmed];
+  const direct = en ? MATCH_ERROR_EN_MAP[trimmed] : MATCH_ERROR_VI_MAP[trimmed];
   if (direct) {
     return direct;
   }
   if (trimmed.startsWith('CARD_CANNOT_BE_PLAYED_DIRECTLY:')) {
     const cardKey = trimmed.slice('CARD_CANNOT_BE_PLAYED_DIRECTLY:'.length);
     if (cardKey === 'thiem') {
-      return 'Lá Thân Pháp chỉ dùng khi né Kiếm Trảm hoặc Mưa Tên Bão Vũ.';
+      return en ? 'Shadow Step can only be played to dodge.' : 'Lá Thân Pháp chỉ dùng khi né Kiếm Trảm hoặc Mưa Tên Bão Vũ.';
     }
     if (cardKey === 'vo_giai_kha_kich') {
-      return 'Hóa Giải Chân Khí chỉ dùng khi Bí kíp sắp có hiệu lực.';
+      return en ? 'Qi Negation is only played when a scroll is active.' : 'Hóa Giải Chân Khí chỉ dùng khi Bí kíp sắp có hiệu lực.';
     }
-    return 'Lá bài này không thể đánh trực tiếp lúc này.';
+    return en ? 'This card cannot be played directly right now.' : 'Lá bài này không thể đánh trực tiếp lúc này.';
   }
   if (trimmed.startsWith('MUST_DISCARD_EXACTLY:')) {
     const count = trimmed.slice('MUST_DISCARD_EXACTLY:'.length);
-    return `Cần chọn đúng ${count} lá bài để bỏ.`;
+    return en ? `Select exactly ${count} card(s) to discard.` : `Cần chọn đúng ${count} lá bài để bỏ.`;
   }
   if (trimmed.startsWith('CANNOT_CONVERT_CARD_AS:')) {
-    return 'Lá bài đã chọn không đủ điều kiện chuyển đổi.';
+    return en ? 'Selected card cannot be converted that way.' : 'Lá bài đã chọn không đủ điều kiện chuyển đổi.';
   }
   if (trimmed.startsWith('CARD_NOT_IN_HAND:')) {
-    return 'Lá bài không còn trên tay.';
+    return en ? 'Card is no longer in hand.' : 'Lá bài không còn trên tay.';
   }
   if (trimmed.startsWith('CARD_NOT_OWNED:')) {
-    return 'Bạn không sở hữu lá bài này.';
+    return en ? 'You do not own that card.' : 'Bạn không sở hữu lá bài này.';
   }
   if (trimmed.startsWith('EXPECTED_INTERRUPT:')) {
-    return 'Trạng thái phản ứng đã thay đổi, vui lòng thử lại.';
+    return en ? 'Response state changed, please try again.' : 'Trạng thái phản ứng đã thay đổi, vui lòng thử lại.';
   }
-  return /^[A-Z0-9_:]+$/.test(trimmed) ? fallback : trimmed;
+  return /^[A-Z0-9_:]+$/.test(trimmed) ? defaultFallback : formatCuuChauDisplayText(trimmed, en ? 'en' : 'vi');
 }
 
 const LEGACY_REPLACEMENT_CACHE: Partial<
@@ -1929,11 +2061,14 @@ function getLegacyReplacementMatcher(locale: 'vi' | 'en') {
     }
   }
 
-  // Cards (32 templates + alternate spellings/short forms)
-  for (const tpl of STANDARD_DECK_TEMPLATES) {
-    add(tpl.nameVi, getCuuChauCardDisplay(tpl.cardKey, locale, tpl.nameVi).name);
+  // Cards (legacy 108 + Cửu Châu 112 templates + short forms)
+  for (const tpl of [...STANDARD_DECK_TEMPLATES, ...CUU_CHAU_DECK_TEMPLATES]) {
+    const disp = getCuuChauCardDisplay(tpl.cardKey, locale, tpl.nameVi).name;
+    add(tpl.nameVi, disp);
+    const viDisp = getCuuChauCardDisplay(tpl.cardKey, 'vi', tpl.nameVi).name;
+    add(viDisp, disp);
   }
-  add('Từ Hùng Song Cổ Kiếm', getCuuChauCardDisplay('thu_hung_song_co_kiem', locale).name);
+  add('Từ Hùng Song Cổ Kiếm', getCuuChauCardDisplay('tu_hung_song_co_kiem', locale).name);
   add('Vô Giải', getCuuChauCardDisplay('vo_giai_kha_kich', locale).name);
   add('Ngũ Cốc', getCuuChauCardDisplay('ngu_coc_phong_dang', locale).name);
   add('Quá Hà', getCuuChauCardDisplay('qua_ha_sai_cau', locale).name);
@@ -1953,6 +2088,103 @@ function getLegacyReplacementMatcher(locale: 'vi' | 'en') {
   return created;
 }
 
+const EN_LOG_PHRASE_REPLACEMENTS: readonly [RegExp, string][] = [
+  [/Ván đấu chính thức bắt đầu — Vòng (\d+)\./gu, 'Match begins — Round $1.'],
+  [/Tất cả người chơi đã chọn tướng xong và đồng loạt lật công khai\./gu, 'All players locked in their warriors and revealed them simultaneously.'],
+  [/rơi vào trạng thái Hấp hối \((-?\d+) (?:máu|HP)\), bắt đầu vòng Cầu Đào!/gu, 'entered Near Death ($1 HP) — starting Rescue Call!'],
+  [/bắt đầu pha Rút bài/gu, 'starts Draw phase'],
+  [/bắt đầu pha Đánh bài/gu, 'starts Action phase'],
+  [/kết thúc pha Đánh bài/gu, 'ended Action phase'],
+  [/chuyển sang pha Bỏ bài \(cần bỏ (\d+) lá\)/gu, 'entered Discard phase (discard $1 card(s))'],
+  [/rút (\d+) lá ở pha Rút bài/gu, 'drew $1 card(s) in Draw phase'],
+  [/rút thêm (\d+) lá khi trúng đòn/gu, 'drew $1 extra card(s) on hit'],
+  [/rút (\d+) lá khi đòn bị né/gu, 'drew $1 card(s) on dodged Strike'],
+  [/rút thêm (\d+) lá/gu, 'drew $1 extra card(s)'],
+  [/rút (\d+) lá/gu, 'drew $1 card(s)'],
+  [/bỏ qua (.+?), rút (\d+) lá/gu, 'skipped $1, drew $2 card(s)'],
+  [/hồi (\d+) Sinh Lực và rút (\d+) lá/gu, 'restored $1 HP and drew $2 card(s)'],
+  [/hồi (\d+) Sinh Lực/gu, 'restored $1 HP'],
+  [/hồi (\d+) HP/gu, 'restored $1 HP'],
+  [/chịu (\d+) sát thương từ (.+?) \((.+?)\), còn (-?\d+)\/(\d+) (?:máu|HP)\./gu, 'took $1 damage from $2 ($3), $4/$5 HP left.'],
+  [/chịu (\d+) sát thương/gu, 'took $1 damage'],
+  [/giảm sát thương xuống 1!/gu, 'reduced incoming damage to 1!'],
+  [/đánh (.+?) vào /gu, 'struck '],
+  [/vô hiệu hóa hoàn toàn /gu, 'completely negated '],
+  [/vô hiệu hóa lá (.+?)!/gu, 'negated $1!'],
+  [/bị (.+?) vô hiệu hóa!/gu, 'was canceled by $1!'],
+  [/trang bị /gu, 'equipped '],
+  [/đã bỏ (\d+) lá cuối lượt\./gu, 'discarded $1 card(s) at end of turn.'],
+  [/lấy trang bị (.+?) từ /gu, 'took $1 from '],
+  [/hủy trang bị (.+?) của /gu, 'discarded $1 of '],
+  [/hủy (\d+) lá bài trên tay của /gu, 'discarded $1 hand card(s) of '],
+  [/nhận (\d+) lá úp từ /gu, 'took $1 face-down card(s) from '],
+  [/giao (\d+) lá bài cho /gu, 'gave $1 card(s) to '],
+  [/kích hoạt /gu, 'activated '],
+  [/phát động /gu, 'triggered '],
+  [/hưởng ứng /gu, 'answered '],
+  [/dùng /gu, 'used '],
+  [/cứu /gu, 'rescued '],
+  [/lâm vào hấp hối \(0 (?:máu|HP)\)/gu, 'is on the brink of death (0 HP)'],
+  [/đã tử trận/gu, 'has fallen'],
+  [/tử trận/gu, 'fell in battle'],
+  [/Lượt của /gu, 'Turn of '],
+  [/đánh (.+?) né thành công/gu, 'dodged cleanly with $1'],
+  [/tự mất (\d+) (?:máu|HP)/gu, 'sacrificed $1 HP'],
+  [/\(bỏ qua giáp, rút 1 lá nếu trúng\)/gu, '(ignores armor, draw 1 on hit)'],
+  [/\(Phản Đòn Lôi\)/gu, '(Thunder Riposte)'],
+  [/\(\+1 khoảng cách, miễn (?:Sát|Kiếm Trảm) cơ bản màu Đen\)/gu, '(+1 distance, immune to Black Strikes)'],
+  [/\(tầm 2, bỏ 2 lá để đánh như (?:Sát|Kiếm Trảm)\)/gu, '(Range 2, discard 2 to play as Strike)'],
+  [/lật lá phán xét \((.+?)\):/gu, 'flipped Judgment ($1):'],
+  [/phán xét ra /gu, 'judged '],
+  [/lên bàn\./gu, 'onto the table.'],
+  [/Bích/gu, 'Spade'],
+  [/Cơ/gu, 'Heart'],
+  [/Chuồn/gu, 'Club'],
+  [/Rô/gu, 'Diamond'],
+  [/Đỏ/gu, 'Red'],
+  [/Đen/gu, 'Black'],
+];
+
+const VI_DIACRITIC_FALLBACK_CHAR_MAP: Readonly<Record<string, string>> = {
+  à:'a',á:'a',ả:'a',ã:'a',ạ:'a',ă:'a',ằ:'a',ắ:'a',ẳ:'a',ẵ:'a',ặ:'a',â:'a',ầ:'a',ấ:'a',ẩ:'a',ẫ:'a',ậ:'a',
+  è:'e',é:'e',ẻ:'e',ẽ:'e',ẹ:'e',ê:'e',ề:'e',ế:'e',ể:'e',ễ:'e',ệ:'e',
+  ì:'i',í:'i',ỉ:'i',ĩ:'i',ị:'i',
+  ò:'o',ó:'o',ỏ:'o',õ:'o',ọ:'o',ô:'o',ồ:'o',ố:'o',ổ:'o',ỗ:'o',ộ:'o',ơ:'o',ờ:'o',ớ:'o',ở:'o',ỡ:'o',ợ:'o',
+  ù:'u',ú:'u',ủ:'u',ũ:'u',ụ:'u',ư:'u',ừ:'u',ứ:'u',ử:'u',ữ:'u',ự:'u',
+  ỳ:'y',ý:'y',ỷ:'y',ỹ:'y',ỵ:'y',đ:'d',
+  À:'A',Á:'A',Ả:'A',Ã:'A',Ạ:'A',Ă:'A',Ằ:'A',Ắ:'A',Ẳ:'A',Ẵ:'A',Ặ:'A',Â:'A',Ầ:'A',Ấ:'A',Ẩ:'A',Ẫ:'A',Ậ:'A',
+  È:'E',É:'E',Ẻ:'E',Ẽ:'E',Ẹ:'E',Ê:'E',Ề:'E',Ế:'E',Ể:'E',Ễ:'E',Ệ:'E',
+  Ì:'I',Í:'I',Ỉ:'I',Ĩ:'I',Ị:'I',
+  Ò:'O',Ó:'O',Ỏ:'O',Õ:'O',Ọ:'O',Ô:'O',Ồ:'O',Ố:'O',Ổ:'O',Ỗ:'O',Ộ:'O',Ơ:'O',Ờ:'O',Ớ:'O',Ở:'O',Ỡ:'O',Ợ:'O',
+  Ù:'U',Ú:'U',Ủ:'U',Ũ:'U',Ụ:'U',Ư:'U',Ừ:'U',Ứ:'U',Ử:'U',Ữ:'U',Ự:'U',
+  Ỳ:'Y',Ý:'Y',Ỷ:'Y',Ỹ:'Y',Ỵ:'Y',Đ:'D',
+};
+
+const VI_FALLBACK_DETECT_RE =
+  /[\u0102\u0103\u00C2\u00E2\u0110\u0111\u00CA\u00EA\u00D4\u00F4\u01A0\u01A1\u01AF\u01B0\u00C0-\u00C3\u00C8-\u00CA\u00CC\u00CD\u00D2-\u00D5\u00D9\u00DA\u00DD\u00E0-\u00E3\u00E8-\u00EA\u00EC\u00ED\u00F2-\u00F5\u00F9\u00FA\u00FD\u1EA0-\u1EF9]/;
+
+function translateActionLogLineEn(text: string): string {
+  let out = text;
+  for (const [pattern, replacement] of EN_LOG_PHRASE_REPLACEMENTS) {
+    out = out.replace(pattern, replacement);
+  }
+  out = out
+    .replace(/\bMáy (\d+)\b/gu, 'Bot $1')
+    .replace(/\bGhế (\d+)\b/gu, 'Seat $1')
+    .replace(/\bVòng (\d+)\b/gu, 'Round $1')
+    .replace(/\bBạn\b/gu, 'You');
+  if (VI_FALLBACK_DETECT_RE.test(out)) {
+    out = out
+      .replace(/\blá\b/gu, 'card(s)')
+      .replace(/\bngười\b/gu, 'fighter')
+      .replace(/\bmục tiêu\b/gu, 'target')
+      .replace(/\blượt\b/gu, 'turn')
+      .replace(/\bpha\b/gu, 'phase');
+    out = out.replace(/[^\u0000-\u007F]/g, (ch) => VI_DIACRITIC_FALLBACK_CHAR_MAP[ch] ?? ch);
+  }
+  return out;
+}
+
 /** Chuyển mọi chuỗi nhật ký / thông báo từ engine legacy sang tên gọi Cửu Châu Ẩn Kiếm theo ngôn ngữ đang chọn. */
 export function formatCuuChauDisplayText(
   text: string,
@@ -1960,5 +2192,6 @@ export function formatCuuChauDisplayText(
 ): string {
   if (!text) return text;
   const { regex, map } = getLegacyReplacementMatcher(locale);
-  return text.replace(regex, (matched) => map.get(matched) ?? matched);
+  const replaced = text.replace(regex, (matched) => map.get(matched) ?? matched);
+  return locale === 'en' ? translateActionLogLineEn(replaced) : replaced;
 }

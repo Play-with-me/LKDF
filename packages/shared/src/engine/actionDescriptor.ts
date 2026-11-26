@@ -27,7 +27,7 @@ function getPlayableCardIdsInPlayPhase(
   const hand = viewer.handCards ?? [];
   if (hand.length === 0) return [];
 
-  const handler = getHeroSkillHandler(viewer.heroId);
+  const handler = getHeroSkillHandler(viewer.heroId, view);
   const satUsed = view.turnFlags?.satUsedThisTurn ?? 0;
   const hasUnlimitedSat =
     Boolean(handler?.unlimitedSat) ||
@@ -38,7 +38,7 @@ function getPlayableCardIdsInPlayPhase(
     (p) => p.alive && p.seatIndex !== viewer.seatIndex,
   );
 
-  const masterLike = { players: view.players } as unknown as Parameters<
+  const masterLike = { players: view.players, enabledPacks: view.enabledPacks } as unknown as Parameters<
     typeof isInAttackRange
   >[0];
 
@@ -58,11 +58,12 @@ function getPlayableCardIdsInPlayPhase(
       case 'dao':
         if (viewer.hp < viewer.maxHp) ids.push(card.id);
         break;
-      case 'sat': {
+      case 'sat':
+      case 'pha_giap_tram': {
         if (isFirstRoundPeaceful) break;
         if (!hasUnlimitedSat && satUsed >= 1) break;
         const hasTarget = aliveOthers.some((other) => {
-          const targetHandler = getHeroSkillHandler(other.heroId);
+          const targetHandler = getHeroSkillHandler(other.heroId, view);
           const immune =
             targetHandler?.canBeTargetedBy?.(
               masterLike as unknown as MasterGameState,
@@ -83,6 +84,7 @@ function getPlayableCardIdsInPlayPhase(
         break;
       }
       case 'vo_trung_sinh_huu':
+      case 'chan_khi_ho_the':
       case 'nam_man_nhap_xam':
       case 'van_tien_te_phat':
       case 'dao_vien_ket_nghia':
@@ -105,6 +107,7 @@ function getPlayableCardIdsInPlayPhase(
         }
         break;
       case 'thuan_thu_khien_duong':
+      case 'kinh_loi_chan':
       case 'quyet_dau':
       case 'lac_bat_tu_thuc':
       case 'ta_dao_sat_nhan':

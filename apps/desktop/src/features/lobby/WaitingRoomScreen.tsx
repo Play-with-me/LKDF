@@ -1,4 +1,5 @@
 import { prefersReducedMotion } from '../../lib/devicePreferences.js';
+import { useTranslation } from 'react-i18next';
 import { TIMER_PRESETS } from '@lkdf/shared';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { MartialBackdropScene } from './MartialBackdropScene.js';
@@ -30,22 +31,30 @@ export interface WaitingRoomScreenProps {
 const PRESET_OPTIONS: readonly {
   readonly id: TimerPreset;
   readonly title: string;
+  readonly titleEn: string;
   readonly detail: string;
+  readonly detailEn: string;
 }[] = [
   {
     id: 'FAST',
     title: 'Nhanh',
+    titleEn: 'Fast',
     detail: `Chọn tướng ${TIMER_PRESETS.FAST.heroSelectSeconds}s · Đánh ${TIMER_PRESETS.FAST.mainTurnSeconds}s · Phản ứng ${TIMER_PRESETS.FAST.reactionSeconds}s`,
+    detailEn: `Draft ${TIMER_PRESETS.FAST.heroSelectSeconds}s · Turn ${TIMER_PRESETS.FAST.mainTurnSeconds}s · React ${TIMER_PRESETS.FAST.reactionSeconds}s`,
   },
   {
     id: 'STANDARD',
     title: 'Chuẩn',
+    titleEn: 'Standard',
     detail: `Chọn tướng ${TIMER_PRESETS.STANDARD.heroSelectSeconds}s · Đánh ${TIMER_PRESETS.STANDARD.mainTurnSeconds}s · Phản ứng ${TIMER_PRESETS.STANDARD.reactionSeconds}s`,
+    detailEn: `Draft ${TIMER_PRESETS.STANDARD.heroSelectSeconds}s · Turn ${TIMER_PRESETS.STANDARD.mainTurnSeconds}s · React ${TIMER_PRESETS.STANDARD.reactionSeconds}s`,
   },
   {
     id: 'RELAXED',
     title: 'Thong thả',
+    titleEn: 'Relaxed',
     detail: `Chọn tướng ${TIMER_PRESETS.RELAXED.heroSelectSeconds}s · Đánh ${TIMER_PRESETS.RELAXED.mainTurnSeconds}s · Phản ứng ${TIMER_PRESETS.RELAXED.reactionSeconds}s`,
+    detailEn: `Draft ${TIMER_PRESETS.RELAXED.heroSelectSeconds}s · Turn ${TIMER_PRESETS.RELAXED.mainTurnSeconds}s · React ${TIMER_PRESETS.RELAXED.reactionSeconds}s`,
   },
 ];
 
@@ -70,6 +79,8 @@ export function WaitingRoomScreen({
   onLeftRoom,
   onSessionInvalid,
 }: WaitingRoomScreenProps) {
+  const { i18n } = useTranslation();
+  const isEn = i18n.language === 'en';
   const [roomPayload, setRoomPayload] = useState<RoomViewerPayload>(initialRoom);
   const [wsStatus, setWsStatus] = useState<WsConnectionStatus>('CONNECTING');
   const [copiedCode, setCopiedCode] = useState<boolean>(false);
@@ -144,12 +155,16 @@ export function WaitingRoomScreen({
         return;
       }
       setActionError(
-        err instanceof Error ? err.message : 'Không thể đồng bộ trạng thái phòng.',
+        err instanceof Error
+          ? err.message
+          : isEn
+            ? 'Unable to sync room state.'
+            : 'Không thể đồng bộ trạng thái phòng.',
       );
     } finally {
       setIsSyncing(false);
     }
-  }, [api, onMatchStarted, onSessionInvalid, roomCode, sessionToken]);
+  }, [api, isEn, onMatchStarted, onSessionInvalid, roomCode, sessionToken]);
 
   async function handleCopyRoomCode(): Promise<void> {
     try {
@@ -159,7 +174,11 @@ export function WaitingRoomScreen({
         setCopiedCode(false);
       }, 2000);
     } catch {
-      setActionError('Không thể sao chép tự động. Vui lòng bôi đen mã phòng để chép.');
+      setActionError(
+        isEn
+          ? 'Could not copy automatically. Please highlight and copy the room code.'
+          : 'Không thể sao chép tự động. Vui lòng bôi đen mã phòng để chép.',
+      );
     }
   }
 
@@ -248,10 +267,27 @@ export function WaitingRoomScreen({
   const readyCount = guests.filter(seat => seat.isReady && seat.connectionStatus === 'ONLINE').length;
   const missing = Math.max(0, 4 - roomState.seats.length);
   const waiting = guests.length - readyCount;
-  const requirement = missing ? `Cần thêm ${missing} người để bắt đầu` :
-    waiting ? `Chờ ${waiting} khách sẵn sàng` : '';
-  const status = isStartingMatch ? 'Đang bắt đầu…' : requirement ||
-    (isHost ? 'Có thể bắt đầu' : 'Chờ chủ phòng bắt đầu');
+  const requirement = missing
+    ? isEn
+      ? `Need ${missing} more player(s) to start`
+      : `Cần thêm ${missing} người để bắt đầu`
+    : waiting
+      ? isEn
+        ? `Waiting for ${waiting} guest(s) to ready up`
+        : `Chờ ${waiting} khách sẵn sàng`
+      : '';
+  const status = isStartingMatch
+    ? isEn
+      ? 'Starting match…'
+      : 'Đang bắt đầu…'
+    : requirement ||
+      (isHost
+        ? isEn
+          ? 'Ready to start'
+          : 'Có thể bắt đầu'
+        : isEn
+          ? 'Waiting for host to start'
+          : 'Chờ chủ phòng bắt đầu');
   const control = 'min-h-10 rounded border border-[#806345] bg-[#211913] px-3 text-sm text-[#F5EBD6] focus-visible:outline-2 focus-visible:outline-[#E6BE6C]';
 
   useEffect(() => {
@@ -270,22 +306,38 @@ export function WaitingRoomScreen({
       const old = previous.find(item => item.userId === seat.userId);
       if (!old) {
         joined = true;
-        setSeatNotice(`${seat.displayName} đã vào ghế ${seat.seatIndex + 1}.`);
+        setSeatNotice(
+          isEn
+            ? `${seat.displayName} joined seat ${seat.seatIndex + 1}.`
+            : `${seat.displayName} đã vào ghế ${seat.seatIndex + 1}.`,
+        );
       } else if (old.connectionStatus !== seat.connectionStatus) {
-        setSeatNotice(`${seat.displayName} ${seat.connectionStatus === 'ONLINE' ? 'vừa kết nối lại' : 'mất kết nối'}.`);
+        setSeatNotice(
+          isEn
+            ? `${seat.displayName} ${seat.connectionStatus === 'ONLINE' ? 'reconnected' : 'disconnected'}.`
+            : `${seat.displayName} ${seat.connectionStatus === 'ONLINE' ? 'vừa kết nối lại' : 'mất kết nối'}.`,
+        );
       } else if (Boolean(old.isReady) !== Boolean(seat.isReady)) {
         if (seat.isReady) readiedOn = true;
         pulse(seat.seatIndex, seat.isReady ? '#8ac5ae' : '#e6be6c');
-        setSeatNotice(`${seat.displayName} ${seat.isReady ? 'vừa sẵn sàng' : 'vừa hủy sẵn sàng'}.`);
+        setSeatNotice(
+          isEn
+            ? `${seat.displayName} ${seat.isReady ? 'is ready' : 'is no longer ready'}.`
+            : `${seat.displayName} ${seat.isReady ? 'vừa sẵn sàng' : 'vừa hủy sẵn sàng'}.`,
+        );
       }
     }
     const departed = previous.find(old => !roomState.seats.some(seat => seat.userId === old.userId));
     if (departed) pulse(previous.length - 1, '#d5a762');
-    if (departed) setSeatNotice(`${departed.displayName} vừa rời phòng.`);
+    if (departed) {
+      setSeatNotice(
+        isEn ? `${departed.displayName} left the room.` : `${departed.displayName} vừa rời phòng.`,
+      );
+    }
     if (joined) playMatchCue('ROOM_JOIN', soundEnabled);
     else if (departed) playMatchCue('ROOM_LEAVE', soundEnabled);
     if (readiedOn) playMatchCue('READY_ON', soundEnabled);
-  }, [roomState.seats, soundEnabled]);
+  }, [isEn, roomState.seats, soundEnabled]);
 
   useEffect(() => {
     if (!seatNotice) return;
@@ -293,32 +345,46 @@ export function WaitingRoomScreen({
     return () => window.clearTimeout(timeout);
   }, [seatNotice]);
 
+  const activePreset = PRESET_OPTIONS.find(option => option.id === roomState.timerPreset);
+
   return (
     <section className="lkdf-lobby-camp relative isolate flex min-h-0 min-w-0 flex-1 overflow-y-auto">
       <div className="lkdf-lobby-camp-art"><MartialBackdropScene /></div>
       <div className="lkdf-lobby-camp-content">
         <div className="lkdf-lobby-camp-panel">
-          <section className="lkdf-waiting-table lkdf-online-panel lkdf-online-room" aria-label="Phòng chờ">
+          <section className="lkdf-waiting-table lkdf-online-panel lkdf-online-room" aria-label={isEn ? 'Waiting Room' : 'Phòng chờ'}>
             <div className="lkdf-online-fog" aria-hidden="true" />
             <header className="lkdf-waiting-header">
               <div>
-                <p className="lkdf-online-kicker">{wsStatus === 'CONNECTED' ? 'Đã kết nối' : 'Đang đồng bộ phòng'}</p>
-                <h2 className="font-serif-title">Phòng chờ</h2>
+                <p className="lkdf-online-kicker">
+                  {wsStatus === 'CONNECTED'
+                    ? isEn ? 'Connected' : 'Đã kết nối'
+                    : isEn ? 'Syncing Room' : 'Đang đồng bộ phòng'}
+                </p>
+                <h2 className="font-serif-title">{isEn ? 'Waiting Room' : 'Phòng chờ'}</h2>
               </div>
               <div className="lkdf-waiting-invite">
                 <strong className="font-mono-num">{roomCode}</strong>
-                <button type="button" className={control} onClick={handleCopyRoomCode}>{copiedCode ? 'Đã sao chép' : 'Sao chép mã'}</button>
-                <button type="button" className={control} onClick={handleLeaveRoom} disabled={isLeavingRoom || isStartingMatch}>Rời phòng</button>
+                <button type="button" className={control} onClick={handleCopyRoomCode}>
+                  {copiedCode ? (isEn ? 'Copied' : 'Đã sao chép') : (isEn ? 'Copy Code' : 'Sao chép mã')}
+                </button>
+                <button type="button" className={control} onClick={handleLeaveRoom} disabled={isLeavingRoom || isStartingMatch}>
+                  {isEn ? 'Leave Room' : 'Rời phòng'}
+                </button>
               </div>
             </header>
             <div className="lkdf-waiting-board">
               <div className="lkdf-waiting-surface">
                 <div>
-                  <strong className="font-serif-title">Bàn Xích Bích</strong>
-                  <small>Nhịp {PRESET_OPTIONS.find(option => option.id === roomState.timerPreset)?.title} · {TIMER_PRESETS[roomState.timerPreset].mainTurnSeconds} giây/lượt</small>
+                  <strong className="font-serif-title">{isEn ? 'Nine Realms Table' : 'Bàn Xích Bích'}</strong>
+                  <small>
+                    {isEn
+                      ? `${activePreset?.titleEn ?? roomState.timerPreset} Pace · ${TIMER_PRESETS[roomState.timerPreset].mainTurnSeconds}s/turn`
+                      : `Nhịp ${activePreset?.title} · ${TIMER_PRESETS[roomState.timerPreset].mainTurnSeconds} giây/lượt`}
+                  </small>
                 </div>
               </div>
-              <ol ref={seatList} className="lkdf-waiting-seats" aria-label="8 ghế phòng chờ">
+              <ol ref={seatList} className="lkdf-waiting-seats" aria-label={isEn ? '8 waiting room seats' : '8 ghế phòng chờ'}>
                 {Array.from({ length: 8 }, (_, index) => {
                   const seat = roomState.seats.find(member => member.seatIndex === index);
                   const host = seat?.userId === roomState.actingHostUserId;
@@ -328,19 +394,29 @@ export function WaitingRoomScreen({
                   return (
                     <li key={index} className="lkdf-waiting-seat" data-occupied={Boolean(seat)} data-self={self}
                       data-host={host} data-ready={ready} data-offline={offline}>
-                      <span className="lkdf-waiting-seat-number" aria-label={`Ghế ${index + 1}`}>{String(index + 1).padStart(2, '0')}</span>
-                      {!seat ? <span className="lkdf-waiting-empty"><span className="lkdf-waiting-empty-avatar"><GameIcon name="ui:user" size={15} /></span>Ghế trống</span> :
+                      <span className="lkdf-waiting-seat-number" aria-label={isEn ? `Seat ${index + 1}` : `Ghế ${index + 1}`}>{String(index + 1).padStart(2, '0')}</span>
+                      {!seat ? <span className="lkdf-waiting-empty"><span className="lkdf-waiting-empty-avatar"><GameIcon name="ui:user" size={15} /></span>{isEn ? 'Empty Seat' : 'Ghế trống'}</span> :
                         <div className="lkdf-waiting-player" key={seat.userId}>
                           <span className="lkdf-waiting-avatar">{seat.avatarUrl ? <img src={seat.avatarUrl} alt="" /> : getInitials(seat.displayName)}</span>
                           <div>
                             <div className="lkdf-waiting-player-name">
-                              {self ? <span className="lkdf-waiting-self-label">Bạn</span> : null}
+                              {self ? <span className="lkdf-waiting-self-label">{isEn ? 'You' : 'Bạn'}</span> : null}
                               <strong title={seat.displayName}>{seat.displayName}</strong>
                             </div>
-                            <small>{host ? seat.userId === roomState.ownerUserId ? 'Chủ phòng' : 'Chủ phòng tạm thời' : 'Khách'}</small>
+                            <small>
+                              {host
+                                ? seat.userId === roomState.ownerUserId
+                                  ? isEn ? 'Host' : 'Chủ phòng'
+                                  : isEn ? 'Acting Host' : 'Chủ phòng tạm thời'
+                                : isEn ? 'Guest' : 'Khách'}
+                            </small>
                             {!host || offline ? <span className="lkdf-seat-readiness">
                               <GameIcon name={offline ? 'ui:wifi-off' : ready ? 'ui:check' : 'ui:clock'} size={12} />
-                              {offline ? 'Mất kết nối' : ready ? 'Sẵn sàng' : 'Chưa sẵn sàng'}
+                              {offline
+                                ? isEn ? 'Disconnected' : 'Mất kết nối'
+                                : ready
+                                  ? isEn ? 'Ready' : 'Sẵn sàng'
+                                  : isEn ? 'Not Ready' : 'Chưa sẵn sàng'}
                             </span> : null}
                           </div>
                         </div>}
@@ -350,21 +426,24 @@ export function WaitingRoomScreen({
               </ol>
             </div>
             <footer className="lkdf-waiting-footer">
-              <p><strong>{roomState.seats.length}/8 người</strong> · {readyCount}/{guests.length} khách đã sẵn sàng</p>
+              <p>
+                <strong>{isEn ? `${roomState.seats.length}/8 players` : `${roomState.seats.length}/8 người`}</strong> ·{' '}
+                {isEn ? `${readyCount}/${guests.length} guests ready` : `${readyCount}/${guests.length} khách đã sẵn sàng`}
+              </p>
               <div className="lkdf-waiting-actions">
-                {wsStatus !== 'CONNECTED' ? <button className={control} type="button" onClick={handleManualSync} disabled={isSyncing}>Đồng bộ lại</button> : null}
+                {wsStatus !== 'CONNECTED' ? <button className={control} type="button" onClick={handleManualSync} disabled={isSyncing}>{isEn ? 'Re-sync' : 'Đồng bộ lại'}</button> : null}
                 {isHost ? <>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-medium text-[#DFCAA9]">Nhịp chơi</span>
+                    <span className="text-xs font-medium text-[#DFCAA9]">{isEn ? 'Pace' : 'Nhịp chơi'}</span>
                     <GuofengPillSelect
-                      ariaLabel="Nhịp chơi"
+                      ariaLabel={isEn ? 'Turn Pace' : 'Nhịp chơi'}
                       value={roomState.timerPreset}
                       disabled={isUpdatingPreset || isStartingMatch}
                       className="min-w-[138px]"
                       options={PRESET_OPTIONS.map((option) => ({
                         value: option.id,
-                        label: option.title,
-                        detail: option.detail,
+                        label: isEn ? option.titleEn : option.title,
+                        detail: isEn ? option.detailEn : option.detail,
                       }))}
                       onChange={(nextValue) => {
                         const option = PRESET_OPTIONS.find((item) => item.id === nextValue);
@@ -374,14 +453,24 @@ export function WaitingRoomScreen({
                   </div>
                   <div className="lkdf-waiting-start">
                     <button className="lkdf-online-join" type="button" disabled={Boolean(requirement) || isStartingMatch}
-                      aria-describedby="live-room-start-status" onClick={handleStartMatch}>Bắt đầu ván đấu</button>
+                      aria-describedby="live-room-start-status" onClick={handleStartMatch}>
+                      {isEn ? 'Start Match' : 'Bắt đầu ván đấu'}
+                    </button>
                     <small id="live-room-start-status" role="status">{status}</small>
                   </div>
                 </> : <>
                   <button className={`${control} lkdf-waiting-ready`} type="button" aria-pressed={Boolean(currentSeat?.isReady)}
                     disabled={isUpdatingReady || currentSeat?.connectionStatus !== 'ONLINE'}
-                    onClick={() => handleReady(!currentSeat?.isReady)}>{currentSeat?.isReady ? 'Hủy sẵn sàng' : 'Sẵn sàng'}</button>
-                  <p className="lkdf-waiting-guest-status" role="status">{currentSeat?.isReady ? status : 'Bấm Sẵn sàng khi bạn đã chuẩn bị xong'}</p>
+                    onClick={() => handleReady(!currentSeat?.isReady)}>
+                    {currentSeat?.isReady ? (isEn ? 'Cancel Ready' : 'Hủy sẵn sàng') : (isEn ? 'Ready' : 'Sẵn sàng')}
+                  </button>
+                  <p className="lkdf-waiting-guest-status" role="status">
+                    {currentSeat?.isReady
+                      ? status
+                      : isEn
+                        ? 'Click Ready when you are prepared'
+                        : 'Bấm Sẵn sàng khi bạn đã chuẩn bị xong'}
+                  </p>
                 </>}
               </div>
               <p className="lkdf-waiting-seat-notice" role="status">{seatNotice}</p>

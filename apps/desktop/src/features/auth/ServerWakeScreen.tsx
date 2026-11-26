@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { GAME_BRAND } from '@lkdf/shared';
 import { GameIcon } from '../../components/icons/index.js';
 import { getUiAssetUrl } from '../../lib/assetCatalog.js';
@@ -16,30 +17,47 @@ export interface ServerWakeScreenProps {
 const RETRY_INTERVAL_MS = 2000;
 const TIP_ROTATION_MS = 6000;
 
-const TACTICAL_TIPS: readonly { readonly title: string; readonly body: string }[] = [
+const TACTICAL_TIPS: readonly {
+  readonly title: string;
+  readonly body: string;
+  readonly titleEn: string;
+  readonly bodyEn: string;
+}[] = [
   {
     title: 'Vòng 1 Hòa Bình',
     body: 'Trong vòng đầu tiên toàn bàn, không thể đánh Sát hay Quyết Đấu — hãy ưu tiên rút bài, lắp Vũ khí và Giáp.',
+    titleEn: 'Round 1 Peace Pact',
+    bodyEn: 'During Round 1 across the table, Strikes and Duels are sealed — focus on drawing cards, equipping weapons, and armor.',
   },
   {
     title: 'Khoảng cách & Chiến mã',
     body: 'Ngựa -1 giúp bạn áp sát mục tiêu thuận lợi hơn; Ngựa +1 giữ khoảng cách khiến đối thủ khó với tới.',
+    titleEn: 'Distance & Steeds',
+    bodyEn: 'Steeds -1 shorten your attack reach to targets; Steeds +1 push enemies farther away from reaching you.',
   },
   {
     title: 'Đào cứu nguy toàn bàn',
     body: 'Khi một tướng tụt về 0 máu (hấp hối), bất kỳ ai còn Đào trên tay đều có thể dùng để cứu +1 máu.',
+    titleEn: 'Global Spirit Peach Rescue',
+    bodyEn: 'Whenever any general drops to 0 HP (brink of death), anyone holding a Spirit Peach may play it to restore +1 HP.',
   },
   {
     title: 'Hóa Giải Chân Khí',
     body: 'Có thể chặn Bí kíp thường lẫn Bí kíp chậm (Phong Mạch Tán, Thiên Lôi Chú) ngay trước lúc phát huy hiệu lực.',
+    titleEn: 'True Qi Negation',
+    bodyEn: 'Negates both instant Scrolls and delayed Scrolls (Qi Lock Seal, Celestial Thunder) right before resolution.',
   },
   {
-    title: 'Nỗ Liên Hoàn & Thanh Cang Kiếm',
-    body: 'Nỗ Liên Hoàn cho phép đánh không giới hạn lá Kiếm Trảm trong lượt; Thanh Cang Kiếm chém xuyên hiệu ứng Hộ giáp đối thủ.',
+    title: 'Liên Châu Nỏ & Thanh Cang Kiếm',
+    body: 'Liên Châu Nỏ cho phép đánh không giới hạn lá Kiếm Trảm trong lượt; Thanh Cang Kiếm chém xuyên hiệu ứng Hộ giáp đối thủ.',
+    titleEn: 'Repeating Crossbow & Blue Steel Blade',
+    bodyEn: 'Repeating Crossbow removes the Strike limit per turn; Blue Steel Blade pierces straight through defender Armor.',
   },
   {
     title: 'Mục tiêu chiến thắng theo Phe',
     body: 'Nghĩa Quân thắng ngay khi hạ được Minh Chủ; Ám Ảnh chỉ thắng khi trở thành người sống sót cuối cùng.',
+    titleEn: 'Allegiance Victory Conditions',
+    bodyEn: 'Rebels win immediately upon slaying the Sovereign; Traitors win only as the sole survivor at the end.',
   },
 ];
 
@@ -49,6 +67,8 @@ export function ServerWakeScreen({
   onServerReady,
   onPlayOffline,
 }: ServerWakeScreenProps) {
+  const { i18n } = useTranslation();
+  const isEn = i18n.language === 'en';
   const [status, setStatus] = useState<'WAKING' | 'ERROR'>('WAKING');
   const [elapsedSeconds, setElapsedSeconds] = useState<number>(0);
   const [lastError, setLastError] = useState<string | null>(null);
@@ -162,7 +182,9 @@ export function ServerWakeScreen({
     clearTimersAndAbort();
     setStatus('ERROR');
     setLastError(
-      'Bạn đã hủy kết nối tới máy chủ. Hãy kiểm tra lại địa chỉ máy chủ hoặc thử kết nối lại.',
+      isEn
+        ? 'You cancelled connecting to the server. Check the server address or try reconnecting.'
+        : 'Bạn đã hủy kết nối tới máy chủ. Hãy kiểm tra lại địa chỉ máy chủ hoặc thử kết nối lại.',
     );
   }
 
@@ -179,7 +201,11 @@ export function ServerWakeScreen({
       normalized = normalizeServerUrl(urlDraft);
     } catch (err: unknown) {
       setUrlError(
-        err instanceof Error ? err.message : 'Địa chỉ máy chủ không hợp lệ.',
+        err instanceof Error
+          ? err.message
+          : isEn
+            ? 'Invalid server address.'
+            : 'Địa chỉ máy chủ không hợp lệ.',
       );
       return;
     }
@@ -262,7 +288,7 @@ export function ServerWakeScreen({
                 htmlFor="lkdf-server-url-input"
                 className="mb-1.5 block text-xs font-semibold text-[#F5EBD6]"
               >
-                Địa chỉ máy chủ (HTTP/HTTPS)
+                {isEn ? 'Server URL (HTTP/HTTPS)' : 'Địa chỉ máy chủ (HTTP/HTTPS)'}
               </label>
               <div className="flex items-center gap-2">
                 <input
@@ -278,7 +304,7 @@ export function ServerWakeScreen({
                   disabled={isSavingUrl}
                   className="shrink-0 cursor-pointer rounded-md border border-[#D4A451]/75 bg-[#9E2B25] px-3 py-1.5 text-xs font-semibold text-[#FFF8ED] transition-colors hover:bg-[#B7372E] disabled:opacity-50"
                 >
-                  {isSavingUrl ? 'Đang lưu...' : 'Áp dụng'}
+                  {isSavingUrl ? (isEn ? 'Saving...' : 'Đang lưu...') : (isEn ? 'Apply' : 'Áp dụng')}
                 </button>
               </div>
               {urlError ? (
@@ -304,10 +330,12 @@ export function ServerWakeScreen({
             </span>
             <div className="min-w-0">
               <h2 className="font-serif-title text-xl font-bold tracking-wide text-[#F5EBD6] sm:text-2xl">
-                {GAME_BRAND.title.vi}
+                {isEn ? GAME_BRAND.title.en : GAME_BRAND.title.vi}
               </h2>
               <p className="mt-0.5 text-xs text-[#D5C3A5]">
-                {GAME_BRAND.subtitle.vi} · Bàn 4–8 người
+                {isEn
+                  ? `${GAME_BRAND.subtitle.en} · 4–8 Players`
+                  : `${GAME_BRAND.subtitle.vi} · Bàn 4–8 người`}
               </p>
             </div>
           </div>
@@ -322,10 +350,10 @@ export function ServerWakeScreen({
                       size={15}
                       className={reducedMotion ? 'shrink-0 text-[#E6BE6C]' : 'shrink-0 animate-spin text-[#E6BE6C]'}
                     />
-                    <span>Đang đánh thức máy chủ phòng chơi…</span>
+                    <span>{isEn ? 'Waking up the game server…' : 'Đang đánh thức máy chủ phòng chơi…'}</span>
                   </p>
                   <span className="font-mono-num shrink-0 rounded border border-[#806345]/70 bg-[#120D0A] px-2 py-0.5 text-[11px] font-semibold text-[#E6BE6C] tabular-nums">
-                    Lần dò #{attemptCount}
+                    {isEn ? `Attempt #${attemptCount}` : `Lần dò #${attemptCount}`}
                   </span>
                 </div>
 
@@ -337,7 +365,9 @@ export function ServerWakeScreen({
                 </div>
 
                 <p className="font-mono-num mt-2.5 text-xs text-[#E6D4B8] tabular-nums">
-                  (Đã chờ {elapsedSeconds}s · Khởi động sảnh lần đầu khoảng 30–50s)
+                  {isEn
+                    ? `(Waited ${elapsedSeconds}s · Cold server startup usually takes ~30–50s)`
+                    : `(Đã chờ ${elapsedSeconds}s · Khởi động sảnh lần đầu khoảng 30–50s)`}
                 </p>
               </div>
 
@@ -346,15 +376,26 @@ export function ServerWakeScreen({
                 <div className="mb-1.5 flex items-center justify-between gap-2">
                   <span className="inline-flex items-center gap-1.5 text-xs font-bold tracking-wide text-[#E6BE6C] uppercase">
                     <GameIcon name="scroll-unfurled" size={14} />
-                    Cẩm Nang Chiến Thuật
+                    {isEn ? 'Tactical Field Guide' : 'Cẩm Nang Chiến Thuật'}
                   </span>
-                  <div className="flex items-center gap-0.5" aria-label={`Mẹo ${tipIndex + 1} trên ${TACTICAL_TIPS.length}`}>
+                  <div
+                    className="flex items-center gap-0.5"
+                    aria-label={
+                      isEn
+                        ? `Tip ${tipIndex + 1} of ${TACTICAL_TIPS.length}`
+                        : `Mẹo ${tipIndex + 1} trên ${TACTICAL_TIPS.length}`
+                    }
+                  >
                     {TACTICAL_TIPS.map((tip, idx) => (
                       <button
                         key={tip.title}
                         type="button"
                         onClick={() => setTipIndex(idx)}
-                        aria-label={`Xem mẹo ${idx + 1}: ${tip.title}`}
+                        aria-label={
+                          isEn
+                            ? `View tip ${idx + 1}: ${tip.titleEn}`
+                            : `Xem mẹo ${idx + 1}: ${tip.title}`
+                        }
                         aria-current={idx === tipIndex ? 'true' : undefined}
                         className="group inline-flex min-h-6 min-w-6 cursor-pointer items-center justify-center rounded focus-visible:outline-2 focus-visible:outline-[#E6BE6C]"
                       >
@@ -371,10 +412,10 @@ export function ServerWakeScreen({
                   </div>
                 </div>
                 <p className="font-serif-title text-sm font-bold text-[#F5EBD6]">
-                  {currentTip.title}
+                  {isEn ? currentTip.titleEn : currentTip.title}
                 </p>
                 <p className="mt-1 text-xs leading-relaxed text-[#D5C3A5]">
-                  {currentTip.body}
+                  {isEn ? currentTip.bodyEn : currentTip.body}
                 </p>
               </div>
 
@@ -386,7 +427,7 @@ export function ServerWakeScreen({
                     className="tqs-talisman-btn inline-flex cursor-pointer items-center gap-2 rounded-md border border-[#F2CF84]/75 px-4 py-2 text-sm font-bold text-[#FFF8ED] focus-visible:outline-2 focus-visible:outline-[#E6BE6C]"
                   >
                     <GameIcon name="ui:bot" size={15} />
-                    <span>Chơi với Máy ngay</span>
+                    <span>{isEn ? 'Play vs Bots Now' : 'Chơi với Máy ngay'}</span>
                   </button>
                 ) : (
                   <span />
@@ -397,7 +438,7 @@ export function ServerWakeScreen({
                   className="lkdf-bronze-pill inline-flex cursor-pointer items-center gap-1.5 rounded-md px-4 py-2 text-sm font-medium text-[#EFE6D5] hover:border-[#DC2626] hover:text-[#FCA5A5] focus-visible:outline-2 focus-visible:outline-[#E6BE6C]"
                 >
                   <GameIcon name="ui:x" size={14} />
-                  <span>Hủy kết nối</span>
+                  <span>{isEn ? 'Cancel Connection' : 'Hủy kết nối'}</span>
                 </button>
               </div>
             </div>
@@ -409,11 +450,13 @@ export function ServerWakeScreen({
               >
                 <p className="flex items-center gap-2 text-sm font-semibold text-[#FCA5A5]">
                   <GameIcon name="ui:alert" size={15} />
-                  <span>Không thể kết nối tới máy chủ phòng chơi</span>
+                  <span>{isEn ? 'Unable to reach game server' : 'Không thể kết nối tới máy chủ phòng chơi'}</span>
                 </p>
                 <p className="mt-1.5 text-xs leading-relaxed text-[#EFE6D5]">
                   {lastError ??
-                    'Kết nối đã bị gián đoạn. Vui lòng thử kết nối lại hoặc kiểm tra cấu hình máy chủ ở góc trên.'}
+                    (isEn
+                      ? 'Connection was interrupted. Please retry or check the server address at top-right.'
+                      : 'Kết nối đã bị gián đoạn. Vui lòng thử kết nối lại hoặc kiểm tra cấu hình máy chủ ở góc trên.')}
                 </p>
               </div>
 
@@ -425,7 +468,7 @@ export function ServerWakeScreen({
                     className="lkdf-bronze-pill inline-flex cursor-pointer items-center gap-2 rounded-md border-[#C89B4B]/75 px-4 py-2.5 text-sm font-semibold text-[#F5EBD6] focus-visible:outline-2 focus-visible:outline-[#E6BE6C]"
                   >
                     <GameIcon name="ui:bot" size={15} />
-                    <span>Chơi với Máy ngay</span>
+                    <span>{isEn ? 'Play vs Bots Now' : 'Chơi với Máy ngay'}</span>
                   </button>
                 ) : (
                   <span />
@@ -436,7 +479,7 @@ export function ServerWakeScreen({
                   className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-[#F2CF84]/70 bg-gradient-to-b from-[#B8332C] to-[#7D1A16] px-5 py-2.5 text-sm font-bold text-[#FFF8ED] transition-colors hover:brightness-110 focus-visible:outline-2 focus-visible:outline-[#E6BE6C]"
                 >
                   <GameIcon name="ui:refresh" size={14} />
-                  <span>Thử kết nối lại</span>
+                  <span>{isEn ? 'Retry Connection' : 'Thử kết nối lại'}</span>
                 </button>
               </div>
             </div>

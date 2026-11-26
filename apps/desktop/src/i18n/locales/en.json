@@ -1,13 +1,18 @@
 {
   "brand": {
     "title": "Blades of the Nine Realms",
-    "subtitle": "Cửu Châu Ẩn Kiếm"
+    "subtitle": "Nine Realms Tactical Card Game"
   },
   "common": {
     "backToMenu": "Back to Menu",
     "backToMainMenu": "Main Menu",
     "settings": "Settings",
-    "language": "Language"
+    "language": "Language",
+    "clear": "Clear"
+  },
+  "heroCollection": {
+    "clearSearch": "Clear search",
+    "suggestionsAria": "General search suggestions"
   },
   "lobby": {
     "mainMenuAria": "Main menu",

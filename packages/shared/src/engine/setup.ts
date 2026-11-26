@@ -1,3 +1,4 @@
+import { CUU_CHAU_CORE_PACK, isCuuChauRuleset } from '../content/cuuChauPack.js';
 import { DEFAULT_CONTENT_REGISTRY } from '../content/registry.js';
 import { getHeroDefinition } from '../heroes/catalog.js';
 import {
@@ -28,6 +29,17 @@ export interface CreateMatchSetupOptions {
   readonly matchId: string;
   readonly seats: readonly SetupSeatInput[];
   readonly rng?: () => number;
+  readonly enabledPacks?: readonly string[];
+}
+
+function getEffectiveHeroBaseHp(
+  heroId: HeroId,
+  state: { readonly enabledPacks?: readonly string[] },
+): number {
+  if (isCuuChauRuleset(state) && (heroId === 'zhang_fei' || heroId === 'loi_chan_son')) {
+    return 3;
+  }
+  return getHeroDefinition(heroId).baseMaxHp;
 }
 
 /** Chia và xáo trộn danh sách Thân Phận cho 4–8 người theo đúng tỷ lệ chuẩn. */
@@ -123,10 +135,17 @@ export function createInitialMatchSetup(
     selectedBySeat: {},
   };
 
+  const cuuChauEnabled = Boolean(options.enabledPacks?.includes('cuu_chau_core'));
   const initialState: MasterGameState = {
-    rulesetVersion: DEFAULT_CONTENT_REGISTRY.getRulesetVersion(),
-    enabledPacks: DEFAULT_CONTENT_REGISTRY.getEnabledPackIds(),
-    contentHash: DEFAULT_CONTENT_REGISTRY.getContentHash(),
+    rulesetVersion: cuuChauEnabled
+      ? CUU_CHAU_CORE_PACK.manifest.rulesetVersion
+      : DEFAULT_CONTENT_REGISTRY.getRulesetVersion(),
+    enabledPacks: cuuChauEnabled
+      ? ['cuu_chau_core']
+      : DEFAULT_CONTENT_REGISTRY.getEnabledPackIds(),
+    contentHash: cuuChauEnabled
+      ? CUU_CHAU_CORE_PACK.manifest.contentHash
+      : DEFAULT_CONTENT_REGISTRY.getContentHash(),
     matchId: options.matchId,
     roundNumber: 1,
     currentTurnSeat: lordSeatIndex,
@@ -178,7 +197,7 @@ export function selectLordHero(
   }
 
   const heroDef = getHeroDefinition(heroId);
-  const lordMaxHp = heroDef.baseMaxHp + 1;
+  const lordMaxHp = getEffectiveHeroBaseHp(heroId, state) + 1;
 
   const returnedHeroes = lordCandidates.filter((id) => id !== heroId);
   const fullPoolAfterLord = shuffleArray(
@@ -289,12 +308,12 @@ export function selectPlayerHero(
     if (!pickedHeroId) {
       throw new Error('MISSING_SELECTED_HERO');
     }
-    const heroDef = getHeroDefinition(pickedHeroId);
+    const baseHp = getEffectiveHeroBaseHp(pickedHeroId, state);
     return {
       ...player,
       heroId: pickedHeroId,
-      maxHp: heroDef.baseMaxHp,
-      hp: heroDef.baseMaxHp,
+      maxHp: baseHp,
+      hp: baseHp,
     };
   });
 

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { GameIcon } from '../../components/icons/index.js';
 import type { LkdfApiClient } from '../../lib/api.js';
 import type { DesktopUpdateState, UserProfile } from '../../lib/types.js';
@@ -42,6 +43,8 @@ export function FirstTimeNicknameCard({
   isPreviewMode = false,
   onComplete,
 }: FirstTimeNicknameCardProps) {
+  const { i18n } = useTranslation();
+  const isEn = i18n.language === 'en';
   const initialDraft = profile.displayName.trim().slice(0, 20);
   const [nickname, setNickname] = useState<string>(initialDraft);
   const [isSaving, setIsSaving] = useState<boolean>(false);
@@ -58,7 +61,11 @@ export function FirstTimeNicknameCard({
   async function handleSaveNickname(event: React.FormEvent): Promise<void> {
     event.preventDefault();
     if (!isLengthValid) {
-      setErrorMsg('Biệt danh cần từ 2 đến 20 ký tự để hiển thị rõ trên bàn tròn.');
+      setErrorMsg(
+        isEn
+          ? 'Nickname must be 2 to 20 characters for clear table display.'
+          : 'Biệt danh cần từ 2 đến 20 ký tự để hiển thị rõ trên bàn tròn.',
+      );
       return;
     }
 
@@ -76,7 +83,9 @@ export function FirstTimeNicknameCard({
       setErrorMsg(
         err instanceof Error
           ? err.message
-          : 'Không thể lưu biệt danh lúc này. Vui lòng thử lại.',
+          : isEn
+            ? 'Unable to save nickname right now. Please try again.'
+            : 'Không thể lưu biệt danh lúc này. Vui lòng thử lại.',
       );
     } finally {
       setIsSaving(false);
@@ -96,11 +105,15 @@ export function FirstTimeNicknameCard({
         <div className="mb-2.5 text-center">
           <div className="text-[11px] font-bold tracking-[0.14em] text-[#D4A451] uppercase drop-shadow-[0_2px_8px_rgba(0,0,0,0.95)]">
             {isPreviewMode
-              ? 'Hồ sơ mới · Chế độ xem thử'
-              : 'Hồ sơ mới · Lần đầu vào sảnh'}
+              ? isEn
+                ? 'New Profile · Preview Mode'
+                : 'Hồ sơ mới · Chế độ xem thử'
+              : isEn
+                ? 'New Profile · First Visit'
+                : 'Hồ sơ mới · Lần đầu vào sảnh'}
           </div>
           <h2 className="mt-1 font-serif-title text-[19px] font-bold text-[#F5ECDC] drop-shadow-[0_2px_10px_rgba(0,0,0,0.95)]">
-            Đặt Biệt Danh Tướng Quân
+            {isEn ? 'Set Your General Nickname' : 'Đặt Biệt Danh Tướng Quân'}
           </h2>
         </div>
 
@@ -121,7 +134,7 @@ export function FirstTimeNicknameCard({
           <span className="truncate font-medium text-[#F5ECDC]">{profile.email}</span>
           <span className="inline-flex shrink-0 items-center gap-1 text-[11px] font-medium text-[#86EFAC]">
             <GameIcon name="ui:check-circle" size={11} />
-            Đã liên kết
+            {isEn ? 'Linked' : 'Đã liên kết'}
           </span>
         </div>
 
@@ -137,7 +150,7 @@ export function FirstTimeNicknameCard({
                 htmlFor="lkdf-first-nickname-input"
                 className="font-medium text-[#CBD5E1]"
               >
-                Biệt danh bàn đấu (2–20 ký tự)
+                {isEn ? 'Table Nickname (2–20 chars)' : 'Biệt danh bàn đấu (2–20 ký tự)'}
               </label>
               <span
                 className={`font-mono-num tabular-nums ${
@@ -157,7 +170,7 @@ export function FirstTimeNicknameCard({
                 setNickname(e.target.value);
                 setErrorMsg(null);
               }}
-              placeholder="VD: Mạnh Đức, Khổng Minh..."
+              placeholder={isEn ? 'e.g., Iron Fang, Cloud Whisper...' : 'VD: Mạnh Đức, Khổng Minh...'}
               className="w-full rounded-[4px] border border-[#C89B4B]/55 bg-[#140F0C]/92 px-3 py-2.5 text-center text-sm font-semibold text-[#F5EBD6] placeholder-[#A8947A] transition-colors focus:border-[#F2CF84] focus-visible:outline-2 focus-visible:outline-[#E6BE6C]"
             />
           </div>
@@ -179,7 +192,7 @@ export function FirstTimeNicknameCard({
               onClick={() => onComplete(profile)}
               className="lkdf-bronze-pill cursor-pointer rounded-[4px] px-3 py-2.5 text-xs font-semibold text-[#EFE6D5] focus-visible:outline-2 focus-visible:outline-[#E6BE6C] disabled:opacity-50"
             >
-              Giữ tên Google
+              {isEn ? 'Keep Google Name' : 'Giữ tên Google'}
             </button>
 
             <button
@@ -192,7 +205,15 @@ export function FirstTimeNicknameCard({
                 size={13}
                 className={isSaving ? 'animate-spin' : ''}
               />
-              <span>{isSaving ? 'Đang lưu...' : 'Lưu & Vào Sảnh'}</span>
+              <span>
+                {isSaving
+                  ? isEn
+                    ? 'Saving...'
+                    : 'Đang lưu...'
+                  : isEn
+                    ? 'Save & Enter Lobby'
+                    : 'Lưu & Vào Sảnh'}
+              </span>
             </button>
           </div>
         </form>

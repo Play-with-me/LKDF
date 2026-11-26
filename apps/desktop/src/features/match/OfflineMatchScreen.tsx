@@ -58,11 +58,11 @@ export interface OfflineMatchScreenProps {
   readonly onExitMatch: () => void;
 }
 
-function buildOfflineSeats(count: PlayerCount, localPlayerName: string): RoomSeat[] {
+function buildOfflineSeats(count: PlayerCount, localPlayerName: string, isEn: boolean): RoomSeat[] {
   return Array.from({ length: count }, (_, idx) => ({
     seatIndex: idx,
     userId: idx === 0 ? 'local_player_0' : `offline_bot_${idx}`,
-    displayName: idx === 0 ? localPlayerName : `Máy ${idx}`,
+    displayName: idx === 0 ? localPlayerName : `${isEn ? 'Bot' : 'Máy'} ${idx}`,
     avatarUrl: '',
     connectionStatus: 'ONLINE',
     isBotTakeover: idx !== 0,
@@ -74,15 +74,18 @@ function buildOfflineSeats(count: PlayerCount, localPlayerName: string): RoomSea
  */
 export function OfflineMatchScreen({
   playerCount,
-  localPlayerName = 'Bạn',
+  localPlayerName,
   onExitMatch,
 }: OfflineMatchScreenProps) {
-  const { t } = useTranslation();
+  const { i18n, t } = useTranslation();
+  const isEn = i18n.language === 'en';
+  const resolvedPlayerName = localPlayerName ?? (isEn ? 'You' : 'Bạn');
   const [masterState, setMasterState] = useState<MasterGameState>(() =>
     createInitialMatchSetup({
       matchId: crypto.randomUUID(),
       manualDraw: true,
-      seats: buildOfflineSeats(playerCount, localPlayerName),
+      enabledPacks: ['cuu_chau_core'],
+      seats: buildOfflineSeats(playerCount, resolvedPlayerName, isEn),
     }),
   );
   const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
@@ -109,7 +112,8 @@ export function OfflineMatchScreen({
       createInitialMatchSetup({
         matchId: crypto.randomUUID(),
         manualDraw: true,
-        seats: buildOfflineSeats(playerCount, localPlayerName),
+        enabledPacks: ['cuu_chau_core'],
+        seats: buildOfflineSeats(playerCount, resolvedPlayerName, isEn),
       }),
     );
     lastBotTurn.current = null;
@@ -117,7 +121,7 @@ export function OfflineMatchScreen({
     setAutoSkipNullify(false);
     setSelection(EMPTY_MATCH_SELECTION);
     setActionError(null);
-  }, [localPlayerName, playerCount]);
+  }, [isEn, playerCount, resolvedPlayerName]);
 
   useEffect(() => {
     const bridge = window.lkdfDesktop;
@@ -243,9 +247,9 @@ export function OfflineMatchScreen({
       hostDisconnectedAt: null,
       timerPreset: 'STANDARD',
       isTimerPaused: false,
-      seats: buildOfflineSeats(playerCount, localPlayerName),
+      seats: buildOfflineSeats(playerCount, resolvedPlayerName, isEn),
     }),
-    [localPlayerName, masterState.turnPhase, playerCount],
+    [isEn, resolvedPlayerName, masterState.turnPhase, playerCount],
   );
 
   const handleSelectHero = useCallback((heroId: HeroId) => {
@@ -261,11 +265,11 @@ export function OfflineMatchScreen({
         }
         return next;
       } catch (err: unknown) {
-        setActionError(formatMatchErrorVi(err, 'Không thể chọn nhân vật.'));
+        setActionError(formatMatchErrorVi(err, isEn ? 'Unable to select warrior.' : 'Không thể chọn nhân vật.'));
         return prev;
       }
     });
-  }, []);
+  }, [isEn]);
 
   const handleSendAction = useCallback((action: GameAction) => {
     setActionError(null);
@@ -277,11 +281,11 @@ export function OfflineMatchScreen({
         setSelection(EMPTY_MATCH_SELECTION);
         return next;
       } catch (err: unknown) {
-        setActionError(formatMatchErrorVi(err, 'Thao tác chưa hợp lệ.'));
+        setActionError(formatMatchErrorVi(err, isEn ? 'Invalid action.' : 'Thao tác chưa hợp lệ.'));
         return prev;
       }
     });
-  }, []);
+  }, [isEn]);
 
   const handleToggleAutoSkipNullify = useCallback(
     (enabled: boolean) => {

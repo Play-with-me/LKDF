@@ -32,18 +32,28 @@ export interface MatchInspectorBoxProps {
   readonly onResetToSelf?: () => void;
 }
 
-function getCardRuleTip(card: CardInstance): string | null {
+function getCardRuleTip(card: CardInstance, isEn: boolean): string | null {
   switch (card.category) {
     case 'WEAPON':
-      return 'Mẹo: Binh khí chỉ tăng tầm đánh Kiếm Trảm; Thám Nang Thủ vẫn đòi hỏi khoảng cách ≤ 1.';
+      return isEn
+        ? 'Tip: Weapons extend Blade Strike range; Sleight of Hand still requires distance ≤ 1.'
+        : 'Mẹo: Binh khí chỉ tăng tầm đánh Kiếm Trảm; Thám Nang Thủ vẫn đòi hỏi khoảng cách ≤ 1.';
     case 'ARMOR':
-      return 'Mẹo: Hộ giáp tự động kích hoạt phòng thủ khi bạn bị nhắm, không tốn lượt.';
+      return isEn
+        ? 'Tip: Armor triggers automatically when targeted; costs no action.'
+        : 'Mẹo: Hộ giáp tự động kích hoạt phòng thủ khi bạn bị nhắm, không tốn lượt.';
     case 'PLUS_ONE_HORSE':
-      return 'Mẹo: Thú cưỡi +1 khiến mọi đối thủ tính khoảng cách tới bạn xa thêm 1.';
+      return isEn
+        ? 'Tip: Defensive +1 Footwork increases distance from opponents to you by 1.'
+        : 'Mẹo: Thú cưỡi +1 khiến mọi đối thủ tính khoảng cách tới bạn xa thêm 1.';
     case 'MINUS_ONE_HORSE':
-      return 'Mẹo: Thú cưỡi −1 giúp bạn tính khoảng cách tới mọi đối thủ gần hơn 1.';
+      return isEn
+        ? 'Tip: Offensive -1 Steed reduces your distance to all opponents by 1.'
+        : 'Mẹo: Thú cưỡi −1 giúp bạn tính khoảng cách tới mọi đối thủ gần hơn 1.';
     case 'DELAYED_SCROLL':
-      return 'Mẹo: Bí kíp thời gian chờ phán xét ở pha đầu lượt, có thể bị Hóa Giải Chân Khí chặn.';
+      return isEn
+        ? 'Tip: Delayed Seals resolve during Judgment phase and can be negated by Qi Negation.'
+        : 'Mẹo: Bí kíp thời gian chờ phán xét ở pha đầu lượt, có thể bị Hóa Giải Chân Khí chặn.';
     default:
       return null;
   }
@@ -103,7 +113,7 @@ export function MatchInspectorBox({
     const red = isCardRed(card);
     const categoryLabel = getCardCategoryLabelVi(card.category, card.attackRange);
     const description = cardDisplay.description;
-    const tip = getCardRuleTip(card);
+    const tip = getCardRuleTip(card, locale === 'en');
 
     return (
       <aside
@@ -132,18 +142,18 @@ export function MatchInspectorBox({
                 onClick={onResetToSelf}
                 className="cursor-pointer rounded border border-[#806345]/75 bg-[#231A14] px-1.5 py-0.5 text-[9.5px] font-semibold text-[#E6CFA3] transition-colors hover:border-[#E6BE6C] hover:text-[#FFF8ED]"
               >
-                Soi mình
+                {locale === 'en' ? 'Self' : 'Soi mình'}
               </button>
             ) : null}
             <button
               type="button"
               onClick={onClose}
-              title="Đóng (Esc)"
-              aria-label="Đóng bảng xem chi tiết (Esc)"
+              title={locale === 'en' ? 'Close (Esc)' : 'Đóng (Esc)'}
+              aria-label={locale === 'en' ? 'Close details (Esc)' : 'Đóng bảng xem chi tiết (Esc)'}
               className="inline-flex cursor-pointer items-center gap-1 rounded border border-[#806345]/80 bg-[#231A14] px-1.5 py-0.5 text-[10px] font-semibold text-[#F5EBD6] transition-colors hover:border-[#E6BE6C] hover:text-[#FFF8ED] focus-visible:outline-2 focus-visible:outline-[#E6BE6C]"
             >
               <GameIcon name="ui:x" size={10} />
-              <span>Đóng</span>
+              <span>{locale === 'en' ? 'Close' : 'Đóng'}</span>
             </button>
           </div>
         </header>
@@ -190,7 +200,7 @@ export function MatchInspectorBox({
                 {card.category === 'WEAPON' && card.attackRange !== undefined ? (
                   <span className="font-mono-num inline-flex items-center gap-1 rounded border border-[#D99B26]/55 bg-[#D99B26]/16 px-1.5 py-0.5 text-[10px] leading-none font-bold text-[#FDE68A] tabular-nums">
                     <GameIcon name="archery-target" size={10} />
-                    Tầm {card.attackRange}
+                    {locale === 'en' ? `Range ${card.attackRange}` : `Tầm ${card.attackRange}`}
                   </span>
                 ) : null}
               </div>

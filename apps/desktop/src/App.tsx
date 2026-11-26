@@ -15,6 +15,7 @@ import {
   useRef,
   useState,
 } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FirstTimeNicknameCard } from './features/auth/FirstTimeNicknameCard.js';
 import { LoginScreen } from './features/auth/LoginScreen.js';
 import { GameIcon } from './components/icons/index.js';
@@ -137,6 +138,8 @@ export function App() {
 
   const [serverUrl, setServerUrl] = useState<string>(DEFAULT_SERVER_URL);
   const [sessionToken, setSessionToken] = useState<string | null>(null);
+  const { i18n } = useTranslation();
+  const isEn = i18n.language === 'en';
   const [health, setHealth] = useState<HealthCheckResponse | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(
     initialDevPreviewMode === 'nickname' || isLobbyPreview
@@ -177,8 +180,20 @@ export function App() {
   const api = useMemo(() => createApiClient(serverUrl), [serverUrl]);
 
   useEffect(() => {
-    document.title = `${GAME_BRAND.title.vi} — ${GAME_BRAND.title.en}`;
-  }, []);
+    document.title = isEn
+      ? `${GAME_BRAND.title.en} — ${GAME_BRAND.subtitle.en}`
+      : `${GAME_BRAND.title.vi} — ${GAME_BRAND.title.en}`;
+  }, [isEn]);
+
+  useEffect(() => {
+    if (!isSteamMode) return;
+    setProfile((prev) => {
+      if (!prev || prev.userId !== 'steam_local_player') return prev;
+      if (prev.displayName !== 'Hiệp Khách' && prev.displayName !== 'Wanderer') return prev;
+      const localized = isEn ? 'Wanderer' : 'Hiệp Khách';
+      return prev.displayName === localized ? prev : { ...prev, displayName: localized };
+    });
+  }, [isEn]);
 
   useEffect(() => {
     let active = true;
@@ -320,7 +335,9 @@ export function App() {
 
         const msg =
           res.messageVi ??
-          `Bạn đang dùng phiên bản mới nhất (v${appVersion}).`;
+          (isEn
+            ? `You are running the latest version (v${appVersion}).`
+            : `Bạn đang dùng phiên bản mới nhất (v${appVersion}).`);
         setUpdateState({
           ...createIdleUpdateState(appVersion),
           phase: 'UP_TO_DATE',
@@ -341,13 +358,15 @@ export function App() {
             messageVi:
               err instanceof Error
                 ? err.message
-                : 'Không thể kiểm tra bản cập nhật mới từ máy chủ.',
+                : isEn
+                  ? 'Unable to check for updates from the server.'
+                  : 'Không thể kiểm tra bản cập nhật mới từ máy chủ.',
           });
           setIsUpdateModalOpen(true);
         }
       }
     },
-    [api, appVersion, serverUrl],
+    [api, appVersion, isEn, serverUrl],
   );
 
   useEffect(() => {
@@ -374,11 +393,12 @@ export function App() {
         ...prev,
         phase: 'DOWNLOADED',
         percent: 100,
-        messageVi:
-          'Đã mở liên kết tải bộ cài trực tiếp từ máy chủ cập nhật. Hãy chạy tệp vừa tải về để cài đặt.',
+        messageVi: isEn
+          ? 'Opened the direct installer download link from the update server. Run the downloaded file to install.'
+          : 'Đã mở liên kết tải bộ cài trực tiếp từ máy chủ cập nhật. Hãy chạy tệp vừa tải về để cài đặt.',
       }));
     }
-  }, [api.baseUrl, serverUrl, updateState.downloadPath]);
+  }, [api.baseUrl, isEn, serverUrl, updateState.downloadPath]);
 
   const handleInstallUpdateNow = useCallback(() => {
     const bridge = window.lkdfDesktop;
@@ -432,17 +452,23 @@ export function App() {
             setSessionToken(null);
             setProfile(null);
             setLoginNotice(
-              'Phiên đăng nhập trước đã hết hạn. Vui lòng đăng nhập lại bằng Google.',
+              isEn
+                ? 'Your previous session expired. Please sign in again with Google.'
+                : 'Phiên đăng nhập trước đã hết hạn. Vui lòng đăng nhập lại bằng Google.',
             );
             setScreen('LOGIN');
             return;
           }
           setLoginNotice(
             timedOut
-              ? 'Máy chủ phản hồi chậm khi khôi phục phiên. Vui lòng đăng nhập lại hoặc Chơi với Máy.'
+              ? isEn
+                ? 'Server responded slowly while restoring your session. Please sign in again or Play vs Bots.'
+                : 'Máy chủ phản hồi chậm khi khôi phục phiên. Vui lòng đăng nhập lại hoặc Chơi với Máy.'
               : err instanceof Error
                 ? err.message
-                : 'Không thể khôi phục phiên đăng nhập. Vui lòng đăng nhập lại hoặc Chơi với Máy.',
+                : isEn
+                  ? 'Unable to restore session. Please sign in again or Play vs Bots.'
+                  : 'Không thể khôi phục phiên đăng nhập. Vui lòng đăng nhập lại hoặc Chơi với Máy.',
           );
           setScreen('LOGIN');
         })
@@ -560,7 +586,7 @@ export function App() {
       <main className="relative flex h-screen w-screen min-h-0 min-w-0 flex-col overflow-hidden bg-[#090807] text-[#EFE6D5]"
         style={offlineMode === 'setup' && lobbyBannerUrl ? { backgroundImage: `linear-gradient(#09080799, #090807df), url("${lobbyBannerUrl}")`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}>
         {offlineMode === 'setup' ? <OfflineMatchSetup onStart={setOfflineMode} onBack={closeOffline} /> : (
-          <Suspense fallback={<div role="status" className="m-auto">Đang chuẩn bị ván tập…</div>}>
+          <Suspense fallback={<div role="status" className="m-auto">{isEn ? 'Preparing practice match…' : 'Đang chuẩn bị ván tập…'}</div>}>
             <OfflineMatchScreenLazy
               playerCount={offlineMode}
               localPlayerName={profile?.displayName}
@@ -619,16 +645,16 @@ export function App() {
           </span>
           {isHomeLobby ? (
             <span className="truncate font-serif-title text-base font-semibold tracking-wide text-[#F4EBD8]">
-              {GAME_BRAND.title.vi}
+              {isEn ? GAME_BRAND.title.en : GAME_BRAND.title.vi}
             </span>
           ) : (
             <h1 className="truncate font-serif-title text-base font-semibold tracking-wide text-[#F4EBD8]">
-              {GAME_BRAND.title.vi}
+              {isEn ? GAME_BRAND.title.en : GAME_BRAND.title.vi}
             </h1>
           )}
           {activeRoom && screen === 'WAITING_ROOM' ? (
             <span className="hidden rounded border border-[#B89352]/45 bg-[#12161E] px-2 py-0.5 font-mono-num text-xs text-[#E6BE6C] sm:inline-block">
-              Phòng #{activeRoom.roomState.roomCode}
+              {isEn ? `Room #${activeRoom.roomState.roomCode}` : `Phòng #${activeRoom.roomState.roomCode}`}
             </span>
           ) : null}
         </div>
@@ -657,7 +683,7 @@ export function App() {
                   health ? 'bg-[#22C55E]' : 'bg-[#D97706]'
                 }`}
               />
-              {health ? 'Máy chủ sẵn sàng' : 'Đang kết nối'}
+              {health ? (isEn ? 'Server Ready' : 'Máy chủ sẵn sàng') : (isEn ? 'Connecting' : 'Đang kết nối')}
             </span>
           )}
 
@@ -672,7 +698,7 @@ export function App() {
               className="inline-flex cursor-pointer items-center gap-1.5 rounded-[5px] border border-[#E6BE6C] bg-[#B8332C] px-3 py-1 font-mono-num text-[11px] font-semibold tabular-nums text-[#F4EFE6] shadow transition-colors hover:bg-[#C83E37]"
             >
               <GameIcon name="ui:download" size={12} />
-              Có bản v{updateState.latestVersion}
+              {isEn ? `Update v${updateState.latestVersion}` : `Có bản v${updateState.latestVersion}`}
             </button>
           ) : (
             <button
@@ -680,8 +706,12 @@ export function App() {
               disabled={!health}
               title={
                 health
-                  ? 'Kiểm tra phiên bản cập nhật mới'
-                  : 'Chờ kết nối máy chủ để kiểm tra cập nhật'
+                  ? isEn
+                    ? 'Check for new updates'
+                    : 'Kiểm tra phiên bản cập nhật mới'
+                  : isEn
+                    ? 'Wait for server connection to check updates'
+                    : 'Chờ kết nối máy chủ để kiểm tra cập nhật'
               }
               onClick={() => {
                 void runUpdateCheck({
@@ -707,8 +737,12 @@ export function App() {
               <GameIcon name="ui:loader" size={16} className="animate-spin text-[#E6BE6C]" />
               <span>
                 {isRestoringSession
-                  ? 'Đang khôi phục phiên đăng nhập Google...'
-                  : `Đang khởi động ứng dụng ${GAME_BRAND.title.vi}...`}
+                  ? isEn
+                    ? 'Restoring Google sign-in session...'
+                    : 'Đang khôi phục phiên đăng nhập Google...'
+                  : isEn
+                    ? `Launching ${GAME_BRAND.title.en}...`
+                    : `Đang khởi động ứng dụng ${GAME_BRAND.title.vi}...`}
               </span>
             </div>
             <button
@@ -717,7 +751,7 @@ export function App() {
               className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-[#C89B4B]/70 bg-[#241813] px-4 py-2 text-sm font-semibold text-[#F5EBD6] transition-colors hover:border-[#E6BE6C] hover:bg-[#6C2521] focus-visible:outline-2 focus-visible:outline-[#E6BE6C]"
             >
               <GameIcon name="ui:bot" size={15} />
-              Chơi với Máy
+              {isEn ? 'Play vs Bots' : 'Chơi với Máy'}
             </button>
           </div>
         </section>
@@ -838,7 +872,7 @@ export function App() {
             <section className="flex flex-1 min-h-0 min-w-0 items-center justify-center p-6">
               <div className="inline-flex items-center gap-2 rounded-xl border border-[#2D343C] bg-[#1E2328] px-6 py-4 text-sm text-[#D1D5DB]">
                 <GameIcon name="ui:loader" size={16} className="animate-spin text-[#D99B26]" />
-                Đang mở bản xem thử Bàn đấu...
+                {isEn ? 'Opening arena preview...' : 'Đang mở bản xem thử Bàn đấu...'}
               </div>
             </section>
           }

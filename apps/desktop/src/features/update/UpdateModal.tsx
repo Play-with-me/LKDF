@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { GAME_BRAND } from '@lkdf/shared';
 import { GameIcon } from '../../components/icons/index.js';
 import { GuofengModalShell } from '../../components/ui/GuofengModalShell.js';
@@ -22,7 +23,7 @@ function formatBytes(bytes: number | null | undefined): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-function formatPublishedDate(raw: string | null): string | null {
+function formatPublishedDate(raw: string | null, locale: 'vi' | 'en'): string | null {
   if (!raw) {
     return null;
   }
@@ -30,7 +31,7 @@ function formatPublishedDate(raw: string | null): string | null {
   if (Number.isNaN(date.getTime())) {
     return null;
   }
-  return date.toLocaleString('vi-VN');
+  return date.toLocaleString(locale === 'en' ? 'en-US' : 'vi-VN');
 }
 
 export function UpdateModal({
@@ -41,27 +42,42 @@ export function UpdateModal({
   onInstallNow,
   onClose,
 }: UpdateModalProps) {
+  const { i18n } = useTranslation();
+  const locale = i18n.language === 'en' ? 'en' : 'vi';
+  const isEn = locale === 'en';
   const isBusy =
     updateState.phase === 'DOWNLOADING' || updateState.phase === 'INSTALLING';
-  const publishedLabel = formatPublishedDate(updateState.publishedAt);
+  const publishedLabel = formatPublishedDate(updateState.publishedAt, locale);
   const displayPercent = updateState.percent ?? 0;
 
   const title =
     updateState.phase === 'AVAILABLE'
-      ? `Đã có phiên bản mới (v${updateState.latestVersion ?? ''})!`
+      ? isEn
+        ? `New Update Available (v${updateState.latestVersion ?? ''})!`
+        : `Đã có phiên bản mới (v${updateState.latestVersion ?? ''})!`
       : updateState.phase === 'DOWNLOADING'
-        ? `Đang tải bản cập nhật v${updateState.latestVersion ?? ''}`
+        ? isEn
+          ? `Downloading update v${updateState.latestVersion ?? ''}`
+          : `Đang tải bản cập nhật v${updateState.latestVersion ?? ''}`
         : updateState.phase === 'INSTALLING'
-          ? 'Đang cài đặt bản cập nhật'
+          ? isEn
+            ? 'Installing update'
+            : 'Đang cài đặt bản cập nhật'
           : updateState.phase === 'DOWNLOADED'
-            ? 'Đã tải xong bản cập nhật'
-            : 'Kiểm tra cập nhật ứng dụng';
+            ? isEn
+              ? 'Update downloaded'
+              : 'Đã tải xong bản cập nhật'
+            : isEn
+              ? 'Check for App Updates'
+              : 'Kiểm tra cập nhật ứng dụng';
 
   const subtitle = (
     <span className="font-mono-num text-xs tabular-nums text-[#D5C3A5]">
-      Phiên bản đang cài: v{updateState.currentVersion}
+      {isEn ? `Installed version: v${updateState.currentVersion}` : `Phiên bản đang cài: v${updateState.currentVersion}`}
       {updateState.latestVersion
-        ? ` → Mới nhất: v${updateState.latestVersion}`
+        ? isEn
+          ? ` → Latest: v${updateState.latestVersion}`
+          : ` → Mới nhất: v${updateState.latestVersion}`
         : ''}
     </span>
   );
@@ -75,7 +91,7 @@ export function UpdateModal({
           className="lkdf-bronze-pill inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-4 py-2 text-xs font-medium text-[#EFE6D5] focus-visible:outline-2 focus-visible:outline-[#E6BE6C]"
         >
           <GameIcon name="ui:skip" size={13} />
-          Để sau
+          {isEn ? 'Later' : 'Để sau'}
         </button>
         <button
           type="button"
@@ -83,7 +99,7 @@ export function UpdateModal({
           className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[#F2CF84]/75 bg-gradient-to-b from-[#B8332C] to-[#7D1A16] px-5 py-2 text-xs font-semibold text-[#FFF8ED] shadow transition-colors hover:brightness-110 focus-visible:outline-2 focus-visible:outline-[#E6BE6C]"
         >
           <GameIcon name="ui:download" size={13} />
-          Cập nhật ngay
+          {isEn ? 'Update Now' : 'Cập nhật ngay'}
         </button>
       </>
     ) : updateState.phase === 'DOWNLOADED' ? (
@@ -94,7 +110,7 @@ export function UpdateModal({
           className="lkdf-bronze-pill inline-flex cursor-pointer items-center gap-1 rounded-lg px-4 py-2 text-xs font-medium text-[#EFE6D5] focus-visible:outline-2 focus-visible:outline-[#E6BE6C]"
         >
           <GameIcon name="ui:x" size={12} />
-          Đóng
+          {isEn ? 'Close' : 'Đóng'}
         </button>
         <button
           type="button"
@@ -106,8 +122,12 @@ export function UpdateModal({
             size={13}
           />
           {updateState.manualDownloadSavedPath
-            ? 'Mở tệp cài đặt vừa tải'
-            : 'Cài đặt & Mở lại ứng dụng'}
+            ? isEn
+              ? 'Open Downloaded Installer'
+              : 'Mở tệp cài đặt vừa tải'
+            : isEn
+              ? 'Install & Restart App'
+              : 'Cài đặt & Mở lại ứng dụng'}
         </button>
       </>
     ) : updateState.phase === 'ERROR' ? (
@@ -118,7 +138,7 @@ export function UpdateModal({
           className="lkdf-bronze-pill inline-flex cursor-pointer items-center gap-1 rounded-lg px-4 py-2 text-xs font-medium text-[#EFE6D5] focus-visible:outline-2 focus-visible:outline-[#E6BE6C]"
         >
           <GameIcon name="ui:x" size={12} />
-          Đóng
+          {isEn ? 'Close' : 'Đóng'}
         </button>
         <button
           type="button"
@@ -126,7 +146,13 @@ export function UpdateModal({
           className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[#F2CF84]/75 bg-gradient-to-b from-[#B8332C] to-[#7D1A16] px-4 py-2 text-xs font-semibold text-[#FFF8ED] transition-colors hover:brightness-110 focus-visible:outline-2 focus-visible:outline-[#E6BE6C]"
         >
           <GameIcon name="ui:refresh" size={13} />
-          {updateState.latestVersion ? 'Thử tải lại' : 'Kiểm tra lại'}
+          {updateState.latestVersion
+            ? isEn
+              ? 'Retry Download'
+              : 'Thử tải lại'
+            : isEn
+              ? 'Check Again'
+              : 'Kiểm tra lại'}
         </button>
       </>
     ) : updateState.phase === 'UP_TO_DATE' ? (
@@ -137,7 +163,7 @@ export function UpdateModal({
           className="lkdf-bronze-pill inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-4 py-2 text-xs font-medium text-[#EFE6D5] focus-visible:outline-2 focus-visible:outline-[#E6BE6C]"
         >
           <GameIcon name="ui:refresh" size={13} />
-          Kiểm tra lại
+          {isEn ? 'Check Again' : 'Kiểm tra lại'}
         </button>
         <button
           type="button"
@@ -145,7 +171,7 @@ export function UpdateModal({
           className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[#F2CF84]/75 bg-gradient-to-b from-[#B8332C] to-[#7D1A16] px-4 py-2 text-xs font-semibold text-[#FFF8ED] transition-colors hover:brightness-110 focus-visible:outline-2 focus-visible:outline-[#E6BE6C]"
         >
           <GameIcon name="ui:x" size={12} />
-          Đóng hộp thoại
+          {isEn ? 'Close Dialog' : 'Đóng hộp thoại'}
         </button>
       </>
     ) : undefined;
@@ -170,7 +196,9 @@ export function UpdateModal({
               className="shrink-0 animate-spin text-[#E6BE6C]"
             />
             <span>
-              Đang kết nối tới cổng cập nhật của máy chủ để kiểm tra phiên bản mới từ kho phát hành...
+              {isEn
+                ? 'Connecting to the update server to check for a new release...'
+                : 'Đang kết nối tới cổng cập nhật của máy chủ để kiểm tra phiên bản mới từ kho phát hành...'}
             </span>
           </div>
         ) : null}
@@ -180,7 +208,9 @@ export function UpdateModal({
             <GameIcon name="ui:check-circle" size={16} className="shrink-0" />
             <span>
               {updateState.messageVi ??
-                `Bạn đang dùng phiên bản mới nhất (v${updateState.currentVersion}).`}
+                (isEn
+                  ? `You are using the latest version (v${updateState.currentVersion}).`
+                  : `Bạn đang dùng phiên bản mới nhất (v${updateState.currentVersion}).`)}
             </span>
           </div>
         ) : null}
@@ -191,7 +221,9 @@ export function UpdateModal({
               <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-[#D5C3A5]">
                 <span className="font-semibold text-[#F5EBD6]">
                   {updateState.releaseName ||
-                    `Phiên bản v${updateState.latestVersion ?? ''}`}
+                    (isEn
+                      ? `Version v${updateState.latestVersion ?? ''}`
+                      : `Phiên bản v${updateState.latestVersion ?? ''}`)}
                 </span>
                 {publishedLabel ? (
                   <span className="font-mono-num tabular-nums">{publishedLabel}</span>
@@ -204,20 +236,24 @@ export function UpdateModal({
                 </pre>
               ) : (
                 <p className="text-xs text-[#E6D4B8]">
-                  Bản cập nhật mới đã sẵn sàng trên máy chủ. Bấm nút bên dưới để tải và nâng cấp tự động trong 1 cú nhấp chuột.
+                  {isEn
+                    ? 'A new update is ready on the server. Click below to download and upgrade automatically in one click.'
+                    : 'Bản cập nhật mới đã sẵn sàng trên máy chủ. Bấm nút bên dưới để tải và nâng cấp tự động trong 1 cú nhấp chuột.'}
                 </p>
               )}
 
               {updateState.installerName ? (
                 <p className="font-mono-num text-[11px] tabular-nums text-[#D5C3A5]">
-                  Tệp cài đặt: {updateState.installerName} (
+                  {isEn ? 'Installer:' : 'Tệp cài đặt:'} {updateState.installerName} (
                   {formatBytes(updateState.installerSizeBytes)})
                 </p>
               ) : null}
             </div>
 
             <p className="text-xs leading-relaxed text-[#D5C3A5]">
-              Bạn không cần mở trình duyệt hay vào GitHub. Ứng dụng sẽ tự tải về, kiểm tra tính toàn vẹn SHA-512, cài đặt đè và tự khởi động lại.
+              {isEn
+                ? 'No browser or GitHub visit needed. The app downloads, verifies SHA-512 integrity, installs, and restarts automatically.'
+                : 'Bạn không cần mở trình duyệt hay vào GitHub. Ứng dụng sẽ tự tải về, kiểm tra tính toàn vẹn SHA-512, cài đặt đè và tự khởi động lại.'}
             </p>
           </>
         ) : null}
@@ -227,7 +263,9 @@ export function UpdateModal({
             <div className="flex items-center justify-between text-sm font-semibold text-[#FDE68A]">
               <span className="inline-flex items-center gap-2">
                 <GameIcon name="ui:download" size={15} />
-                Đang tải bản cập nhật v{updateState.latestVersion ?? ''}...{' '}
+                {isEn
+                  ? `Downloading update v${updateState.latestVersion ?? ''}...`
+                  : `Đang tải bản cập nhật v${updateState.latestVersion ?? ''}...`}{' '}
                 <span className="font-mono-num tabular-nums">{displayPercent}%</span>
               </span>
             </div>
@@ -245,7 +283,9 @@ export function UpdateModal({
                 {formatBytes(updateState.totalBytes ?? updateState.installerSizeBytes)}
               </span>
               {updateState.bytesPerSecond ? (
-                <span>{formatBytes(updateState.bytesPerSecond)}/giây</span>
+                <span>
+                  {formatBytes(updateState.bytesPerSecond)}/{isEn ? 's' : 'giây'}
+                </span>
               ) : null}
             </div>
           </div>
@@ -260,7 +300,9 @@ export function UpdateModal({
             />
             <span>
               {updateState.messageVi ??
-                `Đã tải xong 100%! Đang cài đặt và mở lại ứng dụng ${GAME_BRAND.title.vi}...`}
+                (isEn
+                  ? `Download 100% complete! Installing and restarting ${GAME_BRAND.title.en}...`
+                  : `Đã tải xong 100%! Đang cài đặt và mở lại ứng dụng ${GAME_BRAND.title.vi}...`)}
             </span>
           </div>
         ) : null}
@@ -270,7 +312,9 @@ export function UpdateModal({
             <GameIcon name="ui:check-circle" size={16} className="shrink-0" />
             <span>
               {updateState.messageVi ??
-                'Bản cập nhật đã tải xong 100% và sẵn sàng cài đặt.'}
+                (isEn
+                  ? 'Update downloaded 100% and ready to install.'
+                  : 'Bản cập nhật đã tải xong 100% và sẵn sàng cài đặt.')}
             </span>
           </div>
         ) : null}
@@ -280,7 +324,9 @@ export function UpdateModal({
             <GameIcon name="ui:alert" size={16} className="shrink-0" />
             <span>
               {updateState.messageVi ??
-                'Không thể kiểm tra hoặc tải bản cập nhật.'}
+                (isEn
+                  ? 'Unable to check or download the update.'
+                  : 'Không thể kiểm tra hoặc tải bản cập nhật.')}
             </span>
           </div>
         ) : null}

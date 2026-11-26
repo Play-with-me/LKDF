@@ -199,6 +199,7 @@ export const WU_QUN_HERO_SKILLS: Partial<Record<HeroId, HeroSkillHandler>> = {
         strikeCards,
         isCollateralStrike: isCollateral,
         isFangTianMultiTarget: isFangTian,
+        ...(queuedTargets.size > 0 ? { excludedSeats: [...queuedTargets] } : {}),
       });
     },
   },

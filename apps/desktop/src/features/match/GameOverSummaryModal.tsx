@@ -122,7 +122,7 @@ export function GameOverSummaryModal({
         {!offline ? (
           <div className="inline-flex items-center gap-1.5 rounded-full border border-[#16A34A]/45 bg-[#0D2618] px-3 py-1 text-xs font-medium text-[#86EFAC]">
             <GameIcon name="ui:check-circle" size={13} />
-            Đã lưu kết quả vào Thống kê tài khoản
+            {locale === 'en' ? 'Result saved to Account Stats' : 'Đã lưu kết quả vào Thống kê tài khoản'}
           </div>
         ) : null}
 
@@ -145,7 +145,7 @@ export function GameOverSummaryModal({
               <div className="flex flex-wrap items-center gap-1.5">
                 <span className="inline-flex items-center gap-1 rounded border border-[#C89B4B]/45 bg-[#2A1E12] px-2 py-0.5 text-[10px] font-bold tracking-wider text-[#FDE68A] uppercase">
                   <GameIcon name="crown" size={11} />
-                  Danh Tướng Xuất Sắc (MVP)
+                  {locale === 'en' ? 'Match MVP' : 'Danh Tướng Xuất Sắc (MVP)'}
                 </span>
                 {mvpHero ? <FactionSeal faction={mvpHero.faction} size="sm" /> : null}
               </div>

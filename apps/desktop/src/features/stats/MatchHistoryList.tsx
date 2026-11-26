@@ -46,22 +46,30 @@ const IDENTITY_BADGE_CLASSES: Readonly<Record<IdentityRole, string>> = {
 const WINNING_FACTION_META: Readonly<
   Record<
     WinningFaction,
-    { readonly icon: GameIconName; readonly labelVi: string; readonly className: string }
+    {
+      readonly icon: GameIconName;
+      readonly labelVi: string;
+      readonly labelEn: string;
+      readonly className: string;
+    }
   >
 > = {
   LORD_LOYALIST: {
     icon: 'crown',
     labelVi: 'Phe Minh Chủ & Hộ Pháp thắng',
+    labelEn: 'Sovereign & Wardens Victory',
     className: 'border-[#C89B4B]/70 bg-[#3A290F]/65 text-[#FCD34D]',
   },
   REBEL: {
     icon: 'crossed-swords',
     labelVi: 'Phe Nghĩa Quân thắng',
+    labelEn: 'Rebels Victory',
     className: 'border-[#C83E37]/70 bg-[#C83E37]/20 text-[#FCA5A5]',
   },
   SPY: {
     icon: 'drama-masks',
     labelVi: 'Ám Ảnh thắng',
+    labelEn: 'Traitor Victory',
     className: 'border-[#10B981]/60 bg-[#10B981]/15 text-[#6EE7B7]',
   },
 };
@@ -73,12 +81,12 @@ function formatDurationVi(totalSeconds: number): string {
   return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 }
 
-function formatFinishedAtVi(isoString: string): string {
+function formatFinishedAt(isoString: string, locale: 'vi' | 'en'): string {
   const date = new Date(isoString);
   if (Number.isNaN(date.getTime())) {
     return isoString;
   }
-  return new Intl.DateTimeFormat('vi-VN', {
+  return new Intl.DateTimeFormat(locale === 'en' ? 'en-US' : 'vi-VN', {
     dateStyle: 'short',
     timeStyle: 'short',
   }).format(date);
@@ -92,10 +100,11 @@ export function MatchHistoryList({
 }: MatchHistoryListProps): ReactElement {
   const { i18n } = useTranslation();
   const locale = i18n.language === 'en' ? 'en' : 'vi';
+  const isEn = locale === 'en';
   if (matches.length === 0) {
     return (
       <div className="rounded-lg border border-[#806345]/60 bg-[#16110E]/94 p-6 text-center text-sm text-[#D5C3A5]">
-        Không có lịch sử ván đấu nào khớp bộ lọc hiện tại.
+        {isEn ? 'No match history matches the current filter.' : 'Không có lịch sử ván đấu nào khớp bộ lọc hiện tại.'}
       </div>
     );
   }
@@ -113,22 +122,22 @@ export function MatchHistoryList({
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2 border-b border-[#806345]/45 pb-2.5 min-w-0">
               <div className="flex flex-wrap items-center gap-2 min-w-0">
                 <span className="font-mono-num rounded border border-[#806345]/75 bg-[#1F1712] px-2 py-0.5 text-xs font-semibold tabular-nums text-[#F5EBD6]">
-                  Phòng #{match.roomCode}
+                  {isEn ? `Room #${match.roomCode}` : `Phòng #${match.roomCode}`}
                 </span>
                 <span
                   className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-semibold ${winningMeta.className}`}
                 >
                   <GameIcon name={winningMeta.icon} size={12} />
-                  {winningMeta.labelVi}
+                  {isEn ? winningMeta.labelEn : winningMeta.labelVi}
                 </span>
                 <span className="font-mono-num text-xs font-medium tabular-nums text-[#D5C3A5]">
-                  {match.playerCount} người
+                  {isEn ? `${match.playerCount} players` : `${match.playerCount} người`}
                 </span>
               </div>
 
               <div className="font-mono-num flex flex-wrap items-center gap-3 text-xs tabular-nums text-[#D5C3A5]">
-                <span>Thời lượng: {formatDurationVi(match.durationSeconds)}</span>
-                <span>{formatFinishedAtVi(match.finishedAt)}</span>
+                <span>{isEn ? `Duration: ${formatDurationVi(match.durationSeconds)}` : `Thời lượng: ${formatDurationVi(match.durationSeconds)}`}</span>
+                <span>{formatFinishedAt(match.finishedAt, locale)}</span>
               </div>
             </div>
 
@@ -156,7 +165,7 @@ export function MatchHistoryList({
                             type="button"
                             onClick={() => onSelectPlayer(participant.userId)}
                             className="max-w-full cursor-pointer truncate text-left text-sm font-semibold text-[#F5EBD6] hover:text-[#E6BE6C] focus-visible:outline-2 focus-visible:outline-[#E6BE6C]"
-                            title={`Lọc theo ${participant.displayName}`}
+                            title={isEn ? `Filter by ${participant.displayName}` : `Lọc theo ${participant.displayName}`}
                           >
                             {participant.displayName}
                           </button>
@@ -173,7 +182,7 @@ export function MatchHistoryList({
                           </span>
                           {isSelf ? (
                             <span className="rounded border border-[#C89B4B]/70 bg-[#C89B4B]/15 px-1.5 py-0.5 text-[11px] font-semibold text-[#FCD34D]">
-                              Bạn
+                              {isEn ? 'You' : 'Bạn'}
                             </span>
                           ) : null}
                         </div>
@@ -186,7 +195,7 @@ export function MatchHistoryList({
                             : 'bg-[#DC2626]/20 text-[#FCA5A5]'
                         }`}
                       >
-                        {participant.isWinner ? 'Thắng' : 'Thua'}
+                        {participant.isWinner ? (isEn ? 'Win' : 'Thắng') : (isEn ? 'Loss' : 'Thua')}
                       </span>
                     </div>
 
@@ -196,20 +205,20 @@ export function MatchHistoryList({
                           type="button"
                           onClick={() => onSelectHero(participant.heroId)}
                           className={`cursor-pointer truncate rounded border px-1.5 py-0.5 text-xs font-medium transition-opacity hover:opacity-85 focus-visible:outline-2 focus-visible:outline-[#E6BE6C] ${FACTION_BADGE_CLASSES[heroFaction] ?? 'border-[#9CA3AF]/60 bg-[#9CA3AF]/15 text-[#D1D5DB]'}`}
-                          title={getCuuChauHeroDisplay(participant.heroId, i18n.language === 'en' ? 'en' : 'vi')?.name ?? participant.heroId}
+                          title={getCuuChauHeroDisplay(participant.heroId, locale)?.name ?? participant.heroId}
                         >
-                          {hero ? `${getCuuChauHeroDisplay(participant.heroId, i18n.language === 'en' ? 'en' : 'vi')?.name ?? hero.nameVi} (${getCuuChauFactionDisplay(hero.faction, i18n.language === 'en' ? 'en' : 'vi').shortName})` : participant.heroId}
+                          {hero ? `${getCuuChauHeroDisplay(participant.heroId, locale)?.name ?? hero.nameVi} (${getCuuChauFactionDisplay(hero.faction, locale).shortName})` : participant.heroId}
                         </button>
                       ) : (
                         <span
                           className={`truncate rounded border px-1.5 py-0.5 text-xs font-medium ${FACTION_BADGE_CLASSES[heroFaction] ?? 'border-[#9CA3AF]/60 bg-[#9CA3AF]/15 text-[#D1D5DB]'}`}
                         >
-                          {hero ? `${getCuuChauHeroDisplay(participant.heroId, i18n.language === 'en' ? 'en' : 'vi')?.name ?? hero.nameVi} (${getCuuChauFactionDisplay(hero.faction, i18n.language === 'en' ? 'en' : 'vi').shortName})` : participant.heroId}
+                          {hero ? `${getCuuChauHeroDisplay(participant.heroId, locale)?.name ?? hero.nameVi} (${getCuuChauFactionDisplay(hero.faction, locale).shortName})` : participant.heroId}
                         </span>
                       )}
 
                       <span className="shrink-0 text-[11px] text-[#D5C3A5]">
-                        {participant.survived ? 'Sống sót' : 'Tử trận'}
+                        {participant.survived ? (isEn ? 'Survived' : 'Sống sót') : (isEn ? 'Fallen' : 'Tử trận')}
                       </span>
                     </div>
                   </div>

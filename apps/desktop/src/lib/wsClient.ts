@@ -1,5 +1,6 @@
 import type { GameAction, HeroId, RefereeActionType } from '@lkdf/shared';
 import { normalizeServerUrl } from './api.js';
+import { readAppLocale } from './devicePreferences.js';
 import type { RoomViewerPayload } from './types.js';
 
 export type WsConnectionStatus = 'CONNECTING' | 'CONNECTED' | 'DISCONNECTED';
@@ -311,6 +312,7 @@ export function createRoomWsClient(options: RoomWsClientOptions): RoomWsClient {
   connect();
 
   function sendPayload(payload: unknown): boolean {
+    const isEn = readAppLocale() === 'en';
     if (
       closedManually ||
       !activeSocket ||
@@ -318,8 +320,9 @@ export function createRoomWsClient(options: RoomWsClientOptions): RoomWsClient {
     ) {
       options.onActionError?.({
         code: 'WS_NOT_CONNECTED',
-        messageVi:
-          'Kết nối tới máy chủ phòng đấu chưa sẵn sàng. Vui lòng chờ kết nối lại.',
+        messageVi: isEn
+          ? 'Match server connection is not ready. Waiting to reconnect...'
+          : 'Kết nối tới máy chủ phòng đấu chưa sẵn sàng. Vui lòng chờ kết nối lại.',
       });
       return false;
     }
@@ -329,7 +332,9 @@ export function createRoomWsClient(options: RoomWsClientOptions): RoomWsClient {
     } catch {
       options.onActionError?.({
         code: 'WS_SEND_FAILED',
-        messageVi: 'Không thể gửi thao tác tới máy chủ. Vui lòng thử lại.',
+        messageVi: isEn
+          ? 'Unable to send action to the server. Please try again.'
+          : 'Không thể gửi thao tác tới máy chủ. Vui lòng thử lại.',
       });
       return false;
     }

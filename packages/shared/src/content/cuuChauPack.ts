@@ -13,6 +13,12 @@ import type {
 
 export type CuuChauLocale = 'vi' | 'en';
 
+export function isCuuChauRuleset(
+  stateOrView?: { readonly enabledPacks?: readonly string[] } | null,
+): boolean {
+  return Boolean(stateOrView?.enabledPacks?.includes('cuu_chau_core'));
+}
+
 export interface CuuChauFactionDisplay extends FactionDefinition {
   readonly shortName: LocalizedText;
 }
@@ -423,6 +429,50 @@ export const CUU_CHAU_CARD_DISPLAY_BY_KEY: Readonly<
     descriptionVi:
       'Hóa giải hoàn toàn mọi lá Kiếm Trảm màu Đen (Bích/Chuồn) nhắm vào bạn.',
     descriptionEn: 'Black Blade Strikes (Spade/Club) have no effect on you.',
+  },
+  pha_giap_tram: {
+    cardKey: 'pha_giap_tram',
+    nameVi: 'Phá Giáp Trảm',
+    nameEn: 'Armor-Piercing Strike',
+    descriptionVi:
+      'Đòn Sát đặc biệt (dùng chung giới hạn 1 lần/lượt): Bỏ qua Giáp mục tiêu và rút 1 lá nếu trúng đòn.',
+    descriptionEn:
+      'Special Strike (shares 1/turn limit): Ignores equipped Armor and draws 1 card on hit.',
+  },
+  chan_khi_ho_the: {
+    cardKey: 'chan_khi_ho_the',
+    nameVi: 'Chân Khí Hộ Thể',
+    nameEn: 'Qi Ward',
+    descriptionVi:
+      'Nếu đang mất máu: Hồi 1 Sinh Lực và rút 1 lá. Nếu đầy máu: Rút 2 lá.',
+    descriptionEn:
+      'If wounded: Restore 1 HP and draw 1 card. If at full HP: Draw 2 cards.',
+  },
+  kinh_loi_chan: {
+    cardKey: 'kinh_loi_chan',
+    nameVi: 'Kinh Lôi Chấn',
+    nameEn: 'Thunderclap Pulse',
+    descriptionVi:
+      'Chọn 1 đối thủ: Nếu trên tay họ còn ≤ 1 lá thì gây 1 sát thương; ngược lại hủy 1 lá của họ.',
+    descriptionEn:
+      'Target 1 opponent: Deal 1 damage if they hold ≤ 1 hand card; otherwise discard 1 card from them.',
+  },
+  hoan_anh_giap: {
+    cardKey: 'hoan_anh_giap',
+    nameVi: 'Huyễn Ảnh Giáp',
+    nameEn: 'Mirage Cloak',
+    descriptionVi:
+      'Giáp: Mọi sát thương đơn lẻ lớn hơn 1 nhắm vào bạn đều giảm xuống còn 1.',
+    descriptionEn: 'Armor: Any single hit dealing more than 1 damage to you is reduced to 1.',
+  },
+  tu_khi_hoan: {
+    cardKey: 'tu_khi_hoan',
+    nameVi: 'Tụ Khí Hoàn',
+    nameEn: 'Spirit Resonance Ring',
+    descriptionVi:
+      'Tầm đánh 2: Khi Kiếm Trảm hoặc Phá Giáp Trảm của bạn bị né tránh, rút ngay 1 lá bài.',
+    descriptionEn:
+      'Range 2: Whenever your Strike is dodged, draw 1 card.',
   },
   tuyet_anh: {
     cardKey: 'tuyet_anh',
@@ -1245,8 +1295,13 @@ export const CUU_CHAU_HERO_SKILLS: Readonly<
 > = {
   lam_thanh_vu: {
     heroId: 'lam_thanh_vu',
-    onPeachRescueBonus: (_state, _dying, rescuer, rt) =>
-      rt.getHeroFaction(rescuer.heroId) === 'THANH_VAN' ? 1 : 0,
+    onPeachRescueBonus: (_state, dyingPlayer, rescuer, rt) => {
+      if (dyingPlayer.identity !== 'LORD' || rescuer.seatIndex === dyingPlayer.seatIndex) {
+        return 0;
+      }
+      const faction = rt.getHeroFaction(rescuer.heroId);
+      return faction === 'THANH_VAN' || faction === 'SHU' ? 1 : 0;
+    },
     extraDrawCount: (_state, player) => (player.hp <= 2 ? 1 : 0),
   },
   loi_chan_son: {
@@ -1285,9 +1340,13 @@ export const CUU_CHAU_HERO_SKILLS: Readonly<
   },
   viem_liet_vuong: {
     heroId: 'viem_liet_vuong',
-    extraDrawCount: (_state, player) => (player.handCards.length <= 1 ? 1 : 0),
-    onPeachRescueBonus: (_state, _dying, rescuer, rt) =>
-      rt.getHeroFaction(rescuer.heroId) === 'XICH_DIEM' ? 1 : 0,
+    onPeachRescueBonus: (_state, dyingPlayer, rescuer, rt) => {
+      if (dyingPlayer.identity !== 'LORD' || rescuer.seatIndex === dyingPlayer.seatIndex) {
+        return 0;
+      }
+      const faction = rt.getHeroFaction(rescuer.heroId);
+      return faction === 'XICH_DIEM' || faction === 'WU' ? 1 : 0;
+    },
   },
   luc_tram_an: {
     heroId: 'luc_tram_an',
@@ -1326,48 +1385,98 @@ export const CUU_CHAU_HERO_SKILLS: Readonly<
 
 const EXTRA_FOUR_TEMPLATES: readonly CardTemplate[] = [
   {
-    cardKey: 'thiem',
-    nameVi: 'Thân Pháp',
+    cardKey: 'pha_giap_tram',
+    nameVi: CUU_CHAU_CARD_DISPLAY_BY_KEY['pha_giap_tram']!.nameVi,
     category: 'BASIC',
     suit: 'SPADE',
     rank: 4,
-    descriptionVi: CUU_CHAU_CARD_DISPLAY_BY_KEY['thiem']!.descriptionVi,
+    isEx: true,
+    descriptionVi: CUU_CHAU_CARD_DISPLAY_BY_KEY['pha_giap_tram']!.descriptionVi,
   },
   {
-    cardKey: 'dao',
-    nameVi: 'Hồi Xuân Đan',
-    category: 'BASIC',
-    suit: 'HEART',
-    rank: 5,
-    descriptionVi: CUU_CHAU_CARD_DISPLAY_BY_KEY['dao']!.descriptionVi,
-  },
-  {
-    cardKey: 'sat',
-    nameVi: 'Kiếm Trảm',
+    cardKey: 'pha_giap_tram',
+    nameVi: CUU_CHAU_CARD_DISPLAY_BY_KEY['pha_giap_tram']!.nameVi,
     category: 'BASIC',
     suit: 'CLUB',
     rank: 1,
-    descriptionVi: CUU_CHAU_CARD_DISPLAY_BY_KEY['sat']!.descriptionVi,
+    isEx: true,
+    descriptionVi: CUU_CHAU_CARD_DISPLAY_BY_KEY['pha_giap_tram']!.descriptionVi,
   },
   {
-    cardKey: 'vo_trung_sinh_huu',
-    nameVi: 'Tụ Khí Quyết',
+    cardKey: 'chan_khi_ho_the',
+    nameVi: CUU_CHAU_CARD_DISPLAY_BY_KEY['chan_khi_ho_the']!.nameVi,
+    category: 'NORMAL_SCROLL',
+    suit: 'HEART',
+    rank: 5,
+    isEx: true,
+    descriptionVi: CUU_CHAU_CARD_DISPLAY_BY_KEY['chan_khi_ho_the']!.descriptionVi,
+  },
+  {
+    cardKey: 'chan_khi_ho_the',
+    nameVi: CUU_CHAU_CARD_DISPLAY_BY_KEY['chan_khi_ho_the']!.nameVi,
     category: 'NORMAL_SCROLL',
     suit: 'DIAMOND',
     rank: 6,
-    descriptionVi: CUU_CHAU_CARD_DISPLAY_BY_KEY['vo_trung_sinh_huu']!.descriptionVi,
+    isEx: true,
+    descriptionVi: CUU_CHAU_CARD_DISPLAY_BY_KEY['chan_khi_ho_the']!.descriptionVi,
   },
 ];
 
-export const CUU_CHAU_DECK_TEMPLATES: readonly CardTemplate[] = [
-  ...STANDARD_DECK_TEMPLATES.map((tpl) => {
-    const display = CUU_CHAU_CARD_DISPLAY_BY_KEY[tpl.cardKey];
-    return {
-      ...tpl,
-      nameVi: display?.nameVi ?? tpl.nameVi,
-      descriptionVi: display?.descriptionVi ?? tpl.descriptionVi,
+function mapLegacyTemplateToCuuChau(tpl: CardTemplate): CardTemplate {
+  let nextTpl: CardTemplate = tpl;
+  if (tpl.cardKey === 'nhan_vuong_thuan' && tpl.suit === 'CLUB' && tpl.rank === 2) {
+    nextTpl = {
+      cardKey: 'hoan_anh_giap',
+      nameVi: CUU_CHAU_CARD_DISPLAY_BY_KEY['hoan_anh_giap']!.nameVi,
+      category: 'ARMOR',
+      suit: 'CLUB',
+      rank: 2,
+      isEx: true,
+      descriptionVi: CUU_CHAU_CARD_DISPLAY_BY_KEY['hoan_anh_giap']!.descriptionVi,
     };
-  }),
+  } else if (tpl.cardKey === 'thiem_dien' && tpl.suit === 'HEART' && tpl.rank === 12) {
+    nextTpl = {
+      cardKey: 'tu_khi_hoan',
+      nameVi: CUU_CHAU_CARD_DISPLAY_BY_KEY['tu_khi_hoan']!.nameVi,
+      category: 'WEAPON',
+      suit: 'HEART',
+      rank: 12,
+      attackRange: 2,
+      isEx: true,
+      descriptionVi: CUU_CHAU_CARD_DISPLAY_BY_KEY['tu_khi_hoan']!.descriptionVi,
+    };
+  } else if (tpl.cardKey === 'qua_ha_sai_cau' && tpl.suit === 'SPADE' && tpl.rank === 3) {
+    nextTpl = {
+      cardKey: 'kinh_loi_chan',
+      nameVi: CUU_CHAU_CARD_DISPLAY_BY_KEY['kinh_loi_chan']!.nameVi,
+      category: 'NORMAL_SCROLL',
+      suit: 'SPADE',
+      rank: 3,
+      isEx: true,
+      descriptionVi: CUU_CHAU_CARD_DISPLAY_BY_KEY['kinh_loi_chan']!.descriptionVi,
+    };
+  } else if (tpl.cardKey === 'thuan_thu_khien_duong' && tpl.suit === 'DIAMOND' && tpl.rank === 3) {
+    nextTpl = {
+      cardKey: 'kinh_loi_chan',
+      nameVi: CUU_CHAU_CARD_DISPLAY_BY_KEY['kinh_loi_chan']!.nameVi,
+      category: 'NORMAL_SCROLL',
+      suit: 'DIAMOND',
+      rank: 3,
+      isEx: true,
+      descriptionVi: CUU_CHAU_CARD_DISPLAY_BY_KEY['kinh_loi_chan']!.descriptionVi,
+    };
+  }
+
+  const display = CUU_CHAU_CARD_DISPLAY_BY_KEY[nextTpl.cardKey];
+  return {
+    ...nextTpl,
+    nameVi: display?.nameVi ?? nextTpl.nameVi,
+    descriptionVi: display?.descriptionVi ?? nextTpl.descriptionVi,
+  };
+}
+
+export const CUU_CHAU_DECK_TEMPLATES: readonly CardTemplate[] = [
+  ...STANDARD_DECK_TEMPLATES.map(mapLegacyTemplateToCuuChau),
   ...EXTRA_FOUR_TEMPLATES,
 ];
 

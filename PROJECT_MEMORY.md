@@ -1,10 +1,27 @@
 # PROJECT_MEMORY.md — Ghi Nhớ Dự Án và Bàn Giao Tiến Độ
 
 > **Dự án:** Cửu Châu Ẩn Kiếm / Blades of the Nine Realms (Windows Standalone Portable + Lộ trình lên Steam Phase 4)
-> **Ngày cập nhật:** 2026-11-25
-> **Trạng thái hiện tại:** Đã hoàn thành **Phase 0 (`77d925a`)** và **Phase 1 (1A + 1B)** theo [KE_HOACH_TONG_THE_CUU_CHAU_AN_KIEM.md](./KE_HOACH_TONG_THE_CUU_CHAU_AN_KIEM.md). Đã xuất bản build chơi thử đa máy **Windows Portable `.zip`**: `apps/desktop/release/BladesOfTheNineRealms-Portable-0.1.0.zip` (**166.57 MB**). Chờ Sếp test đa máy và duyệt chuyển sang **Phase 2 (AI Art Factory: 25 chân dung + 32 tranh bài + 3 nền gốc)**.
+> **Ngày cập nhật:** 2026-11-26
+> **Trạng thái hiện tại:** Đã commit **Phase 1 (`c9944d0`)** và hoàn thành **Phase 2A** *(giữ trong working tree chưa commit theo yêu cầu Sếp)* theo [KE_HOACH_TONG_THE_CUU_CHAU_AN_KIEM.md](./KE_HOACH_TONG_THE_CUU_CHAU_AN_KIEM.md). Bước kế tiếp là **Phase 2B** (remix nốt 15 bộ chiêu tướng còn lại + cân bằng + xuất Portable `.zip`).
 
-## 0. Bằng Chứng Kiểm Chứng Mới Nhất — Phase 1 (`2026-11-25`)
+## 0. Bằng Chứng Kiểm Chứng Mới Nhất — Phase 2A (`2026-11-26`)
+- **Commit nền:** `[main c9944d0]` (Phase 1 — 71 files). Toàn bộ thay đổi Phase 2A đang giữ sạch trong working tree để Sếp nghiệm thu trước khi commit.
+- **Lõi gameplay Cửu Châu 112 lá & Bot AI (`packages/shared`):**
+  - Thực thi thật **10 bộ chiêu remix** (`cuuChauPack.ts` + `registry.ts` + `distance/index.ts` + `combatCore.ts` + `combat.ts` + `actionDescriptor.ts`) và **5 lá bài mới Cửu Châu** (`pha_giap_tram` *Phá Giáp Trảm* / *Armor-Piercing Strike*, `chan_khi_ho_the` *Chân Khí Hộ Thể* / *Qi Ward*, `kinh_loi_chan` *Kinh Lôi Chấn* / *Thunderclap Pulse*, `hoan_anh_giap` *Huyễn Ảnh Giáp* / *Mirage Cloak*, `tu_khi_hoan` *Tụ Khí Hoàn* / *Spirit Resonance Ring*) giữ đúng bộ bài `112` lá (`28♠/28♥/28♣/28♦`).
+  - Nâng cấp `bot/index.ts` dùng thông minh 5 lá mới & 10 bộ chiêu remix; vá lỗi chọn trùng mục tiêu `ASK_LIU_LI` bằng trường `excludedSeats` qua `types/game.ts`, `wuQun.ts`, `projection/index.ts`, `bot/index.ts`, `matchTypes.ts`.
+- **Giao diện, Icon, Âm thanh & Song ngữ 100% VI/EN (`apps/desktop`):**
+  - Gắn icon (`GameIcon.tsx`), âm thanh (`matchSounds.ts`), nhắm mục tiêu/kéo-thả (`matchTypes.ts`, `MatchActionSidebar.tsx`) cho 5 lá mới; hoàn thiện 100% VI/EN trên toàn bộ màn hình & hộp thoại (`MatchArenaLayout`, `MatchScreen`, `DevMatchPreview`, `OfflineMatchScreen`, `RefereePanelDialog`, `RulesHotkeysDialog`, `MatchCenterBoard`, `SeatCard`, `TakeHandTray`, `HomeLobbyHub`, `WaitingRoomScreen`, `LobbyProfile`, `StatsPage`, `StatsMetaFilters`, `MatchHistoryList`, `LoginScreen`, `ServerWakeScreen`, `GuofengPortalStage`, `FirstTimeNicknameCard`, `UpdateModal`, `App`, `api.ts`, `wsClient.ts`).
+- **Kết quả kiểm chứng thực tế sau lần sửa cuối:**
+  - `npm.cmd run typecheck`: `0` lỗi (`@lkdf/shared`, `@lkdf/desktop` renderer+electron, `@lkdf/server`).
+  - `npm.cmd run build`: `exit code 0` (`2412` Vite modules + `tsc`).
+  - `npm.cmd run test:unit`: **17/17 files · 137/137 tests passed** (gồm `cuuChauMechanics.test.ts` **15/15** cho 10 chiêu remix + 5 lá mới + Bot AI).
+  - `npm.cmd run test:fuzz`: **2/2 files · 12/12 tests passed — 1.000/1.000 ván đạt 100%** (`500` ván chuẩn 4–8P + `500` ván Cửu Châu 112 lá 4–8P, đủ 25 tướng, 3 phe thắng & 5 lá mới, `0` deadlock, `0` rò rỉ `PlayerViewState`).
+  - `npm.cmd run test:integration`: **7/7 files · 26/26 tests passed**.
+  - `npx.cmd vitest run apps/desktop/src/features/match/offlineBot.test.ts apps/desktop/src/i18n/i18nParity.test.ts`: **2/2 files · 7/7 tests passed** (`i18nParity.test.ts` **3/3** + `offlineBot.test.ts` **4/4**).
+  - `npm.cmd run assets:check`: **PASS** (`59` tệp runtime, `60` mục manifest, `0` ảnh AI cũ, `1.15 MB`).
+  - **Live Electron `45.3.3` UI Audit (`1280×720` & `960×600`, cả `VI` & `EN`):** **14/14 checks PASS** (`lobby-vi`, `lobby-en`, `compendium-5newcards` kiểm đủ 5 lá mới VI/EN, `profile-en`, `offline-setup-en`, `hero-select-vi+en`, `match-arena+rules+log`), **`0` lỗi console, `0` URL lỗi, `0` chữ Tam Quốc, `0` dấu tiếng Việt lọt chế độ EN, `0` tràn khung**.
+
+## 0B. Bằng Chứng Kiểm Chứng Phase 1 (`2026-11-25`) — Đã Commit `c9944d0`
 - **Kiến trúc & Nội dung gốc Cửu Châu (`Phase 1A + 1B`):**
   - `packages/shared`: `utils/shuffle.ts` (khử vòng phụ thuộc ESM), `types/events.ts` (`GameEvent`), `content/{types,registry,cuuChauPack}.ts` (`ContentRegistry`, `CUU_CHAU_CORE_PACK` gồm 4 tông môn `雲/鐵/炎/影`, 4 vai, 25 hiệp khách song ngữ VI/EN, 112 lá `28♠/28♥/28♣/28♦`, 10 bộ chiêu remix, `createCuuChau112Deck`), `engine/{primitives,actionDescriptor,setup,combat}.ts` (`deckFactory`), `projection/index.ts`.
   - `apps/server`: xác thực action qua `RegisteredHeroIdSchema` & `RegisteredPlaySkillIdSchema`.

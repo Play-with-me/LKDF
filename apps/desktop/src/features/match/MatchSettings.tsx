@@ -104,7 +104,7 @@ export function MatchSettings({
       <div
         id={id}
         popover="auto"
-        aria-label="Cài đặt trận đấu"
+        aria-label={t('common.settings')}
         className="lkdf-scroll fixed inset-auto right-2 top-10 m-0 max-h-[calc(100dvh-3.25rem)] w-max max-w-[min(460px,calc(100vw-1rem))] overflow-auto rounded-xl border border-[#C89B4B]/60 bg-[#14100D]/98 p-3 text-[#EFE6D5] shadow-[0_18px_48px_rgba(0,0,0,0.85)]"
         onClick={event => {
           if (event.target instanceof Element && event.target.closest('button')) {

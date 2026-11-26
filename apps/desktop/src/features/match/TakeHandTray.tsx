@@ -1,5 +1,7 @@
 import { prefersReducedMotion } from '../../lib/devicePreferences.js';
+import { getCuuChauCardDisplay } from '@lkdf/shared';
 import { useLayoutEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { GameAction, PublicInterruptView, PublicPlayerView } from '@lkdf/shared';
 import { CardBack, GameIcon } from '../../components/icons/index.js';
 import { PlayingCardFace } from './HandCardItem.js';
@@ -12,14 +14,14 @@ interface Props {
   readonly onBackToZones?: () => void;
 }
 
-function getTakeHandSourceLabel(interrupt: PublicInterruptView): string {
+function getTakeHandSourceLabel(interrupt: PublicInterruptView, isEn: boolean): string {
   if (interrupt.id.startsWith('fankui_pick_')) {
-    return 'Hồi Hưởng';
+    return isEn ? 'Resonance Counter' : 'Hồi Hưởng';
   }
   if (interrupt.id.startsWith('tu_xi_take')) {
-    return 'Đoạt Lương';
+    return isEn ? 'Raid Provisions' : 'Đoạt Lương';
   }
-  return 'Thám Nang Thủ';
+  return isEn ? 'Shadow Snatch' : 'Thám Nang Thủ';
 }
 
 export function TakeHandTray({
@@ -29,6 +31,8 @@ export function TakeHandTray({
   onSendAction,
   onBackToZones,
 }: Props) {
+  const { i18n } = useTranslation();
+  const isEn = i18n.language === 'en';
   const prePrepare = !interrupt.handPick && interrupt.sourceSeat === viewerSeat;
   const preparing = interrupt.handPick === 'PREPARE';
   const selecting = interrupt.handPick === 'SELECT';
@@ -41,7 +45,7 @@ export function TakeHandTray({
   const [sent, setSent] = useState(false);
   const cards = useRef<HTMLDivElement>(null);
   const moving = useRef<Animation[]>([]);
-  const triggerLabel = getTakeHandSourceLabel(interrupt);
+  const triggerLabel = getTakeHandSourceLabel(interrupt, isEn);
 
   useLayoutEffect(() => {
     if (canPrepare || prePrepare || prefersReducedMotion()) return;
@@ -129,7 +133,7 @@ export function TakeHandTray({
   }
 
   return (
-    <section aria-label="Khay lấy bài úp" className="pointer-events-auto flex w-[min(420px,48cqw)] min-w-0 flex-col gap-2 rounded-lg border border-[#9a774e] bg-[#261c17] p-2 text-[#f4e3bd] shadow-lg">
+    <section aria-label={isEn ? 'Hand pick tray' : 'Khay lấy bài úp'} className="pointer-events-auto flex w-[min(420px,48cqw)] min-w-0 flex-col gap-2 rounded-lg border border-[#9a774e] bg-[#261c17] p-2 text-[#f4e3bd] shadow-lg">
       <div className="flex flex-wrap items-center justify-center gap-1.5">
         <span className="inline-flex items-center gap-1 rounded border border-[#C89B4B]/65 bg-[#18120E] px-2 py-0.5 text-[10.5px] font-bold text-[#FDE68A]">
           <GameIcon name="grab" size={11} className="text-[#E6BE6C]" />
@@ -138,16 +142,18 @@ export function TakeHandTray({
       </div>
       <p className="text-center text-xs font-semibold">
         {sent
-          ? 'Đang chờ xác nhận…'
+          ? (isEn ? 'Waiting for confirmation…' : 'Đang chờ xác nhận…')
           : canPrepare
-            ? 'Kéo hoặc bấm hai lá để đổi chỗ'
+            ? (isEn ? 'Drag or click two cards to swap positions' : 'Kéo hoặc bấm hai lá để đổi chỗ')
             : prePrepare
-              ? `Xác nhận lấy bài tay (${owner.handCount} lá) hoặc quay lại chọn trang bị`
+              ? (isEn
+                  ? `Confirm picking hand card (${owner.handCount} cards) or go back`
+                  : `Xác nhận lấy bài tay (${owner.handCount} lá) hoặc quay lại chọn trang bị`)
               : canPick
-                ? 'Bấm trực tiếp 1 lá úp để nhận ngay'
+                ? (isEn ? 'Click 1 face-down card to claim it' : 'Bấm trực tiếp 1 lá úp để nhận ngay')
                 : preparing
-                  ? 'Đang chờ chủ bài xác nhận'
-                  : 'Đang chờ người rút chọn lá'}
+                  ? (isEn ? 'Waiting for card owner confirmation' : 'Đang chờ chủ bài xác nhận')
+                  : (isEn ? 'Waiting for taker to pick a card' : 'Đang chờ người rút chọn lá')}
       </p>
       <div ref={cards} className="flex min-w-0 gap-1 overflow-x-auto p-1">
         {Array.from({ length: owner.handCount }, (_, index) => {
@@ -155,7 +161,7 @@ export function TakeHandTray({
           const interactive = canPrepare || canPick || prePrepare;
           return <button type="button" key={index} disabled={sent || !interactive}
             draggable={canPrepare && !sent}
-            aria-label={face?.nameVi ?? `Lá úp ${index + 1}`}
+            aria-label={face ? getCuuChauCardDisplay(face.cardKey, isEn ? 'en' : 'vi', face.nameVi).name : (isEn ? `Face-down card ${index + 1}` : `Lá úp ${index + 1}`)}
             aria-pressed={canPrepare || canPick ? slot === index : undefined}
             onDragStart={event => { if (!canPrepare) return; dragging.current = index; event.dataTransfer.setData('text/plain', String(index)); }}
             onDragEnd={() => { dragging.current = null; }}
@@ -188,13 +194,13 @@ export function TakeHandTray({
               className="inline-flex cursor-pointer items-center gap-1 rounded border border-[#806345] bg-[#1B1410] px-2.5 py-1 text-xs font-semibold text-[#E8DCC8] hover:border-[#C89B4B] disabled:opacity-50"
             >
               <GameIcon name="ui:arrow-left" size={11} />
-              Chọn trang bị khác
+              {isEn ? 'Choose other gear' : 'Chọn trang bị khác'}
             </button>
           ) : null}
           <button type="button" onClick={confirm}
             disabled={sent}
             className="cursor-pointer rounded border border-[#ae8956] bg-[#463321] px-3 py-1 text-xs font-semibold hover:border-[#E6BE6C] disabled:opacity-50">
-            {canPrepare ? 'Xác nhận úp bài' : 'Lấy ngẫu nhiên từ bài tay'}
+            {canPrepare ? (isEn ? 'Confirm Shuffle' : 'Xác nhận úp bài') : (isEn ? 'Take random hand card' : 'Lấy ngẫu nhiên từ bài tay')}
           </button>
         </div>
       )}

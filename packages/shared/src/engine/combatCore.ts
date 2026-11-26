@@ -96,10 +96,10 @@ export function canUseCardAs(
   asCardKey: VirtualCardKey,
   inTurn: boolean,
 ): boolean {
-  if (card.cardKey === asCardKey) {
+  if (card.cardKey === asCardKey || (asCardKey === 'sat' && card.cardKey === 'pha_giap_tram')) {
     return true;
   }
-  const handler = getHeroSkillHandler(player.heroId);
+  const handler = getHeroSkillHandler(player.heroId, state);
   return handler?.canConvertCardAs?.(state, player, card, asCardKey, inTurn) ?? false;
 }
 
@@ -165,7 +165,7 @@ export function notifyHandCardsLost(
   if (!player.alive || player.handCards.length > 0) {
     return state;
   }
-  const handler = getHeroSkillHandler(player.heroId);
+  const handler = getHeroSkillHandler(player.heroId, state);
   if (!handler?.onHandCardsLost) {
     return state;
   }
@@ -185,7 +185,7 @@ export function notifyEquipLost(
   if (!player.alive) {
     return state;
   }
-  const handler = getHeroSkillHandler(player.heroId);
+  const handler = getHeroSkillHandler(player.heroId, state);
   if (!handler?.onEquipLost) {
     return state;
   }
@@ -197,7 +197,7 @@ export function canTargetPlayerWithCard(
   target: PlayerCombatState,
   cardKey: string,
 ): boolean {
-  const handler = getHeroSkillHandler(target.heroId);
+  const handler = getHeroSkillHandler(target.heroId, state);
   if (!handler?.canBeTargetedBy) {
     return true;
   }
@@ -266,29 +266,51 @@ export function applyDamage(
     return state;
   }
 
-  const nextHp = target.hp - amount;
+  const source = sourceSeat !== null ? getPlayerBySeat(state, sourceSeat) : null;
+  const isStrikeDamage = damageCards.some(
+    (c) => c.cardKey === 'sat' || c.cardKey === 'pha_giap_tram',
+  );
+  const ignoreArmor =
+    damageCards.some((c) => c.cardKey === 'pha_giap_tram') ||
+    (isStrikeDamage && source?.equipments.weapon?.cardKey === 'thanh_cong_kiem');
+
+  let effectiveAmount = amount;
+  const armorLogs: string[] = [];
+  if (
+    !ignoreArmor &&
+    target.equipments.armor?.cardKey === 'hoan_anh_giap' &&
+    effectiveAmount > 1
+  ) {
+    effectiveAmount = 1;
+    armorLogs.push(
+      `Huyễn Ảnh Giáp của ${target.displayName} giảm sát thương xuống 1!`,
+    );
+  }
+
+  const nextHp = target.hp - effectiveAmount;
   let next = updatePlayer(state, targetSeat, (p) => ({
     ...p,
     hp: nextHp,
   }));
 
   const sourceName =
-    sourceSeat !== null ? getPlayerBySeat(next, sourceSeat).displayName : 'Thiên tai';
+    source !== null ? source.displayName : 'Thiên tai';
   next = {
     ...next,
     actionLog: [
       ...next.actionLog,
-      `${target.displayName} chịu ${amount} sát thương từ ${sourceName} (${reasonVi}), còn ${nextHp}/${target.maxHp} máu.`,
+      ...armorLogs,
+      `${target.displayName} chịu ${effectiveAmount} sát thương từ ${sourceName} (${reasonVi}), còn ${nextHp}/${target.maxHp} máu.`,
     ],
   };
 
-  const targetHandler = getHeroSkillHandler(target.heroId);
+  const targetHandler = getHeroSkillHandler(target.heroId, next);
   if (targetHandler?.onAfterDamageTaken) {
     next = pushPendingEffect(next, {
       kind: 'FINISH_DAMAGE_REACTIONS',
       sourceSeat,
       targetSeat,
-      amount,
+      amount: effectiveAmount,
       damageCards,
     });
   }
@@ -337,7 +359,7 @@ export function beginStrikeAgainstTarget(
   }
 
   // Kiểm tra Lưu Ly (Đại Kiều) khi bị chọn làm mục tiêu Sát
-  const targetHandler = getHeroSkillHandler(target.heroId);
+  const targetHandler = getHeroSkillHandler(target.heroId, state);
   if (targetHandler?.onStrikeTargeted) {
     const afterLiuLiHook = targetHandler.onStrikeTargeted(
       state,
@@ -435,7 +457,7 @@ export function resolveStrikeAfterTuHung(
   }
 
   // Kiểm tra Thiết Kỵ (Mã Siêu) khi chỉ định mục tiêu — trước khi Nhân Vương Thuẫn chặn Sát Đen
-  const sourceHandler = getHeroSkillHandler(source.heroId);
+  const sourceHandler = getHeroSkillHandler(source.heroId, state);
   if (sourceHandler?.onStrikeTargeting) {
     const nextWithPending = pushPendingEffect(state, {
       kind: 'RESOLVE_STRIKE_AFTER_TIE_QI',
@@ -476,6 +498,7 @@ export function resolveStrikeAfterTieQi(
   isCollateralStrike: boolean,
   isFangTianMultiTarget: boolean,
   cannotDodge: boolean,
+  rng: () => number = Math.random,
 ): MasterGameState {
   if (state.turnPhase === 'GAME_OVER') {
     return state;
@@ -487,7 +510,8 @@ export function resolveStrikeAfterTieQi(
   }
 
   const ignoresArmor =
-    source.equipments.weapon?.cardKey === 'thanh_cong_kiem';
+    source.equipments.weapon?.cardKey === 'thanh_cong_kiem' ||
+    strikeCards.some((c) => c.cardKey === 'pha_giap_tram');
   const strikeColor = getCardColor(strikeCards);
 
   // Nhân Vương Thuẫn vẫn vô hiệu hóa Sát Đen ngay cả khi Mã Siêu Thiết Kỵ ra Đỏ
@@ -506,13 +530,13 @@ export function resolveStrikeAfterTieQi(
   }
 
   if (cannotDodge) {
-    return resolveStrikeHit(state, sourceSeat, targetSeat, strikeCards);
+    return resolveStrikeHit(state, sourceSeat, targetSeat, strikeCards, rng);
   }
 
   const allowBagua =
     !ignoresArmor && target.equipments.armor?.cardKey === 'bat_quai_tran';
   const canBeForced = hasQuanThachPhuCards(source);
-  const sourceHandler = getHeroSkillHandler(source.heroId);
+  const sourceHandler = getHeroSkillHandler(source.heroId, state);
   const requiredCount =
     sourceHandler?.strikeDodgeRequiredCount?.(state, source) ?? 1;
 
@@ -557,6 +581,7 @@ export function completeStrikeDodged(
   targetSeat: number,
   isCollateralStrike: boolean,
   isFangTianMultiTarget: boolean,
+  rng: () => number = Math.random,
 ): MasterGameState {
   const pending = [...(state.pendingEffects ?? [])];
   const hitIdx = pending.findLastIndex(
@@ -605,6 +630,20 @@ export function completeStrikeDodged(
     sourceEquips.some((c) => canUseCardAs(next, source, c, 'sat', inSourceTurn)) ||
     hasTruongBat(source);
 
+  if (
+    source.alive &&
+    source.equipments.weapon?.cardKey === 'tu_khi_hoan'
+  ) {
+    const dealt = dealCardsToSeat(next, sourceSeat, 1, rng);
+    next = {
+      ...dealt.state,
+      actionLog: [
+        ...dealt.state.actionLog,
+        `${source.displayName} kích hoạt Tụ Khí Hoàn rút ${dealt.dealt.length} lá khi đòn bị né.`,
+      ],
+    };
+  }
+
   const targetPlayer = getPlayerBySeat(next, targetSeat);
   if (
     !isFangTianMultiTarget &&
@@ -630,6 +669,7 @@ export function resolveStrikeHit(
   sourceSeat: number,
   targetSeat: number,
   strikeCards: readonly CardInstance[],
+  rng: () => number = Math.random,
 ): MasterGameState {
   if (state.turnPhase === 'GAME_OVER') {
     return state;
@@ -660,7 +700,7 @@ export function resolveStrikeHit(
     state.turnFlags?.luoYiActive
       ? 1
       : 0;
-  const afterDmg = applyDamage(
+  let afterDmg = applyDamage(
     state,
     sourceSeat,
     targetSeat,
@@ -668,6 +708,19 @@ export function resolveStrikeHit(
     luoYiBonus > 0 ? 'Sát (Lỏa Y +1)' : 'Sát',
     strikeCards,
   );
+  if (
+    strikeCards.some((c) => c.cardKey === 'pha_giap_tram') &&
+    getPlayerBySeat(afterDmg, sourceSeat).alive
+  ) {
+    const dealt = dealCardsToSeat(afterDmg, sourceSeat, 1, rng);
+    afterDmg = {
+      ...dealt.state,
+      actionLog: [
+        ...dealt.state.actionLog,
+        `${source.displayName} kích hoạt Phá Giáp Trảm rút thêm ${dealt.dealt.length} lá khi trúng đòn.`,
+      ],
+    };
+  }
   return maybeOfferKyLanCung(afterDmg, sourceSeat, targetSeat);
 }
 
@@ -847,6 +900,7 @@ function maybeOfferTianDo(
 function resolveJudgmentEffect(
   state: MasterGameState,
   effect: Extract<PendingEffect, { kind: 'RESOLVE_JUDGMENT' }>,
+  rng: () => number = Math.random,
 ): MasterGameState {
   const { ownerSeat, purpose, judgeCard } = effect;
   const owner = getPlayerBySeat(state, ownerSeat);
@@ -953,6 +1007,7 @@ function resolveJudgmentEffect(
               saved.targetSeat,
               saved.isCollateralStrike,
               saved.isFangTianMultiTarget,
+              rng,
             );
           }
         } else {
@@ -996,6 +1051,7 @@ function resolveJudgmentEffect(
                 parentFrame.targetSeat,
                 parentFrame.isCollateralStrike,
                 parentFrame.isFangTianMultiTarget,
+                rng,
               );
             }
           }
@@ -1198,6 +1254,56 @@ function executeScrollEffect(
         ],
       };
     }
+    case 'chan_khi_ho_the': {
+      const caster = getPlayerBySeat(state, effect.casterSeat);
+      if (!caster.alive) return state;
+      if (caster.hp < caster.maxHp) {
+        let next = updatePlayer(state, effect.casterSeat, (p) => ({
+          ...p,
+          hp: Math.min(p.maxHp, p.hp + 1),
+        }));
+        const dealt = dealCardsToSeat(next, effect.casterSeat, 1, rng);
+        return {
+          ...dealt.state,
+          actionLog: [
+            ...dealt.state.actionLog,
+            `${caster.displayName} dùng Chân Khí Hộ Thể hồi 1 Sinh Lực và rút ${dealt.dealt.length} lá.`,
+          ],
+        };
+      }
+      const dealt = dealCardsToSeat(state, effect.casterSeat, 2, rng);
+      return {
+        ...dealt.state,
+        actionLog: [
+          ...dealt.state.actionLog,
+          `${caster.displayName} dùng Chân Khí Hộ Thể rút ${dealt.dealt.length} lá.`,
+        ],
+      };
+    }
+    case 'kinh_loi_chan': {
+      const caster = getPlayerBySeat(state, effect.casterSeat);
+      const target = getPlayerBySeat(state, effect.targetSeat);
+      if (!caster.alive || !target.alive) return state;
+      if (target.handCards.length <= 1) {
+        return applyDamage(
+          state,
+          effect.casterSeat,
+          effect.targetSeat,
+          1,
+          'Kinh Lôi Chấn',
+          [effect.scrollCard],
+        );
+      }
+      const { state: s1, id } = nextFrameId(state, 'kinhloidismantle');
+      return pushInterrupt(s1, {
+        id,
+        kind: 'PICK_TARGET_CARD',
+        targetSeat: effect.targetSeat,
+        sourceSeat: effect.casterSeat,
+        mode: 'DISMANTLE',
+        allowDelayed: false,
+      });
+    }
     case 'thuan_thu_khien_duong': {
       const caster = getPlayerBySeat(state, effect.casterSeat);
       const target = getPlayerBySeat(state, effect.targetSeat);
@@ -1236,7 +1342,7 @@ function executeScrollEffect(
       if (!caster.alive || !target.alive) {
         return state;
       }
-      const casterHandler = getHeroSkillHandler(caster.heroId);
+      const casterHandler = getHeroSkillHandler(caster.heroId, state);
       const requiredCount =
         casterHandler?.duelSatRequiredCount?.(state, caster) ?? 1;
       const isVirtualLiJian = effect.scrollCard.id.startsWith('li_jian_');
@@ -1409,11 +1515,12 @@ export function stepEngine(
             topEffect.isCollateralStrike,
             topEffect.isFangTianMultiTarget,
             topEffect.cannotDodge,
+            rng,
           );
           break;
         }
         case 'RESOLVE_JUDGMENT': {
-          state = resolveJudgmentEffect(state, topEffect);
+          state = resolveJudgmentEffect(state, topEffect, rng);
           break;
         }
         case 'CONTINUE_LUO_SHEN': {
@@ -1450,7 +1557,7 @@ export function stepEngine(
         case 'FINISH_DAMAGE_REACTIONS': {
           const target = getPlayerBySeat(state, topEffect.targetSeat);
           if (target.alive) {
-            const handler = getHeroSkillHandler(target.heroId);
+            const handler = getHeroSkillHandler(target.heroId, state);
             if (handler?.onAfterDamageTaken) {
               state = handler.onAfterDamageTaken(
                 state,
@@ -1471,6 +1578,7 @@ export function stepEngine(
             topEffect.sourceSeat,
             topEffect.targetSeat,
             topEffect.strikeCards,
+            rng,
           );
           break;
         }
@@ -1633,7 +1741,7 @@ export function stepEngine(
               startSkillsChecked: true,
             },
           };
-          const startHandler = getHeroSkillHandler(curPlayer.heroId);
+          const startHandler = getHeroSkillHandler(curPlayer.heroId, state);
           if (startHandler?.onTurnStart) {
             state = startHandler.onTurnStart(
               state,
@@ -1686,7 +1794,7 @@ export function stepEngine(
               drawSkillChecked: true,
             },
           };
-          const drawHandler = getHeroSkillHandler(curPlayer.heroId);
+          const drawHandler = getHeroSkillHandler(curPlayer.heroId, state);
           if (drawHandler?.onDrawPhase) {
             state = drawHandler.onDrawPhase(
               state,
@@ -1711,7 +1819,7 @@ export function stepEngine(
         if (curPlayer.handCards.length <= limit) {
           state = { ...state, turnPhase: 'END' };
         } else {
-          const discardHandler = getHeroSkillHandler(curPlayer.heroId);
+          const discardHandler = getHeroSkillHandler(curPlayer.heroId, state);
           if (discardHandler?.onBeforeDiscardPhase && !state.turnFlags?.keJiChecked) {
             const flagged = {
               ...state,
@@ -1744,7 +1852,7 @@ export function stepEngine(
               endSkillChecked: true,
             },
           };
-          const endHandler = getHeroSkillHandler(curPlayer.heroId);
+          const endHandler = getHeroSkillHandler(curPlayer.heroId, state);
           if (endHandler?.onTurnEnd) {
             state = endHandler.onTurnEnd(
               state,
@@ -1768,7 +1876,7 @@ export function turnDrawCount(state: MasterGameState): number {
     (state.turnFlags?.drawSecondAvailable ||
       getPlayerBySeat(state, state.currentTurnSeat).heroId === 'xu_chu')) return 1;
   const player = getPlayerBySeat(state, state.currentTurnSeat);
-  return 2 + (getHeroSkillHandler(player.heroId)?.extraDrawCount?.(state, player) ?? 0);
+  return 2 + (getHeroSkillHandler(player.heroId, state)?.extraDrawCount?.(state, player) ?? 0);
 }
 
 export function completeTurnDraw(state: MasterGameState, rng: () => number): MasterGameState {
@@ -1776,7 +1884,7 @@ export function completeTurnDraw(state: MasterGameState, rng: () => number): Mas
   const { state: drawn, dealt } = dealCardsToSeat(state, player.seatIndex, turnDrawCount(state), rng);
   const isYingZiDraw =
     player.heroId === 'zhou_yu' &&
-    (getHeroSkillHandler(player.heroId)?.extraDrawCount?.(state, player) ?? 0) > 0 &&
+    (getHeroSkillHandler(player.heroId, state)?.extraDrawCount?.(state, player) ?? 0) > 0 &&
     !drawn.turnFlags?.drawSecondAvailable;
   const drawLog = isYingZiDraw
     ? `${player.displayName} phát động Anh Tư, rút ${dealt.length} lá ở pha Rút bài.`

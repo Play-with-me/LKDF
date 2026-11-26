@@ -53,6 +53,7 @@ export function StatsMetaFilters({
 }: StatsMetaFiltersProps): ReactElement {
   const { i18n } = useTranslation();
   const locale = i18n.language === 'en' ? 'en' : 'vi';
+  const isEn = locale === 'en';
   const hasActiveFilter =
     filter.userId !== null || filter.identity !== null || filter.heroId !== null;
 
@@ -67,8 +68,7 @@ export function StatsMetaFilters({
 
   const selectedIdentityName =
     filter.identity !== null
-      ? (meta?.identities.find((i) => i.id === filter.identity)?.nameVi ??
-        IDENTITY_FALLBACK_LABELS[filter.identity])
+      ? getCuuChauRoleDisplay(filter.identity, locale).name
       : null;
 
   const selectedHero =
@@ -87,10 +87,10 @@ export function StatsMetaFilters({
   };
 
   const playerOptions = [
-    { value: '', label: 'Tất cả người chơi' },
+    { value: '', label: isEn ? 'All Players' : 'Tất cả người chơi' },
     ...(meta?.players ?? []).map((player) => ({
       value: player.userId,
-      label: `${player.displayName}${currentUserId && player.userId === currentUserId ? ' (Bạn)' : ''}`,
+      label: `${player.displayName}${currentUserId && player.userId === currentUserId ? (isEn ? ' (You)' : ' (Bạn)') : ''}`,
     })),
   ];
 
@@ -123,14 +123,16 @@ export function StatsMetaFilters({
               className="lkdf-bronze-pill inline-flex cursor-pointer items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium text-[#F5EBD6] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E6BE6C]"
             >
               <GameIcon name="ui:arrow-left" size={14} className="text-[#E6BE6C]" />
-              <span>Quay lại</span>
+              <span>{isEn ? 'Back' : 'Quay lại'}</span>
             </button>
             <div className="min-w-0">
               <h1 className="font-serif-title truncate text-lg font-bold tracking-tight text-[#F5EBD6]">
-                Thống Kê &amp; Lịch Sử Ván Đấu
+                {isEn ? 'Match Stats & History' : 'Thống Kê & Lịch Sử Ván Đấu'}
               </h1>
               <p className="truncate text-xs text-[#D5C3A5]">
-                Số liệu thực tế từ máy chủ theo Người chơi, Thân Phận và 25 Tướng
+                {isEn
+                  ? 'Live server telemetry by Player, Allegiance, and 25 Generals'
+                  : 'Số liệu thực tế từ máy chủ theo Người chơi, Thân Phận và 25 Tướng'}
               </p>
             </div>
           </div>
@@ -148,7 +150,11 @@ export function StatsMetaFilters({
                 }`}
               >
                 <GameIcon name="ui:user" size={14} className="text-[#E6BE6C]" />
-                <span>{isMyFilterActive ? 'Đang lọc: Của tôi' : 'Chỉ xem của tôi'}</span>
+                <span>
+                  {isMyFilterActive
+                    ? isEn ? 'Filtering: Mine' : 'Đang lọc: Của tôi'
+                    : isEn ? 'My Matches Only' : 'Chỉ xem của tôi'}
+                </span>
               </button>
             ) : null}
 
@@ -163,7 +169,11 @@ export function StatsMetaFilters({
                 size={14}
                 className={isLoading ? 'animate-spin text-[#E6BE6C]' : 'text-[#E6BE6C]'}
               />
-              <span>{isLoading ? 'Đang tải...' : 'Tải lại thống kê'}</span>
+              <span>
+                {isLoading
+                  ? isEn ? 'Loading...' : 'Đang tải...'
+                  : isEn ? 'Refresh Stats' : 'Tải lại thống kê'}
+              </span>
             </button>
           </div>
         </div>
@@ -171,8 +181,8 @@ export function StatsMetaFilters({
         {/* Hàng 2: 3 Bộ lọc Người chơi / Thân phận / Tướng */}
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 lg:grid-cols-4 min-w-0">
           <GuofengPillSelect
-            label="Người chơi"
-            ariaLabel="Lọc theo người chơi"
+            label={isEn ? 'Player' : 'Người chơi'}
+            ariaLabel={isEn ? 'Filter by player' : 'Lọc theo người chơi'}
             value={filter.userId ?? ''}
             options={playerOptions}
             onChange={(value) =>
@@ -184,8 +194,8 @@ export function StatsMetaFilters({
           />
 
           <GuofengPillSelect
-            label="Thân phận"
-            ariaLabel="Lọc theo thân phận"
+            label={isEn ? 'Role' : 'Thân phận'}
+            ariaLabel={isEn ? 'Filter by role' : 'Lọc theo thân phận'}
             value={filter.identity ?? ''}
             options={identityOptions}
             onChange={(value) =>
@@ -197,8 +207,8 @@ export function StatsMetaFilters({
           />
 
           <GuofengPillSelect
-            label="Tướng (25 tướng)"
-            ariaLabel="Lọc theo tướng"
+            label={isEn ? 'General (25 total)' : 'Tướng (25 tướng)'}
+            ariaLabel={isEn ? 'Filter by general' : 'Lọc theo tướng'}
             value={filter.heroId ?? ''}
             options={heroOptions}
             onChange={(value) =>
@@ -217,7 +227,7 @@ export function StatsMetaFilters({
               className="lkdf-bronze-pill inline-flex min-h-9 w-full cursor-pointer items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium text-[#F5EBD6] hover:border-[#C83E37] hover:text-[#FFF8ED] disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E6BE6C]"
             >
               <GameIcon name="ui:undo" size={14} className="text-[#E6BE6C]" />
-              <span>Xóa bộ lọc</span>
+              <span>{isEn ? 'Clear Filters' : 'Xóa bộ lọc'}</span>
             </button>
           </div>
         </div>
@@ -226,16 +236,16 @@ export function StatsMetaFilters({
         {hasActiveFilter ? (
           <div
             className="flex flex-wrap items-center gap-2 pt-0.5 text-xs"
-            aria-label="Bộ lọc đang áp dụng"
+            aria-label={isEn ? 'Active filters' : 'Bộ lọc đang áp dụng'}
           >
-            <span className="font-semibold text-[#E6BE6C]">Đang lọc theo:</span>
+            <span className="font-semibold text-[#E6BE6C]">{isEn ? 'Filtered by:' : 'Đang lọc theo:'}</span>
             {selectedPlayerName !== null ? (
               <button
                 type="button"
                 onClick={() => onChangeFilter({ ...filter, userId: null })}
                 className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-[#C89B4B]/70 bg-[#1F1712] px-2.5 py-0.5 text-[#F5EBD6] hover:border-[#C83E37] focus-visible:outline-2 focus-visible:outline-[#E6BE6C]"
               >
-                <span>Người chơi: {selectedPlayerName}</span>
+                <span>{isEn ? `Player: ${selectedPlayerName}` : `Người chơi: ${selectedPlayerName}`}</span>
                 <span aria-hidden="true" className="text-[#D5C3A5]">
                   ×
                 </span>
@@ -248,7 +258,7 @@ export function StatsMetaFilters({
                 onClick={() => onChangeFilter({ ...filter, identity: null })}
                 className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-[#C89B4B]/70 bg-[#1F1712] px-2.5 py-0.5 text-[#F5EBD6] hover:border-[#C83E37] focus-visible:outline-2 focus-visible:outline-[#E6BE6C]"
               >
-                <span>Thân phận: {selectedIdentityName}</span>
+                <span>{isEn ? `Role: ${selectedIdentityName}` : `Thân phận: ${selectedIdentityName}`}</span>
                 <span aria-hidden="true" className="text-[#D5C3A5]">
                   ×
                 </span>

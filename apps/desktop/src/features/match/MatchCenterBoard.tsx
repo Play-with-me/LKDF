@@ -81,6 +81,8 @@ function GuanXingPlanner({
   readonly seatIndex: number;
   readonly onSendAction: (action: GameAction) => void;
 }) {
+  const { i18n } = useTranslation();
+  const isEn = i18n.language === 'en';
   const [topIds, setTopIds] = useState<string[]>(() => cards.map((c) => c.id));
   const [bottomIds, setBottomIds] = useState<string[]>([]);
 
@@ -110,7 +112,7 @@ function GuanXingPlanner({
         <span className="inline-flex min-w-0 items-center gap-1.5 truncate text-[11.5px] font-bold text-[#FDE68A]">
           <GameIcon name="ui:sparkles" size={13} className="shrink-0 text-[#E6BE6C]" />
           <span className="truncate">
-            Quan Tinh ({topIds.length}/{bottomIds.length})
+            {isEn ? 'Celestial Gaze' : 'Quan Tinh'} ({topIds.length}/{bottomIds.length})
           </span>
         </span>
         <button
@@ -125,14 +127,14 @@ function GuanXingPlanner({
           }
           className="shrink-0 cursor-pointer whitespace-nowrap rounded bg-[#9E2B25] px-2 py-1 text-[10.5px] font-bold text-[#FFF5EC] hover:bg-[#B2342E]"
         >
-          Xác nhận Quan Tinh
+          {isEn ? 'Confirm Gaze' : 'Xác nhận Quan Tinh'}
         </button>
       </div>
       <div className="lkdf-planner-grid grid grid-cols-1 gap-1.5">
         <div className="lkdf-planner-col rounded border border-[#806345]/50 bg-[#1D1510] p-1.5">
           <div className="mb-1 flex items-center justify-between text-[10.5px] leading-tight font-bold text-[#86EFAC]">
-            <span>Đầu chồng bài (rút trước)</span>
-            <span className="text-[9.5px] font-normal text-[#C7B69B]">Bấm lá để đẩy xuống đáy</span>
+            <span>{isEn ? 'Top of Deck (Drawn First)' : 'Đầu chồng bài (rút trước)'}</span>
+            <span className="text-[9.5px] font-normal text-[#C7B69B]">{isEn ? 'Click card to move to bottom' : 'Bấm lá để đẩy xuống đáy'}</span>
           </div>
           {topIds.length > 0 ? (
             <div className="flex flex-wrap gap-1">
@@ -144,7 +146,7 @@ function GuanXingPlanner({
                     key={id}
                     type="button"
                     onClick={() => moveCard(id, 'BOTTOM')}
-                    title={`Bấm để chuyển ${formatCardShort(card)} xuống đáy`}
+                    title={isEn ? `Move ${formatCardShort(card)} to bottom` : `Bấm để chuyển ${formatCardShort(card)} xuống đáy`}
                     className="lkdf-card-gwent lkdf-planner-card group relative flex h-[64px] w-[46px] shrink-0 cursor-pointer flex-col overflow-hidden rounded-[5px] border border-[#86EFAC]/65 text-left transition-transform duration-150 hover:-translate-y-0.5 hover:border-[#FBBF24]"
                   >
                     <PlayingCardFace card={card} showCategoryTag={false} />
@@ -156,16 +158,16 @@ function GuanXingPlanner({
               })}
             </div>
           ) : (
-            <p className="text-[10px] text-[#A89984]">Chưa có lá ở đầu chồng bài.</p>
+            <p className="text-[10px] text-[#A89984]">{isEn ? 'No cards placed at top.' : 'Chưa có lá ở đầu chồng bài.'}</p>
           )}
         </div>
         <div className="lkdf-planner-col rounded border border-[#806345]/50 bg-[#1D1510] p-1.5">
           <div className="flex items-center justify-between text-[10.5px] leading-tight font-bold text-[#93C5FD]">
-            <span>Đáy chồng bài</span>
+            <span>{isEn ? 'Bottom of Deck' : 'Đáy chồng bài'}</span>
             {bottomIds.length === 0 ? (
-              <span className="text-[9.5px] font-normal text-[#A89984]">Trống</span>
+              <span className="text-[9.5px] font-normal text-[#A89984]">{isEn ? 'Empty' : 'Trống'}</span>
             ) : (
-              <span className="text-[9.5px] font-normal text-[#C7B69B]">Bấm lá để đưa lên đầu</span>
+              <span className="text-[9.5px] font-normal text-[#C7B69B]">{isEn ? 'Click card to move to top' : 'Bấm lá để đưa lên đầu'}</span>
             )}
           </div>
           {bottomIds.length > 0 ? (
@@ -178,7 +180,7 @@ function GuanXingPlanner({
                     key={id}
                     type="button"
                     onClick={() => moveCard(id, 'TOP')}
-                    title={`Bấm để chuyển ${formatCardShort(card)} lên đầu`}
+                    title={isEn ? `Move ${formatCardShort(card)} to top` : `Bấm để chuyển ${formatCardShort(card)} lên đầu`}
                     className="lkdf-card-gwent lkdf-planner-card group relative flex h-[64px] w-[46px] shrink-0 cursor-pointer flex-col overflow-hidden rounded-[5px] border border-[#93C5FD]/55 opacity-85 text-left transition-transform duration-150 hover:-translate-y-0.5 hover:border-[#FBBF24] hover:opacity-100"
                   >
                     <PlayingCardFace card={card} showCategoryTag={false} />
@@ -202,6 +204,8 @@ function YiJiDistributor({
   readonly playerView: PlayerViewState;
   readonly onSendAction: (action: GameAction) => void;
 }) {
+  const { i18n } = useTranslation();
+  const isEn = i18n.language === 'en';
   const alivePlayers = useMemo(
     () => playerView.players.filter((p) => p.alive),
     [playerView.players],
@@ -248,14 +252,14 @@ function YiJiDistributor({
       <div className="lkdf-planner-head mb-1.5 flex items-center justify-between gap-2">
         <span className="inline-flex items-center gap-1.5 text-[11.5px] font-bold text-[#FDE68A]">
           <GameIcon name="scroll-unfurled" size={13} className="text-[#E6BE6C]" />
-          Di Kế — Chọn người nhận bài
+          {isEn ? 'Lasting Stratagem — Assign Recipients' : 'Tâm Kế — Chọn người nhận bài'}
         </span>
         <button
           type="button"
           onClick={handleConfirm}
           className="cursor-pointer rounded bg-[#9E2B25] px-2.5 py-1 text-[11px] font-bold text-[#FFF5EC] hover:bg-[#B2342E]"
         >
-          Chia bài Di Kế
+          {isEn ? 'Confirm Deal' : 'Chia bài Tâm Kế'}
         </button>
       </div>
       <div className="flex flex-wrap items-start gap-2">
@@ -265,14 +269,14 @@ function YiJiDistributor({
             const isSelected = selectedCardId === card.id;
             const shortTarget =
               targetSeat === playerView.viewerSeatIndex
-                ? 'Bản thân'
-                : `Ghế #${targetSeat + 1}`;
+                ? (isEn ? 'Self' : 'Bản thân')
+                : (isEn ? `Seat #${targetSeat + 1}` : `Ghế #${targetSeat + 1}`);
             return (
               <button
                 key={card.id}
                 type="button"
                 onClick={() => setSelectedCardId(card.id)}
-                title={`Chọn ${formatCardShort(card)} để gán người nhận`}
+                title={isEn ? `Select ${formatCardShort(card)} to assign` : `Chọn ${formatCardShort(card)} để gán người nhận`}
                 className={[
                   'lkdf-card-gwent lkdf-planner-card relative flex h-[64px] w-[46px] shrink-0 cursor-pointer flex-col overflow-hidden rounded-[5px] text-left transition-transform duration-150',
                   isSelected
@@ -295,8 +299,8 @@ function YiJiDistributor({
               (assignByCardId[selectedCardId] ?? playerView.viewerSeatIndex) === p.seatIndex;
             const label =
               p.seatIndex === playerView.viewerSeatIndex
-                ? 'Bản thân'
-                : `Ghế #${p.seatIndex + 1} · ${p.displayName}`;
+                ? (isEn ? 'Self' : 'Bản thân')
+                : `${isEn ? 'Seat' : 'Ghế'} #${p.seatIndex + 1} · ${p.displayName}`;
             return (
               <button
                 key={p.seatIndex}
@@ -336,7 +340,7 @@ function getPublicTargetZones(player: PublicPlayerView): TargetCardZone[] {
   return zones;
 }
 
-function getTargetEquipZones(player: PublicPlayerView): readonly {
+function getTargetEquipZones(player: PublicPlayerView, isEn: boolean): readonly {
   readonly zone: 'WEAPON' | 'ARMOR' | 'PLUS_ONE_HORSE' | 'MINUS_ONE_HORSE';
   readonly prefix: string;
   readonly card: CardInstance;
@@ -347,22 +351,22 @@ function getTargetEquipZones(player: PublicPlayerView): readonly {
     readonly card: CardInstance;
   }[] = [];
   if (player.equipments.weapon) {
-    zones.push({ zone: 'WEAPON', prefix: 'Vũ khí:', card: player.equipments.weapon });
+    zones.push({ zone: 'WEAPON', prefix: isEn ? 'Weapon:' : 'Binh khí:', card: player.equipments.weapon });
   }
   if (player.equipments.armor) {
-    zones.push({ zone: 'ARMOR', prefix: 'Giáp:', card: player.equipments.armor });
+    zones.push({ zone: 'ARMOR', prefix: isEn ? 'Armor:' : 'Hộ giáp:', card: player.equipments.armor });
   }
   if (player.equipments.plusOneHorse) {
     zones.push({
       zone: 'PLUS_ONE_HORSE',
-      prefix: 'Ngựa +1 (Thủ):',
+      prefix: isEn ? 'Footwork +1:' : 'Khinh công +1:',
       card: player.equipments.plusOneHorse,
     });
   }
   if (player.equipments.minusOneHorse) {
     zones.push({
       zone: 'MINUS_ONE_HORSE',
-      prefix: 'Ngựa -1 (Công):',
+      prefix: isEn ? 'Steed -1:' : 'Thân pháp -1:',
       card: player.equipments.minusOneHorse,
     });
   }
@@ -382,6 +386,9 @@ function TablePlayedCard({
   readonly takeThrowOrigin?: ThrowOriginLookup;
   readonly onInspect?: (card: CardInstance, sourceLabel: string) => void;
 }) {
+  const { i18n } = useTranslation();
+  const isEn = i18n.language === 'en';
+  const cardName = getCuuChauCardDisplay(card.cardKey, isEn ? 'en' : 'vi', card.nameVi).name;
   const rankLabel = formatRankLabel(card.rank);
   const faceRef = useRef<HTMLButtonElement>(null);
 
@@ -424,8 +431,8 @@ function TablePlayedCard({
       data-recent-discard={isLatest ? 'latest' : 'older'}
       data-inspected-trigger={isInspected ? 'true' : undefined}
       type="button"
-      onClick={onInspect ? () => onInspect(card, 'Bài ngửa') : undefined}
-      title={`Bấm xem kỹ năng ${rankLabel} ${card.nameVi}`}
+      onClick={onInspect ? () => onInspect(card, isEn ? 'Open Card' : 'Bài ngửa') : undefined}
+      title={isEn ? `Inspect ${rankLabel} ${cardName}` : `Bấm xem kỹ năng ${rankLabel} ${cardName}`}
       className={[
         'lkdf-card-gwent group relative flex h-[104px] w-[74px] shrink-0 flex-col overflow-hidden rounded-[6px] text-left text-[#F4EBD8] transition-transform duration-150 select-none',
         onInspect ? 'cursor-pointer hover:-translate-y-1.5 hover:z-30' : '',
@@ -443,17 +450,20 @@ function TablePlayedCard({
 
 function buildTargetedSelfAlert(
   view: PlayerViewState,
+  isEn = false,
 ): { readonly icon: 'archery-target' | 'ui:alert'; readonly text: string } | null {
   const interrupt = view.activeInterrupt;
   if (!interrupt) return null;
   const viewer = view.viewerSeatIndex;
   const getName = (seat: number | undefined | null) =>
-    seat === undefined || seat === null ? 'Đối thủ' : getPlayerSeatLabel(view.players, seat);
+    seat === undefined || seat === null ? (isEn ? 'Opponent' : 'Đối thủ') : getPlayerSeatLabel(view.players, seat);
 
   if (interrupt.kind === 'WAIT_FAN_JIAN_GUESS' && interrupt.targetSeat === viewer) {
     return {
       icon: 'archery-target',
-      text: `${getName(interrupt.sourceSeat)} dùng Đoán Tâm Mưu nhắm BẠN · Chọn chất bài!`,
+      text: isEn
+        ? `${getName(interrupt.sourceSeat)} targeted YOU with Mind Gambit · Pick a suit!`
+        : `${getName(interrupt.sourceSeat)} dùng Đoán Tâm Mưu nhắm BẠN · Chọn chất bài!`,
     };
   }
   if (
@@ -468,8 +478,12 @@ function buildTargetedSelfAlert(
       icon: 'archery-target',
       text:
         req >= 2
-          ? `${getName(interrupt.sourceSeat)} đang đánh Kiếm Trảm vào BẠN · Bá Thể (Cửu Diện Vô Song): Cần ${req} lá Thân Pháp (${dodged}/${req})!`
-          : `${getName(interrupt.sourceSeat)} đang đánh Kiếm Trảm vào BẠN!`,
+          ? (isEn
+              ? `${getName(interrupt.sourceSeat)} strikes YOU · Unrivaled: Need ${req} Shadow Steps (${dodged}/${req})!`
+              : `${getName(interrupt.sourceSeat)} đang đánh Kiếm Trảm vào BẠN · Bá Thể (Cửu Diện Vô Song): Cần ${req} lá Thân Pháp (${dodged}/${req})!`)
+          : (isEn
+              ? `${getName(interrupt.sourceSeat)} strikes YOU!`
+              : `${getName(interrupt.sourceSeat)} đang đánh Kiếm Trảm vào BẠN!`),
     };
   }
   if (
@@ -484,8 +498,12 @@ function buildTargetedSelfAlert(
       icon: 'archery-target',
       text:
         req >= 2
-          ? `${getName(interrupt.sourceSeat)} đang Sinh Tử Lôi Đài với BẠN · Bá Thể: Cần ${req} lá Kiếm Trảm (${played}/${req})!`
-          : `${getName(interrupt.sourceSeat)} đang Sinh Tử Lôi Đài với BẠN!`,
+          ? (isEn
+              ? `${getName(interrupt.sourceSeat)} challenges YOU to Trial by Combat · Need ${req} Strikes (${played}/${req})!`
+              : `${getName(interrupt.sourceSeat)} đang Sinh Tử Lôi Đài với BẠN · Bá Thể: Cần ${req} lá Kiếm Trảm (${played}/${req})!`)
+          : (isEn
+              ? `${getName(interrupt.sourceSeat)} challenges YOU to Trial by Combat!`
+              : `${getName(interrupt.sourceSeat)} đang Sinh Tử Lôi Đài với BẠN!`),
     };
   }
   if (
@@ -496,7 +514,9 @@ function buildTargetedSelfAlert(
   ) {
     return {
       icon: 'archery-target',
-      text: `${getName(interrupt.sourceSeat)} dùng Thú Triều Công Thành nhắm BẠN!`,
+      text: isEn
+        ? `${getName(interrupt.sourceSeat)} unleashed Thousand Blades on YOU!`
+        : `${getName(interrupt.sourceSeat)} dùng Vạn Kiếm Quy Tông nhắm BẠN!`,
     };
   }
   if (
@@ -507,7 +527,9 @@ function buildTargetedSelfAlert(
   ) {
     return {
       icon: 'archery-target',
-      text: `${getName(interrupt.sourceSeat)} dùng Mưa Tên Bão Vũ nhắm BẠN!`,
+      text: isEn
+        ? `${getName(interrupt.sourceSeat)} unleashed Skyfall Volley on YOU!`
+        : `${getName(interrupt.sourceSeat)} dùng Loạn Tiễn Xuyên Vân nhắm BẠN!`,
     };
   }
   if (
@@ -517,13 +539,15 @@ function buildTargetedSelfAlert(
     interrupt.sourceSeat !== viewer
   ) {
     const action = interrupt.id.startsWith('fankui_pick_')
-      ? 'Hồi Hưởng'
+      ? (isEn ? 'Retaliate' : 'Hồi Hưởng')
       : interrupt.id.startsWith('tu_xi_take')
-        ? 'Đoạt Lương'
-        : interrupt.stealing ? 'Thám Nang Thủ' : 'Phá Trận Chưởng';
+        ? (isEn ? 'Ration Raid' : 'Đoạt Lương')
+        : interrupt.stealing ? (isEn ? 'Sleight of Hand' : 'Thám Nang Thủ') : (isEn ? 'Break Formation' : 'Phá Trận Chưởng');
     return {
       icon: 'archery-target',
-      text: `${getName(interrupt.sourceSeat)} dùng ${action} nhắm bài của BẠN!`,
+      text: isEn
+        ? `${getName(interrupt.sourceSeat)} used ${action} targeting YOUR cards!`
+        : `${getName(interrupt.sourceSeat)} dùng ${action} nhắm bài của BẠN!`,
     };
   }
   if (
@@ -534,7 +558,9 @@ function buildTargetedSelfAlert(
   ) {
     return {
       icon: 'archery-target',
-      text: `${getName(interrupt.sourceSeat)} dùng Tá Kiếm Trảm Phong lên BẠN!`,
+      text: isEn
+        ? `${getName(interrupt.sourceSeat)} used Borrowed Edge on YOU!`
+        : `${getName(interrupt.sourceSeat)} dùng Tá Kiếm Trảm Phong lên BẠN!`,
     };
   }
   if (interrupt.kind === 'WAIT_NULLIFICATION') {
@@ -544,11 +570,12 @@ function buildTargetedSelfAlert(
       readonly nullifyDepth?: number;
     };
     const origTarget = nullifyInterrupt.originalTargetSeat ?? interrupt.targetSeat;
-    const origName = nullifyInterrupt.originalScrollNameVi ?? interrupt.scrollNameVi ?? 'Bí kíp';
+    const rawOrigName = nullifyInterrupt.originalScrollNameVi ?? interrupt.scrollNameVi ?? (isEn ? 'Scroll' : 'Bí kíp');
+    const origName = formatCuuChauDisplayText(rawOrigName, isEn ? 'en' : 'vi');
     if (origTarget === viewer && (nullifyInterrupt.nullifyDepth ?? 0) % 2 === 0) {
       return {
         icon: 'ui:alert',
-        text: `Bí kíp [${origName}] đang nhắm vào BẠN!`,
+        text: isEn ? `Scroll [${origName}] is targeting YOU!` : `Bí kíp [${origName}] đang nhắm vào BẠN!`,
       };
     }
   }
@@ -736,7 +763,7 @@ export function MatchCenterBoard({
     playerView.actionLog.length > 0
       ? playerView.actionLog[playerView.actionLog.length - 1]
       : null;
-  const targetAlert = buildTargetedSelfAlert(playerView);
+  const targetAlert = buildTargetedSelfAlert(playerView, i18n.language === 'en');
   const isFirstRoundPeaceful = Boolean(
     playerView.peacefulFirstRound &&
       playerView.roundNumber === 1 &&
@@ -854,13 +881,13 @@ export function MatchCenterBoard({
                 ].join(' ')}
               >
                 <GameIcon name={isTimerPaused ? 'ui:pause' : 'ui:clock'} size={11} />
-                {isTimerPaused ? `Dừng (${remainingSeconds}s)` : `${remainingSeconds}s`}
+                {isTimerPaused ? `${locale === 'en' ? 'Paused' : 'Dừng'} (${remainingSeconds}s)` : `${remainingSeconds}s`}
               </span>
             ) : null}
           </div>
 
           <div className="lkdf-center-steps flex min-h-[18px] flex-wrap items-center justify-center gap-1 border-t border-[#806345]/35 pt-0.5 text-[9.5px] leading-none">
-            {['Phán xét & Rút bài', 'Ra bài', 'Bỏ bài'].map((label, index) => (
+            {(locale === 'en' ? ['Judge & Draw', 'Action', 'Discard'] : ['Phán xét & Rút bài', 'Ra bài', 'Bỏ bài']).map((label, index) => (
               <span
                 key={label}
                 aria-current={activeStage === index ? 'step' : undefined}
@@ -959,7 +986,7 @@ export function MatchCenterBoard({
           viewerSeat={playerView.viewerSeatIndex}
           onSendAction={onSendAction}
           onBackToZones={
-            !interrupt.handPick && getTargetEquipZones(pickTargetPlayer).length > 0
+            !interrupt.handPick && getTargetEquipZones(pickTargetPlayer, locale === 'en').length > 0
               ? () => setPrePrepareStealId(null)
               : undefined
           }
@@ -978,7 +1005,7 @@ export function MatchCenterBoard({
               {drawReady ? (
                 <button
                   type="button"
-                  aria-label={`Rút ${playerView.availableDrawCount} lá`}
+                  aria-label={locale === 'en' ? `Draw ${playerView.availableDrawCount} card(s)` : `Rút ${playerView.availableDrawCount} lá`}
                   disabled={privateDraw.length > 0}
                   onClick={() =>
                     onSendAction({
@@ -992,12 +1019,14 @@ export function MatchCenterBoard({
                   <CardBack size="md" className="relative block h-full w-full shadow-lg" />
                   <span className="pointer-events-none absolute inset-x-0.5 bottom-1 z-10 flex flex-col items-center gap-0.5 rounded bg-[#1A120A]/92 px-1 py-0.5 text-center shadow-[0_0_12px_rgba(251,191,36,0.6)] ring-1 ring-[#FBBF24]/85">
                     <span className="text-[10px] font-extrabold leading-none text-[#FDE68A]">
-                      {isLuoYiSecond ? 'Rút lá 2' : `Rút ${playerView.availableDrawCount} lá`}
+                      {isLuoYiSecond
+                        ? (locale === 'en' ? 'Draw 2nd' : 'Rút lá 2')
+                        : (locale === 'en' ? `Draw ${playerView.availableDrawCount}` : `Rút ${playerView.availableDrawCount} lá`)}
                     </span>
                     {isAnhTuDraw ? (
-                      <span className="text-[8.5px] font-bold leading-none text-[#FBBF24]">Tâm Nhãn</span>
+                      <span className="text-[8.5px] font-bold leading-none text-[#FBBF24]">{locale === 'en' ? "Mind's Eye" : 'Tâm Nhãn'}</span>
                     ) : isLuoYiSecond ? (
-                      <span className="text-[8.5px] font-bold leading-none text-[#FCA5A5]">Phá Giáp</span>
+                      <span className="text-[8.5px] font-bold leading-none text-[#FCA5A5]">{locale === 'en' ? 'Armor Piercing' : 'Phá Giáp'}</span>
                     ) : null}
                   </span>
                 </button>
@@ -1006,12 +1035,12 @@ export function MatchCenterBoard({
               )}
             </div>
             <span className="font-mono-num inline-flex items-center gap-1 rounded-full border border-[#806345]/55 bg-[#16110E]/90 px-2 py-0.5 text-[11px] font-semibold text-[#E8DCC8] tabular-nums">
-              Rút: <strong className="text-[#F5EBD6]">{playerView.drawPileCount}</strong>
+              {locale === 'en' ? 'Deck:' : 'Rút:'} <strong className="text-[#F5EBD6]">{playerView.drawPileCount}</strong>
             </span>
           </div>
           {shownReveal ? (
             <div data-public-card-reveal key={shownReveal.id} className="flex shrink-0 flex-col items-center gap-0.5 rounded border border-[#E6BE6C] bg-[#211509] p-1 shadow-lg">
-              <span className="max-w-24 text-center text-[10px] font-bold text-[#FEF08A]">{shownReveal.label}</span>
+              <span className="max-w-24 text-center text-[10px] font-bold text-[#FEF08A]">{formatCuuChauDisplayText(shownReveal.label, locale)}</span>
               <div className="relative h-[86px] w-[62px]">
                 <PlayingCardFace card={shownReveal.card} />
               </div>
@@ -1092,7 +1121,7 @@ export function MatchCenterBoard({
             <div>
               <div className="mb-1.5 inline-flex items-center gap-1.5 text-[12px] font-bold text-[#FDE68A]">
                 <GameIcon name="archery-target" size={13} className="text-[#E6BE6C]" />
-                Chọn 1 lá từ {getPlayerSeatLabel(playerView.players, pickTargetPlayer.seatIndex)}:
+                {locale === 'en' ? `Pick 1 card from ${getPlayerSeatLabel(playerView.players, pickTargetPlayer.seatIndex)}:` : `Chọn 1 lá từ ${getPlayerSeatLabel(playerView.players, pickTargetPlayer.seatIndex)}:`}
               </div>
               <div className="flex flex-wrap items-center gap-1.5">
                 {pickTargetPlayer.handCount > 0 ? (
@@ -1103,7 +1132,7 @@ export function MatchCenterBoard({
                       className="cursor-pointer rounded border border-[#C89B4B]/60 bg-[#231A14] px-3 py-1.5 text-xs font-bold text-[#F5EBD6] hover:border-[#E6BE6C]"
                       onClick={() => setPrePrepareStealId(interrupt.id)}
                     >
-                      Lấy từ bài tay ({pickTargetPlayer.handCount})
+                      {locale === 'en' ? `Take from Hand (${pickTargetPlayer.handCount})` : `Lấy từ bài tay (${pickTargetPlayer.handCount})`}
                     </button>
                   ) : (
                     <BlindHandCardFan
@@ -1122,7 +1151,7 @@ export function MatchCenterBoard({
                     />
                   )
                 ) : null}
-                {getTargetEquipZones(pickTargetPlayer).map(({ zone, prefix, card }) => (
+                {getTargetEquipZones(pickTargetPlayer, locale === 'en').map(({ zone, prefix, card }) => (
                   <button
                     key={zone}
                     type="button"
@@ -1150,8 +1179,9 @@ export function MatchCenterBoard({
                 <div className="inline-flex items-center gap-1.5 text-[12px] font-bold text-[#93C5FD]">
                   <GameIcon name="ui:sparkles" size={14} className="text-[#60A5FA]" />
                   <span>
-                    Hàn Băng Kiếm ({interrupt.remainingDiscards ?? 2}/2) — Hủy bài của{' '}
-                    {getPlayerSeatLabel(playerView.players, hanBangTarget.seatIndex)} thay sát thương:
+                    {locale === 'en'
+                      ? `Glacier Blade (${interrupt.remainingDiscards ?? 2}/2) — Discard card(s) of ${getPlayerSeatLabel(playerView.players, hanBangTarget.seatIndex)} instead of damage:`
+                      : `Băng Phách Kiếm (${interrupt.remainingDiscards ?? 2}/2) — Hủy bài của ${getPlayerSeatLabel(playerView.players, hanBangTarget.seatIndex)} thay sát thương:`}
                   </span>
                 </div>
                 <button
@@ -1167,8 +1197,8 @@ export function MatchCenterBoard({
                 >
                   <GameIcon name="ui:skip" size={12} />
                   {(interrupt.remainingDiscards ?? 2) === 1
-                    ? 'Bỏ qua Hàn Băng Kiếm (Dừng hủy)'
-                    : 'Bỏ qua Hàn Băng Kiếm'}
+                    ? (locale === 'en' ? 'Stop Glacier Blade' : 'Bỏ qua Băng Phách Kiếm (Dừng hủy)')
+                    : (locale === 'en' ? 'Skip Glacier Blade' : 'Bỏ qua Băng Phách Kiếm')}
                 </button>
               </div>
               <div className="flex flex-wrap items-center gap-2">
@@ -1187,7 +1217,7 @@ export function MatchCenterBoard({
                     }
                   />
                 ) : null}
-                {getTargetEquipZones(hanBangTarget).map(({ zone, prefix, card }) => (
+                {getTargetEquipZones(hanBangTarget, locale === 'en').map(({ zone, prefix, card }) => (
                   <button
                     key={zone}
                     type="button"

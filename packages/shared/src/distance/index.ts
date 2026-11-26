@@ -1,4 +1,5 @@
 import type { HeroId, PlayerEquipments } from '../types/game.js';
+import { getHeroSkillHandler } from '../heroes/registry.js';
 
 export interface DistancePlayerLike {
   readonly seatIndex: number;
@@ -8,6 +9,7 @@ export interface DistancePlayerLike {
 }
 
 export interface DistanceStateLike {
+  readonly enabledPacks?: readonly string[];
   readonly players: readonly DistancePlayerLike[];
 }
 
@@ -83,7 +85,13 @@ export function calculateDistance(
   if (fromPlayer.equipments.minusOneHorse !== null) {
     modifier -= 1;
   }
-  if (fromPlayer.heroId === 'ma_chao') {
+  const skillModifier = getHeroSkillHandler(fromPlayer.heroId, state)?.distanceModifier?.(
+    fromPlayer as never,
+    toPlayer as never,
+  );
+  if (skillModifier !== undefined) {
+    modifier += skillModifier;
+  } else if (fromPlayer.heroId === 'ma_chao') {
     modifier -= 1;
   }
 
@@ -140,7 +148,10 @@ export function canReachForSnatch(
   if (!fromPlayer || !toPlayer || !fromPlayer.alive || !toPlayer.alive) {
     return false;
   }
-  if (fromPlayer.heroId === 'huang_yue_ying') {
+  if (
+    getHeroSkillHandler(fromPlayer.heroId, state)?.ignoreScrollDistance ||
+    fromPlayer.heroId === 'huang_yue_ying'
+  ) {
     return true;
   }
   return calculateDistance(state, fromSeat, toSeat) <= 1;

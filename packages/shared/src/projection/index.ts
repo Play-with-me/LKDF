@@ -191,6 +191,14 @@ function projectTopInterrupt(
         kind: topFrame.kind,
         targetSeat: topFrame.targetSeat,
       };
+    case 'ASK_LIU_LI':
+      return {
+        id: topFrame.id,
+        kind: topFrame.kind,
+        targetSeat: topFrame.targetSeat,
+        sourceSeat: topFrame.sourceSeat,
+        ...(topFrame.excludedSeats ? { excludedSeats: [...topFrame.excludedSeats] } : {}),
+      };
     case 'ASK_JIAN_XIONG':
       return {
         id: topFrame.id,

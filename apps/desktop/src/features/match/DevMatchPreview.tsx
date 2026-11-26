@@ -22,6 +22,7 @@ import type {
   RoomState,
 } from '@lkdf/shared';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { readDevicePreference, writeDevicePreference } from '../../lib/devicePreferences.js';
 import { useGameAmbience } from '../../lib/useGameAmbience.js';
 import { useInterfaceSounds } from '../../lib/useInterfaceSounds.js';
@@ -167,6 +168,8 @@ export function DevMatchPreview({
   offline = false,
   onExitPreview,
 }: DevMatchPreviewProps) {
+  const { i18n } = useTranslation();
+  const isEn = i18n.language === 'en';
   const [playerCount, setPlayerCount] = useState<PlayerCount>(initialPlayerCount);
   const [previewStage, setPreviewStage] = useState<PreviewStage>('IN_PLAY');
   const [masterState, setMasterState] = useState<MasterGameState>(() =>
@@ -405,11 +408,11 @@ export function DevMatchPreview({
         }
         return next;
       } catch (err: unknown) {
-        setActionError(formatMatchErrorVi(err, 'Không thể chọn tướng.'));
+        setActionError(formatMatchErrorVi(err, isEn ? 'Unable to select general.' : 'Không thể chọn tướng.'));
         return prev;
       }
     });
-  }, [offline]);
+  }, [isEn, offline]);
 
   const handleSendAction = useCallback((action: GameAction) => {
     setActionError(null);
@@ -420,11 +423,11 @@ export function DevMatchPreview({
         setSelection(EMPTY_MATCH_SELECTION);
         return next;
       } catch (err: unknown) {
-        setActionError(formatMatchErrorVi(err, 'Thao tác chưa hợp lệ.'));
+        setActionError(formatMatchErrorVi(err, isEn ? 'Invalid action.' : 'Thao tác chưa hợp lệ.'));
         return prev;
       }
     });
-  }, [offline]);
+  }, [isEn, offline]);
 
   const handleToggleAutoSkipNullify = useCallback(
     (enabled: boolean) => {
@@ -443,7 +446,7 @@ export function DevMatchPreview({
       const entry: RefereeAuditEntry = {
         timestamp: new Date().toISOString(),
         actorUserId: 'dev_user_0',
-        actorName: 'Bạn (Kiểm tra)',
+        actorName: isEn ? 'You (Test)' : 'Bạn (Kiểm tra)',
         actionType,
       };
       setAuditLog((prev) => [...prev, entry]);
@@ -460,7 +463,7 @@ export function DevMatchPreview({
         setUndoHistory((prev) => {
           const last = prev[prev.length - 1];
           if (!last) {
-            setActionError('Chưa có bước trước đó để hoàn tác.');
+            setActionError(isEn ? 'No previous step to undo.' : 'Chưa có bước trước đó để hoàn tác.');
             return prev;
           }
           setMasterState(last);
@@ -773,7 +776,7 @@ export function DevMatchPreview({
               onChange={(event) => handleToggleAutoSkipNullify(event.target.checked)}
               className="accent-[#D99B26]"
             />
-            Tự bỏ qua Hóa Giải
+            {isEn ? 'Auto-pass Negation' : 'Tự bỏ qua Hóa Giải'}
           </label>
           <label className="flex cursor-pointer items-center gap-2 text-xs font-semibold text-[#EFE6D5]">
             <input
@@ -782,19 +785,19 @@ export function DevMatchPreview({
               onChange={(event) => handleToggleReduceMotion(event.target.checked)}
               className="accent-[#D99B26]"
             />
-            Giảm chuyển động
+            {isEn ? 'Reduce Motion' : 'Giảm chuyển động'}
           </label>
         </div>
         {!offline ? <>
         <div className="mb-2.5 flex min-w-0 flex-wrap items-center gap-1.5 text-[11px]">
-          <span className="shrink-0 text-[#B5A792]">Cảnh thử:</span>
+          <span className="shrink-0 text-[#B5A792]">{isEn ? 'Preview:' : 'Cảnh thử:'}</span>
           {(
             [
-              ['HERO_SELECT', 'Chọn tướng'],
-              ['IN_PLAY', 'Đánh bài'],
-              ['GUAN_XING', 'Quan Tinh'],
-              ['YI_JI', 'Di Kế'],
-              ['GAME_OVER', 'Kết ván'],
+              ['HERO_SELECT', isEn ? 'Hero Draft' : 'Chọn tướng'],
+              ['IN_PLAY', isEn ? 'Play Phase' : 'Đánh bài'],
+              ['GUAN_XING', isEn ? 'Star Gazing' : 'Quan Tinh'],
+              ['YI_JI', isEn ? 'Final Testament' : 'Di Kế'],
+              ['GAME_OVER', isEn ? 'Game Over' : 'Kết ván'],
             ] as const
           ).map(([stageKey, label]) => (
             <button
@@ -847,15 +850,19 @@ export function DevMatchPreview({
             />
             <span className="whitespace-nowrap shrink-0">
               <span className="lg:hidden">
-                {previewStage === 'HERO_SELECT' ? 'Chọn tướng' : 'Đánh bài'}
+                {previewStage === 'HERO_SELECT'
+                  ? isEn ? 'Hero Draft' : 'Chọn tướng'
+                  : isEn ? 'Play Phase' : 'Đánh bài'}
               </span>
               <span className="hidden lg:inline">
-                {previewStage === 'HERO_SELECT' ? 'Pha Chọn Tướng' : 'Pha Đánh Bài'}
+                {previewStage === 'HERO_SELECT'
+                  ? isEn ? 'Hero Draft Phase' : 'Pha Chọn Tướng'
+                  : isEn ? 'Play Phase' : 'Pha Đánh Bài'}
               </span>
             </span>
           </button>
           <span className="font-mono-num shrink-0 whitespace-nowrap text-[#B5A792] tabular-nums">
-            Rút: {playerView.drawPileCount}
+            {isEn ? `Deck: ${playerView.drawPileCount}` : `Rút: ${playerView.drawPileCount}`}
           </span>
         </div>
 
@@ -863,24 +870,24 @@ export function DevMatchPreview({
         <div className="flex flex-wrap items-center gap-1.5">
           <button
             type="button"
-            aria-label="Hiệu ứng âm thanh"
+            aria-label={isEn ? 'Sound Effects' : 'Hiệu ứng âm thanh'}
             aria-pressed={soundEnabled}
             onClick={() => setSoundEnabled(enabled => !enabled)}
             className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-[#9A7B4F]/40 bg-[#14100D]/90 px-2.5 py-1 text-[11px] font-medium text-[#EFE6D5] hover:border-[#D99B26] xl:text-xs"
           >
             <GameIcon name={soundEnabled ? 'ui:volume-on' : 'ui:volume-off'} size={13} />
-            <span className="lg:hidden">Âm thanh</span>
-            <span className="hidden lg:inline">Hiệu ứng âm thanh</span>
+            <span className="lg:hidden">{isEn ? 'Sound' : 'Âm thanh'}</span>
+            <span className="hidden lg:inline">{isEn ? 'Sound Effects' : 'Hiệu ứng âm thanh'}</span>
           </button>
           <button
             type="button"
-            aria-label="Nhạc nền"
+            aria-label={isEn ? 'Background Music' : 'Nhạc nền'}
             aria-pressed={musicEnabled}
             onClick={() => setMusicEnabled(enabled => !enabled)}
             className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-[#9A7B4F]/40 bg-[#14100D]/90 px-2.5 py-1 text-[11px] font-medium text-[#EFE6D5] hover:border-[#D99B26] xl:text-xs"
           >
             <GameIcon name={musicEnabled ? 'ui:volume-on' : 'ui:volume-off'} size={13} />
-            <span>Nhạc nền</span>
+            <span>{isEn ? 'Music' : 'Nhạc nền'}</span>
           </button>
           <button
             type="button"
@@ -888,7 +895,7 @@ export function DevMatchPreview({
             className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-[#9A7B4F]/40 bg-[#14100D]/90 px-2.5 py-1 text-[11px] font-medium text-[#FCA5A5] hover:border-[#DC2626] xl:text-xs"
           >
             <GameIcon name="ui:undo" size={13} />
-            <span>{offline ? 'Về menu' : 'Thoát'}</span>
+            <span>{offline ? (isEn ? 'Main Menu' : 'Về menu') : (isEn ? 'Exit' : 'Thoát')}</span>
           </button>
         </div>
       </MatchSettings>
@@ -958,7 +965,7 @@ export function DevMatchPreview({
           onClose={() => setShowExitDialog(false)}
           ariaLabelledBy="offline-exit-title"
           icon="ui:door-open"
-          title="Rời ván tập?"
+          title={isEn ? 'Leave Practice Match?' : 'Rời ván tập?'}
           maxWidthClass="max-w-sm"
           footer={
             <>
@@ -968,27 +975,33 @@ export function DevMatchPreview({
                 onClick={() => setShowExitDialog(false)}
                 className="lkdf-bronze-pill cursor-pointer rounded-lg px-3.5 py-2 text-xs font-semibold"
               >
-                Ở lại ván
+                {isEn ? 'Stay in Match' : 'Ở lại ván'}
               </button>
               <button
                 type="button"
                 onClick={onExitPreview}
                 className="cursor-pointer rounded-lg border border-[#E6BE6C]/45 bg-[#9E2B25] px-3.5 py-2 text-xs font-bold text-[#FFF5EC] hover:bg-[#B8322B]"
               >
-                Về menu
+                {isEn ? 'Main Menu' : 'Về menu'}
               </button>
             </>
           }
         >
-          <p className="text-sm text-[#E8DCC8]">Tiến độ ván này sẽ mất khi bạn về menu.</p>
+          <p className="text-sm text-[#E8DCC8]">
+            {isEn ? 'Progress in this match will be lost if you return to the main menu.' : 'Tiến độ ván này sẽ mất khi bạn về menu.'}
+          </p>
         </GuofengModalShell>
       ) : null}
 
       {botFault ? (
         <div role="alert" className="absolute left-1/2 top-14 z-40 flex w-max max-w-[calc(100%-2rem)] -translate-x-1/2 flex-wrap items-center gap-3 rounded border border-[#CA9A48] bg-[#14100D] p-3 text-sm">
-          Không thể tiếp tục ván này.
-          <button type="button" onClick={() => resetPreview(playerCount, 'HERO_SELECT')} className="rounded bg-[#9E2B25] px-3 py-2">Chơi lại</button>
-          <button type="button" onClick={onExitPreview} className="rounded border border-[#9A7B4F] px-3 py-2">Về menu</button>
+          {isEn ? 'Unable to continue this match.' : 'Không thể tiếp tục ván này.'}
+          <button type="button" onClick={() => resetPreview(playerCount, 'HERO_SELECT')} className="rounded bg-[#9E2B25] px-3 py-2">
+            {isEn ? 'Play Again' : 'Chơi lại'}
+          </button>
+          <button type="button" onClick={onExitPreview} className="rounded border border-[#9A7B4F] px-3 py-2">
+            {isEn ? 'Main Menu' : 'Về menu'}
+          </button>
         </div>
       ) : null}
 

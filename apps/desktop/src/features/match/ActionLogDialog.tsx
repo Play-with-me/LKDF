@@ -44,8 +44,8 @@ export function ActionLogDialog({
       onClose={onClose}
       ariaLabelledBy="action-log-dialog-title"
       icon="scroll-unfurled"
-      title={`Nhật Ký Diễn Biến Bàn Đấu (${actionLog.length})`}
-      subtitle="Hiển thị tối đa 60 diễn biến gần nhất của ván đấu hiện tại"
+      title={locale === 'en' ? `Match Action Log (${actionLog.length})` : `Nhật Ký Diễn Biến Bàn Đấu (${actionLog.length})`}
+      subtitle={locale === 'en' ? 'Showing up to the latest 60 events in this match' : 'Hiển thị tối đa 60 diễn biến gần nhất của ván đấu hiện tại'}
       maxWidthClass="max-w-xl"
       footer={
         <button
@@ -54,7 +54,7 @@ export function ActionLogDialog({
           onClick={onClose}
           className="lkdf-bronze-pill inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-4 py-2 text-xs font-semibold focus-visible:outline-2 focus-visible:outline-[#E6BE6C]"
         >
-          Quay lại bàn đấu
+          {locale === 'en' ? 'Return to Match' : 'Quay lại bàn đấu'}
         </button>
       }
     >
@@ -64,7 +64,7 @@ export function ActionLogDialog({
       >
         {entries.length === 0 ? (
           <div className="rounded-lg border border-dashed border-[#806345]/50 bg-[#1B1410]/70 p-6 text-center text-sm text-[#B5A792]">
-            Chưa có diễn biến nào trong ván đấu.
+            {locale === 'en' ? 'No events recorded yet.' : 'Chưa có diễn biến nào trong ván đấu.'}
           </div>
         ) : (
           entries.map((entry, idx) => {

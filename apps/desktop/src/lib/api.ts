@@ -1,3 +1,4 @@
+import { readAppLocale } from './devicePreferences.js';
 import type {
   ExchangeManualCodeResponse,
   FilteredStatsResponse,
@@ -46,18 +47,24 @@ export function normalizeServerUrl(raw: string): string {
   try {
     parsed = new URL(withProtocol);
   } catch {
+    const isEn = readAppLocale() === 'en';
     throw new ApiError(
       400,
       'INVALID_SERVER_URL',
-      'Địa chỉ máy chủ không hợp lệ (ví dụ: http://127.0.0.1:3001).',
+      isEn
+        ? 'Invalid server URL (e.g., http://127.0.0.1:3001).'
+        : 'Địa chỉ máy chủ không hợp lệ (ví dụ: http://127.0.0.1:3001).',
     );
   }
 
   if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+    const isEn = readAppLocale() === 'en';
     throw new ApiError(
       400,
       'INVALID_SERVER_URL',
-      'Chỉ hỗ trợ máy chủ giao thức http:// hoặc https://.',
+      isEn
+        ? 'Only http:// and https:// server protocols are supported.'
+        : 'Chỉ hỗ trợ máy chủ giao thức http:// hoặc https://.',
     );
   }
 
@@ -219,13 +226,20 @@ export function createApiClient(serverUrl: string): LkdfApiClient {
       }
       response = await fetch(`${baseUrl}${path}`, init);
     } catch (error) {
+      const isEn = readAppLocale() === 'en';
       if (error instanceof DOMException && error.name === 'AbortError') {
-        throw new ApiError(0, 'REQUEST_ABORTED', 'Đã hủy kết nối tới máy chủ.');
+        throw new ApiError(
+          0,
+          'REQUEST_ABORTED',
+          isEn ? 'Cancelled connection to the server.' : 'Đã hủy kết nối tới máy chủ.',
+        );
       }
       throw new ApiError(
         0,
         'NETWORK_ERROR',
-        'Không thể kết nối tới máy chủ phòng chơi. Máy chủ có thể đang khởi động hoặc mất mạng.',
+        isEn
+          ? 'Unable to connect to the game server. The server may be starting up or offline.'
+          : 'Không thể kết nối tới máy chủ phòng chơi. Máy chủ có thể đang khởi động hoặc mất mạng.',
       );
     }
 
@@ -236,6 +250,7 @@ export function createApiClient(serverUrl: string): LkdfApiClient {
       payload = null;
     }
 
+    const isEn = readAppLocale() === 'en';
     if (!response.ok) {
       const code =
         payload && typeof payload['code'] === 'string'
@@ -245,8 +260,12 @@ export function createApiClient(serverUrl: string): LkdfApiClient {
         payload && typeof payload['messageVi'] === 'string'
           ? payload['messageVi']
           : response.status >= 500
-            ? 'Máy chủ đang bận hoặc gặp sự cố tạm thời. Vui lòng thử lại sau.'
-            : `Yêu cầu không thành công (mã ${response.status}).`;
+            ? isEn
+              ? 'Server is busy or encountered a temporary error. Please try again shortly.'
+              : 'Máy chủ đang bận hoặc gặp sự cố tạm thời. Vui lòng thử lại sau.'
+            : isEn
+              ? `Request failed (HTTP ${response.status}).`
+              : `Yêu cầu không thành công (mã ${response.status}).`;
       throw new ApiError(response.status, code, messageVi);
     }
 
@@ -254,7 +273,9 @@ export function createApiClient(serverUrl: string): LkdfApiClient {
       throw new ApiError(
         response.status,
         'INVALID_SERVER_RESPONSE',
-        'Phản hồi từ máy chủ không đúng định dạng JSON.',
+        isEn
+          ? 'Invalid JSON response from server.'
+          : 'Phản hồi từ máy chủ không đúng định dạng JSON.',
       );
     }
 

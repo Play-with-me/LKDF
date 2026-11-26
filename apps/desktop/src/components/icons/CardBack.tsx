@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { getUiAssetUrl } from '../../lib/assetCatalog.js';
 
 export interface CardBackProps {
@@ -14,6 +15,8 @@ const SIZE_MAP: Readonly<Record<'xs' | 'sm' | 'md' | 'lg', string>> = {
 };
 
 export function CardBack({ count, size = 'sm', className = '' }: CardBackProps) {
+  const { i18n } = useTranslation();
+  const isEn = i18n.language === 'en';
   const customBackUrl = getUiAssetUrl('card-back');
   const isCompact = size === 'xs' || size === 'sm';
 
@@ -28,7 +31,7 @@ export function CardBack({ count, size = 'sm', className = '' }: CardBackProps) 
       {customBackUrl ? (
         <img
           src={customBackUrl}
-          alt="Mặt lưng lá bài"
+          alt={isEn ? 'Card back' : 'Mặt lưng lá bài'}
           className="h-full w-full object-cover"
         />
       ) : isCompact ? (

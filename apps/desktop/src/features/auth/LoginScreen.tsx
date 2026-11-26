@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { GameIcon } from '../../components/icons/index.js';
 import { ApiError, saveClientStatePatch } from '../../lib/api.js';
 import type { LkdfApiClient } from '../../lib/api.js';
@@ -44,6 +45,8 @@ export function LoginScreen({
   onCheckUpdate,
   onOpenDevPreview,
 }: LoginScreenProps) {
+  const { i18n } = useTranslation();
+  const isEn = i18n.language === 'en';
   const [isPendingGoogle, setIsPendingGoogle] = useState<boolean>(false);
   const [pendingStatusText, setPendingStatusText] = useState<string>('');
   const [errorMsg, setErrorMsg] = useState<string | null>(initialNotice ?? null);
@@ -192,7 +195,9 @@ export function LoginScreen({
     setErrorMsg(null);
     setIsPendingGoogle(true);
     setPendingStatusText(
-      'Đang mở Google để xác nhận tài khoản trên trình duyệt...',
+      isEn
+        ? 'Opening Google in your browser to verify your account...'
+        : 'Đang mở Google để xác nhận tài khoản trên trình duyệt...',
     );
 
     try {
@@ -208,7 +213,9 @@ export function LoginScreen({
         pollSecret: started.pollSecret,
       };
       setPendingStatusText(
-        'Đang chờ bạn xác nhận tài khoản Google trên trình duyệt...',
+        isEn
+          ? 'Waiting for you to confirm your Google account in the browser...'
+          : 'Đang chờ bạn xác nhận tài khoản Google trên trình duyệt...',
       );
 
       if (window.lkdfDesktop) {
@@ -242,7 +249,9 @@ export function LoginScreen({
       setErrorMsg(
         err instanceof Error
           ? err.message
-          : 'Không thể mở cửa sổ đăng nhập Google.',
+          : isEn
+            ? 'Unable to open Google sign-in window.'
+            : 'Không thể mở cửa sổ đăng nhập Google.',
       );
     }
   }
@@ -257,7 +266,11 @@ export function LoginScreen({
     event.preventDefault();
     const trimmed = manualCode.trim();
     if (trimmed.length < 4) {
-      setErrorMsg('Vui lòng nhập mã đăng nhập dự phòng từ trình duyệt.');
+      setErrorMsg(
+        isEn
+          ? 'Please enter the fallback login code from your browser.'
+          : 'Vui lòng nhập mã đăng nhập dự phòng từ trình duyệt.',
+      );
       return;
     }
 
@@ -318,7 +331,9 @@ export function LoginScreen({
             <span>{pendingStatusText}</span>
           </p>
           <p className="mt-1 text-[11.5px] text-[#D5C3A5]">
-            Xác nhận xong trên trình duyệt, app sẽ tự vào sảnh (hoặc dán mã bên dưới).
+            {isEn
+              ? 'Once confirmed in your browser, the app will enter the lobby automatically (or paste the code below).'
+              : 'Xác nhận xong trên trình duyệt, app sẽ tự vào sảnh (hoặc dán mã bên dưới).'}
           </p>
           <div className="mt-2.5 flex justify-center">
             <button
@@ -329,7 +344,7 @@ export function LoginScreen({
               className="lkdf-bronze-pill inline-flex cursor-pointer items-center gap-1.5 rounded-[4px] px-3 py-1 text-xs font-medium text-[#F5EBD6] hover:border-[#DC2626] hover:text-[#FCA5A5] focus-visible:outline-2 focus-visible:outline-[#E6BE6C]"
             >
               <GameIcon name="ui:x" size={12} />
-              Hủy đăng nhập
+              {isEn ? 'Cancel Sign-In' : 'Hủy đăng nhập'}
             </button>
           </div>
         </div>
@@ -345,7 +360,9 @@ export function LoginScreen({
               disabled={!health.googleConfigured}
               title={
                 !health.googleConfigured
-                  ? 'Máy chủ thử cục bộ chưa cấu hình khóa Google OAuth'
+                  ? isEn
+                    ? 'Local test server does not have Google OAuth keys configured'
+                    : 'Máy chủ thử cục bộ chưa cấu hình khóa Google OAuth'
                   : undefined
               }
               onClick={() => {
@@ -373,7 +390,7 @@ export function LoginScreen({
                   />
                 </svg>
               </span>
-              <span>Đăng nhập / Lập hồ sơ Google</span>
+              <span>{isEn ? 'Sign In / Create Google Profile' : 'Đăng nhập / Lập hồ sơ Google'}</span>
             </button>
             <span
               aria-hidden="true"
@@ -382,7 +399,9 @@ export function LoginScreen({
           </div>
 
           <p className="text-center text-[11.5px] text-[#F2CF84]/92 drop-shadow-[0_2px_6px_rgba(0,0,0,0.95)]">
-            Tự động tạo hồ sơ và chọn Biệt danh nếu vào lần đầu
+            {isEn
+              ? 'Automatically creates a profile and lets you pick a Nickname on first visit'
+              : 'Tự động tạo hồ sơ và chọn Biệt danh nếu vào lần đầu'}
           </p>
 
           {onPlayOffline ? (
@@ -393,7 +412,7 @@ export function LoginScreen({
                 className="lkdf-bronze-pill inline-flex w-full max-w-[340px] cursor-pointer items-center justify-center gap-2 rounded-[4px] border border-[#C89B4B]/65 bg-[#1B130F]/92 px-4 py-2 text-xs font-semibold text-[#F5EBD6] hover:border-[#F2CF84] hover:bg-[#3A1E19] focus-visible:outline-2 focus-visible:outline-[#F2CF84]"
               >
                 <GameIcon name="ui:bot" size={14} className="text-[#E6BE6C]" />
-                <span>Chơi với Máy (Ván tập 4–8 ghế)</span>
+                <span>{isEn ? 'Play vs Bots (4–8 Seats)' : 'Chơi với Máy (Ván tập 4–8 ghế)'}</span>
               </button>
             </div>
           ) : null}
@@ -409,13 +428,13 @@ export function LoginScreen({
             onClick={() => setShowManualBox((prev) => !prev)}
             className="inline-flex cursor-pointer items-center gap-1 rounded px-2 py-0.5 text-xs font-medium text-[#E6BE6C] transition-colors hover:text-[#FFF2D0] focus-visible:outline-2 focus-visible:outline-[#E6BE6C]"
           >
-            <span>Có mã dự phòng từ trình duyệt?</span>
+            <span>{isEn ? 'Have a fallback code from browser?' : 'Có mã dự phòng từ trình duyệt?'}</span>
             <span aria-hidden="true">{isManualSectionVisible ? '▴' : '▾'}</span>
           </button>
 
           {!health.googleConfigured ? (
             <span className="text-[11px] text-[#D5C3A5]">
-              (Cục bộ chưa gắn khóa Google OAuth)
+              {isEn ? '(Google OAuth not configured locally)' : '(Cục bộ chưa gắn khóa Google OAuth)'}
             </span>
           ) : null}
         </div>
@@ -431,8 +450,8 @@ export function LoginScreen({
               type="text"
               value={manualCode}
               onChange={(e) => setManualCode(e.target.value.toUpperCase())}
-              placeholder="VD: TQS-AB12-CD34"
-              aria-label="Mã đăng nhập dự phòng từ trình duyệt"
+              placeholder={isEn ? 'e.g., TQS-AB12-CD34' : 'VD: TQS-AB12-CD34'}
+              aria-label={isEn ? 'Fallback login code from browser' : 'Mã đăng nhập dự phòng từ trình duyệt'}
               className="min-w-0 flex-1 rounded-[4px] border border-[#C89B4B]/55 bg-[#140F0C]/92 px-3 py-2 font-mono-num text-xs uppercase text-[#F5EBD6] placeholder-[#A8947A] focus:border-[#F2CF84] focus-visible:outline-2 focus-visible:outline-[#E6BE6C]"
             />
             <button
@@ -440,7 +459,7 @@ export function LoginScreen({
               disabled={isExchangingCode}
               className="shrink-0 cursor-pointer rounded-[4px] border border-[#F2CF84]/65 bg-gradient-to-b from-[#B8332C] to-[#7D1B17] px-3.5 py-2 text-xs font-bold text-[#FFF6E5] transition-colors hover:brightness-110 focus-visible:outline-2 focus-visible:outline-[#E6BE6C] disabled:opacity-50"
             >
-              {isExchangingCode ? 'Đang gửi...' : 'Vào'}
+              {isExchangingCode ? (isEn ? 'Sending...' : 'Đang gửi...') : (isEn ? 'Enter' : 'Vào')}
             </button>
           </form>
         ) : null}

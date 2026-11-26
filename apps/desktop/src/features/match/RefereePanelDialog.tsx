@@ -1,5 +1,6 @@
 import type { RefereeActionType, RefereeAuditEntry, RoomState } from '@lkdf/shared';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { GameIcon } from '../../components/icons/index.js';
 import { GuofengModalShell } from '../../components/ui/GuofengModalShell.js';
 
@@ -12,7 +13,7 @@ export interface RefereePanelDialogProps {
   readonly onClose: () => void;
 }
 
-const ACTION_LABELS: Record<RefereeActionType, string> = {
+const ACTION_LABELS_VI: Record<RefereeActionType, string> = {
   PAUSE: 'Tạm dừng đồng hồ',
   RESUME: 'Tiếp tục đồng hồ',
   UNDO_ONE_STEP: 'Hoàn tác 1 bước vừa đánh',
@@ -20,9 +21,17 @@ const ACTION_LABELS: Record<RefereeActionType, string> = {
   ABORT_MATCH: 'Kết thúc ván & Về phòng chờ',
 };
 
-function formatAuditTime(iso: string): string {
+const ACTION_LABELS_EN: Record<RefereeActionType, string> = {
+  PAUSE: 'Pause Timer',
+  RESUME: 'Resume Timer',
+  UNDO_ONE_STEP: 'Undo 1 Step',
+  SKIP_PHASE: 'Skip Current Phase',
+  ABORT_MATCH: 'End Match & Return to Lobby',
+};
+
+function formatAuditTime(iso: string, locale: 'vi' | 'en'): string {
   try {
-    return new Date(iso).toLocaleTimeString('vi-VN', {
+    return new Date(iso).toLocaleTimeString(locale === 'en' ? 'en-US' : 'vi-VN', {
       hour: '2-digit',
       minute: '2-digit',
       second: '2-digit',
@@ -40,6 +49,10 @@ export function RefereePanelDialog({
   onSendRefereeAction,
   onClose,
 }: RefereePanelDialogProps) {
+  const { i18n } = useTranslation();
+  const locale = i18n.language === 'en' ? 'en' : 'vi';
+  const isEn = locale === 'en';
+  const actionLabels = isEn ? ACTION_LABELS_EN : ACTION_LABELS_VI;
   const [confirmingAbort, setConfirmingAbort] = useState<boolean>(false);
   const [nowMs, setNowMs] = useState<number>(() => Date.now());
 
@@ -79,9 +92,17 @@ export function RefereePanelDialog({
 
   const subtitle = (
     <span>
-      Trọng tài hiện tại:{' '}
-      <strong className="text-[#E6BE6C]">{actingHostSeat?.displayName ?? 'Đang cập nhật'}</strong>
-      {roomState.actingHostUserId !== roomState.ownerUserId ? ' (Chủ phòng tạm thời)' : ' (Chủ phòng)'}
+      {isEn ? 'Current Referee:' : 'Trọng tài hiện tại:'}{' '}
+      <strong className="text-[#E6BE6C]">
+        {actingHostSeat?.displayName ?? (isEn ? 'Updating' : 'Đang cập nhật')}
+      </strong>
+      {roomState.actingHostUserId !== roomState.ownerUserId
+        ? isEn
+          ? ' (Temporary Host)'
+          : ' (Chủ phòng tạm thời)'
+        : isEn
+          ? ' (Host)'
+          : ' (Chủ phòng)'}
     </span>
   );
 
@@ -91,7 +112,7 @@ export function RefereePanelDialog({
       onClose={onClose}
       ariaLabelledBy="referee-panel-title"
       icon="scales"
-      title={`Bảng Trọng Tài Phòng #${roomState.roomCode}`}
+      title={isEn ? `Referee Panel · Room #${roomState.roomCode}` : `Bảng Trọng Tài Phòng #${roomState.roomCode}`}
       subtitle={subtitle}
       maxWidthClass="max-w-xl"
       footer={
@@ -101,7 +122,7 @@ export function RefereePanelDialog({
           onClick={onClose}
           className="lkdf-bronze-pill inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-4 py-2 text-xs font-semibold focus-visible:outline-2 focus-visible:outline-[#E6BE6C]"
         >
-          Đóng bảng (Esc)
+          {isEn ? 'Close Panel (Esc)' : 'Đóng bảng (Esc)'}
         </button>
       }
     >
@@ -110,13 +131,21 @@ export function RefereePanelDialog({
           <div className="flex items-start gap-2 rounded-lg border border-[#D97706]/55 bg-[#2E1B0E] px-3.5 py-2.5 text-xs text-[#FDE68A]">
             <GameIcon name="ui:alert" size={15} className="mt-0.5 shrink-0 text-[#FBBF24]" />
             <div>
-              Chủ phòng gốc ({hostSeat?.displayName ?? 'Chủ phòng'}) đang mất kết nối.{' '}
+              {isEn
+                ? `Original host (${hostSeat?.displayName ?? 'Host'}) is disconnected.`
+                : `Chủ phòng gốc (${hostSeat?.displayName ?? 'Chủ phòng'}) đang mất kết nối.`}{' '}
               {takeoverRemainingSeconds !== null && takeoverRemainingSeconds > 0 ? (
                 <span className="font-mono-num font-bold tabular-nums">
-                  Chuyển quyền Trọng Tài tạm thời sau {takeoverRemainingSeconds}s.
+                  {isEn
+                    ? `Temporary Referee authority transfers in ${takeoverRemainingSeconds}s.`
+                    : `Chuyển quyền Trọng Tài tạm thời sau ${takeoverRemainingSeconds}s.`}
                 </span>
               ) : (
-                <span>Quyền Trọng Tài tạm thời đã được kích hoạt cho người kế tiếp.</span>
+                <span>
+                  {isEn
+                    ? 'Temporary Referee authority has been granted to the next player.'
+                    : 'Quyền Trọng Tài tạm thời đã được kích hoạt cho người kế tiếp.'}
+                </span>
               )}
             </div>
           </div>
@@ -124,8 +153,9 @@ export function RefereePanelDialog({
 
         {!isActingHost ? (
           <div className="rounded-lg border border-[#DC2626]/45 bg-[#3B1312]/70 px-3.5 py-2.5 text-xs text-[#FCA5A5]">
-            Chỉ Chủ phòng (hoặc Chủ phòng tạm thời khi Chủ phòng mất mạng &gt;30s) mới được bấm các
-            nút này
+            {isEn
+              ? 'Only the Host (or Temporary Host when the Host disconnects >30s) can use these controls'
+              : 'Chỉ Chủ phòng (hoặc Chủ phòng tạm thời khi Chủ phòng mất mạng >30s) mới được bấm các nút này'}
           </div>
         ) : null}
 
@@ -143,7 +173,7 @@ export function RefereePanelDialog({
               size={14}
               className="text-[#E6BE6C]"
             />
-            {roomState.isTimerPaused ? 'Tiếp tục đồng hồ' : 'Tạm dừng đồng hồ'}
+            {roomState.isTimerPaused ? actionLabels.RESUME : actionLabels.PAUSE}
           </button>
 
           <button
@@ -155,7 +185,7 @@ export function RefereePanelDialog({
             className="lkdf-bronze-pill inline-flex cursor-pointer items-center gap-2 rounded-lg px-3.5 py-2.5 text-left text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-45"
           >
             <GameIcon name="ui:undo" size={14} className="text-[#E6BE6C]" />
-            Hoàn tác 1 bước vừa đánh
+            {actionLabels.UNDO_ONE_STEP}
           </button>
 
           <button
@@ -167,7 +197,7 @@ export function RefereePanelDialog({
             className="lkdf-bronze-pill inline-flex cursor-pointer items-center gap-2 rounded-lg px-3.5 py-2.5 text-left text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-45"
           >
             <GameIcon name="ui:skip" size={14} className="text-[#E6BE6C]" />
-            Bỏ qua pha đang chờ
+            {actionLabels.SKIP_PHASE}
           </button>
 
           {!confirmingAbort ? (
@@ -178,12 +208,14 @@ export function RefereePanelDialog({
               className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-[#C83E37]/65 bg-[#3B1312]/80 px-3.5 py-2.5 text-left text-xs font-semibold text-[#FCA5A5] transition-colors hover:border-[#EF4444] hover:bg-[#4F1918] disabled:cursor-not-allowed disabled:opacity-45"
             >
               <GameIcon name="ui:flag" size={14} />
-              Kết thúc ván &amp; Về phòng chờ
+              {actionLabels.ABORT_MATCH}
             </button>
           ) : (
             <div className="col-span-full rounded-lg border border-[#DC2626] bg-[#3B1312]/85 p-3">
               <p className="text-xs font-semibold text-[#FCA5A5]">
-                Xác nhận hủy ván đấu hiện tại và đưa toàn bộ người chơi về phòng chờ?
+                {isEn
+                  ? 'Confirm aborting this match and returning all players to the waiting room?'
+                  : 'Xác nhận hủy ván đấu hiện tại và đưa toàn bộ người chơi về phòng chờ?'}
               </p>
               <div className="mt-2.5 flex flex-wrap gap-2">
                 <button
@@ -196,7 +228,7 @@ export function RefereePanelDialog({
                   className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg bg-[#9E2B25] px-3 py-1.5 text-xs font-bold text-[#FFF5EC] hover:bg-[#B8322B]"
                 >
                   <GameIcon name="ui:flag" size={13} />
-                  Kết thúc ván &amp; Về phòng chờ ngay
+                  {isEn ? 'End Match & Return Now' : 'Kết thúc ván & Về phòng chờ ngay'}
                 </button>
                 <button
                   type="button"
@@ -204,7 +236,7 @@ export function RefereePanelDialog({
                   className="lkdf-bronze-pill inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold"
                 >
                   <GameIcon name="ui:undo" size={13} />
-                  Giữ nguyên ván đấu
+                  {isEn ? 'Keep Playing' : 'Giữ nguyên ván đấu'}
                 </button>
               </div>
             </div>
@@ -213,11 +245,11 @@ export function RefereePanelDialog({
 
         <section>
           <h3 className="text-xs font-bold tracking-wider text-[#D5C3A5] uppercase">
-            Nhật ký thao tác Trọng Tài (Công khai toàn bàn)
+            {isEn ? 'Referee Action Log (Public to Table)' : 'Nhật ký thao tác Trọng Tài (Công khai toàn bàn)'}
           </h3>
           {refereeAuditLog.length === 0 ? (
             <div className="mt-2 rounded-lg border border-[#806345]/45 bg-[#1B1410] px-3.5 py-3 text-xs text-[#B5A792]">
-              Chưa có thao tác Trọng Tài nào trong ván đấu này.
+              {isEn ? 'No referee actions recorded in this match yet.' : 'Chưa có thao tác Trọng Tài nào trong ván đấu này.'}
             </div>
           ) : (
             <ul className="lkdf-scroll mt-2 max-h-48 space-y-1.5 overflow-y-auto rounded-lg border border-[#806345]/45 bg-[#1B1410] p-3 text-xs">
@@ -228,10 +260,10 @@ export function RefereePanelDialog({
                 >
                   <span className="text-[#E8DCC8]">
                     <strong className="text-[#E6BE6C]">{entry.actorName}</strong>:{' '}
-                    {ACTION_LABELS[entry.actionType] ?? entry.actionType}
+                    {actionLabels[entry.actionType] ?? entry.actionType}
                   </span>
                   <span className="shrink-0 font-mono-num text-[11px] tabular-nums text-[#B5A792]">
-                    {formatAuditTime(entry.timestamp)}
+                    {formatAuditTime(entry.timestamp, locale)}
                   </span>
                 </li>
               ))}

@@ -11,33 +11,45 @@ export interface RulesHotkeysDialogProps {
 
 const HOTKEY_ROWS: readonly {
   readonly keycaps: readonly string[];
-  readonly action: string;
-  readonly detail: string;
+  readonly actionVi: string;
+  readonly actionEn: string;
+  readonly detailVi: string;
+  readonly detailEn: string;
 }[] = [
   {
     keycaps: ['1 – 9'],
-    action: 'Chọn nhanh lá bài trên tay',
-    detail: 'Chọn hoặc bỏ chọn lá bài thứ 1 đến thứ 9 từ trái sang phải.',
+    actionVi: 'Chọn nhanh lá bài trên tay',
+    actionEn: 'Quick-select Hand Card',
+    detailVi: 'Chọn hoặc bỏ chọn lá bài thứ 1 đến thứ 9 từ trái sang phải.',
+    detailEn: 'Select or deselect hand cards 1 through 9 from left to right.',
   },
   {
     keycaps: ['Enter', 'Space'],
-    action: 'Thực hiện hành động chính',
-    detail: 'Bấm nút hành động chính đang sáng (khi đã chọn đủ bài và mục tiêu).',
+    actionVi: 'Thực hiện hành động chính',
+    actionEn: 'Confirm Primary Action',
+    detailVi: 'Bấm nút hành động chính đang sáng (khi đã chọn đủ bài và mục tiêu).',
+    detailEn: 'Activate the highlighted primary action once card(s) and target(s) are selected.',
   },
   {
     keycaps: ['Esc'],
-    action: 'Hủy chọn / Đóng bảng phụ',
-    detail: 'Hủy chọn lá bài và mục tiêu đang chọn, hoặc đóng hộp thoại đang mở.',
+    actionVi: 'Hủy chọn / Đóng bảng phụ',
+    actionEn: 'Clear Selection / Close Dialog',
+    detailVi: 'Hủy chọn lá bài và mục tiêu đang chọn, hoặc đóng hộp thoại đang mở.',
+    detailEn: 'Clear current card/target selection or close an open dialog.',
   },
   {
     keycaps: ['E'],
-    action: 'Kết thúc lượt đánh',
-    detail: 'Kết thúc giai đoạn Đánh bài khi đang tới lượt chính của bạn.',
+    actionVi: 'Kết thúc lượt đánh',
+    actionEn: 'End Action Phase',
+    detailVi: 'Kết thúc giai đoạn Đánh bài khi đang tới lượt chính của bạn.',
+    detailEn: 'End your Action phase and advance to Discard phase.',
   },
   {
     keycaps: ['Tab'],
-    action: 'Di chuyển tiêu điểm',
-    detail: 'Di chuyển giữa các nút bấm và lá bài bằng bàn phím với viền sáng rõ.',
+    actionVi: 'Di chuyển tiêu điểm',
+    actionEn: 'Move Keyboard Focus',
+    detailVi: 'Di chuyển giữa các nút bấm và lá bài bằng bàn phím với viền sáng rõ.',
+    detailEn: 'Navigate across action buttons and cards using visible focus outlines.',
   },
 ];
 
@@ -102,8 +114,8 @@ export function RulesHotkeysDialog({ open, onClose }: RulesHotkeysDialogProps) {
       onClose={onClose}
       ariaLabelledBy="rules-hotkeys-title"
       icon="ui:book-open"
-      title="Luật Chơi Nhanh & Phím Tắt Bàn Đấu"
-      subtitle="Phím tắt Windows, bảng chia Thân Phận chuẩn và quy tắc tầm đánh"
+      title={locale === 'en' ? 'Quick Rules & Table Hotkeys' : 'Luật Chơi Nhanh & Phím Tắt Bàn Đấu'}
+      subtitle={locale === 'en' ? 'Keyboard shortcuts, standard 4–8P role table, and range rules' : 'Phím tắt Windows, bảng chia Thân Phận chuẩn và quy tắc tầm đánh'}
       maxWidthClass="max-w-3xl"
       footer={
         <button
@@ -112,27 +124,27 @@ export function RulesHotkeysDialog({ open, onClose }: RulesHotkeysDialogProps) {
           onClick={onClose}
           className="lkdf-bronze-pill inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-4 py-2 text-xs font-semibold focus-visible:outline-2 focus-visible:outline-[#E6BE6C]"
         >
-          Đã hiểu · Quay lại bàn
+          {locale === 'en' ? 'Got It · Return' : 'Đã hiểu · Quay lại bàn'}
         </button>
       }
     >
       <div className="space-y-5 text-sm text-[#EFE6D5]">
         <section>
           <h3 className="text-xs font-bold tracking-wider text-[#E6BE6C] uppercase">
-            Phím tắt bàn đấu Windows
+            {locale === 'en' ? 'Table Keyboard Shortcuts' : 'Phím tắt bàn đấu Windows'}
           </h3>
           <div className="mt-2 overflow-hidden rounded-lg border border-[#806345]/55">
             <table className="w-full border-collapse text-left text-xs">
               <thead className="bg-[#1B1410] text-[#D5C3A5]">
                 <tr>
-                  <th className="px-3 py-2 font-semibold">Phím</th>
-                  <th className="px-3 py-2 font-semibold">Hành động</th>
-                  <th className="px-3 py-2 font-semibold">Mô tả</th>
+                  <th className="px-3 py-2 font-semibold">{locale === 'en' ? 'Key' : 'Phím'}</th>
+                  <th className="px-3 py-2 font-semibold">{locale === 'en' ? 'Action' : 'Hành động'}</th>
+                  <th className="px-3 py-2 font-semibold">{locale === 'en' ? 'Description' : 'Mô tả'}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#806345]/35 bg-[#140F0C]">
                 {HOTKEY_ROWS.map((row) => (
-                  <tr key={row.action}>
+                  <tr key={row.actionVi}>
                     <td className="px-3 py-2 whitespace-nowrap">
                       <div className="flex flex-wrap items-center gap-1">
                         {row.keycaps.map((cap, idx) => (
@@ -145,8 +157,8 @@ export function RulesHotkeysDialog({ open, onClose }: RulesHotkeysDialogProps) {
                         ))}
                       </div>
                     </td>
-                    <td className="px-3 py-2 font-semibold text-[#F5EBD6]">{row.action}</td>
-                    <td className="px-3 py-2 text-[#E8DCC8]">{row.detail}</td>
+                    <td className="px-3 py-2 font-semibold text-[#F5EBD6]">{locale === 'en' ? row.actionEn : row.actionVi}</td>
+                    <td className="px-3 py-2 text-[#E8DCC8]">{locale === 'en' ? row.detailEn : row.detailVi}</td>
                   </tr>
                 ))}
               </tbody>
@@ -157,36 +169,55 @@ export function RulesHotkeysDialog({ open, onClose }: RulesHotkeysDialogProps) {
         <section className="lkdf-bronze-bevel rounded-lg p-3.5">
           <h3 className="flex items-center gap-1.5 text-xs font-bold tracking-wider text-[#E6BE6C] uppercase">
             <GameIcon name="archery-target" size={14} className="text-[#E6BE6C]" />
-            Quy tắc Khoảng cách, Tầm đánh &amp; Vòng 1 Hòa Bình
+            {locale === 'en' ? 'Distance, Attack Range & Round 1 Truce' : 'Quy tắc Khoảng cách, Tầm đánh & Vòng 1 Hòa Bình'}
           </h3>
-          <ul className="mt-2 space-y-1.5 text-xs leading-relaxed text-[#E8DCC8]">
-            <li>
-              <strong className="text-[#FDE68A]">Khoảng cách cơ bản:</strong> Đếm theo đường vòng
-              ngắn nhất giữa hai người chơi còn sống (bên cạnh là Cách 1).
-            </li>
-            <li>
-              <strong className="text-[#FDE68A]">Thân pháp −1 &amp; Khinh công +1:</strong> Khinh công{' '}
-              <span className="font-mono-num font-bold text-[#FCA5A5]">−1</span> giúp bạn nhìn mọi
-              người gần hơn 1; Khinh công{' '}
-              <span className="font-mono-num font-bold text-[#93C5FD]">+1</span> khiến đối thủ nhìn
-              bạn xa hơn 1.
-            </li>
-            <li>
-              <strong className="text-[#FDE68A]">Tầm đánh Binh khí:</strong> Binh khí mở rộng tầm đánh{' '}
-              <em>Kiếm Trảm</em> từ 1 lên 2–5 ô, nhưng không thay đổi tầm{' '}
-              <em>Thám Nang Thủ</em> (luôn cần khoảng cách ≤ 1).
-            </li>
-            <li>
-              <strong className="text-[#86EFAC]">Vòng 1 Hòa Bình:</strong> Ở vòng đầu tiên, các ghế
-              tạm thời chưa xuất <em>Kiếm Trảm</em> và chưa rút thêm bài mở màn nhằm giữ nhịp công bằng
-              cho cả bàn.
-            </li>
-          </ul>
+          {locale === 'en' ? (
+            <ul className="mt-2 space-y-1.5 text-xs leading-relaxed text-[#E8DCC8]">
+              <li>
+                <strong className="text-[#FDE68A]">Seat Distance:</strong> Counted along the shortest ring path between living fighters (adjacent seats start at Dist 1).
+              </li>
+              <li>
+                <strong className="text-[#FDE68A]">Steed −1 &amp; Footwork +1:</strong> Offensive{' '}
+                <span className="font-mono-num font-bold text-[#FCA5A5]">−1</span> decreases your distance to everyone by 1; Defensive{' '}
+                <span className="font-mono-num font-bold text-[#93C5FD]">+1</span> increases opponents’ distance to you by 1.
+              </li>
+              <li>
+                <strong className="text-[#FDE68A]">Weapon Range:</strong> Weapons extend <em>Blade Strike</em> range from 1 up to 2–5, without changing <em>Sleight of Hand</em> (always Dist ≤ 1).
+              </li>
+              <li>
+                <strong className="text-[#86EFAC]">Round 1 Truce:</strong> During Round 1, fighters hold Strikes and extra opening draws for fair table pacing.
+              </li>
+            </ul>
+          ) : (
+            <ul className="mt-2 space-y-1.5 text-xs leading-relaxed text-[#E8DCC8]">
+              <li>
+                <strong className="text-[#FDE68A]">Khoảng cách cơ bản:</strong> Đếm theo đường vòng
+                ngắn nhất giữa hai người chơi còn sống (bên cạnh là Cách 1).
+              </li>
+              <li>
+                <strong className="text-[#FDE68A]">Thân pháp −1 &amp; Khinh công +1:</strong> Thân pháp{' '}
+                <span className="font-mono-num font-bold text-[#FCA5A5]">−1</span> giúp bạn nhìn mọi
+                người gần hơn 1; Khinh công{' '}
+                <span className="font-mono-num font-bold text-[#93C5FD]">+1</span> khiến đối thủ nhìn
+                bạn xa hơn 1.
+              </li>
+              <li>
+                <strong className="text-[#FDE68A]">Tầm đánh Binh khí:</strong> Binh khí mở rộng tầm đánh{' '}
+                <em>Kiếm Trảm</em> từ 1 lên 2–5 ô, nhưng không thay đổi tầm{' '}
+                <em>Thám Nang Thủ</em> (luôn cần khoảng cách ≤ 1).
+              </li>
+              <li>
+                <strong className="text-[#86EFAC]">Vòng 1 Hòa Bình:</strong> Ở vòng đầu tiên, các ghế
+                tạm thời chưa xuất <em>Kiếm Trảm</em> và chưa rút thêm bài mở màn nhằm giữ nhịp công bằng
+                cho cả bàn.
+              </li>
+            </ul>
+          )}
         </section>
 
         <section>
           <h3 className="text-xs font-bold tracking-wider text-[#E6BE6C] uppercase">
-            Bảng phân bổ Thân Phận chuẩn (4–8 người)
+            {locale === 'en' ? 'Standard Role Distribution (4–8 Players)' : 'Bảng phân bổ Thân Phận chuẩn (4–8 người)'}
           </h3>
           <div className="mt-2 overflow-hidden rounded-lg border border-[#806345]/55">
             <table className="w-full border-collapse text-center text-xs">
@@ -226,7 +257,7 @@ export function RulesHotkeysDialog({ open, onClose }: RulesHotkeysDialogProps) {
 
         <section>
           <h3 className="text-xs font-bold tracking-wider text-[#E6BE6C] uppercase">
-            Trình tự các pha trong 1 lượt
+            {locale === 'en' ? 'Turn Phase Order' : 'Trình tự các pha trong 1 lượt'}
           </h3>
           <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
             {TURN_PHASES.map((phase) => (
@@ -246,8 +277,9 @@ export function RulesHotkeysDialog({ open, onClose }: RulesHotkeysDialogProps) {
         </section>
 
         <section className="border-t border-[#806345]/40 pt-3 text-[11px] text-[#B5A792]">
-          Nguồn biểu tượng: Lucide Icons (MIT) &amp; Lorc, Delapouite cùng cộng tác viên từ
-          Game-icons.net (CC BY 3.0).
+          {locale === 'en'
+            ? 'Icon attribution: Lucide Icons (MIT) & Lorc, Delapouite and contributors from Game-icons.net (CC BY 3.0).'
+            : 'Nguồn biểu tượng: Lucide Icons (MIT) & Lorc, Delapouite cùng cộng tác viên từ Game-icons.net (CC BY 3.0).'}
         </section>
       </div>
     </GuofengModalShell>

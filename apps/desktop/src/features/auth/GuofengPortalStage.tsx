@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import { GAME_BRAND } from '@lkdf/shared';
 import { GameIcon } from '../../components/icons/index.js';
 import { getHeroPortraitUrl, getUiAssetUrl } from '../../lib/assetCatalog.js';
@@ -51,7 +52,7 @@ function createEmbers(): EmberParticle[] {
  * Xích Bích và thanh trạng thái đáy 44px.
  */
 export function GuofengPortalStage({
-  deckTotal = 108,
+  deckTotal = 112,
   heroCount = 25,
   serverConnected,
   appVersion,
@@ -64,6 +65,8 @@ export function GuofengPortalStage({
   onOpenDevPreview,
   children,
 }: GuofengPortalStageProps) {
+  const { i18n } = useTranslation();
+  const isEn = i18n.language === 'en';
   const stageRef = useRef<HTMLElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
@@ -282,7 +285,7 @@ export function GuofengPortalStage({
               {GAME_BRAND.emblem}
             </span>
             <h1 className="font-serif-title text-[28px] font-bold tracking-[0.16em] text-[#FAF2E3] drop-shadow-[0_4px_24px_rgba(0,0,0,0.95)] sm:text-[38px] sm:tracking-[0.18em]">
-              {GAME_BRAND.title.vi}
+              {isEn ? GAME_BRAND.title.en : GAME_BRAND.title.vi}
             </h1>
           </div>
 
@@ -292,7 +295,9 @@ export function GuofengPortalStage({
               className="h-px w-8 bg-gradient-to-r from-transparent to-[#D4A451]/75"
             />
             <span>
-              {GAME_BRAND.title.en} · {deckTotal} Lá · {heroCount} Nhân vật
+              {isEn
+                ? `${GAME_BRAND.subtitle.en} · ${deckTotal} Cards · ${heroCount} Generals`
+                : `${GAME_BRAND.title.en} · ${deckTotal} Lá · ${heroCount} Nhân vật`}
             </span>
             <span
               aria-hidden="true"
@@ -330,7 +335,7 @@ export function GuofengPortalStage({
                   : 'bg-[#D97706]'
               }`}
             />
-            {serverConnected ? 'Máy chủ sẵn sàng' : 'Đang kết nối'}
+            {serverConnected ? (isEn ? 'Server Ready' : 'Máy chủ sẵn sàng') : (isEn ? 'Connecting' : 'Đang kết nối')}
           </span>
 
           {updateState.phase === 'AVAILABLE' && updateState.latestVersion ? (
@@ -340,7 +345,7 @@ export function GuofengPortalStage({
               className="inline-flex cursor-pointer items-center gap-1.5 rounded-[4px] border border-[#E6BE6C] bg-[#B8332C] px-2.5 py-0.5 font-mono-num text-[11px] font-semibold tabular-nums text-[#F4EFE6] shadow transition-colors hover:bg-[#C83E37] focus-visible:outline-2 focus-visible:outline-[#E6BE6C]"
             >
               <GameIcon name="ui:download" size={11} />
-              Có bản v{updateState.latestVersion}
+              {isEn ? `Update v${updateState.latestVersion}` : `Có bản v${updateState.latestVersion}`}
             </button>
           ) : (
             <button
@@ -348,8 +353,12 @@ export function GuofengPortalStage({
               disabled={!serverConnected}
               title={
                 serverConnected
-                  ? 'Kiểm tra phiên bản cập nhật mới'
-                  : 'Chờ kết nối máy chủ để kiểm tra cập nhật'
+                  ? isEn
+                    ? 'Check for new updates'
+                    : 'Kiểm tra phiên bản cập nhật mới'
+                  : isEn
+                    ? 'Wait for server connection to check updates'
+                    : 'Chờ kết nối máy chủ để kiểm tra cập nhật'
               }
               onClick={onCheckUpdate}
               className="inline-flex cursor-pointer items-center gap-1 rounded px-1.5 py-0.5 font-mono-num text-[11.5px] tabular-nums text-[#D5C3A5] transition-colors hover:text-[#FFF5DF] focus-visible:outline-2 focus-visible:outline-[#E6BE6C] disabled:cursor-not-allowed disabled:opacity-60"
@@ -368,7 +377,7 @@ export function GuofengPortalStage({
               className="inline-flex cursor-pointer items-center gap-1.5 rounded-[4px] border border-[#C89B4B]/65 bg-[#241813]/92 px-2.5 py-1 text-xs font-semibold text-[#F5EBD6] transition-colors hover:border-[#F2CF84] hover:bg-[#6C2521] focus-visible:outline-2 focus-visible:outline-[#E6BE6C]"
             >
               <GameIcon name="ui:bot" size={12} />
-              Chơi với Máy
+              {isEn ? 'Play vs Bots' : 'Chơi với Máy'}
             </button>
           ) : null}
 
@@ -378,7 +387,7 @@ export function GuofengPortalStage({
               onClick={onOpenStats}
               className="cursor-pointer rounded px-1.5 py-0.5 text-xs font-medium text-[#E6D4B8] transition-colors hover:text-[#FFF8ED] focus-visible:outline-2 focus-visible:outline-[#E6BE6C]"
             >
-              Bảng Thống Kê
+              {isEn ? 'Match Stats' : 'Bảng Thống Kê'}
             </button>
           ) : null}
 
@@ -388,7 +397,7 @@ export function GuofengPortalStage({
               onClick={onRecheckServer}
               className="cursor-pointer rounded px-1.5 py-0.5 text-xs font-medium text-[#E6D4B8] transition-colors hover:text-[#FFF8ED] focus-visible:outline-2 focus-visible:outline-[#E6BE6C]"
             >
-              Kiểm tra máy chủ
+              {isEn ? 'Check Server' : 'Kiểm tra máy chủ'}
             </button>
           ) : null}
 
@@ -398,7 +407,7 @@ export function GuofengPortalStage({
               onClick={onOpenDevPreview}
               className="cursor-pointer rounded px-1.5 py-0.5 text-xs font-semibold text-[#F2CF84] transition-colors hover:text-[#FFF5DF] focus-visible:outline-2 focus-visible:outline-[#E6BE6C]"
             >
-              Xem thử Bàn 8 người →
+              {isEn ? 'Preview 8P Arena →' : 'Xem thử Bàn 8 người →'}
             </button>
           ) : null}
         </div>

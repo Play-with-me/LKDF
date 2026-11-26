@@ -19,14 +19,19 @@ export const BOT_MODULE_READY = true;
 const CARD_KEEP_PRIORITY: Readonly<Record<string, number>> = {
   dao: 100,
   vo_giai_kha_kich: 90,
+  chan_khi_ho_the: 86,
   vo_trung_sinh_huu: 85,
+  pha_giap_tram: 82,
   sat: 75,
   thiem: 70,
+  kinh_loi_chan: 66,
   thuan_thu_khien_duong: 65,
+  hoan_anh_giap: 64,
   qua_ha_sai_cau: 62,
   quyet_dau: 60,
   nam_man_nhap_xam: 58,
   van_tien_te_phat: 58,
+  tu_khi_hoan: 56,
   lac_bat_tu_thuc: 55,
   ngu_coc_phong_dang: 52,
   ta_dao_sat_nhan: 45,
@@ -153,7 +158,9 @@ function findSingleCardForSat(
   allowEquipSacrifice = false,
 ): CardInstance | null {
   const hand = player.handCards ?? [];
-  const exact = hand.find((c) => c.cardKey === 'sat');
+  const exact =
+    hand.find((c) => c.cardKey === 'pha_giap_tram') ??
+    hand.find((c) => c.cardKey === 'sat');
   if (exact) return exact;
   if (player.heroId === 'zhao_yun') {
     const thiem = hand.find((c) => c.cardKey === 'thiem');
@@ -478,9 +485,29 @@ function decidePlayPhaseAction(view: PlayerViewState): GameAction {
   }
 
   // 4. Đánh Cẩm nang có lợi
+  const chanKhi = hand.find((c) => c.cardKey === 'chan_khi_ho_the');
+  if (chanKhi) {
+    return { type: 'PLAY_CARD', seatIndex, cardIds: [chanKhi.id] };
+  }
+
   const voTrung = hand.find((c) => c.cardKey === 'vo_trung_sinh_huu');
   if (voTrung) {
     return { type: 'PLAY_CARD', seatIndex, cardIds: [voTrung.id] };
+  }
+
+  const kinhLoi = hand.find((c) => c.cardKey === 'kinh_loi_chan');
+  if (kinhLoi) {
+    const lowHandTarget = rankedEnemies.find((p) => p.handCount <= 1);
+    const dismantleTarget = rankedEnemies.find((p) => p.handCount >= 2);
+    const target = lowHandTarget ?? dismantleTarget;
+    if (target) {
+      return {
+        type: 'PLAY_CARD',
+        seatIndex,
+        cardIds: [kinhLoi.id],
+        targetSeats: [target.seatIndex],
+      };
+    }
   }
 
   const nguCoc = hand.find((c) => c.cardKey === 'ngu_coc_phong_dang');
@@ -655,7 +682,9 @@ function decidePlayPhaseAction(view: PlayerViewState): GameAction {
           seatIndex,
           cardIds: [singleSat.id],
           targetSeats: chosenTargets,
-          ...(singleSat.cardKey !== 'sat' ? { asCardKey: 'sat' as const } : {}),
+          ...(singleSat.cardKey !== 'sat' && singleSat.cardKey !== 'pha_giap_tram'
+            ? { asCardKey: 'sat' as const }
+            : {}),
         };
       }
 
@@ -712,7 +741,8 @@ export function decideBotAction(
           isAllySeat(view, active.targetSeat) &&
           active.scrollNameVi !== 'Đào Viên Kết Nghĩa' &&
           active.scrollNameVi !== 'Ngũ Cốc Phong Đăng' &&
-          active.scrollNameVi !== 'Vô Trung Sinh Hữu';
+          active.scrollNameVi !== 'Vô Trung Sinh Hữu' &&
+          active.scrollNameVi !== 'Chân Khí Hộ Thể';
         if (vg && hostileToAlly) {
           return { type: 'RESPOND_NULLIFICATION', seatIndex, cardId: vg.id };
         }
@@ -973,6 +1003,7 @@ export function decideBotAction(
 
       case 'ASK_LIU_LI': {
         const discardables = collectAnyOwnedCards(self);
+        const excluded = new Set(active.excludedSeats ?? []);
         const candidates = rankEnemyTargets(
           view,
           view.players.filter(
@@ -980,6 +1011,7 @@ export function decideBotAction(
               p.alive &&
               p.seatIndex !== seatIndex &&
               p.seatIndex !== active.sourceSeat &&
+              !excluded.has(p.seatIndex) &&
               canTargetWithBasicCard(p, 'sat') &&
               isInAttackRange(view, seatIndex, p.seatIndex),
           ),

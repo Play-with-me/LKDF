@@ -17,7 +17,9 @@ export function writeAppLocale(locale: AppLocale): boolean {
   } catch {
     return false;
   }
-  document.documentElement.lang = locale;
+  if (typeof document !== 'undefined') {
+    document.documentElement.lang = locale;
+  }
   return true;
 }
 

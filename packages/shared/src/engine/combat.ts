@@ -1,4 +1,5 @@
 import { isBlackSuit, isRedSuit } from '../cards/catalog.js';
+import { isCuuChauRuleset } from '../content/cuuChauPack.js';
 import { DEFAULT_CONTENT_REGISTRY } from '../content/registry.js';
 import { appendGameEvent } from '../types/events.js';
 import {
@@ -151,7 +152,7 @@ function getStrikeConversionSkill(
   player: PlayerCombatState,
   card: CardInstance,
 ): 'Võ Thánh' | 'Long Đảm' | null {
-  if (card.cardKey === 'sat') return null;
+  if (card.cardKey === 'sat' || card.cardKey === 'pha_giap_tram') return null;
   if (player.heroId === 'guan_yu' && isRedSuit(card.suit)) return 'Võ Thánh';
   if (player.heroId === 'zhao_yun' && card.cardKey === 'thiem') return 'Long Đảm';
   return null;
@@ -224,7 +225,7 @@ function handlePlayCard(
     throw new Error('DEAD_PLAYER_CANNOT_ACT');
   }
 
-  const actorHandler = getHeroSkillHandler(actor.heroId);
+  const actorHandler = getHeroSkillHandler(actor.heroId, state);
   const hasUnlimitedSat =
     Boolean(actorHandler?.unlimitedSat) ||
     actor.equipments.weapon?.cardKey === 'gia_cat_lien_no';
@@ -376,8 +377,8 @@ function handlePlayCard(
     };
   }
 
-  // 3. SÁT
-  if (effectiveKey === 'sat') {
+  // 3. SÁT / PHÁ GIÁP TRẢM
+  if (effectiveKey === 'sat' || effectiveKey === 'pha_giap_tram') {
     if (state.peacefulFirstRound && state.roundNumber === 1) {
       throw new Error('FIRST_ROUND_SAT_FORBIDDEN');
     }
@@ -434,7 +435,7 @@ function handlePlayCard(
     }
 
     const res = SKILL_RUNTIME.discardAnyCard(state, action.seatIndex, cardId, rng);
-    let next = showDiscardAs(res.state, res.removed, 'sat');
+    let next = showDiscardAs(res.state, res.removed, effectiveKey);
     const targetNames = targets.map((s) => getPlayerBySeat(next, s).displayName).join(', ');
     const strikeSkill = getStrikeConversionSkill(actor, res.removed);
     const paoXiaoLogs =
@@ -473,7 +474,7 @@ function handlePlayCard(
 
   const triggerScrollHook = (s: MasterGameState): MasterGameState => {
     const p = getPlayerBySeat(s, action.seatIndex);
-    return getHeroSkillHandler(p.heroId)?.onNormalScrollPlayed?.(s, action.seatIndex, rng, SKILL_RUNTIME) ?? s;
+    return getHeroSkillHandler(p.heroId, s)?.onNormalScrollPlayed?.(s, action.seatIndex, rng, SKILL_RUNTIME) ?? s;
   };
 
   // 4. CẨM NANG THỜI GIAN
@@ -598,7 +599,8 @@ function handlePlayCard(
   const usedCard = res.removed[0]!;
 
   switch (usedCard.cardKey) {
-    case 'vo_trung_sinh_huu': {
+    case 'vo_trung_sinh_huu':
+    case 'chan_khi_ho_the': {
       next = pushPendingEffect(next, {
         kind: 'RESOLVE_SCROLL',
         cancelled: false,
@@ -610,6 +612,35 @@ function handlePlayCard(
       next = openNullificationWindow(
         next,
         action.seatIndex,
+        action.seatIndex,
+        usedCard.nameVi,
+      );
+      return stepEngine(next, rng);
+    }
+
+    case 'kinh_loi_chan': {
+      const targetSeat = action.targetSeats?.[0];
+      if (targetSeat === undefined || targetSeat === action.seatIndex) {
+        throw new Error('INVALID_KINH_LOI_CHAN_TARGET');
+      }
+      const target = getPlayerBySeat(next, targetSeat);
+      if (!target.alive) {
+        throw new Error('TARGET_NOT_ALIVE');
+      }
+      if (!canTargetPlayerWithCard(next, target, 'kinh_loi_chan')) {
+        throw new Error('TARGET_IMMUNE_TO_CARD');
+      }
+      next = pushPendingEffect(next, {
+        kind: 'RESOLVE_SCROLL',
+        cancelled: false,
+        casterSeat: action.seatIndex,
+        targetSeat,
+        scrollKey: usedCard.cardKey,
+        scrollCard: usedCard,
+      });
+      next = openNullificationWindow(
+        next,
+        targetSeat,
         action.seatIndex,
         usedCard.nameVi,
       );
@@ -882,7 +913,7 @@ export function applyGameAction(
           rng,
         ).state;
         const actorAfterDiscard = getPlayerBySeat(next, action.seatIndex);
-        const actorHandler = getHeroSkillHandler(actorAfterDiscard.heroId);
+        const actorHandler = getHeroSkillHandler(actorAfterDiscard.heroId, next);
         if (actorHandler?.onNormalScrollPlayed) {
           next = actorHandler.onNormalScrollPlayed(
             next,
@@ -1072,7 +1103,7 @@ export function applyGameAction(
         });
       }
 
-      // Đã né đủ -> hoàn tất né Sát và kiểm tra Quán Thạch Phủ / Thanh Long Đao
+      // Đã né đủ -> hoàn tất né Sát và kiểm tra Quán Thạch Phủ / Thanh Long Đao / Tụ Khí Hoàn
       next = popInterrupt(next).state;
       return stepEngine(
         completeStrikeDodged(
@@ -1081,6 +1112,7 @@ export function applyGameAction(
           top.targetSeat,
           top.isCollateralStrike,
           top.isFangTianMultiTarget,
+          rng,
         ),
         rng,
       );
@@ -1130,7 +1162,7 @@ export function applyGameAction(
           `${source.displayName} bỏ 2 lá kích hoạt Quán Thạch Phủ ép Sát trúng đích!`,
         ],
       };
-      next = resolveStrikeHit(next, top.sourceSeat, top.targetSeat, top.strikeCards);
+      next = resolveStrikeHit(next, top.sourceSeat, top.targetSeat, top.strikeCards, rng);
       return stepEngine(next, rng);
     }
 
@@ -1359,7 +1391,7 @@ export function applyGameAction(
         });
       }
       const actor = getPlayerBySeat(next, action.seatIndex);
-      const actorHandler = getHeroSkillHandler(actor.heroId);
+      const actorHandler = getHeroSkillHandler(actor.heroId, state);
       const nextRequired =
         actorHandler?.duelSatRequiredCount?.(next, actor) ?? 1;
       if (nextRequired >= 2) {
@@ -1769,7 +1801,7 @@ export function applyGameAction(
 
         next = showDiscardAs(next, found.card, 'dao');
 
-        const targetHandler = getHeroSkillHandler(target.heroId);
+        const targetHandler = getHeroSkillHandler(target.heroId, next);
         const rescueBonus =
           targetHandler?.onPeachRescueBonus?.(
             next,
@@ -1842,7 +1874,7 @@ export function applyGameAction(
       if (!actor.alive) {
         throw new Error('DEAD_PLAYER_CANNOT_ACT');
       }
-      const handler = getHeroSkillHandler(actor.heroId);
+      const handler = getHeroSkillHandler(actor.heroId, state);
       if (!handler?.executePlaySkill) {
         throw new Error(`HERO_HAS_NO_PLAY_SKILL:${actor.heroId ?? 'NONE'}`);
       }
@@ -2186,6 +2218,9 @@ export function applyGameAction(
             handCards: [...p.handCards, ...taken],
           }));
         }
+        if (isCuuChauRuleset(next)) {
+          next = dealCardsToSeat(next, top.targetSeat, 1, rng).state;
+        }
       }
       return stepEngine(next, rng);
     }
@@ -2443,7 +2478,7 @@ export function applyGameAction(
                 jiJiangTriedThisFrame: false,
               });
             } else {
-              const lordHandler = getHeroSkillHandler(lord.heroId);
+              const lordHandler = getHeroSkillHandler(lord.heroId, next);
               const nextRequired = lordHandler?.duelSatRequiredCount?.(next, lord) ?? 1;
               next = replaceTopInterrupt(next, {
                 ...duelTop,
@@ -2590,6 +2625,7 @@ export function applyGameAction(
               dodgeTop.targetSeat,
               dodgeTop.isCollateralStrike,
               dodgeTop.isFangTianMultiTarget,
+              rng,
             );
           }
         }

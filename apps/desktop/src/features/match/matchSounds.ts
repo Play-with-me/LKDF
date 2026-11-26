@@ -38,6 +38,7 @@ const EQUIPMENT_CUES = {
 
 const CARD_CUES: Partial<Record<CardInstance['cardKey'], ActionCue>> = {
   sat: 'SAT',
+  pha_giap_tram: 'SAT',
   dao: 'DAO',
   thiem: 'THIEM',
   nam_man_nhap_xam: 'TABLE_SKILL',
@@ -48,6 +49,9 @@ const CARD_CUES: Partial<Record<CardInstance['cardKey'], ActionCue>> = {
   quyet_dau: 'DUEL',
   thuan_thu_khien_duong: 'STEAL_DISMANTLE',
   qua_ha_sach_kieu: 'STEAL_DISMANTLE',
+  qua_ha_sai_cau: 'STEAL_DISMANTLE',
+  kinh_loi_chan: 'LIGHTNING',
+  chan_khi_ho_the: 'HEAL',
   thiem_dien: 'LIGHTNING',
   lac_bat_tu_thuc: 'CONTROL_SCROLL',
 };

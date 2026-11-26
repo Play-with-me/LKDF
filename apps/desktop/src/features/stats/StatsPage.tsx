@@ -89,14 +89,16 @@ function getInitials(name: string): string {
   return `${first[0] ?? ''}${last[0] ?? ''}`.toUpperCase();
 }
 
-function formatErrorMessageVi(err: unknown): string {
+function formatErrorMessageVi(err: unknown, isEn = false): string {
   if (err instanceof ApiError) {
     return err.message;
   }
   if (err instanceof Error && err.message.trim().length > 0) {
     return err.message;
   }
-  return 'Không thể tải dữ liệu thống kê từ máy chủ. Vui lòng thử lại.';
+  return isEn
+    ? 'Unable to load stats from the server. Please try again.'
+    : 'Không thể tải dữ liệu thống kê từ máy chủ. Vui lòng thử lại.';
 }
 
 export function StatsPage({
@@ -106,6 +108,8 @@ export function StatsPage({
   onBack,
 }: StatsPageProps): ReactElement {
   const { i18n } = useTranslation();
+  const locale = i18n.language === 'en' ? 'en' : 'vi';
+  const isEn = locale === 'en';
   const [meta, setMeta] = useState<StatsMetaResponse | null>(null);
   const [stats, setStats] = useState<FilteredStatsResponse | null>(null);
   const [filter, setFilter] = useState<StatsFilterState>(() => ({
@@ -177,14 +181,14 @@ export function StatsPage({
           }
           return;
         }
-        setErrorMessage(formatErrorMessageVi(err));
+        setErrorMessage(formatErrorMessageVi(err, isEn));
         setIsLoading(false);
       });
 
     return () => {
       controller.abort();
     };
-  }, [api, filter, reloadNonce]);
+  }, [api, filter, isEn, reloadNonce]);
 
   const handleCancelLoading = useCallback((): void => {
     userCancelledRef.current = true;
@@ -241,7 +245,7 @@ export function StatsPage({
 
   return (
     <section
-      aria-label="Trang thống kê và lịch sử ván đấu"
+      aria-label={isEn ? 'Match Statistics and History' : 'Trang thống kê và lịch sử ván đấu'}
       className="flex h-full w-full min-h-0 min-w-0 flex-col bg-transparent text-[#F5EBD6]"
     >
       <StatsMetaFilters
@@ -271,7 +275,7 @@ export function StatsPage({
                     className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-[#E6BE6C] border-t-transparent"
                   />
                   <span className="text-sm font-medium text-[#F5EBD6]">
-                    Đang tải dữ liệu thống kê từ máy chủ...
+                    {isEn ? 'Loading stats from server...' : 'Đang tải dữ liệu thống kê từ máy chủ...'}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -281,14 +285,14 @@ export function StatsPage({
                     className="lkdf-bronze-pill inline-flex cursor-pointer items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium text-[#F5EBD6] hover:border-[#C83E37] focus-visible:outline-2 focus-visible:outline-[#E6BE6C]"
                   >
                     <GameIcon name="ui:x" size={13} />
-                    <span>Hủy tải</span>
+                    <span>{isEn ? 'Cancel Loading' : 'Hủy tải'}</span>
                   </button>
                   <button
                     type="button"
                     onClick={onBack}
                     className="lkdf-bronze-pill cursor-pointer rounded-md px-3 py-1.5 text-xs font-medium text-[#F5EBD6] focus-visible:outline-2 focus-visible:outline-[#E6BE6C]"
                   >
-                    ← Quay lại
+                    {isEn ? '← Back' : '← Quay lại'}
                   </button>
                 </div>
               </div>
@@ -305,7 +309,7 @@ export function StatsPage({
           ) : isCancelled && !stats ? (
             <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-[#C89B4B]/60 bg-[#16110E]/94 p-8 text-center backdrop-blur-md">
               <p className="text-sm font-medium text-[#F5EBD6]">
-                Đã hủy tải dữ liệu thống kê.
+                {isEn ? 'Stats loading cancelled.' : 'Đã hủy tải dữ liệu thống kê.'}
               </p>
               <div className="flex items-center gap-2">
                 <button
@@ -314,14 +318,14 @@ export function StatsPage({
                   className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-[#F2CF84]/70 bg-[#9E2B25] px-4 py-2 text-sm font-semibold text-[#FFF8ED] hover:bg-[#B7372E] focus-visible:outline-2 focus-visible:outline-[#E6BE6C]"
                 >
                   <GameIcon name="ui:refresh" size={14} />
-                  <span>Tải lại thống kê</span>
+                  <span>{isEn ? 'Reload Stats' : 'Tải lại thống kê'}</span>
                 </button>
                 <button
                   type="button"
                   onClick={onBack}
                   className="lkdf-bronze-pill cursor-pointer rounded-md px-4 py-2 text-sm font-medium text-[#F5EBD6] focus-visible:outline-2 focus-visible:outline-[#E6BE6C]"
                 >
-                  ← Quay lại
+                  {isEn ? '← Back' : '← Quay lại'}
                 </button>
               </div>
             </div>
@@ -333,7 +337,7 @@ export function StatsPage({
             >
               <div className="min-w-0">
                 <h2 className="font-serif-title text-sm font-bold text-[#FCA5A5]">
-                  Không tải được thống kê từ máy chủ
+                  {isEn ? 'Failed to load stats from server' : 'Không tải được thống kê từ máy chủ'}
                 </h2>
                 <p className="mt-1 text-sm text-[#F5EBD6]">{errorMessage}</p>
               </div>
@@ -343,7 +347,7 @@ export function StatsPage({
                 className="inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-md border border-[#F2CF84]/70 bg-[#9E2B25] px-4 py-2 text-sm font-semibold text-[#FFF8ED] transition-colors duration-150 hover:bg-[#B7372E] focus-visible:outline-2 focus-visible:outline-[#E6BE6C]"
               >
                 <GameIcon name="ui:refresh" size={14} />
-                <span>Tải lại thống kê</span>
+                <span>{isEn ? 'Reload Stats' : 'Tải lại thống kê'}</span>
               </button>
             </div>
           ) : stats && stats.summary.totalDistinctMatches === 0 ? (
@@ -357,8 +361,12 @@ export function StatsPage({
               </div>
               <p className="max-w-lg text-sm leading-relaxed text-[#F5EBD6]">
                 {hasActiveFilter
-                  ? 'Không có ván đấu nào khớp bộ lọc đang chọn.'
-                  : 'Chưa có ván đấu nào được ghi nhận. Hãy hoàn thành ván đầu tiên để xem thống kê theo Thân Phận và Tướng!'}
+                  ? isEn
+                    ? 'No matches fit the selected filters.'
+                    : 'Không có ván đấu nào khớp bộ lọc đang chọn.'
+                  : isEn
+                    ? 'No matches recorded yet. Finish your first match to inspect Role & General stats!'
+                    : 'Chưa có ván đấu nào được ghi nhận. Hãy hoàn thành ván đầu tiên để xem thống kê theo Thân Phận và Tướng!'}
               </p>
               {hasActiveFilter ? (
                 <button
@@ -367,7 +375,7 @@ export function StatsPage({
                   className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-[#F2CF84]/70 bg-[#9E2B25] px-4 py-2 text-sm font-semibold text-[#FFF8ED] transition-colors duration-150 hover:bg-[#B7372E] focus-visible:outline-2 focus-visible:outline-[#E6BE6C]"
                 >
                   <GameIcon name="ui:undo" size={14} />
-                  <span>Xóa bộ lọc</span>
+                  <span>{isEn ? 'Clear Filters' : 'Xóa bộ lọc'}</span>
                 </button>
               ) : (
                 <button
@@ -375,7 +383,7 @@ export function StatsPage({
                   onClick={onBack}
                   className="lkdf-bronze-pill cursor-pointer rounded-md px-4 py-2 text-sm font-medium text-[#F5EBD6] focus-visible:outline-2 focus-visible:outline-[#E6BE6C]"
                 >
-                  ← Quay lại sảnh chờ
+                  {isEn ? '← Back to Lobby' : '← Quay lại sảnh chờ'}
                 </button>
               )}
             </div>
@@ -385,57 +393,57 @@ export function StatsPage({
               {/* 4 Thẻ chỉ số tổng quan (KPI) */}
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 min-w-0">
                 <div className="rounded-lg border border-[#806345]/60 bg-[#16110E]/94 p-4 min-w-0 backdrop-blur-md">
-                  <p className="text-xs font-medium text-[#D5C3A5]">Tổng trận</p>
+                  <p className="text-xs font-medium text-[#D5C3A5]">{isEn ? 'Total Matches' : 'Tổng trận'}</p>
                   <p className="font-mono-num mt-1 text-2xl font-bold tabular-nums text-[#F5EBD6]">
                     {stats.summary.totalDistinctMatches}
                   </p>
                   <p className="font-mono-num mt-0.5 text-[11px] tabular-nums text-[#D5C3A5]">
-                    {stats.summary.totalAppearances} lượt tham gia
+                    {isEn ? `${stats.summary.totalAppearances} appearances` : `${stats.summary.totalAppearances} lượt tham gia`}
                   </p>
                 </div>
 
                 <div className="rounded-lg border border-[#806345]/60 bg-[#16110E]/94 p-4 min-w-0 backdrop-blur-md">
-                  <p className="text-xs font-medium text-[#D5C3A5]">Số thắng</p>
+                  <p className="text-xs font-medium text-[#D5C3A5]">{isEn ? 'Wins' : 'Số thắng'}</p>
                   <p className="font-mono-num mt-1 text-2xl font-bold tabular-nums text-[#86EFAC]">
                     {stats.summary.totalWins}
                   </p>
                   <p className="mt-0.5 text-[11px] text-[#D5C3A5]">
-                    Theo bộ lọc hiện tại
+                    {isEn ? 'By current filter' : 'Theo bộ lọc hiện tại'}
                   </p>
                 </div>
 
                 <div className="rounded-lg border border-[#806345]/60 bg-[#16110E]/94 p-4 min-w-0 backdrop-blur-md">
-                  <p className="text-xs font-medium text-[#D5C3A5]">Số thua</p>
+                  <p className="text-xs font-medium text-[#D5C3A5]">{isEn ? 'Losses' : 'Số thua'}</p>
                   <p className="font-mono-num mt-1 text-2xl font-bold tabular-nums text-[#FCA5A5]">
                     {stats.summary.totalLosses}
                   </p>
                   <p className="mt-0.5 text-[11px] text-[#D5C3A5]">
-                    Theo bộ lọc hiện tại
+                    {isEn ? 'By current filter' : 'Theo bộ lọc hiện tại'}
                   </p>
                 </div>
 
                 <div className="rounded-lg border border-[#806345]/60 bg-[#16110E]/94 p-4 min-w-0 backdrop-blur-md">
-                  <p className="text-xs font-medium text-[#D5C3A5]">Tỷ lệ thắng</p>
+                  <p className="text-xs font-medium text-[#D5C3A5]">{isEn ? 'Win Rate' : 'Tỷ lệ thắng'}</p>
                   <p className="font-mono-num mt-1 text-2xl font-bold tabular-nums text-[#E6BE6C]">
                     {stats.summary.winRatePercent.toFixed(1)}%
                   </p>
                   <p className="mt-0.5 text-[11px] text-[#D5C3A5]">
-                    Trên tổng lượt tham gia
+                    {isEn ? 'Across all appearances' : 'Trên tổng lượt tham gia'}
                   </p>
                 </div>
               </div>
 
               {/* Phân tích theo 4 Thân Phận */}
               <section
-                aria-label="Thống kê theo Thân Phận"
+                aria-label={isEn ? 'Stats by Allegiance Role' : 'Thống kê theo Thân Phận'}
                 className="rounded-lg border border-[#806345]/60 bg-[#16110E]/94 p-4 min-w-0 backdrop-blur-md"
               >
                 <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                   <h2 className="font-serif-title text-sm font-bold text-[#F5EBD6]">
-                    Thống kê theo 4 Thân Phận
+                    {isEn ? 'Breakdown by 4 Allegiances' : 'Thống kê theo 4 Thân Phận'}
                   </h2>
                   <span className="text-xs text-[#D5C3A5]">
-                    Bấm vào thẻ Thân Phận để lọc nhanh
+                    {isEn ? 'Click a card to quick-filter' : 'Bấm vào thẻ Thân Phận để lọc nhanh'}
                   </span>
                 </div>
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 min-w-0">
@@ -463,7 +471,7 @@ export function StatsPage({
                           <span
                             className={`rounded border px-2 py-0.5 text-xs font-semibold ${item.accentClass}`}
                           >
-                            {item.nameVi}
+                            {getCuuChauRoleDisplay(item.id, locale).name}
                           </span>
                           <span className="font-mono-num text-sm font-bold tabular-nums text-[#F5EBD6]">
                             {entry.winRatePercent.toFixed(1)}%
@@ -478,9 +486,11 @@ export function StatsPage({
                           />
                         </div>
                         <div className="font-mono-num flex items-center justify-between text-xs tabular-nums text-[#D5C3A5]">
-                          <span>{entry.played} lượt</span>
+                          <span>{isEn ? `${entry.played} games` : `${entry.played} lượt`}</span>
                           <span>
-                            {entry.wins} thắng · {entry.losses} thua
+                            {isEn
+                              ? `${entry.wins}W · ${entry.losses}L`
+                              : `${entry.wins} thắng · ${entry.losses} thua`}
                           </span>
                         </div>
                       </button>
@@ -502,7 +512,7 @@ export function StatsPage({
                   }`}
                 >
                   <GameIcon name="ui:layers" size={13} />
-                  <span>Xem tất cả</span>
+                  <span>{isEn ? 'View All' : 'Xem tất cả'}</span>
                 </button>
                 <button
                   type="button"
@@ -515,7 +525,11 @@ export function StatsPage({
                   }`}
                 >
                   <GameIcon name="ui:users" size={13} />
-                  <span>Bảng xếp hạng &amp; 25 Tướng ({sortedPlayers.length})</span>
+                  <span>
+                    {isEn
+                      ? `Leaderboard & 25 Generals (${sortedPlayers.length})`
+                      : `Bảng xếp hạng & 25 Tướng (${sortedPlayers.length})`}
+                  </span>
                 </button>
                 <button
                   type="button"
@@ -528,7 +542,11 @@ export function StatsPage({
                   }`}
                 >
                   <GameIcon name="scroll-unfurled" size={13} />
-                  <span>Lịch sử các ván đấu gần đây ({recentMatches.length})</span>
+                  <span>
+                    {isEn
+                      ? `Recent Match History (${recentMatches.length})`
+                      : `Lịch sử các ván đấu gần đây (${recentMatches.length})`}
+                  </span>
                 </button>
               </div>
 
@@ -536,15 +554,15 @@ export function StatsPage({
                 <div className="grid grid-cols-1 gap-4 lg:grid-cols-12 min-w-0">
                   {/* Bảng xếp hạng người chơi */}
                   <section
-                    aria-label="Bảng xếp hạng người chơi"
+                    aria-label={isEn ? 'Player Leaderboard' : 'Bảng xếp hạng người chơi'}
                     className="rounded-lg border border-[#806345]/60 bg-[#16110E]/94 p-4 lg:col-span-6 min-w-0 backdrop-blur-md"
                   >
                     <h2 className="font-serif-title mb-3 text-sm font-bold text-[#F5EBD6]">
-                      Bảng xếp hạng người chơi
+                      {isEn ? 'Player Leaderboard' : 'Bảng xếp hạng người chơi'}
                     </h2>
                     {sortedPlayers.length === 0 ? (
                       <p className="text-sm text-[#D5C3A5]">
-                        Chưa có dữ liệu người chơi cho bộ lọc này.
+                        {isEn ? 'No player data for this filter.' : 'Chưa có dữ liệu người chơi cho bộ lọc này.'}
                       </p>
                     ) : (
                       <div className="lkdf-scroll overflow-x-auto">
@@ -552,11 +570,11 @@ export function StatsPage({
                           <thead>
                             <tr className="border-b border-[#806345]/50 text-xs text-[#D5C3A5]">
                               <th className="py-2 pr-2 font-medium">#</th>
-                              <th className="py-2 pr-2 font-medium">Người chơi</th>
-                              <th className="py-2 px-2 text-right font-medium">Trận</th>
-                              <th className="py-2 px-2 text-right font-medium">Thắng</th>
-                              <th className="py-2 px-2 text-right font-medium">Thua</th>
-                              <th className="py-2 pl-2 text-right font-medium">Tỷ lệ</th>
+                              <th className="py-2 pr-2 font-medium">{isEn ? 'Player' : 'Người chơi'}</th>
+                              <th className="py-2 px-2 text-right font-medium">{isEn ? 'Games' : 'Trận'}</th>
+                              <th className="py-2 px-2 text-right font-medium">{isEn ? 'Wins' : 'Thắng'}</th>
+                              <th className="py-2 px-2 text-right font-medium">{isEn ? 'Losses' : 'Thua'}</th>
+                              <th className="py-2 pl-2 text-right font-medium">{isEn ? 'Win%' : 'Tỷ lệ'}</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -587,7 +605,7 @@ export function StatsPage({
                                         }))
                                       }
                                       className="flex cursor-pointer items-center gap-2 text-left hover:text-[#E6BE6C] focus-visible:outline-2 focus-visible:outline-[#E6BE6C]"
-                                      title={`Lọc theo ${player.displayName}`}
+                                      title={isEn ? `Filter by ${player.displayName}` : `Lọc theo ${player.displayName}`}
                                     >
                                       {player.avatarUrl ? (
                                         <img
@@ -605,7 +623,7 @@ export function StatsPage({
                                       </span>
                                       {isSelf ? (
                                         <span className="shrink-0 rounded border border-[#C89B4B]/70 bg-[#C89B4B]/15 px-1.5 py-0.5 text-[10px] font-semibold text-[#FCD34D]">
-                                          Bạn
+                                          {isEn ? 'You' : 'Bạn'}
                                         </span>
                                       ) : null}
                                     </button>
@@ -633,7 +651,7 @@ export function StatsPage({
 
                   {/* Lưới thống kê 25 Tướng theo Thế lực */}
                   <section
-                    aria-label="Thống kê theo 25 Tướng"
+                    aria-label={isEn ? 'Stats across 25 Generals' : 'Thống kê theo 25 Tướng'}
                     className="rounded-lg border border-[#806345]/60 bg-[#16110E]/94 p-4 lg:col-span-6 min-w-0 backdrop-blur-md"
                   >
                     <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
@@ -702,7 +720,7 @@ export function StatsPage({
                                   : '—'}
                               </p>
                               <p className="text-[11px] text-[#D5C3A5]">
-                                {entry.wins}/{entry.played} thắng
+                                {isEn ? `${entry.wins}/${entry.played} wins` : `${entry.wins}/${entry.played} thắng`}
                               </p>
                             </div>
                           </button>
@@ -714,13 +732,15 @@ export function StatsPage({
               ) : null}
 
               {activeTab === 'ALL' || activeTab === 'HISTORY' ? (
-                <section aria-label="Lịch sử các ván đấu gần đây" className="min-w-0">
+                <section aria-label={isEn ? 'Recent Match History' : 'Lịch sử các ván đấu gần đây'} className="min-w-0">
                   <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                     <h2 className="font-serif-title text-sm font-bold text-[#F5EBD6]">
-                      Lịch sử các ván đấu gần đây ({recentMatches.length})
+                      {isEn
+                        ? `Recent Match History (${recentMatches.length})`
+                        : `Lịch sử các ván đấu gần đây (${recentMatches.length})`}
                     </h2>
                     <span className="text-xs text-[#D5C3A5]">
-                      Bấm vào tên người chơi hoặc tướng để lọc nhanh
+                      {isEn ? 'Click a player or general name to quick-filter' : 'Bấm vào tên người chơi hoặc tướng để lọc nhanh'}
                     </span>
                   </div>
                   <MatchHistoryList

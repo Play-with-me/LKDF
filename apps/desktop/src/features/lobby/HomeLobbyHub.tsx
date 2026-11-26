@@ -78,7 +78,8 @@ export function HomeLobbyHub({
   onLoggedOut,
   onSessionInvalid,
 }: HomeLobbyHubProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isEn = i18n.language === 'en';
   const [selectedPreset, setSelectedPreset] = useState<TimerPreset>('STANDARD');
   const [roomCodeInput, setRoomCodeInput] = useState<string>('');
   const [isCheckingActiveRoom, setIsCheckingActiveRoom] = useState<boolean>(true);
@@ -166,7 +167,11 @@ export function HomeLobbyHub({
     } catch (error) {
       if (signal.aborted) {
         preferencesOutcomeUncertain.current = true;
-        throw new Error('Chưa xác nhận được cài đặt đã lưu. Hãy thử lại để kiểm tra với máy chủ.');
+        throw new Error(
+          isEn
+            ? 'Could not confirm saved preferences. Please retry to verify with the server.'
+            : 'Chưa xác nhận được cài đặt đã lưu. Hãy thử lại để kiểm tra với máy chủ.',
+        );
       }
       if (error instanceof ApiError && error.statusCode === 401) onSessionInvalid(error.message);
       throw error;
@@ -196,7 +201,9 @@ export function HomeLobbyHub({
       await api.logout(sessionToken, AbortSignal.timeout(8000));
     } catch (error) {
       if (!(error instanceof ApiError && error.code === 'INVALID_SESSION')) {
-        notice = 'Đã đăng xuất trên thiết bị này. Máy chủ chưa xác nhận đóng phiên.';
+        notice = isEn
+          ? 'Signed out on this device. The server did not confirm session closure.'
+          : 'Đã đăng xuất trên thiết bị này. Máy chủ chưa xác nhận đóng phiên.';
       }
     } finally {
       onLoggedOut(notice);
@@ -210,7 +217,9 @@ export function HomeLobbyHub({
       setCreateError(
         isSteamBuildTarget()
           ? t('lobby.steamLobbyHint')
-          : 'Hãy đăng nhập để tạo phòng chơi.',
+          : isEn
+            ? 'Please sign in to create a room.'
+            : 'Hãy đăng nhập để tạo phòng chơi.',
       );
       return;
     }
@@ -224,7 +233,11 @@ export function HomeLobbyHub({
         return;
       }
       setCreateError(
-        err instanceof Error ? err.message : 'Không thể tạo phòng mới.',
+        err instanceof Error
+          ? err.message
+          : isEn
+            ? 'Unable to create a new room.'
+            : 'Không thể tạo phòng mới.',
       );
     } finally {
       setIsCreatingRoom(false);
@@ -238,11 +251,15 @@ export function HomeLobbyHub({
     setCreateError(null);
     const normalized = roomCodeInput.trim().toUpperCase();
     if (!/^[A-Z0-9]{6}$/.test(normalized)) {
-      setJoinError('Mã phòng phải gồm đúng 6 ký tự chữ hoặc số (VD: K9M2P4).');
+      setJoinError(
+        isEn
+          ? 'Room code must be exactly 6 letters or digits (e.g., K9M2P4).'
+          : 'Mã phòng phải gồm đúng 6 ký tự chữ hoặc số (VD: K9M2P4).',
+      );
       return;
     }
     if (!sessionToken) {
-      setJoinError('Hãy đăng nhập để vào phòng chơi.');
+      setJoinError(isEn ? 'Please sign in to join a room.' : 'Hãy đăng nhập để vào phòng chơi.');
       return;
     }
 
@@ -256,7 +273,11 @@ export function HomeLobbyHub({
         return;
       }
       setJoinError(
-        err instanceof Error ? err.message : 'Không thể vào phòng chơi này.',
+        err instanceof Error
+          ? err.message
+          : isEn
+            ? 'Unable to join this room.'
+            : 'Không thể vào phòng chơi này.',
       );
     } finally {
       setIsJoiningRoom(false);

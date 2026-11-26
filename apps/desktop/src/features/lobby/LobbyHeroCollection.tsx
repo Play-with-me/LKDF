@@ -236,17 +236,17 @@ export function LobbyHeroCollection({ control }: { readonly control: string }) {
             <button
               type="button"
               className="lkdf-hero-search-clear"
-              aria-label="Xóa từ khóa"
+              aria-label={t('heroCollection.clearSearch', 'Xóa từ khóa')}
               onClick={() => {
                 changeQuery('');
                 searchRef.current?.focus({ preventScroll: true });
               }}
             >
-              Xóa
+              {t('common.clear', 'Xóa')}
             </button>
           ) : null}
           {suggestions.length > 0 ? (
-            <ul id={listId} role="listbox" aria-label="Gợi ý tìm tướng" className="lkdf-hero-suggestions lkdf-scroll">
+            <ul id={listId} role="listbox" aria-label={t('heroCollection.suggestionsAria', 'Gợi ý tìm tướng')} className="lkdf-hero-suggestions lkdf-scroll">
               {suggestions.map(hero => (
                 <li
                   key={hero.id}

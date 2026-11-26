@@ -5,7 +5,9 @@ import en from './locales/en.json' with { type: 'json' };
 import vi from './locales/vi.json' with { type: 'json' };
 
 const initialLocale = readAppLocale();
-document.documentElement.lang = initialLocale;
+if (typeof document !== 'undefined') {
+  document.documentElement.lang = initialLocale;
+}
 
 void i18n.use(initReactI18next).init({
   resources: {

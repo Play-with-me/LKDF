@@ -116,7 +116,7 @@ export function SeatCard({
       : Number.POSITIVE_INFINITY;
   const identityLabel = player.isIdentityRevealed
     ? getIdentityLabelVi(player.identity)
-    : 'Ẩn';
+    : (locale === 'en' ? 'Hidden' : 'Ẩn');
   const identityClass = player.isIdentityRevealed
     ? getIdentityBadgeClass(player.identity)
     : getIdentityBadgeClass('UNKNOWN');
@@ -130,44 +130,46 @@ export function SeatCard({
     readonly card: CardInstance;
     readonly shortLabel: string;
   }> = [];
+  const cardTitle = (card: CardInstance) =>
+    getCuuChauCardDisplay(card.cardKey, locale, card.nameVi).name;
   if (player.equipments.weapon) {
     openCards.push({
       sourceId: `seat:${player.seatIndex}:weapon`,
-      sourceLabel: `Vũ khí · ${player.displayName}`,
+      sourceLabel: `${locale === 'en' ? 'Weapon' : 'Binh khí'} · ${player.displayName}`,
       card: player.equipments.weapon,
-      shortLabel: player.equipments.weapon.nameVi,
+      shortLabel: cardTitle(player.equipments.weapon),
     });
   }
   if (player.equipments.armor) {
     openCards.push({
       sourceId: `seat:${player.seatIndex}:armor`,
-      sourceLabel: `Giáp · ${player.displayName}`,
+      sourceLabel: `${locale === 'en' ? 'Armor' : 'Hộ giáp'} · ${player.displayName}`,
       card: player.equipments.armor,
-      shortLabel: player.equipments.armor.nameVi,
+      shortLabel: cardTitle(player.equipments.armor),
     });
   }
   if (player.equipments.plusOneHorse) {
     openCards.push({
       sourceId: `seat:${player.seatIndex}:plusOne`,
-      sourceLabel: `Ngựa +1 · ${player.displayName}`,
+      sourceLabel: `${locale === 'en' ? 'Footwork +1' : 'Khinh công +1'} · ${player.displayName}`,
       card: player.equipments.plusOneHorse,
-      shortLabel: `+1 ${player.equipments.plusOneHorse.nameVi}`,
+      shortLabel: `+1 ${cardTitle(player.equipments.plusOneHorse)}`,
     });
   }
   if (player.equipments.minusOneHorse) {
     openCards.push({
       sourceId: `seat:${player.seatIndex}:minusOne`,
-      sourceLabel: `Ngựa -1 · ${player.displayName}`,
+      sourceLabel: `${locale === 'en' ? 'Steed -1' : 'Thân pháp -1'} · ${player.displayName}`,
       card: player.equipments.minusOneHorse,
-      shortLabel: `-1 ${player.equipments.minusOneHorse.nameVi}`,
+      shortLabel: `-1 ${cardTitle(player.equipments.minusOneHorse)}`,
     });
   }
   for (const scroll of player.delayedScrolls) {
     openCards.push({
       sourceId: `seat:${player.seatIndex}:delayed:${scroll.id}`,
-      sourceLabel: `Phán xét · ${player.displayName}`,
+      sourceLabel: `${locale === 'en' ? 'Seal' : 'Phán xét'} · ${player.displayName}`,
       card: scroll,
-      shortLabel: scroll.cardKey === 'lac_bat_tu_thuc' ? 'Lạc Bất Tư' : scroll.nameVi,
+      shortLabel: cardTitle(scroll),
     });
   }
 
@@ -300,12 +302,12 @@ export function SeatCard({
       {isDragHovered ? (
         <span className="pointer-events-none absolute -top-2.5 left-1/2 z-25 inline-flex -translate-x-1/2 items-center gap-1 rounded-full border border-[#FDE68A] bg-[#9E2B25] px-2.5 py-0.5 text-[10px] font-extrabold whitespace-nowrap text-[#FFF8EB] shadow-lg">
           <GameIcon name="saber-slash" size={11} />
-          {dragHoverLabelVi || 'Thả để đánh vào đây'}
+          {dragHoverLabelVi || (locale === 'en' ? 'Drop to target here' : 'Thả để đánh vào đây')}
         </span>
       ) : isDragTargetEligible ? (
         <span className="pointer-events-none absolute -top-2.5 left-1/2 z-20 inline-flex -translate-x-1/2 items-center gap-1 rounded-full border border-[#FBBF24] bg-[#D99B26] px-2 py-0.5 text-[9.5px] font-extrabold whitespace-nowrap text-[#14171A] shadow">
           <GameIcon name="archery-target" size={11} />
-          Thả vào mục tiêu
+          {locale === 'en' ? 'Drop on target' : 'Thả vào mục tiêu'}
         </span>
       ) : canClick ? (
         <span className="pointer-events-none absolute -top-2.5 left-1/2 z-20 inline-flex -translate-x-1/2 items-center gap-1 rounded-full border border-[#D99B26] bg-[#14171A] px-2 py-0.5 text-[10px] font-bold whitespace-nowrap text-[#FBBF24] shadow">
@@ -313,7 +315,7 @@ export function SeatCard({
             name={isSelectedTarget ? 'ui:check' : 'archery-target'}
             size={11}
           />
-          {isSelectedTarget ? 'Đã chọn' : 'Chọn mục tiêu'}
+          {isSelectedTarget ? (locale === 'en' ? 'Selected' : 'Đã chọn') : (locale === 'en' ? 'Select target' : 'Chọn mục tiêu')}
         </span>
       ) : null}
 
@@ -351,7 +353,7 @@ export function SeatCard({
               {player.displayName}
             </span>
             <span
-              title={`Thứ tự lượt theo chiều kim đồng hồ: Ghế #${player.seatIndex + 1}`}
+              title={locale === 'en' ? `Clockwise turn order: Seat #${player.seatIndex + 1}` : `Thứ tự lượt theo chiều kim đồng hồ: Ghế #${player.seatIndex + 1}`}
               className="font-mono-num shrink-0 rounded border border-[#475569]/60 bg-[#0B0E14]/85 px-1 text-[8.5px] font-bold text-[#E2E8F0]"
             >
               #{player.seatIndex + 1}
@@ -361,10 +363,10 @@ export function SeatCard({
                 data-turn-badge={isCurrentTurnOwner ? (isActiveActor ? 'turn-active' : 'turn-waiting') : 'reacting'}
                 title={
                   isCurrentTurnOwner && isActiveActor
-                    ? 'Đang trong lượt chính'
+                    ? (locale === 'en' ? 'Active Turn' : 'Đang trong lượt chính')
                     : isCurrentTurnOwner
-                      ? 'Lượt chính (Đang chờ phản ứng)'
-                      : 'Đang phản ứng'
+                      ? (locale === 'en' ? 'Turn Owner (Waiting Response)' : 'Lượt chính (Đang chờ phản ứng)')
+                      : (locale === 'en' ? 'Responding' : 'Đang phản ứng')
                 }
                 className={[
                   'inline-flex shrink-0 items-center gap-0.5 rounded px-1 py-0 text-[8px] leading-[13px] font-extrabold uppercase shadow-sm',
@@ -378,17 +380,17 @@ export function SeatCard({
                 {isCurrentTurnOwner && isActiveActor ? (
                   <>
                     <GameIcon name="ui:flag" size={9} />
-                    <span>Lượt</span>
+                    <span>{locale === 'en' ? 'Turn' : 'Lượt'}</span>
                   </>
                 ) : isCurrentTurnOwner ? (
                   <>
                     <GameIcon name="ui:flag" size={9} />
-                    <span>Chờ</span>
+                    <span>{locale === 'en' ? 'Wait' : 'Chờ'}</span>
                   </>
                 ) : (
                   <>
                     <GameIcon name="ui:zap" size={9} />
-                    <span>Phản ứng</span>
+                    <span>{locale === 'en' ? 'React' : 'Phản ứng'}</span>
                   </>
                 )}
               </span>
@@ -399,24 +401,24 @@ export function SeatCard({
             {isDying ? (
               <span
                 role="status"
-                title="Đang hấp hối — cần Đào cứu"
+                title={locale === 'en' ? 'Near Death — Needs Elixir Pill rescue' : 'Đang hấp hối — cần Hồi Xuân Đan cứu'}
                 className="lkdf-dying-badge inline-flex shrink-0 items-center gap-0.5 rounded border border-[#F87171]/75 bg-[#7F1D1D]/92 px-1.5 py-0 text-[9px] font-extrabold text-[#FEE2E2] shadow-sm"
               >
                 <GameIcon name="death-skull" size={9.5} />
-                Hấp hối
+                {locale === 'en' ? 'Dying' : 'Hấp hối'}
               </span>
             ) : null}
             {player.alive && Number.isFinite(distance) ? (
               <span
                 className="font-mono-num shrink-0 rounded bg-[#0B0E14]/85 px-1.5 py-0 text-[9px] font-bold text-[#E6BE6C] tabular-nums drop-shadow-sm"
-                title={`Khoảng cách tới ghế này là ${distance}`}
+                title={locale === 'en' ? `Distance to this seat is ${distance}` : `Khoảng cách tới ghế này là ${distance}`}
               >
-                Cách {distance}
+                {locale === 'en' ? `Dist ${distance}` : `Cách ${distance}`}
               </span>
             ) : !player.alive ? (
               <span className="inline-flex shrink-0 items-center gap-0.5 rounded bg-[#DC2626]/25 px-1.5 py-0 text-[9px] font-bold text-[#FCA5A5]">
                 <GameIcon name="death-skull" size={10} />
-                Tử trận
+                {locale === 'en' ? 'Fallen' : 'Tử trận'}
               </span>
             ) : null}
 
@@ -434,8 +436,8 @@ export function SeatCard({
                     e.stopPropagation();
                   }
                 }}
-                title={`Xem kỹ năng tướng ${hero?.nameVi ?? ''}`}
-                aria-label={`Xem kỹ năng tướng ${hero?.nameVi ?? ''}`}
+                title={locale === 'en' ? `Inspect skills of ${heroDisplay?.name ?? ''}` : `Xem kỹ năng ${heroDisplay?.name ?? ''}`}
+                aria-label={locale === 'en' ? `Inspect skills of ${heroDisplay?.name ?? ''}` : `Xem kỹ năng ${heroDisplay?.name ?? ''}`}
                 className={[
                   'inline-flex h-6 w-6 min-h-[24px] min-w-[24px] shrink-0 cursor-pointer items-center justify-center rounded-md border transition-colors',
                   isInspectedHero
@@ -565,7 +567,7 @@ export function SeatCard({
       <div className="lkdf-battle-seat-summary relative z-10 mt-0.5 flex items-center justify-between gap-1.5">
         {isHeroSelectPhase && player.maxHp <= 0 ? (
           <span className="truncate text-[10px] font-medium text-[#94A3B8]">
-            {isSeatReady ? 'Chờ người khác…' : 'Chưa chốt tướng'}
+            {isSeatReady ? (locale === 'en' ? 'Waiting…' : 'Chờ người khác…') : (locale === 'en' ? 'Picking' : 'Chưa chốt tướng')}
           </span>
         ) : (
           <HpJadeMeter hp={player.hp} maxHp={player.maxHp} size="sm" />
@@ -574,16 +576,16 @@ export function SeatCard({
         <div className="flex items-center gap-1 shrink-0">
           {player.isBotTakeover ? (
             <span
-              title="Máy đánh hộ tạm thời"
+              title={locale === 'en' ? 'Temporary Bot Takeover' : 'Máy đánh hộ tạm thời'}
               className="lkdf-match-bot"
             >
               <GameIcon name="ui:bot" size={10} />
-              Máy
+              {locale === 'en' ? 'Bot' : 'Máy'}
             </span>
           ) : null}
           {isDisconnected ? (
             <span
-              title="Mất kết nối mạng"
+              title={locale === 'en' ? 'Disconnected' : 'Mất kết nối mạng'}
               className="inline-flex items-center rounded bg-[#DC2626]/25 p-0.5 text-[#FCA5A5]"
             >
               <GameIcon name="ui:wifi-off" size={10} />
@@ -591,13 +593,13 @@ export function SeatCard({
           ) : null}
           {isHeroSelectPhase ? (
             <span className="inline-flex items-center rounded border border-[#94A3B8]/25 bg-[#0B0E14]/80 px-1.5 py-0.5 text-[9.5px] font-medium text-[#9CA3AF]">
-              Chờ chia bài…
+              {locale === 'en' ? 'Wait deal…' : 'Chờ chia bài…'}
             </span>
           ) : (
             <div
               className="inline-flex items-center gap-1 rounded border border-[#94A3B8]/35 bg-[#0B0E14]/90 px-1.5 py-0.5"
               data-motion-hand-count
-              title={`Đang cầm ${player.handCount} lá bài trên tay`}
+              title={locale === 'en' ? `Holding ${player.handCount} card(s)` : `Đang cầm ${player.handCount} lá bài trên tay`}
             >
               <CardBack size="xs" />
               <span className="font-mono-num text-[clamp(10px,0.9cqw,11.5px)] font-extrabold text-[#F4EFE6] tabular-nums">

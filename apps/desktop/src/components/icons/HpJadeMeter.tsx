@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next';
+
 export interface HpJadeMeterProps {
   readonly hp: number;
   readonly maxHp: number;
@@ -11,6 +13,8 @@ export function HpJadeMeter({
   size = 'sm',
   showNumeric = true,
 }: HpJadeMeterProps) {
+  const { i18n } = useTranslation();
+  const isEn = i18n.language === 'en';
   const safeMax = Math.max(1, maxHp);
   const safeHp = Math.max(0, Math.min(safeMax, hp));
   const useCompactBar = safeMax > 6;
@@ -28,8 +32,8 @@ export function HpJadeMeter({
     <div
       className="lkdf-hp-meter inline-flex min-w-0 items-center gap-1"
       data-vitality={vitality}
-      title={`Sinh lực: ${safeHp}/${safeMax}`}
-      aria-label={`Sinh lực ${safeHp} trên ${safeMax}`}
+      title={isEn ? `HP: ${safeHp}/${safeMax}` : `Sinh lực: ${safeHp}/${safeMax}`}
+      aria-label={isEn ? `HP ${safeHp} of ${safeMax}` : `Sinh lực ${safeHp} trên ${safeMax}`}
     >
       {useCompactBar ? (
         <div className="h-2 w-10 shrink-0 overflow-hidden rounded-sm border border-[#625e57] bg-[#151315]">

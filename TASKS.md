@@ -1,7 +1,7 @@
 # TASKS.md — Kế Hoạch Thực Hiện Chi Tiết Theo Từng Bước Kiểm Tra Được
 
 > **Dự án:** Cửu Châu Ẩn Kiếm / Blades of the Nine Realms (Standalone Portable Windows + Lộ trình lên Steam Phase 4)
-> **Cập nhật lần cuối:** 2026-11-25
+> **Cập nhật lần cuối:** 2026-11-26
 > **Quy tắc bắt buộc:** Chỉ đánh dấu hoàn thành (`[x]`) khi đã có sản phẩm bàn giao và đã chạy kiểm tra đạt điều kiện nghiệm thu của bước đó. Không đánh dấu hoàn thành chỉ vì đã viết xong mã nguồn.
 > **Tài liệu liên quan:** [KE_HOACH_TONG_THE_CUU_CHAU_AN_KIEM.md](./KE_HOACH_TONG_THE_CUU_CHAU_AN_KIEM.md) · [REQUIREMENTS.md](./REQUIREMENTS.md) · [ARCHITECTURE.md](./ARCHITECTURE.md) · [TESTING.md](./TESTING.md) · [PROJECT_MEMORY.md](./PROJECT_MEMORY.md)
 
@@ -12,15 +12,20 @@
 | Phase | Nội dung chính | Đóng gói kiểm thử | Trạng thái |
 | :---: | :--- | :---: | :---: |
 | **Phase 0** | IP Purge, BrandConfig SSOT, BuildTarget & Steamworks Spike (`77d925a`) | N/A | ✅ Hoàn thành & Commit (`77d925a`) |
-| **Phase 1** | Core `ContentRegistry`, `i18next` VI/EN, `CUU_CHAU_CORE_PACK` (`4` tông môn, `25` hiệp khách, `112` lá `28×4`, `10` bộ chiêu remix), Reskin UI & Vertical Slice 4P | Windows Portable `.zip` | ✅ Hoàn thành (`BladesOfTheNineRealms-Portable-0.1.0.zip` — `166.57 MB`) |
-| **Phase 2** | AI Art Factory: 25 chân dung + 32 tranh lá bài + 3 nền mới | Windows Portable `.zip` | 👉 Kế tiếp |
+| **Phase 1** | Core `ContentRegistry`, `i18next` VI/EN, `CUU_CHAU_CORE_PACK` (`4` tông môn, `25` hiệp khách, `112` lá `28×4`), Reskin UI & Vertical Slice 4P | Windows Portable `.zip` | ✅ Hoàn thành & Commit (`c9944d0`) |
+| **Phase 2A** | Đưa 10 bộ chiêu remix + 5 lá bài mới Cửu Châu vào Engine & Bot AI, 100% VI/EN (`i18nParity`) & Cổng 500 ván Fuzz 112 lá | Repo working tree + Electron Audit | ✅ Hoàn thành & Đã kiểm chứng (`1000` ván fuzz, `14/14` UI checks) |
+| **Phase 2B** | Remix nốt 15 bộ chiêu tướng còn lại + cân bằng chỉ số & Portable `.zip` mới | Windows Portable `.zip` | 👉 Kế tiếp |
+| **Phase 2C** | AI Art Factory: 25 chân dung + 32 tranh lá bài + 3 nền mới | Windows Portable `.zip` | ⬜ Chờ |
 | **Phase 3** | Audio Studio, Game Feel, Tái cấu trúc UI/UX + Chiến dịch cốt truyện | Windows Portable `.zip` | ⬜ Chờ |
 | **Phase 4** | Hoàn thiện Steamworks (Lobby P2P, Cloud Save, Achievements) + Xuất bản Steam | Steam Build + `.exe` | ⬜ Chờ |
 | **Phase 5** | Post-Launch LiveOps & Content Pack mở rộng | Steam Update | ⬜ Chờ |
 
-### Chi Tiết Phase 1 — Hoàn Thành & Kiểm Chứng Thực Tế (`2026-11-25`)
+### Chi Tiết Phase 1 & Phase 2A — Hoàn Thành & Kiểm Chứng Thực Tế (`2026-11-26`)
 - [x] **Phase 1A — Nền tảng mở rộng & Song ngữ:** Tạo `utils/shuffle.ts`, `GameEvent`, `ContentRegistry`, 8 primitive phản ứng (`primitives.ts`), `actionDescriptor.ts`, `IMatchTransport`, tích hợp `i18next` + `LanguageToggle` (`VI`/`EN`) và script `package:win:zip`.
-- [x] **Phase 1B — Gói IP gốc `CUU_CHAU_CORE_PACK`, Reskin UI & Portable `.zip`:** Hoàn thành 4 tông môn (`雲/鐵/炎/影`), 4 vai (`Minh Chủ/Hộ Pháp/Nghĩa Quân/Ám Ảnh`), 25 hiệp khách song ngữ, bộ bài 112 lá (`28♠/28♥/28♣/28♦`), 10 bộ chiêu remix, `formatCuuChauDisplayText` cho nhật ký/cảnh báo, test `cuuChauPack.test.ts` (4/4 gồm 50 ván fuzz 112 lá) và kiểm chứng Electron `45.3.3` ở `1280×720` & `960×600` (`VI` & `EN`).
+- [x] **Phase 1B — Gói IP gốc `CUU_CHAU_CORE_PACK`, Reskin UI & Portable `.zip` (Commit `c9944d0`):** Hoàn thành 4 tông môn (`雲/鐵/炎/影`), 4 vai (`Minh Chủ/Hộ Pháp/Nghĩa Quân/Ám Ảnh`), 25 hiệp khách song ngữ, bộ bài 112 lá, `formatCuuChauDisplayText`, test `cuuChauPack.test.ts` (4/4) và đóng gói `BladesOfTheNineRealms-Portable-0.1.0.zip`.
+- [x] **Phase 2A — Gameplay Core Remix, 5 Lá Mới Cửu Châu, Song Ngữ 100% & Fuzz 500 Ván:**
+  - Chạy thật 10 bộ chiêu remix Cửu Châu & 5 lá bài mới (`pha_giap_tram`, `chan_khi_ho_the`, `kinh_loi_chan`, `hoan_anh_giap`, `tu_khi_hoan`) trong `packages/shared` + Bot AI + Desktop UI; vá triệt để lỗi chọn trùng mục tiêu `ASK_LIU_LI` qua `excludedSeats`.
+  - Hoàn thiện 100% song ngữ VI/EN mọi màn hình/hộp thoại (`i18nParity.test.ts` **3/3** đạt 0 dấu tiếng Việt lọt `EN`), kiểm chứng `typecheck` 0 lỗi, `build` thoát 0, `test:unit` **17/17 files · 137/137 tests**, `test:fuzz` **1.000/1.000 ván** (`500` chuẩn + `500` Cửu Châu 112 lá, 0 deadlock), `test:integration` **7/7 files · 26/26 tests**, `offlineBot.test.ts` **4/4**, `assets:check` **PASS**, và Electron `45.3.3` Live UI Audit **14/14 checks PASS** (`1280×720` & `960×600`).
 
 ---
 

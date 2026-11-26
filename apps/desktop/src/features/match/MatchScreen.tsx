@@ -6,6 +6,7 @@ import type {
   RefereeActionType,
 } from '@lkdf/shared';
 import { useCallback, useEffect, useEffectEvent, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ApiError } from '../../lib/api.js';
 import type { LkdfApiClient } from '../../lib/api.js';
 import { playMatchCue, setMatchSoundEnabled } from '../../lib/soundFx.js';
@@ -57,6 +58,8 @@ export function MatchScreen({
   onLeftRoom,
   onSessionInvalid,
 }: MatchScreenProps) {
+  const { i18n } = useTranslation();
+  const isEn = i18n.language === 'en';
   const [roomPayload, setRoomPayload] = useState<RoomViewerPayload>(initialRoom);
   const [wsStatus, setWsStatus] = useState<WsConnectionStatus>('CONNECTING');
   const [wsReconnectKey, setWsReconnectKey] = useState<number>(0);
@@ -260,12 +263,15 @@ export function MatchScreen({
         return;
       }
       setActionError(
-        formatMatchErrorVi(err, 'Không thể đồng bộ trạng thái bàn đấu.'),
+        formatMatchErrorVi(
+          err,
+          isEn ? 'Unable to sync match state.' : 'Không thể đồng bộ trạng thái bàn đấu.',
+        ),
       );
     } finally {
       setIsSyncing(false);
     }
-  }, [api, onReturnToLobby, onSessionInvalid, roomCode, sessionToken]);
+  }, [api, isEn, onReturnToLobby, onSessionInvalid, roomCode, sessionToken]);
 
   const handleReconnect = useCallback(() => {
     setWsReconnectKey((prev) => prev + 1);
@@ -292,17 +298,23 @@ export function MatchScreen({
           return;
         }
         setActionError(
-          formatMatchErrorVi(err, 'Không thể đưa phòng về sảnh chờ. Vui lòng thử lại.'),
+          formatMatchErrorVi(
+            err,
+            isEn ? 'Unable to return room to lobby. Please retry.' : 'Không thể đưa phòng về sảnh chờ. Vui lòng thử lại.',
+          ),
         );
       } catch {
         setActionError(
-          formatMatchErrorVi(err, 'Không thể đưa phòng về sảnh chờ. Vui lòng thử lại.'),
+          formatMatchErrorVi(
+            err,
+            isEn ? 'Unable to return room to lobby. Please retry.' : 'Không thể đưa phòng về sảnh chờ. Vui lòng thử lại.',
+          ),
         );
       }
     } finally {
       returningToLobbyRef.current = false;
     }
-  }, [api, onReturnToLobby, onSessionInvalid, roomCode, sessionToken]);
+  }, [api, isEn, onReturnToLobby, onSessionInvalid, roomCode, sessionToken]);
 
   const handleToggleSound = useCallback(async () => {
     setIsTogglingSound(true);
@@ -318,12 +330,15 @@ export function MatchScreen({
         return;
       }
       setActionError(
-        formatMatchErrorVi(err, 'Không thể cập nhật cài đặt âm thanh.'),
+        formatMatchErrorVi(
+          err,
+          isEn ? 'Unable to update audio settings.' : 'Không thể cập nhật cài đặt âm thanh.',
+        ),
       );
     } finally {
       setIsTogglingSound(false);
     }
-  }, [api, currentUser.preferences.soundEnabled, onProfileUpdated, onSessionInvalid, sessionToken]);
+  }, [api, currentUser.preferences.soundEnabled, isEn, onProfileUpdated, onSessionInvalid, sessionToken]);
 
   const handleLeaveRoom = useCallback(async () => {
     setIsLeavingRoom(true);
@@ -337,12 +352,12 @@ export function MatchScreen({
         return;
       }
       setActionError(
-        formatMatchErrorVi(err, 'Không thể rời bàn đấu.'),
+        formatMatchErrorVi(err, isEn ? 'Unable to leave the table.' : 'Không thể rời bàn đấu.'),
       );
     } finally {
       setIsLeavingRoom(false);
     }
-  }, [api, onLeftRoom, onSessionInvalid, roomCode, sessionToken]);
+  }, [api, isEn, onLeftRoom, onSessionInvalid, roomCode, sessionToken]);
 
   const handleSendAction = useCallback((action: GameAction) => {
     setActionError(null);
@@ -615,11 +630,11 @@ export function MatchScreen({
         <div className="mb-3 flex flex-wrap items-center gap-4">
           <label className="flex cursor-pointer items-center gap-2 text-xs font-semibold text-[#EFE6D5]">
             <input type="checkbox" checked={autoSkipNullification} onChange={(event) => handleToggleAutoSkipNullification(event.target.checked)} className="accent-[#D99B26]" />
-            Tự bỏ qua Hóa Giải
+            {isEn ? 'Auto-pass Negation' : 'Tự bỏ qua Hóa Giải'}
           </label>
           <label className="flex cursor-pointer items-center gap-2 text-xs font-semibold text-[#EFE6D5]">
             <input type="checkbox" checked={reduceMotion} onChange={(event) => handleToggleReduceMotion(event.target.checked)} className="accent-[#D99B26]" />
-            Giảm chuyển động
+            {isEn ? 'Reduce Motion' : 'Giảm chuyển động'}
           </label>
         </div>
         <div className="mb-3 flex min-w-0 flex-wrap items-center gap-2 text-xs">
@@ -627,22 +642,25 @@ export function MatchScreen({
             殺
           </span>
           <span className="font-mono-num shrink-0 font-bold text-[#D4A451]">
-            Phòng #{roomCode} <span className="hidden lg:inline">({seatCount} người)</span>
+            {isEn ? `Room #${roomCode}` : `Phòng #${roomCode}`}{' '}
+            <span className="hidden lg:inline">
+              ({isEn ? `${seatCount} players` : `${seatCount} người`})
+            </span>
           </span>
           <span className="text-[#4B5563]">·</span>
           <span className="font-mono-num shrink-0 font-semibold text-[#EFE6D5] tabular-nums">
-            Vòng {roundNumber}
+            {isEn ? `Round ${roundNumber}` : `Vòng ${roundNumber}`}
           </span>
           <span className="text-[#4B5563]">·</span>
           <span className="font-mono-num shrink-0 text-[#B5A792] tabular-nums">
-            Rút: {drawPileCount}
+            {isEn ? `Deck: ${drawPileCount}` : `Rút: ${drawPileCount}`}
           </span>
         </div>
 
         <div className="flex flex-wrap items-center gap-1.5">
           <button
             type="button"
-            aria-label="Hiệu ứng âm thanh"
+            aria-label={isEn ? 'Sound Effects' : 'Hiệu ứng âm thanh'}
             aria-pressed={currentUser.preferences.soundEnabled}
             disabled={isTogglingSound}
             onClick={() => {
@@ -654,8 +672,8 @@ export function MatchScreen({
               name={currentUser.preferences.soundEnabled ? 'ui:volume-on' : 'ui:volume-off'}
               size={13}
             />
-            <span className="lg:hidden">Âm thanh</span>
-            <span className="hidden lg:inline">Hiệu ứng âm thanh</span>
+            <span className="lg:hidden">{isEn ? 'Sound' : 'Âm thanh'}</span>
+            <span className="hidden lg:inline">{isEn ? 'Sound Effects' : 'Hiệu ứng âm thanh'}</span>
           </button>
 
           <button
@@ -731,7 +749,7 @@ export function MatchScreen({
         <div className="flex flex-1 min-h-0 min-w-0 items-center justify-center p-6">
           <div className="inline-flex items-center gap-2 rounded-xl border border-[#806345]/60 bg-[#18120E] px-6 py-4 text-sm text-[#EDE3D2]">
             <GameIcon name="ui:loader" size={16} className="animate-spin text-[#D99B26]" />
-            Đang tải trạng thái bàn đấu...
+            {isEn ? 'Loading match state...' : 'Đang tải trạng thái bàn đấu...'}
           </div>
         </div>
       )}

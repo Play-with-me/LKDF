@@ -130,7 +130,7 @@ function showTurnHandoff(motion: BoardMotion, previous: PlayerViewState, state: 
     banner.className = 'lkdf-turn-banner';
     banner.setAttribute('aria-hidden', 'true');
     const text = document.createElement('span');
-    text.textContent = 'ĐẾN LƯỢT BẠN';
+    text.textContent = document.documentElement.lang === 'en' ? 'YOUR TURN' : 'ĐẾN LƯỢT BẠN';
     banner.append(buildSwordsIconSvg(), text);
     motion.layer.append(banner);
     animateElement(banner, [
