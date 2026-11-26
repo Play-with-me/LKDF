@@ -48,6 +48,60 @@ const CUU_CHAU_HANDLER_BY_ID: Readonly<Record<string, HeroSkillHandler>> = (() =
       };
     }
 
+    // Hoàng Bất Dịch (huang_gai): lần đầu Phần Tâm Quyết trong lượt cấp thêm +1 lượt Kiếm Trảm
+    if (h.id === 'hoang_bat_dich' && base?.executePlaySkill) {
+      const baseExecute = base.executePlaySkill;
+      composed = {
+        ...composed,
+        executePlaySkill(state, action, rng, rt) {
+          const hadBonus = Boolean(state.turnFlags?.kuRouBonusGrantedThisTurn);
+          let next = baseExecute(state, action, rng, rt);
+          if (action.skillId === 'ku_rou' && !hadBonus) {
+            const prevFlags = next.turnFlags ?? { satUsedThisTurn: 0, skipPlayPhase: false };
+            next = {
+              ...next,
+              turnFlags: {
+                ...prevFlags,
+                kuRouBonusGrantedThisTurn: true,
+                bonusSatLimitThisTurn: (prevFlags.bonusSatLimitThisTurn ?? 0) + 1,
+              },
+            };
+          }
+          return next;
+        },
+      };
+    }
+
+    // Dược Vô Ưu (hua_tuo): Thanh Tâm Đan chữa cho đồng đội khác bản thân giúp rút thêm 1 lá
+    if (h.id === 'duoc_vo_uu' && base?.executePlaySkill) {
+      const baseExecute = base.executePlaySkill;
+      composed = {
+        ...composed,
+        executePlaySkill(state, action, rng, rt) {
+          let next = baseExecute(state, action, rng, rt);
+          const targetSeat = action.targetSeats?.[0];
+          if (
+            action.skillId === 'qing_nang' &&
+            targetSeat !== undefined &&
+            targetSeat !== action.seatIndex
+          ) {
+            const actor = rt.getPlayerBySeat(next, action.seatIndex);
+            if (actor.alive) {
+              const dealt = rt.dealCardsToSeat(next, action.seatIndex, 1, rng);
+              next = {
+                ...dealt.state,
+                actionLog: [
+                  ...dealt.state.actionLog,
+                  `${actor.displayName} kích hoạt Thanh Tâm Đan, rút thêm ${dealt.dealt.length} lá bài.`,
+                ],
+              };
+            }
+          }
+          return next;
+        },
+      };
+    }
+
     map[h.id] = composed;
     map[h.legacySlotId] = composed;
   }

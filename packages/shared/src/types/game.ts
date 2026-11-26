@@ -599,6 +599,10 @@ export interface TurnFlags {
   readonly liJianUsedThisTurn?: boolean;
   readonly jiJiangDeclinedThisTurn?: boolean;
   readonly luoYiActive?: boolean;
+  readonly bonusSatLimitThisTurn?: number;
+  readonly kuRouBonusGrantedThisTurn?: boolean;
+  readonly crimsonEdgeDrawnThisTurn?: boolean;
+  readonly qiXiDrawnThisTurn?: boolean;
 }
 
 export interface RefereeAuditEntry {

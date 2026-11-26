@@ -1,16 +1,10 @@
 import { getCardColor, isBlackSuit, isRedSuit } from '../cards/catalog.js';
+import { isCuuChauRuleset } from '../content/cuuChauPack.js';
 import { isInAttackRange } from '../distance/index.js';
 import { HERO_BY_ID } from '../heroes/catalog.js';
 import { getHeroSkillHandler } from '../heroes/registry.js';
 import type { SkillRuntime } from '../heroes/skillContracts.js';
-import type {
-  CardInstance,
-  InterruptFrame,
-  JudgmentPurpose,
-  MasterGameState,
-  PendingEffect,
-  PlayerCombatState,
-} from '../types/game.js';
+import type { TurnFlags, CardInstance, InterruptFrame, JudgmentPurpose, MasterGameState, PendingEffect, PlayerCombatState } from '../types/game.js';
 import type { PendingPrompt, VirtualCardKey } from './combatTypes.js';
 import {
   appendToDiscardPile,
@@ -202,6 +196,41 @@ export function canTargetPlayerWithCard(
     return true;
   }
   return handler.canBeTargetedBy(state, target, cardKey);
+}
+
+/** Single source of truth cho giới hạn bài tối đa trên tay ở pha Bỏ bài (cả MasterGameState lẫn PlayerViewState). */
+export function getPlayerMaxHandLimit(
+  stateOrView: {
+    readonly rulesetVersion?: string;
+    readonly enabledPacks?: readonly string[];
+    readonly currentTurnSeat?: number;
+    readonly turnFlags?: TurnFlags;
+  },
+  player: Pick<PlayerCombatState, 'heroId' | 'hp' | 'maxHp' | 'seatIndex'>,
+): number {
+  const modifier =
+    getHeroSkillHandler(player.heroId, stateOrView)?.maxHandLimitModifier?.(
+      stateOrView,
+      player,
+    ) ?? 0;
+  return Math.max(0, player.hp + modifier);
+}
+
+/** Single source of truth cho số Sát tối đa trong pha PLAY của lượt (hoặc Infinity nếu không giới hạn). */
+export function getPlayerMaxSatPerTurn(
+  stateOrView: {
+    readonly rulesetVersion?: string;
+    readonly enabledPacks?: readonly string[];
+    readonly currentTurnSeat?: number;
+    readonly turnFlags?: TurnFlags;
+  },
+  player: Pick<PlayerCombatState, 'heroId' | 'equipments'>,
+): number {
+  const handler = getHeroSkillHandler(player.heroId, stateOrView);
+  if (handler?.unlimitedSat || player.equipments.weapon?.cardKey === 'gia_cat_lien_no') {
+    return Number.POSITIVE_INFINITY;
+  }
+  return 1 + (stateOrView.turnFlags?.bonusSatLimitThisTurn ?? 0);
 }
 
 export const SKILL_RUNTIME: SkillRuntime = {
@@ -721,6 +750,20 @@ export function resolveStrikeHit(
       ],
     };
   }
+  const sourceAfterDmg = getPlayerBySeat(afterDmg, sourceSeat);
+  if (sourceAfterDmg.alive) {
+    const strikeHandler = getHeroSkillHandler(sourceAfterDmg.heroId, afterDmg);
+    if (strikeHandler?.onStrikeHit) {
+      afterDmg = strikeHandler.onStrikeHit(
+        afterDmg,
+        sourceSeat,
+        targetSeat,
+        strikeCards,
+        rng,
+        SKILL_RUNTIME,
+      );
+    }
+  }
   return maybeOfferKyLanCung(afterDmg, sourceSeat, targetSeat);
 }
 
@@ -1092,6 +1135,18 @@ function resolveJudgmentEffect(
           effects[idx] = { ...eff, cannotDodge: true };
           next = { ...next, pendingEffects: effects };
         }
+      } else if (!success && isCuuChauRuleset(next)) {
+        const attacker = getPlayerBySeat(next, ownerSeat);
+        if (attacker.alive) {
+          const dealt = dealCardsToSeat(next, ownerSeat, 1, rng);
+          next = {
+            ...dealt.state,
+            actionLog: [
+              ...dealt.state.actionLog,
+              `${attacker.displayName} kích hoạt Phá Phong Quyết, rút bù ${dealt.dealt.length} lá bài.`,
+            ],
+          };
+        }
       }
       return maybeOfferTianDo(next, ownerSeat, judgeCard);
     }
@@ -1115,6 +1170,18 @@ function resolveJudgmentEffect(
             targetSeat: effect.targetSeat,
             sourceSeat: ownerSeat,
           });
+        }
+      } else if (isHeart && isCuuChauRuleset(next)) {
+        const xhd = getPlayerBySeat(next, ownerSeat);
+        if (xhd.alive) {
+          const dealt = dealCardsToSeat(next, ownerSeat, 1, rng);
+          next = {
+            ...dealt.state,
+            actionLog: [
+              ...dealt.state.actionLog,
+              `${xhd.displayName} kích hoạt Bất Khuất Hồn, phán xét Cơ rút ${dealt.dealt.length} lá.`,
+            ],
+          };
         }
       }
       return maybeOfferTianDo(next, ownerSeat, judgeCard);
@@ -1815,7 +1882,7 @@ export function stepEngine(
         return state;
       }
       case 'DISCARD': {
-        const limit = Math.max(0, curPlayer.hp);
+        const limit = getPlayerMaxHandLimit(state, curPlayer);
         if (curPlayer.handCards.length <= limit) {
           state = { ...state, turnPhase: 'END' };
         } else {

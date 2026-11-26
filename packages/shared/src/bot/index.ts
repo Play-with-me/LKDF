@@ -1,9 +1,11 @@
 import { getCardColor, isBlackSuit, isRedSuit } from '../cards/catalog.js';
+import { isCuuChauRuleset } from '../content/cuuChauPack.js';
 import {
   canReachForSnatch,
   canUseCollateralMurder,
   isInAttackRange,
 } from '../distance/index.js';
+import { getPlayerMaxHandLimit, getPlayerMaxSatPerTurn } from '../engine/combatCore.js';
 import { getHeroDefinition } from '../heroes/catalog.js';
 import type { GameAction } from '../engine/combatTypes.js';
 import type {
@@ -134,13 +136,16 @@ function isAllySeat(
 
 function canTargetWithBasicCard(
   target: PublicPlayerView,
-  cardKey: 'sat' | 'quyet_dau' | 'thuan_thu_khien_duong' | 'lac_bat_tu_thuc',
+  cardKey: 'sat' | 'quyet_dau' | 'thuan_thu_khien_duong' | 'lac_bat_tu_thuc' | 'kinh_loi_chan',
+  view?: PlayerViewState,
 ): boolean {
   if (!target.alive) return false;
   if (
     target.heroId === 'zhuge_liang' &&
     target.handCount === 0 &&
-    (cardKey === 'sat' || cardKey === 'quyet_dau')
+    (cardKey === 'sat' ||
+      cardKey === 'quyet_dau' ||
+      (cardKey === 'kinh_loi_chan' && isCuuChauRuleset(view)))
   ) {
     return false;
   }
@@ -373,9 +378,9 @@ function decidePlayPhaseAction(view: PlayerViewState): GameAction {
     !flags?.qingNangUsedThisTurn &&
     hand.length >= 2
   ) {
-    const injuredAlly = view.players.find(
-      (p) => p.alive && p.hp < p.maxHp && isAllySeat(view, p.seatIndex),
-    );
+    const injuredAlly = view.players
+      .filter((p) => p.alive && p.hp < p.maxHp && isAllySeat(view, p.seatIndex))
+      .sort((a, b) => (a.seatIndex === seatIndex ? 1 : 0) - (b.seatIndex === seatIndex ? 1 : 0))[0];
     if (injuredAlly) {
       const discard = sortCardsLowestFirst(hand)[0]!;
       return {
@@ -472,10 +477,16 @@ function decidePlayPhaseAction(view: PlayerViewState): GameAction {
     };
   }
 
+  const canUseKuRouForBonusStrike =
+    isCuuChauRuleset(view) &&
+    !flags?.kuRouBonusGrantedThisTurn &&
+    (flags?.satUsedThisTurn ?? 0) >= 1 &&
+    findSingleCardForSat(self) !== null &&
+    aliveOpponents.length > 0;
   if (
     self.heroId === 'huang_gai' &&
     self.hp >= 3 &&
-    hand.length <= 2
+    (hand.length <= 2 || canUseKuRouForBonusStrike)
   ) {
     return {
       type: 'ACTIVATE_HERO_SKILL',
@@ -497,8 +508,12 @@ function decidePlayPhaseAction(view: PlayerViewState): GameAction {
 
   const kinhLoi = hand.find((c) => c.cardKey === 'kinh_loi_chan');
   if (kinhLoi) {
-    const lowHandTarget = rankedEnemies.find((p) => p.handCount <= 1);
-    const dismantleTarget = rankedEnemies.find((p) => p.handCount >= 2);
+    const lowHandTarget = rankedEnemies.find(
+      (p) => canTargetWithBasicCard(p, 'kinh_loi_chan', view) && p.handCount <= 1,
+    );
+    const dismantleTarget = rankedEnemies.find(
+      (p) => canTargetWithBasicCard(p, 'kinh_loi_chan', view) && p.handCount >= 2,
+    );
     const target = lowHandTarget ?? dismantleTarget;
     if (target) {
       return {
@@ -644,12 +659,10 @@ function decidePlayPhaseAction(view: PlayerViewState): GameAction {
 
   // 5. Đánh Sát vào mục tiêu hợp lệ trong tầm đánh (trừ Vòng 1 Hòa Bình)
   const canAttackRound = !(view.peacefulFirstRound && view.roundNumber === 1);
-  const unlimitedSat =
-    self.heroId === 'zhang_fei' ||
-    self.equipments.weapon?.cardKey === 'gia_cat_lien_no';
+  const maxSat = getPlayerMaxSatPerTurn(view, self);
   const satUsed = flags?.satUsedThisTurn ?? 0;
 
-  if (canAttackRound && (unlimitedSat || satUsed < 1)) {
+  if (canAttackRound && satUsed < maxSat) {
     const attackTargets = rankedEnemies.filter(
       (p) =>
         isInAttackRange(view, seatIndex, p.seatIndex) &&
@@ -1143,7 +1156,7 @@ export function decideBotAction(
   }
 
   if (view.turnPhase === 'DISCARD') {
-    const limit = Math.max(0, self.hp);
+    const limit = getPlayerMaxHandLimit(view, self);
     const excess = Math.max(0, hand.length - limit);
     const toDiscard = sortCardsLowestFirst(hand)
       .slice(0, excess)

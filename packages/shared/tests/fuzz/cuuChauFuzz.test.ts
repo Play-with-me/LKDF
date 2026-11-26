@@ -190,21 +190,39 @@ function simulateCuuChauMatch(
   return { state, steps, elapsedMs };
 }
 
-describe('Phase 2A — 500-Match Cửu Châu 112-Card Fuzz Test Gate (4, 5, 6, 7, 8P)', () => {
+describe('Phase 2B — 500-Match Cửu Châu 112-Card Fuzz & Balance Telemetry (4, 5, 6, 7, 8P)', () => {
   const GAMES_PER_COUNT = 100;
   const seenHeroes = new Set<string>();
   const seenFactions = new Set<string>();
   const seenNewCardKeys = new Set<string>();
+  const factionWins: Record<'LORD_LOYALIST' | 'REBEL' | 'SPY', number> = {
+    LORD_LOYALIST: 0,
+    REBEL: 0,
+    SPY: 0,
+  };
+  const factionByCount: Record<number, Record<'LORD_LOYALIST' | 'REBEL' | 'SPY', number>> = {};
+  const heroStats = new Map<string, { picks: number; wins: number }>();
+  let totalRoundsAll = 0;
+  let maxRoundAll = 0;
+  let totalMatchesAll = 0;
 
   for (const playerCount of [4, 5, 6, 7, 8] as const satisfies readonly PlayerCount[]) {
     it(
       `Cửu Châu ${playerCount}P: completes 100/100 matches (0 deadlock, 0 privacy leak, < 50ms/match)`,
       () => {
         let totalMs = 0;
+        let countRounds = 0;
+        factionByCount[playerCount] = { LORD_LOYALIST: 0, REBEL: 0, SPY: 0 };
 
         for (let i = 0; i < GAMES_PER_COUNT; i += 1) {
           const result = simulateCuuChauMatch(playerCount, i, seenNewCardKeys);
           totalMs += result.elapsedMs;
+          totalMatchesAll += 1;
+          countRounds += result.state.roundNumber;
+          totalRoundsAll += result.state.roundNumber;
+          if (result.state.roundNumber > maxRoundAll) {
+            maxRoundAll = result.state.roundNumber;
+          }
 
           expect(result.state.turnPhase).toBe('GAME_OVER');
           expect(result.state.enabledPacks).toContain('cuu_chau_core');
@@ -215,22 +233,36 @@ describe('Phase 2A — 500-Match Cửu Châu 112-Card Fuzz Test Gate (4, 5, 6, 7
 
           if (result.state.winningFaction) {
             seenFactions.add(result.state.winningFaction);
+            factionWins[result.state.winningFaction] += 1;
+            factionByCount[playerCount]![result.state.winningFaction] += 1;
           }
+          const winnerSet = new Set(result.state.winnerUserIds);
           for (const p of result.state.players) {
             if (p.heroId) {
               seenHeroes.add(p.heroId);
+              const cur = heroStats.get(p.heroId) ?? { picks: 0, wins: 0 };
+              cur.picks += 1;
+              if (winnerSet.has(p.userId)) {
+                cur.wins += 1;
+              }
+              heroStats.set(p.heroId, cur);
             }
           }
         }
 
         const avgMs = totalMs / GAMES_PER_COUNT;
+        const avgRounds = countRounds / GAMES_PER_COUNT;
+        const f = factionByCount[playerCount]!;
+        console.log(
+          `[CuuChau ${playerCount}P] avgMs=${avgMs.toFixed(2)}ms avgRounds=${avgRounds.toFixed(2)} | LORD=${f.LORD_LOYALIST}% REBEL=${f.REBEL}% SPY=${f.SPY}%`,
+        );
         expect(avgMs).toBeLessThan(50);
       },
       25000,
     );
   }
 
-  it('confirms all 25 heroes, all 3 factions, and all 5 original Cửu Châu cards appear across 500 matches', () => {
+  it('confirms 25 heroes, 3 factions, 5 new cards, and healthy 500-match balance telemetry', () => {
     expect(seenHeroes.size).toBe(STANDARD_HERO_IDS.length);
     expect(seenFactions.has('LORD_LOYALIST')).toBe(true);
     expect(seenFactions.has('REBEL')).toBe(true);
@@ -238,5 +270,32 @@ describe('Phase 2A — 500-Match Cửu Châu 112-Card Fuzz Test Gate (4, 5, 6, 7
     for (const cardKey of NEW_CUU_CHAU_CARD_KEYS) {
       expect(seenNewCardKeys.has(cardKey)).toBe(true);
     }
+
+    const avgRounds = totalRoundsAll / totalMatchesAll;
+    const lordPct = (factionWins.LORD_LOYALIST / totalMatchesAll) * 100;
+    const rebelPct = (factionWins.REBEL / totalMatchesAll) * 100;
+    const spyPct = (factionWins.SPY / totalMatchesAll) * 100;
+
+    const rankedHeroes = [...heroStats.entries()]
+      .filter(([, s]) => s.picks >= 10)
+      .map(([id, s]) => ({ id, picks: s.picks, wins: s.wins, rate: (s.wins / s.picks) * 100 }))
+      .sort((a, b) => b.rate - a.rate);
+
+    console.log(
+      `[CuuChau 500M SUMMARY] total=${totalMatchesAll} avgRounds=${avgRounds.toFixed(2)} maxRound=${maxRoundAll} | LORD=${lordPct.toFixed(1)}% REBEL=${rebelPct.toFixed(1)}% SPY=${spyPct.toFixed(1)}%`,
+    );
+    console.log(
+      `[CuuChau TOP5 HEROES] ${rankedHeroes.slice(0, 5).map((h) => `${h.id}:${h.rate.toFixed(1)}%(${h.wins}/${h.picks})`).join(', ')}`,
+    );
+    console.log(
+      `[CuuChau BOT5 HEROES] ${rankedHeroes.slice(-5).reverse().map((h) => `${h.id}:${h.rate.toFixed(1)}%(${h.wins}/${h.picks})`).join(', ')}`,
+    );
+
+    expect(avgRounds).toBeGreaterThanOrEqual(2.5);
+    expect(avgRounds).toBeLessThanOrEqual(25);
+    expect(lordPct).toBeGreaterThanOrEqual(18);
+    expect(lordPct).toBeLessThanOrEqual(78);
+    expect(rebelPct).toBeGreaterThanOrEqual(18);
+    expect(rebelPct).toBeLessThanOrEqual(78);
   });
 });

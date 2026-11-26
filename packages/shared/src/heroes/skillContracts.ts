@@ -8,6 +8,7 @@ import type {
   MasterGameState,
   PendingEffect,
   PlayerCombatState,
+  TurnFlags,
 } from '../types/game.js';
 
 /**
@@ -111,10 +112,37 @@ export interface HeroSkillHandler {
   // --- Quy tắc bị động / Sửa đổi luật ---
   /** Trương Phi (Phao Hống): đánh Sát không giới hạn trong pha PLAY. */
   readonly unlimitedSat?: boolean;
-  /** Mã Siêu (Mã Thuật): điều chỉnh khoảng cách từ `from` tới `to`. */
+  /** Mã Siêu (Mã Thuật) / Thạch Phá Thiên: điều chỉnh khoảng cách từ `from` tới `to`. */
   readonly distanceModifier?: (
     from: PlayerCombatState,
     to: PlayerCombatState,
+    state?: {
+      readonly currentTurnSeat?: number;
+      readonly turnFlags?: TurnFlags;
+      readonly rulesetVersion?: string;
+      readonly enabledPacks?: readonly string[];
+    },
+  ) => number;
+  /** Thủy U Linh (Thủy Bộ Pháp): điều chỉnh khoảng cách phòng thủ từ `attacker` tới `target`. */
+  readonly defensiveDistanceModifier?: (
+    target: PlayerCombatState,
+    attacker: PlayerCombatState,
+    state?: {
+      readonly currentTurnSeat?: number;
+      readonly turnFlags?: TurnFlags;
+      readonly rulesetVersion?: string;
+      readonly enabledPacks?: readonly string[];
+    },
+  ) => number;
+  /** Điều chỉnh giới hạn bài trên tay ở pha Bỏ bài. */
+  readonly maxHandLimitModifier?: (
+    state: {
+      readonly rulesetVersion?: string;
+      readonly enabledPacks?: readonly string[];
+      readonly currentTurnSeat?: number;
+      readonly turnFlags?: TurnFlags;
+    },
+    player: Pick<PlayerCombatState, 'heroId' | 'hp' | 'maxHp' | 'seatIndex'>,
   ) => number;
   /** Hoàng Nguyệt Anh (Kỳ Tài): bỏ qua giới hạn khoảng cách khi dùng Cẩm nang. */
   readonly ignoreScrollDistance?: boolean;
@@ -226,6 +254,22 @@ export interface HeroSkillHandler {
     state: MasterGameState,
     sourceSeat: number,
     targetSeat: number,
+    rt: SkillRuntime,
+  ) => MasterGameState;
+  /** Khi đánh Sát trúng (gây sát thương): Triệu Thiên Hành (Xích Khí Trảm). */
+  readonly onStrikeHit?: (
+    state: MasterGameState,
+    sourceSeat: number,
+    targetSeat: number,
+    strikeCards: readonly CardInstance[],
+    rng: () => number,
+    rt: SkillRuntime,
+  ) => MasterGameState;
+  /** Khi đánh / chuyển bài thành Thiểm để né: Bạch Ngọc Thành (Du Long Thế). */
+  readonly onDodgePlayed?: (
+    state: MasterGameState,
+    seatIndex: number,
+    rng: () => number,
     rt: SkillRuntime,
   ) => MasterGameState;
   /** Sau khi chịu sát thương (và còn sống): Gian Hùng, Phản Quỷ, Cương Liệt, Di Kế. */

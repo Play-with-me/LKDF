@@ -2,9 +2,29 @@
 
 > **Dự án:** Cửu Châu Ẩn Kiếm / Blades of the Nine Realms (Windows Standalone Portable + Lộ trình lên Steam Phase 4)
 > **Ngày cập nhật:** 2026-11-26
-> **Trạng thái hiện tại:** Đã commit **Phase 1 (`c9944d0`)** và hoàn thành **Phase 2A** *(giữ trong working tree chưa commit theo yêu cầu Sếp)* theo [KE_HOACH_TONG_THE_CUU_CHAU_AN_KIEM.md](./KE_HOACH_TONG_THE_CUU_CHAU_AN_KIEM.md). Bước kế tiếp là **Phase 2B** (remix nốt 15 bộ chiêu tướng còn lại + cân bằng + xuất Portable `.zip`).
+> **Trạng thái hiện tại:** Đã commit **Phase 2A (`4facc12`)** và hoàn thành **Phase 2B** *(25/25 hiệp khách remix + 500 ván fuzz đo cân bằng + Portable `.zip` `166.61 MB`, giữ trong working tree chưa commit để Sếp kiểm tra)* theo [KE_HOACH_TONG_THE_CUU_CHAU_AN_KIEM.md](./KE_HOACH_TONG_THE_CUU_CHAU_AN_KIEM.md). Bước kế tiếp là **Phase 2C** (AI Art Factory: 25 chân dung + 32 tranh bài + 3 nền Doanh Trại).
 
-## 0. Bằng Chứng Kiểm Chứng Mới Nhất — Phase 2A (`2026-11-26`)
+## 0. Bằng Chứng Kiểm Chứng Mới Nhất — Phase 2B (`2026-11-26`)
+- **Commit nền:** `[main 4facc12]` (Phase 2A — 59 files). Toàn bộ thay đổi Phase 2B đang giữ sạch trong working tree để Sếp trải nghiệm bản Portable `.zip` trước khi commit.
+- **25/25 Bộ Chiêu Remix Độc Bản (`packages/shared`):**
+  - Thêm Single Source of Truth `getPlayerMaxHandLimit` & `getPlayerMaxSatPerTurn` dùng chung xuyên suốt Lõi trận, Bot AI (`bot/index.ts`) và Giao diện (`MatchArenaLayout.tsx`, `matchTypes.ts`), cùng 4 hook mở rộng trong `skillContracts.ts` & `distance/index.ts` (`defensiveDistanceModifier`, `maxHandLimitModifier`, `onDodgePlayed`, `onStrikeHit`) và miễn nhiễm `kinh_loi_chan` cho *Thẩm Tinh Hà* khi hết bài.
+  - Hoàn tất đủ **15 bộ chiêu remix còn lại** via TDD (`cuuChauMechanics.test.ts` **31/31**, gồm non-regression 108 lá): *Triệu Thiên Hành* (Xích Khí Trảm 1/lượt rút 1), *Thẩm Tinh Hà* (+1 giữ bài & Vô Ngã Cảnh chặn `pha_giap_tram`/`kinh_loi_chan`), *Bạch Ngọc Thành* (né ngoài lượt tay ≤ 2 rút 1), *Khương Vô Tà* (Thiết Kỵ ra Đen rút bù 1), *Cố Huyền Cơ* (Quỷ Tài đổi phán xét rút 1), *Nghiêm Cương* (Cương Liệt ra Cơ rút 1 & +1 giữ bài khi bị thương), *Thạch Phá Thiên* (Bá Thể Phá `-1` khoảng cách khi bật), *Lý Tri Vi* (+1 giữ bài & cuối lượt bị thương tay ≤ 1 rút 1), *Thủy U Linh* (`+1` thủ khi chưa mặc Giáp), *Cam Dạ Sát* (1/lượt dùng bí kíp tay ≤ 2 rút 1), *Hoàng Bất Dịch* (Khổ Nhục lần đầu +1 Kiếm Trảm & HP ≤ 2 +1 giữ bài), *Tiêu Viêm Lãng* (+1 giữ bài & Phản Gián đoán sai rút 1), *Hạ Tuyết Nghi* (Lưu Ly còn ≤ 1 lá rút 1), *Dược Vô Ưu* (Thanh Tâm Đan chữa người khác rút 1), *Dạ Vô Ngân* (Nguyệt Ẩn Ảnh cuối lượt rút 2 nếu tay ≤ 1, ngược lại 1).
+- **Telemetry 500 Ván Fuzz Cửu Châu 112 Lá (`cuuChauFuzz.test.ts`):**
+  - Tổng hợp **500/500 ván** (`100` ván/mốc 4P–8P): `0` deadlock, `0` rò rỉ `PlayerViewState`, `< 42ms/ván`, `avgRounds = 8.95` (`maxRound = 61`).
+  - Tỷ lệ thắng theo phe: `LORD_LOYALIST = 29.6%` (`27%/33%/27%/31%/30%`), `REBEL = 56.4%` (`39%/52%/71%/62%/58%`), `SPY = 14.0%` (`34%/15%/2%/7%/12%`).
+  - Tỷ lệ thắng 25 tướng đều xuất hiện (`97–130` lượt chọn/tướng, phân bố `24.4%–62.1%`, không tướng nào vượt ngưỡng lệch >75%): Top 5 `zhang_liao 62.1%`, `sun_shang_xiang 58.6%`, `xia_hou_dun 48.1%`, `guan_yu 47.4%`, `ma_chao 46.0%`; Bottom 5 `lu_xun 24.4%`, `zhou_yu 26.3%`, `zhang_fei 27.4%`, `huang_gai 28.5%`, `hua_tuo 28.9%`.
+- **Kết quả kiểm chứng sau lần sửa cuối:**
+  - `npm.cmd run typecheck`: `0` lỗi (`shared`, `desktop` renderer+electron, `server`).
+  - `npm.cmd run build`: `exit code 0` (`2412` Vite modules + `tsc`).
+  - `npm.cmd run test:unit`: **17/17 files · 153/153 tests passed**.
+  - `npm.cmd run test:fuzz`: **2/2 files · 12/12 tests = 1.000/1.000 ván passed**.
+  - `npm.cmd run test:integration`: **7/7 files · 26/26 tests passed**.
+  - `npx.cmd vitest run apps/desktop/src/features/match/offlineBot.test.ts apps/desktop/src/i18n/i18nParity.test.ts`: **2/2 files · 7/7 tests passed**.
+  - `npm.cmd run assets:check`: **PASS** (`59` tệp runtime, `60` mục manifest, `0` AI, `1.15 MB`).
+  - Live Electron `45.3.3` UI Audit (`1280×720` & `960×600`, `VI` & `EN`): **14/14 checks PASS**, `0` lỗi console, `0` URL lỗi.
+  - **Portable `.zip` Mới:** `C:\Tam quốc sát\apps\desktop\release\BladesOfTheNineRealms-Portable-0.1.0.zip` (**166.61 MB**, tạo lúc `2026-11-26 19:59:36`).
+
+## 0A. Bằng Chứng Kiểm Chứng Phase 2A (`2026-11-26`) — Đã Commit `4facc12`
 - **Commit nền:** `[main c9944d0]` (Phase 1 — 71 files). Toàn bộ thay đổi Phase 2A đang giữ sạch trong working tree để Sếp nghiệm thu trước khi commit.
 - **Lõi gameplay Cửu Châu 112 lá & Bot AI (`packages/shared`):**
   - Thực thi thật **10 bộ chiêu remix** (`cuuChauPack.ts` + `registry.ts` + `distance/index.ts` + `combatCore.ts` + `combat.ts` + `actionDescriptor.ts`) và **5 lá bài mới Cửu Châu** (`pha_giap_tram` *Phá Giáp Trảm* / *Armor-Piercing Strike*, `chan_khi_ho_the` *Chân Khí Hộ Thể* / *Qi Ward*, `kinh_loi_chan` *Kinh Lôi Chấn* / *Thunderclap Pulse*, `hoan_anh_giap` *Huyễn Ảnh Giáp* / *Mirage Cloak*, `tu_khi_hoan` *Tụ Khí Hoàn* / *Spirit Resonance Ring*) giữ đúng bộ bài `112` lá (`28♠/28♥/28♣/28♦`).

@@ -55,10 +55,10 @@ describe('Cửu Châu Ẩn Kiếm Original IP Core Pack', () => {
     }
   });
 
-  it('defines 25 original bilingual heroes with 0 Three Kingdoms IP names and 10 remixed skill kits', () => {
+  it('defines 25 original bilingual heroes with 0 Three Kingdoms IP names and 25 remixed skill kits', () => {
     expect(CUU_CHAU_HEROES).toHaveLength(25);
     expect(new Set(CUU_CHAU_HEROES.map((h) => h.id)).size).toBe(25);
-    expect(CUU_CHAU_REMIXED_HERO_IDS).toHaveLength(10);
+    expect(CUU_CHAU_REMIXED_HERO_IDS).toHaveLength(25);
 
     for (const hero of CUU_CHAU_HEROES) {
       expect(hero.nameVi.length).toBeGreaterThan(2);

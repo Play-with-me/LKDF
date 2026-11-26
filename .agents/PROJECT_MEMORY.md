@@ -3,22 +3,25 @@
 - **Ngày cập nhật:** 2026-11-26
 - **Trạng thái hiện tại:**
   - **Phase 0:** Đã commit sạch (`77d925a`).
-  - **Phase 1 (1A + 1B):** Đã commit sạch (`c9944d0`, 71 files; kèm Portable `.zip` `166.57 MB` tại `apps/desktop/release/`).
-  - **Phase 2A ✅ HOÀN THÀNH (đang giữ uncommitted trong working tree theo yêu cầu):** Đã đưa **10 bộ chiêu remix** + **5 lá bài mới Cửu Châu** (`pha_giap_tram`, `chan_khi_ho_the`, `kinh_loi_chan`, `hoan_anh_giap`, `tu_khi_hoan`) + **Bot AI** vào chạy thật trên bộ bài 112 lá (`28×4`), vá lỗi `ASK_LIU_LI.excludedSeats`, và hoàn thiện **100% song ngữ VI/EN** mọi màn hình/hộp thoại + `translateActionLogLineEn`.
+  - **Phase 1 (1A + 1B):** Đã commit sạch (`c9944d0`, 71 files).
+  - **Phase 2A:** Đã commit sạch (`4facc12`, 59 files — 10 chiêu remix, 5 lá bài mới 112 lá, Bot AI, VI/EN 100%).
+  - **Phase 2B ✅ HOÀN THÀNH (đang giữ uncommitted trong working tree):** Remix nốt **15 bộ chiêu còn lại** -> **25/25 hiệp khách Cửu Châu** có cơ chế riêng, thêm SSOT `getPlayerMaxHandLimit` / `getPlayerMaxSatPerTurn`, tự map skill VI→EN trong `matchTypes.ts`, đo **500 ván fuzz cân bằng** (`24.4%–62.1%` đều 25 tướng), và xuất Portable `.zip` mới (`166.61 MB`).
 - **Lộ trình đóng gói đã chốt:** Hoàn thiện gameplay & art ở bản Windows/Portable trên máy trước; **Phase 4** mới đưa lên **Steam**.
 
-## Bằng chứng kiểm chứng sau lần sửa cuối (`2026-11-26`)
+## Bằng chứng kiểm chứng Phase 2B sau lần sửa cuối (`2026-11-26`)
 - `npm.cmd run typecheck`: `0` lỗi (`shared`, `desktop` renderer+electron, `server`).
 - `npm.cmd run build`: `exit 0` (`2412` Vite modules + `tsc`).
-- `npm.cmd run test:unit`: **17/17 files · 137/137 tests** (`cuuChauMechanics.test.ts` 15/15).
-- `npm.cmd run test:fuzz`: **2/2 files · 12/12 tests = 1.000/1.000 ván** (`500` chuẩn + `500` Cửu Châu 112 lá, 4–8P, đủ 25 tướng & 5 lá mới, `0` deadlock).
+- `npm.cmd run test:unit`: **17/17 files · 153/153 tests** (`cuuChauMechanics.test.ts` 31/31 + `cuuChauPack.test.ts` 4/4).
+- `npm.cmd run test:fuzz`: **2/2 files · 12/12 tests = 1.000/1.000 ván** (`avgRounds=8.95`, `LORD=29.6% REBEL=56.4% SPY=14.0%`, 25 tướng `24.4%–62.1%`, `0` deadlock, `0` rò rỉ).
 - `npm.cmd run test:integration`: **7/7 files · 26/26 tests**.
-- `vitest run` (`offlineBot.test.ts` + `i18nParity.test.ts`): **2/2 files · 7/7 tests** (0 dấu tiếng Việt trong `en.json` & bản dịch log/catalog).
+- `vitest run` (`offlineBot.test.ts` + `i18nParity.test.ts`): **2/2 files · 7/7 tests**.
 - `assets:check`: **PASS** (`59` tệp, `60` manifest, `0` AI, `1.15 MB`).
-- Live Electron `45.3.3` UI Audit (`1280×720` & `960×600`, `VI` & `EN`): **14/14 checks PASS**, `0` console errors, `0` failed URLs, `0` chữ Tam Quốc, `0` dấu tiếng Việt ở chế độ EN, `0` overflow.
+- Live Electron `45.3.3` UI Audit (`1280×720` & `960×600`, `VI` & `EN`): **14/14 checks PASS**, `0` console errors, `0` failed URLs, `0` overflow.
+- Windows Portable `.zip`: `apps/desktop/release/BladesOfTheNineRealms-Portable-0.1.0.zip` (`166.61 MB`, built `2026-11-26 19:59:36`).
 
-## Ghi chú bàn giao kỹ thuật cho Bước kế tiếp (Phase 2B Handoff Notes)
-- **Mục tiêu Phase 2B đề xuất:** Hoàn tất **15 bộ chiêu remix còn lại** (nối theo cùng pattern `isCuuChauRuleset(state)` trong `cuuChauPack.ts` -> `registry.ts` -> `engine/*` -> `bot/index.ts`), thêm test TDD vào `cuuChauMechanics.test.ts`, chạy cổng `1.000` ván fuzz + telemetry cân bằng thắng/thua 25 tướng, sau đó bước sang **Phase 2C** (AI Art Factory 25 chân dung + 32 tranh bài + 3 nền + đóng gói Portable `.zip` mới).
+## Ghi chú bàn giao kỹ thuật cho Bước kế tiếp (Phase 2C Handoff Notes)
+- **Mục tiêu Phase 2C:** Commit Phase 2B nếu Sếp duyệt, rồi dựng quy trình & tài nguyên **AI Art Factory** (25 chân dung tướng Cửu Châu + 32 tranh bài + 3 nền Doanh Trại) qua `scripts/assets-pipeline.mjs` & `assets-manifest.json`, giữ dung lượng media gọn cho Portable `.zip` & Steam.
+- **Móc vừa thêm ở Phase 2B cần giữ nguyên:** `getPlayerMaxHandLimit`, `getPlayerMaxSatPerTurn` (`packages/shared/src/engine/combatCore.ts`), `defensiveDistanceModifier` / `maxHandLimitModifier` / `onDodgePlayed` / `onStrikeHit` (`skillContracts.ts`), và `isCuuChauRuleset(state)` giữ 108-card legacy nguyên vẹn.
 - **Quy ước quan trọng cần giữ:** `MasterGameState.actionLog` giữ chuỗi tiếng Việt gốc để không làm gãy regex trong `useMatchMotion.ts` & `matchSounds.ts`; mọi dịch hiển thị (EN + Cửu Châu) đi qua `formatCuuChauDisplayText()` trong `matchTypes.ts`.
 - **Tên mặc định Steam Offline:** `App.tsx` tự chuyển đổi `'Hiệp Khách'` <-> `'Wanderer'` khi đổi ngôn ngữ `VI`/`EN` cho `steam_local_player`.
 - **Lệnh Windows/PowerShell 5.1:** Luôn dùng `npm.cmd`/`npx.cmd`, kiểm tra `if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }`, và chạy Electron audit từ `.\node_modules\.bin\electron.cmd`.

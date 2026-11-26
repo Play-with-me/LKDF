@@ -93,7 +93,8 @@ function handleJiJiang(
   }
 
   const hasLienNo = lord.equipments.weapon?.cardKey === 'gia_cat_lien_no';
-  if (!hasLienNo && (state.turnFlags?.satUsedThisTurn ?? 0) >= 1) {
+  const maxSatThisTurn = 1 + (state.turnFlags?.bonusSatLimitThisTurn ?? 0);
+  if (!hasLienNo && (state.turnFlags?.satUsedThisTurn ?? 0) >= maxSatThisTurn) {
     throw new Error('Đã hết lượt đánh Sát trong lượt này.');
   }
 
@@ -106,7 +107,7 @@ function handleJiJiang(
     throw new Error('Mục tiêu Kích Tướng không hợp lệ hoặc ngoài tầm đánh.');
   }
 
-  if (target.heroId === 'zhuge_liang' && target.handCards.length === 0) {
+  if (!rt.canTargetPlayerWithCard(state, target, 'sat')) {
     throw new Error('Không thể chọn Gia Cát Lượng đang Không Thành làm mục tiêu Sát.');
   }
 

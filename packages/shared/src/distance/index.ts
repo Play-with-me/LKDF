@@ -1,4 +1,4 @@
-import type { HeroId, PlayerEquipments } from '../types/game.js';
+import type { HeroId, PlayerEquipments, TurnFlags } from '../types/game.js';
 import { getHeroSkillHandler } from '../heroes/registry.js';
 
 export interface DistancePlayerLike {
@@ -10,6 +10,9 @@ export interface DistancePlayerLike {
 
 export interface DistanceStateLike {
   readonly enabledPacks?: readonly string[];
+  readonly rulesetVersion?: string;
+  readonly currentTurnSeat?: number;
+  readonly turnFlags?: TurnFlags;
   readonly players: readonly DistancePlayerLike[];
 }
 
@@ -88,12 +91,20 @@ export function calculateDistance(
   const skillModifier = getHeroSkillHandler(fromPlayer.heroId, state)?.distanceModifier?.(
     fromPlayer as never,
     toPlayer as never,
+    state as never,
   );
   if (skillModifier !== undefined) {
     modifier += skillModifier;
   } else if (fromPlayer.heroId === 'ma_chao') {
     modifier -= 1;
   }
+  const defensiveModifier =
+    getHeroSkillHandler(toPlayer.heroId, state)?.defensiveDistanceModifier?.(
+      toPlayer as never,
+      fromPlayer as never,
+      state as never,
+    ) ?? 0;
+  modifier += defensiveModifier;
 
   return Math.max(1, base + modifier);
 }

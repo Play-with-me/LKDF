@@ -119,6 +119,11 @@ describe('i18n VI/EN parity and Cửu Châu localization', () => {
       'Ghế 1 trang bị Tụ Khí Hoàn (tầm 2, bỏ 2 lá để đánh như Sát).',
       'Ghế 5 lâm vào hấp hối (0 máu)!',
       'Ghế 5 tử trận!',
+      'Ghế 1 kích hoạt Xích Khí Trảm, rút thêm 1 lá.',
+      'Ghế 2 kích hoạt Phá Phong Quyết, rút bù 1 lá bài.',
+      'Ghế 3 kích hoạt Bất Khuất Hồn, phán xét Cơ rút 1 lá.',
+      'Ghế 4 kích hoạt Chuyển Hoa Ảnh, rút 1 lá bài.',
+      'Ghế 5 kích hoạt Nguyệt Ẩn Ảnh, rút 2 lá bài.',
     ];
 
     for (const line of sampleLogs) {

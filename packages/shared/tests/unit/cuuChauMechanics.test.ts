@@ -7,6 +7,8 @@ import {
   canReachForSnatch,
   createCuuChau112Deck,
   createInitialMatchSetup,
+  getPlayerMaxHandLimit,
+  getPlayerMaxSatPerTurn,
   isCuuChauRuleset,
   projectStateForPlayer,
   selectLordHero,
@@ -494,5 +496,541 @@ describe('Phase 2A Slice 2 — 5 Original Cửu Châu Cards Breaking the 108-Car
     );
     s2 = applyGameAction(s2, { type: 'RESPOND_DODGE', seatIndex: 2, cardId: null }, createSeededRng(14));
     expect(s2.players[2]!.hp).toBe(beforeHp - 1);
+  });
+});
+
+describe('Phase 2B Slice 1 — Thanh Vân Môn Remaining 4 Hero Remixes', () => {
+  it('11. Triệu Thiên Hành (guan_yu): Red Strike hit draws 1 card once per turn', () => {
+    let state = setupCuuChauMatch(['liu_bei', 'guan_yu', 'sun_quan', 'zhang_liao']);
+    const gySeat = state.players.find((p) => p.heroId === 'guan_yu')!.seatIndex;
+    const victimSeat = (gySeat + 1) % 4;
+    const lienNo = card('ln1', 'gia_cat_lien_no', 'Liên Hoàn Nỏ', 'WEAPON', 'CLUB', 1, 1);
+    const redCard1 = card('r1', 'dao', 'Hồi Xuân Đan', 'BASIC', 'HEART', 3);
+    const redCard2 = card('r2', 'thiem', 'Thân Pháp', 'BASIC', 'DIAMOND', 4);
+    state = {
+      ...state,
+      currentTurnSeat: gySeat,
+      turnPhase: 'PLAY',
+      players: state.players.map((p) =>
+        p.seatIndex === gySeat
+          ? { ...p, handCards: [redCard1, redCard2], equipments: { ...p.equipments, weapon: lienNo } }
+          : p.seatIndex === victimSeat
+            ? { ...p, hp: 4, handCards: [] }
+            : p,
+      ),
+    };
+    let s1 = applyGameAction(
+      state,
+      { type: 'PLAY_CARD', seatIndex: gySeat, cardIds: ['r1'], targetSeats: [victimSeat], asCardKey: 'sat' },
+      createSeededRng(21),
+    );
+    s1 = applyGameAction(s1, { type: 'RESPOND_DODGE', seatIndex: victimSeat, cardId: null }, createSeededRng(21));
+    expect(s1.players[victimSeat]!.hp).toBe(3);
+    expect(s1.turnFlags?.crimsonEdgeDrawnThisTurn).toBe(true);
+    // Had [r1, r2], spent r1 -> 1 left + 1 drawn from Crimson Edge = 2 hand cards
+    expect(s1.players[gySeat]!.handCards).toHaveLength(2);
+
+    // 2nd Red Strike hit same turn does NOT trigger Crimson Edge again
+    let s2 = applyGameAction(
+      s1,
+      { type: 'PLAY_CARD', seatIndex: gySeat, cardIds: ['r2'], targetSeats: [victimSeat], asCardKey: 'sat' },
+      createSeededRng(21),
+    );
+    s2 = applyGameAction(s2, { type: 'RESPOND_DODGE', seatIndex: victimSeat, cardId: null }, createSeededRng(21));
+    expect(s2.players[victimSeat]!.hp).toBe(2);
+    expect(s2.players[gySeat]!.handCards).toHaveLength(1);
+  });
+
+  it('12. Thẩm Tinh Hà (zhuge_liang): +1 max hand limit and Empty Mind blocks kinh_loi_chan & pha_giap_tram', () => {
+    let state = setupCuuChauMatch(['liu_bei', 'zhuge_liang', 'sun_quan', 'cao_cao']);
+    const zlSeat = state.players.find((p) => p.heroId === 'zhuge_liang')!.seatIndex;
+    const pulse = card('kl_z', 'kinh_loi_chan', 'Kinh Lôi Chấn', 'NORMAL_SCROLL', 'SPADE', 3);
+    const pierce = card('pg_z', 'pha_giap_tram', 'Phá Giáp Trảm', 'BASIC', 'CLUB', 1);
+    const extra1 = card('ex1', 'sat', 'Kiếm Trảm', 'BASIC', 'SPADE', 7);
+    const extra2 = card('ex2', 'sat', 'Kiếm Trảm', 'BASIC', 'SPADE', 8);
+    const extra3 = card('ex3', 'sat', 'Kiếm Trảm', 'BASIC', 'SPADE', 9);
+    const extra4 = card('ex4', 'sat', 'Kiếm Trảm', 'BASIC', 'SPADE', 10);
+    state = {
+      ...state,
+      currentTurnSeat: 0,
+      turnPhase: 'PLAY',
+      players: state.players.map((p) =>
+        p.seatIndex === 0
+          ? { ...p, handCards: [pulse, pierce] }
+          : p.seatIndex === zlSeat
+            ? { ...p, hp: 3, handCards: [] }
+            : p,
+      ),
+    };
+    const zlEmpty = state.players[zlSeat]!;
+    expect(getPlayerMaxHandLimit(state, zlEmpty)).toBe(4);
+    expect(() =>
+      applyGameAction(state, { type: 'PLAY_CARD', seatIndex: 0, cardIds: ['kl_z'], targetSeats: [zlSeat] }, createSeededRng(22)),
+    ).toThrow('TARGET_IMMUNE_TO_CARD');
+    expect(() =>
+      applyGameAction(state, { type: 'PLAY_CARD', seatIndex: 0, cardIds: ['pg_z'], targetSeats: [zlSeat] }, createSeededRng(22)),
+    ).toThrow('TARGET_IMMUNE_TO_CARD');
+
+    // Discard phase allows keeping 4 cards (3 HP + 1 Astral Chart)
+    const discardState: MasterGameState = {
+      ...state,
+      currentTurnSeat: zlSeat,
+      turnPhase: 'DISCARD',
+      players: state.players.map((p) =>
+        p.seatIndex === zlSeat ? { ...p, hp: 3, handCards: [extra1, extra2, extra3, extra4] } : p,
+      ),
+    };
+    const afterDiscard = stepEngine(discardState, createSeededRng(22));
+    expect(afterDiscard.players[zlSeat]!.handCards).toHaveLength(4);
+    expect(afterDiscard.currentTurnSeat).not.toBe(zlSeat);
+  });
+
+  it('13. Bạch Ngọc Thành (zhao_yun): playing Shadow Step out-of-turn with <=2 hand remaining draws 1', () => {
+    let state = setupCuuChauMatch(['liu_bei', 'zhao_yun', 'sun_quan', 'cao_cao']);
+    const zySeat = state.players.find((p) => p.heroId === 'zhao_yun')!.seatIndex;
+    const strike = card('st_zy', 'sat', 'Kiếm Trảm', 'BASIC', 'SPADE', 7);
+    const dodgeSat = card('ds_zy', 'sat', 'Kiếm Trảm', 'BASIC', 'HEART', 8);
+    const extra = card('e_zy', 'dao', 'Hồi Xuân Đan', 'BASIC', 'HEART', 9);
+    state = {
+      ...state,
+      currentTurnSeat: 0,
+      turnPhase: 'PLAY',
+      players: state.players.map((p) =>
+        p.seatIndex === 0
+          ? { ...p, handCards: [strike] }
+          : p.seatIndex === zySeat
+            ? { ...p, handCards: [dodgeSat, extra] }
+            : p,
+      ),
+    };
+    let s1 = applyGameAction(
+      state,
+      { type: 'PLAY_CARD', seatIndex: 0, cardIds: ['st_zy'], targetSeats: [zySeat] },
+      createSeededRng(23),
+    );
+    s1 = applyGameAction(
+      s1,
+      { type: 'RESPOND_DODGE', seatIndex: zySeat, cardId: 'ds_zy' },
+      createSeededRng(23),
+    );
+    // Left with [extra] (1 <= 2), drew 1 -> total 2 cards
+    expect(s1.players[zySeat]!.handCards).toHaveLength(2);
+  });
+
+  it('14. Khương Vô Tà (ma_chao): Black Tie Qi flip draws 1 compensation card', () => {
+    let state = setupCuuChauMatch(['liu_bei', 'ma_chao', 'sun_quan', 'cao_cao']);
+    const mcSeat = state.players.find((p) => p.heroId === 'ma_chao')!.seatIndex;
+    const victimSeat = (mcSeat + 1) % 4;
+    const blackJudge = card('bj_mc', 'sat', 'Kiếm Trảm', 'BASIC', 'SPADE', 9);
+    const strike = card('st_mc', 'sat', 'Kiếm Trảm', 'BASIC', 'CLUB', 6);
+    state = {
+      ...state,
+      currentTurnSeat: mcSeat,
+      turnPhase: 'PLAY',
+      drawPile: [blackJudge, ...state.drawPile],
+      players: state.players.map((p) =>
+        p.seatIndex === mcSeat
+          ? { ...p, handCards: [strike] }
+          : p.seatIndex === victimSeat
+            ? { ...p, handCards: [] }
+            : p,
+      ),
+    };
+    let s1 = applyGameAction(
+      state,
+      { type: 'PLAY_CARD', seatIndex: mcSeat, cardIds: ['st_mc'], targetSeats: [victimSeat] },
+      createSeededRng(24),
+    );
+    expect(s1.interruptStack[0]?.kind).toBe('ASK_TIE_QI');
+    s1 = applyGameAction(
+      s1,
+      { type: 'RESPOND_TIE_QI', seatIndex: mcSeat, activate: true },
+      createSeededRng(24),
+    );
+    // Judge flipped blackJudge (SPADE), so Ma Chao missed lock and compensated by drawing 1 card!
+    expect(s1.players[mcSeat]!.handCards).toHaveLength(1);
+  });
+});
+
+describe('Phase 2B Slice 2 — Huyền Thiết Phủ Remaining 5 Hero Remixes', () => {
+  it('15. Cố Huyền Cơ (si_ma_yi): replacing a judgment card via Gui Cai draws 1 card', () => {
+    let state = setupCuuChauMatch(['liu_bei', 'si_ma_yi', 'sun_quan', 'cao_cao']);
+    const smSeat = state.players.find((p) => p.heroId === 'si_ma_yi')!.seatIndex;
+    const oldJudge = card('jg0', 'sat', 'Kiếm Trảm', 'BASIC', 'HEART', 5);
+    const swapCard = card('sw1', 'thiem', 'Thân Pháp', 'BASIC', 'SPADE', 2);
+    state = {
+      ...state,
+      players: state.players.map((p) =>
+        p.seatIndex === smSeat ? { ...p, handCards: [swapCard] } : p,
+      ),
+      pendingEffects: [
+        {
+          kind: 'RESOLVE_JUDGMENT',
+          purpose: 'LAC_BAT_TU_THUC',
+          ownerSeat: 0,
+          judgeCard: oldJudge,
+        },
+      ],
+      interruptStack: [
+        {
+          id: 'gc_1',
+          kind: 'WAIT_GUI_CAI',
+          targetSeat: smSeat,
+          judgeOwnerSeat: 0,
+          judgePurpose: 'LAC_BAT_TU_THUC',
+          judgeCard: oldJudge,
+        },
+      ],
+    };
+    const next = applyGameAction(
+      state,
+      { type: 'RESPOND_GUI_CAI', seatIndex: smSeat, cardId: 'sw1' },
+      createSeededRng(25),
+    );
+    // Replaced with sw1 -> drew 1 card -> still has 1 card in hand!
+    expect(next.players[smSeat]!.handCards).toHaveLength(1);
+    expect(next.players[smSeat]!.handCards[0]!.id).not.toBe('sw1');
+  });
+
+  it('16. Nghiêm Cương (xia_hou_dun): Heart Gang Lie draws 1 card & +1 hand limit while wounded', () => {
+    let state = setupCuuChauMatch(['liu_bei', 'xia_hou_dun', 'sun_quan', 'cao_cao']);
+    const xhdSeat = state.players.find((p) => p.heroId === 'xia_hou_dun')!.seatIndex;
+    const fullPlayer = state.players[xhdSeat]!;
+    expect(getPlayerMaxHandLimit(state, fullPlayer)).toBe(fullPlayer.hp);
+
+    const woundedHeart = card('jh1', 'dao', 'Hồi Xuân Đan', 'BASIC', 'HEART', 6);
+    state = {
+      ...state,
+      drawPile: [woundedHeart, ...state.drawPile],
+      players: state.players.map((p) =>
+        p.seatIndex === xhdSeat ? { ...p, hp: p.maxHp - 1, handCards: [] } : p,
+      ),
+      interruptStack: [
+        {
+          id: 'gl_1',
+          kind: 'ASK_GANG_LIE',
+          targetSeat: xhdSeat,
+          sourceSeat: 0,
+        },
+      ],
+    };
+    expect(getPlayerMaxHandLimit(state, state.players[xhdSeat]!)).toBe(state.players[xhdSeat]!.hp + 1);
+
+    const next = applyGameAction(
+      state,
+      { type: 'RESPOND_GANG_LIE', seatIndex: xhdSeat, activate: true },
+      createSeededRng(26),
+    );
+    // Flipped HEART -> Gang Lie missed, so Nghiêm Cương drew 1 card
+    expect(next.players[xhdSeat]!.handCards).toHaveLength(1);
+  });
+
+  it('17. Thạch Phá Thiên (xu_chu): active Luo Yi gives -1 offensive distance during his turn', () => {
+    let state = setupCuuChauMatch(['liu_bei', 'xu_chu', 'sun_quan', 'cao_cao']);
+    const xcSeat = state.players.find((p) => p.heroId === 'xu_chu')!.seatIndex;
+    const oppositeSeat = (xcSeat + 2) % 4;
+    expect(calculateDistance(state, xcSeat, oppositeSeat)).toBe(2);
+
+    const withLuoYi: MasterGameState = {
+      ...state,
+      currentTurnSeat: xcSeat,
+      turnFlags: { satUsedThisTurn: 0, skipPlayPhase: false, luoYiActive: true },
+    };
+    expect(calculateDistance(withLuoYi, xcSeat, oppositeSeat)).toBe(1);
+  });
+
+  it('18. Lý Tri Vi (guo_jia): +1 max hand limit and draws 1 at END if wounded and hand <= 1', () => {
+    let state = setupCuuChauMatch(['liu_bei', 'guo_jia', 'sun_quan', 'cao_cao']);
+    const gjSeat = state.players.find((p) => p.heroId === 'guo_jia')!.seatIndex;
+    state = {
+      ...state,
+      currentTurnSeat: gjSeat,
+      turnPhase: 'END',
+      players: state.players.map((p) =>
+        p.seatIndex === gjSeat ? { ...p, hp: p.maxHp - 1, handCards: [] } : p,
+      ),
+    };
+    expect(getPlayerMaxHandLimit(state, state.players[gjSeat]!)).toBe(state.players[gjSeat]!.hp + 1);
+    const next = stepEngine(state, createSeededRng(28));
+    expect(next.players[gjSeat]!.handCards).toHaveLength(1);
+  });
+
+  it('19. Thủy U Linh (zhen_ji): +1 defensive distance while wearing no Armor', () => {
+    let state = setupCuuChauMatch(['liu_bei', 'zhen_ji', 'sun_quan', 'cao_cao']);
+    const zjSeat = state.players.find((p) => p.heroId === 'zhen_ji')!.seatIndex;
+    const attackerSeat = (zjSeat + 1) % 4;
+    expect(calculateDistance(state, attackerSeat, zjSeat)).toBe(2);
+
+    const withArmor: MasterGameState = {
+      ...state,
+      players: state.players.map((p) =>
+        p.seatIndex === zjSeat
+          ? {
+              ...p,
+              equipments: {
+                ...p.equipments,
+                armor: card('ar1', 'bat_quai_tran', 'Bát Quái Y', 'ARMOR', 'SPADE', 2),
+              },
+            }
+          : p,
+      ),
+    };
+    expect(calculateDistance(withArmor, attackerSeat, zjSeat)).toBe(1);
+  });
+});
+
+describe('Phase 2B Slice 3 — Xích Diễm Bang Remaining 4 Hero Remixes', () => {
+  it('20. Cam Dạ Sát (gan_ning): playing scroll (including Black Break Formation) with <=2 hand remaining draws 1 once/turn', () => {
+    let state = setupCuuChauMatch(['liu_bei', 'gan_ning', 'sun_quan', 'cao_cao']);
+    const gnSeat = state.players.find((p) => p.heroId === 'gan_ning')!.seatIndex;
+    const victimSeat = (gnSeat + 1) % 4;
+    const black1 = card('b1', 'sat', 'Kiếm Trảm', 'BASIC', 'SPADE', 6);
+    const black2 = card('b2', 'thiem', 'Thân Pháp', 'BASIC', 'CLUB', 5);
+    const oppCard1 = card('oc1', 'sat', 'Kiếm Trảm', 'BASIC', 'HEART', 7);
+    const oppCard2 = card('oc2', 'thiem', 'Thân Pháp', 'BASIC', 'DIAMOND', 8);
+    state = {
+      ...state,
+      currentTurnSeat: gnSeat,
+      turnPhase: 'PLAY',
+      players: state.players.map((p) =>
+        p.seatIndex === gnSeat
+          ? { ...p, handCards: [black1, black2] }
+          : p.seatIndex === victimSeat
+            ? { ...p, handCards: [oppCard1, oppCard2] }
+            : { ...p, handCards: [] },
+      ),
+    };
+    let s1 = applyGameAction(
+      state,
+      { type: 'PLAY_CARD', seatIndex: gnSeat, cardIds: ['b1'], targetSeats: [victimSeat], asCardKey: 'qua_ha_sai_cau' },
+      createSeededRng(29),
+    );
+    expect(s1.turnFlags?.qiXiDrawnThisTurn).toBe(true);
+    // Spent b1 -> 1 left (<=2), Night Raid Break drew 1 -> 2 hand cards!
+    expect(s1.players[gnSeat]!.handCards).toHaveLength(2);
+  });
+
+  it('21. Hoàng Bất Dịch (huang_gai): 1st ku_rou per turn grants +1 Strike limit AND +1 hand limit when HP <= 2', () => {
+    let state = setupCuuChauMatch(['liu_bei', 'huang_gai', 'sun_quan', 'cao_cao']);
+    const hgSeat = state.players.find((p) => p.heroId === 'huang_gai')!.seatIndex;
+    const victimSeat = (hgSeat + 1) % 4;
+    const s1Card = card('hs1', 'sat', 'Kiếm Trảm', 'BASIC', 'SPADE', 7);
+    const s2Card = card('hs2', 'sat', 'Kiếm Trảm', 'BASIC', 'HEART', 8);
+    state = {
+      ...state,
+      currentTurnSeat: hgSeat,
+      turnPhase: 'PLAY',
+      players: state.players.map((p) =>
+        p.seatIndex === hgSeat
+          ? { ...p, hp: 3, handCards: [s1Card, s2Card] }
+          : p.seatIndex === victimSeat
+            ? { ...p, hp: 4, handCards: [] }
+            : p,
+      ),
+    };
+    expect(getPlayerMaxSatPerTurn(state, state.players[hgSeat]!)).toBe(1);
+
+    let next = applyGameAction(
+      state,
+      { type: 'ACTIVATE_HERO_SKILL', seatIndex: hgSeat, skillId: 'ku_rou' },
+      createSeededRng(30),
+    );
+    // HP dropped from 3 -> 2 (<= 2), so hand limit is 2 + 1 = 3 and max strikes/turn is 2!
+    expect(next.players[hgSeat]!.hp).toBe(2);
+    expect(getPlayerMaxHandLimit(next, next.players[hgSeat]!)).toBe(3);
+    expect(getPlayerMaxSatPerTurn(next, next.players[hgSeat]!)).toBe(2);
+    expect(next.turnFlags?.kuRouBonusGrantedThisTurn).toBe(true);
+
+    next = applyGameAction(next, { type: 'PLAY_CARD', seatIndex: hgSeat, cardIds: ['hs1'], targetSeats: [victimSeat] }, createSeededRng(30));
+    next = applyGameAction(next, { type: 'RESPOND_DODGE', seatIndex: victimSeat, cardId: null }, createSeededRng(30));
+    next = applyGameAction(next, { type: 'PLAY_CARD', seatIndex: hgSeat, cardIds: ['hs2'], targetSeats: [victimSeat] }, createSeededRng(30));
+    next = applyGameAction(next, { type: 'RESPOND_DODGE', seatIndex: victimSeat, cardId: null }, createSeededRng(30));
+    expect(next.players[victimSeat]!.hp).toBe(2);
+  });
+
+  it('22. Tiêu Viêm Lãng (zhou_yu): +1 max hand limit and wrong Fan Jian guess draws 1 card', () => {
+    let state = setupCuuChauMatch(['liu_bei', 'zhou_yu', 'sun_quan', 'cao_cao']);
+    const zySeat = state.players.find((p) => p.heroId === 'zhou_yu')!.seatIndex;
+    const targetSeat = (zySeat + 1) % 4;
+    const spadeCard = card('sp_z', 'sat', 'Kiếm Trảm', 'BASIC', 'SPADE', 10);
+    state = {
+      ...state,
+      currentTurnSeat: zySeat,
+      turnPhase: 'PLAY',
+      players: state.players.map((p) =>
+        p.seatIndex === zySeat
+          ? { ...p, hp: 3, handCards: [spadeCard] }
+          : p.seatIndex === targetSeat
+            ? { ...p, hp: 4, handCards: [] }
+            : p,
+      ),
+    };
+    expect(getPlayerMaxHandLimit(state, state.players[zySeat]!)).toBe(4);
+
+    let s1 = applyGameAction(
+      state,
+      { type: 'ACTIVATE_HERO_SKILL', seatIndex: zySeat, skillId: 'fan_jian', targetSeats: [targetSeat] },
+      createSeededRng(31),
+    );
+    s1 = applyGameAction(
+      s1,
+      { type: 'RESPOND_FAN_JIAN_GUESS', seatIndex: targetSeat, suit: 'HEART' },
+      createSeededRng(31),
+    );
+    expect(s1.players[targetSeat]!.hp).toBe(3);
+    // Gave away spadeCard (0 left) -> wrong guess drew 1 card for Zhou Yu!
+    expect(s1.players[zySeat]!.handCards).toHaveLength(1);
+  });
+
+  it('23. Hạ Tuyết Nghi (da_qiao): Liu Li redirect leaving <=1 hand card draws 1 card', () => {
+    let state = setupCuuChauMatch(['liu_bei', 'da_qiao', 'sun_quan', 'cao_cao']);
+    const dqSeat = state.players.find((p) => p.heroId === 'da_qiao')!.seatIndex;
+    const attackerSeat = 0;
+    const redirectSeat = (dqSeat + 1) % 4;
+    const strike = card('st_dq', 'sat', 'Kiếm Trảm', 'BASIC', 'SPADE', 7);
+    const discard1 = card('d1_dq', 'thiem', 'Thân Pháp', 'BASIC', 'DIAMOND', 2);
+    const keep1 = card('k1_dq', 'dao', 'Hồi Xuân Đan', 'BASIC', 'HEART', 4);
+    state = {
+      ...state,
+      currentTurnSeat: attackerSeat,
+      turnPhase: 'PLAY',
+      players: state.players.map((p) =>
+        p.seatIndex === attackerSeat
+          ? { ...p, handCards: [strike] }
+          : p.seatIndex === dqSeat
+            ? { ...p, handCards: [discard1, keep1] }
+            : { ...p, handCards: [] },
+      ),
+    };
+    let s1 = applyGameAction(
+      state,
+      { type: 'PLAY_CARD', seatIndex: attackerSeat, cardIds: ['st_dq'], targetSeats: [dqSeat] },
+      createSeededRng(32),
+    );
+    expect(s1.interruptStack[0]?.kind).toBe('ASK_LIU_LI');
+    s1 = applyGameAction(
+      s1,
+      { type: 'RESPOND_LIU_LI', seatIndex: dqSeat, activate: true, discardCardId: 'd1_dq', newTargetSeat: redirectSeat },
+      createSeededRng(32),
+    );
+    // Discarded d1_dq -> left with keep1 (1 <= 1) -> drew 1 card -> total 2 cards in hand!
+    expect(s1.players[dqSeat]!.handCards).toHaveLength(2);
+  });
+});
+
+describe('Phase 2B Slice 4 — U Minh Cốc Remaining 2 Remixes & Legacy Non-Regression', () => {
+  it('24. Dược Vô Ưu (hua_tuo): qing_nang healing another seat draws 1 card; healing self does not', () => {
+    let state = setupCuuChauMatch(['liu_bei', 'hua_tuo', 'sun_quan', 'cao_cao']);
+    const htSeat = state.players.find((p) => p.heroId === 'hua_tuo')!.seatIndex;
+    const allySeat = (htSeat + 1) % 4;
+    const balm1 = card('qn1', 'sat', 'Kiếm Trảm', 'BASIC', 'HEART', 5);
+    state = {
+      ...state,
+      currentTurnSeat: htSeat,
+      turnPhase: 'PLAY',
+      players: state.players.map((p) =>
+        p.seatIndex === htSeat
+          ? { ...p, hp: p.maxHp - 1, handCards: [balm1] }
+          : p.seatIndex === allySeat
+            ? { ...p, hp: p.maxHp - 1 }
+            : p,
+      ),
+    };
+    const afterAllyHeal = applyGameAction(
+      state,
+      { type: 'ACTIVATE_HERO_SKILL', seatIndex: htSeat, skillId: 'qing_nang', cardIds: ['qn1'], targetSeats: [allySeat] },
+      createSeededRng(33),
+    );
+    expect(afterAllyHeal.players[allySeat]!.hp).toBe(afterAllyHeal.players[allySeat]!.maxHp);
+    expect(afterAllyHeal.players[htSeat]!.handCards).toHaveLength(1);
+
+    // Self-heal does NOT draw a card
+    const afterSelfHeal = applyGameAction(
+      state,
+      { type: 'ACTIVATE_HERO_SKILL', seatIndex: htSeat, skillId: 'qing_nang', cardIds: ['qn1'], targetSeats: [htSeat] },
+      createSeededRng(33),
+    );
+    expect(afterSelfHeal.players[htSeat]!.hp).toBe(afterSelfHeal.players[htSeat]!.maxHp);
+    expect(afterSelfHeal.players[htSeat]!.handCards).toHaveLength(0);
+  });
+
+  it('25. Dạ Vô Ngân (diao_chan): END phase draws 2 cards if hand <= 1 else draws 1 (no double-draw)', () => {
+    let state = setupCuuChauMatch(['liu_bei', 'diao_chan', 'sun_quan', 'cao_cao']);
+    const dcSeat = state.players.find((p) => p.heroId === 'diao_chan')!.seatIndex;
+    const hold1 = card('dc1', 'thiem', 'Thân Pháp', 'BASIC', 'HEART', 2);
+    const hold2 = card('dc2', 'thiem', 'Thân Pháp', 'BASIC', 'DIAMOND', 3);
+
+    const lowHandState: MasterGameState = {
+      ...state,
+      currentTurnSeat: dcSeat,
+      turnPhase: 'END',
+      players: state.players.map((p) =>
+        p.seatIndex === dcSeat ? { ...p, handCards: [hold1] } : p,
+      ),
+    };
+    const afterLow = stepEngine(lowHandState, createSeededRng(34));
+    expect(afterLow.players[dcSeat]!.handCards).toHaveLength(3); // 1 + 2 = 3
+
+    const twoHandState: MasterGameState = {
+      ...state,
+      currentTurnSeat: dcSeat,
+      turnPhase: 'END',
+      players: state.players.map((p) =>
+        p.seatIndex === dcSeat ? { ...p, handCards: [hold1, hold2] } : p,
+      ),
+    };
+    const afterTwo = stepEngine(twoHandState, createSeededRng(34));
+    expect(afterTwo.players[dcSeat]!.handCards).toHaveLength(3); // 2 + 1 = 3
+  });
+
+  it('Legacy 108-card ruleset preserves classic behaviors untouched by Cửu Châu remixes', () => {
+    const rng = createSeededRng(35);
+    const seats = makeSeats(4);
+    let legacy = createInitialMatchSetup({ matchId: 'leg-nonreg', seats, rng });
+    const lordSeat = legacy.heroDraft!.lordSeatIndex;
+    const others = [0, 1, 2, 3].filter((s) => s !== lordSeat);
+    const heroPick: HeroId[] = ['liu_bei', 'zhuge_liang', 'zhen_ji', 'diao_chan'];
+    legacy = {
+      ...legacy,
+      heroDraft: {
+        ...legacy.heroDraft!,
+        candidatesBySeat: {
+          ...legacy.heroDraft!.candidatesBySeat,
+          [lordSeat]: [heroPick[0]!, ...legacy.heroDraft!.candidatesBySeat[lordSeat]!.filter((h) => h !== heroPick[0])].slice(0, 5),
+        },
+      },
+    };
+    legacy = selectLordHero(legacy, lordSeat, heroPick[0]!, rng);
+    others.forEach((seat, idx) => {
+      const hid = heroPick[idx + 1]!;
+      legacy = {
+        ...legacy,
+        heroDraft: {
+          ...legacy.heroDraft!,
+          candidatesBySeat: {
+            ...legacy.heroDraft!.candidatesBySeat,
+            [seat]: [hid, ...legacy.heroDraft!.candidatesBySeat[seat]!.filter((h) => h !== hid)].slice(0, 3),
+          },
+        },
+      };
+      legacy = selectPlayerHero(legacy, seat, hid);
+    });
+    legacy = startMatchCombat(legacy, rng);
+    const zl = legacy.players.find((p) => p.heroId === 'zhuge_liang')!;
+    const zj = legacy.players.find((p) => p.heroId === 'zhen_ji')!;
+    const dc = legacy.players.find((p) => p.heroId === 'diao_chan')!;
+    expect(isCuuChauRuleset(legacy)).toBe(false);
+    // Standard Zhuge Liang keeps base handLimit = hp (no +1)
+    expect(getPlayerMaxHandLimit(legacy, zl)).toBe(zl.hp);
+    // Standard Zhen Ji without armor has normal adjacent distance 1
+    expect(calculateDistance(legacy, (zj.seatIndex + 1) % 4, zj.seatIndex)).toBe(1);
+    // Standard Diao Chan draws 1 card (not 2) at END when hand === 0
+    const dcEnd: MasterGameState = {
+      ...legacy,
+      currentTurnSeat: dc.seatIndex,
+      turnPhase: 'END',
+      players: legacy.players.map((p) => (p.seatIndex === dc.seatIndex ? { ...p, handCards: [] } : p)),
+    };
+    expect(stepEngine(dcEnd, createSeededRng(36)).players[dc.seatIndex]!.handCards).toHaveLength(1);
   });
 });

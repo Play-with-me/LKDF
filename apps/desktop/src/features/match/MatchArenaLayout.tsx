@@ -1,7 +1,7 @@
 import { clearHandOrder, orderHand, rememberHandOrder } from './handOrder.js';
 import { createPortal } from 'react-dom';
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
-import { formatRankLabel, getCuuChauCardDisplay, getCuuChauHeroDisplay, getCuuChauRoleDisplay, getHeroDefinition } from '@lkdf/shared';
+import { formatRankLabel, getCuuChauCardDisplay, getCuuChauHeroDisplay, getCuuChauRoleDisplay, getHeroDefinition, getPlayerMaxHandLimit } from '@lkdf/shared';
 import { useTranslation } from 'react-i18next';
 import type {
   CardInstance,
@@ -491,7 +491,7 @@ export function MatchArenaLayout({
     rememberHandOrder(playerView.matchId, ids);
     refreshHand(value => value + 1);
   };
-  const discardLimit = Math.max(0, selfPlayer?.hp ?? 0);
+  const discardLimit = selfPlayer ? getPlayerMaxHandLimit(playerView, selfPlayer) : 0;
   const discardRequired = !connectionLost && selfPlayer?.alive && !selfPlayer.isBotTakeover &&
     playerView.turnPhase === 'DISCARD' && playerView.activeInterrupt === null &&
     playerView.currentTurnSeat === playerView.viewerSeatIndex

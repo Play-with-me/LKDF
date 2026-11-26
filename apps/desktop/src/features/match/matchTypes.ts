@@ -13,6 +13,9 @@ import {
   getCuuChauHeroDisplay,
   getCuuChauRoleDisplay,
   getHeroDefinition,
+  getPlayerMaxHandLimit,
+  getPlayerMaxSatPerTurn,
+  isCuuChauRuleset,
   isInAttackRange,
   isRedSuit,
 } from '@lkdf/shared';
@@ -275,7 +278,7 @@ export function getAvailablePlaySkills(
         );
       const canUseSatThisTurn =
         player.equipments.weapon?.cardKey === 'gia_cat_lien_no' ||
-        (turnFlags?.satUsedThisTurn ?? 0) < 1;
+        (turnFlags?.satUsedThisTurn ?? 0) < 1 + (turnFlags?.bonusSatLimitThisTurn ?? 0);
       if (
         !isFirstRoundPeaceful &&
         player.identity === 'LORD' &&
@@ -758,7 +761,10 @@ export function getRequiredTargetSpec(
       };
     }
     case 'kinh_loi_chan': {
-      const eligible = aliveOthers.map((p) => p.seatIndex);
+      const cuuChau = isCuuChauRuleset(view);
+      const eligible = aliveOthers
+        .filter((p) => !(cuuChau && isKongChengProtected(p)))
+        .map((p) => p.seatIndex);
       return {
         minTargets: 1,
         maxTargets: 1,
@@ -1475,15 +1481,16 @@ export function describePendingActorPrompt(view: PlayerViewState): TurnActorProm
       };
     }
     case 'DISCARD': {
-      const needDrop = Math.max(0, (viewer?.handCount ?? 0) - Math.max(0, viewer?.hp ?? 0));
+      const handLimit = viewer ? getPlayerMaxHandLimit(view, viewer) : 0;
+      const needDrop = Math.max(0, (viewer?.handCount ?? 0) - handLimit);
       return {
         headlineVi: isSelfTurn
           ? (en ? `Discard Phase — Discard ${needDrop} card(s)` : `Pha Bỏ Bài — Cần bỏ ${needDrop} lá bài`)
           : (en ? `Waiting for ${currentActorName} to discard...` : `Đang chờ ${currentActorName} bỏ bài cuối lượt...`),
         detailVi: isSelfTurn
           ? (en
-              ? `Hand limit equals your current HP (${Math.max(0, viewer?.hp ?? 0)} card(s)).`
-              : `Giới hạn bài trên tay bằng sinh lực hiện tại (${Math.max(0, viewer?.hp ?? 0)} lá).`)
+              ? `Hand limit is ${handLimit} card(s).`
+              : `Giới hạn bài trên tay hiện tại là ${handLimit} lá.`)
           : (en ? 'Turn advances after discarding excess cards.' : 'Kết thúc pha bỏ bài sẽ chuyển lượt sang ghế kế tiếp.'),
         actorSeat: view.currentTurnSeat,
         actorNameVi: currentActorName,
@@ -1732,7 +1739,7 @@ export function buildCardDragDropIntent(
 
   if (view.turnPhase === 'DISCARD' && view.currentTurnSeat === selfSeat) {
     const handCount = selfPlayer.handCards?.length ?? 0;
-    const discardNeeded = Math.max(0, handCount - Math.max(0, selfPlayer.hp));
+    const discardNeeded = Math.max(0, handCount - getPlayerMaxHandLimit(view, selfPlayer));
     if (discardNeeded <= 1) {
       return {
         kind: 'table',
@@ -1783,10 +1790,8 @@ export function buildCardDragDropIntent(
           reasonVi: en ? 'Peaceful Round 1: Strikes are disabled on the opening round.' : 'Vòng 1 Hòa Bình: chưa được đánh Kiếm Trảm ở vòng đầu tiên.',
         };
       }
-      const unlimited =
-        selfPlayer.heroId === 'zhang_fei' ||
-        selfPlayer.equipments.weapon?.cardKey === 'gia_cat_lien_no';
-      if (!unlimited && (view.turnFlags?.satUsedThisTurn ?? 0) >= 1) {
+      const maxSat = getPlayerMaxSatPerTurn(view, selfPlayer);
+      if ((view.turnFlags?.satUsedThisTurn ?? 0) >= maxSat) {
         return { kind: 'blocked', reasonVi: en ? 'Strike limit reached for this turn.' : 'Bạn đã dùng Kiếm Trảm trong lượt đánh này.' };
       }
     }
@@ -2059,6 +2064,16 @@ function getLegacyReplacementMatcher(locale: 'vi' | 'en') {
     if (leg) {
       add(leg.nameVi, cuuHero.name);
     }
+    const viHero = getCuuChauHeroDisplay(h.id, 'vi');
+    if (viHero) {
+      add(viHero.name, cuuHero.name);
+      for (const s of cuuHero.skills) {
+        const viSkill = viHero.skills.find((x) => x.id === s.id);
+        if (viSkill) {
+          add(viSkill.name, s.name);
+        }
+      }
+    }
   }
 
   // Cards (legacy 108 + Cửu Châu 112 templates + short forms)
@@ -2099,7 +2114,12 @@ const EN_LOG_PHRASE_REPLACEMENTS: readonly [RegExp, string][] = [
   [/rút (\d+) lá ở pha Rút bài/gu, 'drew $1 card(s) in Draw phase'],
   [/rút thêm (\d+) lá khi trúng đòn/gu, 'drew $1 extra card(s) on hit'],
   [/rút (\d+) lá khi đòn bị né/gu, 'drew $1 card(s) on dodged Strike'],
+  [/rút bù (\d+) lá bài/gu, 'drew $1 compensation card(s)'],
+  [/phán xét Cơ rút (\d+) lá/gu, 'drew $1 card(s) on Heart judgment'],
+  [/rút (\d+) lá cuối lượt/gu, 'drew $1 card(s) at turn end'],
+  [/rút thêm (\d+) lá bài/gu, 'drew $1 extra card(s)'],
   [/rút thêm (\d+) lá/gu, 'drew $1 extra card(s)'],
+  [/rút (\d+) lá bài/gu, 'drew $1 card(s)'],
   [/rút (\d+) lá/gu, 'drew $1 card(s)'],
   [/bỏ qua (.+?), rút (\d+) lá/gu, 'skipped $1, drew $2 card(s)'],
   [/hồi (\d+) Sinh Lực và rút (\d+) lá/gu, 'restored $1 HP and drew $2 card(s)'],

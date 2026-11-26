@@ -1,4 +1,4 @@
-import { STANDARD_DECK_TEMPLATES, type CardTemplate } from '../cards/catalog.js';
+import { STANDARD_DECK_TEMPLATES, isRedSuit, type CardTemplate } from '../cards/catalog.js';
 import type { HeroSkillHandler } from '../heroes/skillContracts.js';
 import type { CardInstance, HeroDefinition, HeroFaction } from '../types/game.js';
 import type { IdentityRole } from '../types/identity.js';
@@ -589,8 +589,10 @@ export const CUU_CHAU_HEROES: readonly CuuChauHeroDefinition[] = [
         id: 'wu_sheng',
         nameVi: 'Xích Khí Trảm',
         nameEn: 'Crimson Edge',
-        descriptionVi: 'Có thể dùng bất kỳ lá chất Đỏ nào làm Kiếm Trảm.',
-        descriptionEn: 'Treat any Red card (hand or gear) as a Blade Strike.',
+        descriptionVi:
+          'Dùng mọi lá Đỏ làm Kiếm Trảm; 1 lần/lượt khi Kiếm Trảm chất Đỏ đánh trúng, rút 1 lá.',
+        descriptionEn:
+          'Treat any Red card as a Blade Strike; once per turn, draw 1 card when a Red Strike deals damage.',
       },
     ],
   },
@@ -634,18 +636,18 @@ export const CUU_CHAU_HEROES: readonly CuuChauHeroDefinition[] = [
         nameVi: 'Tinh Bàn Đạo',
         nameEn: 'Astral Chart',
         descriptionVi:
-          'Đầu lượt xem tối đa 5 lá trên đỉnh chồng bài rút và sắp xếp lại đỉnh/đáy.',
+          'Đầu lượt xem tối đa 5 lá đỉnh bài rút để xếp lại; giới hạn giữ bài tăng +1.',
         descriptionEn:
-          'At turn start, inspect up to 5 top cards and arrange them on top or bottom.',
+          'Arrange up to 5 top deck cards at turn start; gain +1 maximum hand limit.',
       },
       {
         id: 'kong_cheng',
         nameVi: 'Vô Ngã Cảnh',
         nameEn: 'Empty Mind',
         descriptionVi:
-          'Khi tay trống, miễn nhiễm mục tiêu Kiếm Trảm và Sinh Tử Lôi Đài.',
+          'Khi tay trống, miễn nhiễm Kiếm Trảm, Phá Giáp Trảm, Sinh Tử Lôi Đài và Kinh Lôi Chấn.',
         descriptionEn:
-          'While empty-handed, cannot be targeted by Blade Strike or Trial by Combat.',
+          'While empty-handed, cannot be targeted by Blade Strike, Armor-Piercing Strike, Trial by Combat, or Thunderclap Pulse.',
       },
     ],
   },
@@ -665,8 +667,10 @@ export const CUU_CHAU_HEROES: readonly CuuChauHeroDefinition[] = [
         id: 'long_dan',
         nameVi: 'Du Long Thế',
         nameEn: 'Dragon Stance',
-        descriptionVi: 'Dùng Kiếm Trảm như Thân Pháp và ngược lại.',
-        descriptionEn: 'Use Blade Strike as Shadow Step and vice versa.',
+        descriptionVi:
+          'Dùng Kiếm Trảm như Thân Pháp và ngược lại; khi né ngoài lượt nếu tay còn ≤ 2 lá, rút 1 lá.',
+        descriptionEn:
+          'Swap Blade Strike and Shadow Step; when dodging out-of-turn with ≤ 2 cards left, draw 1 card.',
       },
     ],
   },
@@ -694,9 +698,9 @@ export const CUU_CHAU_HEROES: readonly CuuChauHeroDefinition[] = [
         nameVi: 'Phá Phong Quyết',
         nameEn: 'Gale Breaker',
         descriptionVi:
-          'Khi xuất Kiếm Trảm, có thể phán xét: ra chất Đỏ khiến mục tiêu không thể né.',
+          'Khi xuất Kiếm Trảm, có thể phán xét: ra Đỏ khiến mục tiêu không thể né; ra Đen rút bù 1 lá.',
         descriptionEn:
-          'When targeting with Blade Strike, judge top card: Red makes it undodgeable.',
+          'When Striking, judge top card: Red locks out dodging; Black draws 1 card in compensation.',
       },
     ],
   },
@@ -789,9 +793,9 @@ export const CUU_CHAU_HEROES: readonly CuuChauHeroDefinition[] = [
         nameVi: 'Nghịch Mệnh Phù',
         nameEn: 'Fate Reversal',
         descriptionVi:
-          'Trước khi lá phán xét có hiệu lực, đánh 1 lá trên tay thay thế.',
+          'Trước khi lá phán xét có hiệu lực, đánh 1 lá trên tay thay thế rồi rút 1 lá.',
         descriptionEn:
-          'Replace any pending judgment card with a card from your hand.',
+          'Replace any pending judgment card with a hand card, then draw 1 card.',
       },
     ],
   },
@@ -812,9 +816,9 @@ export const CUU_CHAU_HEROES: readonly CuuChauHeroDefinition[] = [
         nameVi: 'Bất Khuất Hồn',
         nameEn: 'Unyielding Will',
         descriptionVi:
-          'Khi chịu sát thương, phán xét nếu không phải Cơ thì kẻ tấn công bỏ 2 lá hoặc mất 1 máu.',
+          'Khi chịu thương, phán xét: khác Cơ buộc đối thủ bỏ 2 lá hoặc mất 1 máu; ra Cơ rút 1 lá. Khi bị thương, +1 giữ bài.',
         descriptionEn:
-          'After taking damage, judge: non-Heart forces attacker to discard 2 cards or take 1 damage.',
+          'On damage, judge: non-Heart forces 2 discards or 1 damage; Heart draws 1 card. +1 hand limit while wounded.',
       },
     ],
   },
@@ -858,9 +862,9 @@ export const CUU_CHAU_HEROES: readonly CuuChauHeroDefinition[] = [
         nameVi: 'Bá Thể Phá',
         nameEn: 'Shattering Might',
         descriptionVi:
-          'Ở pha Rút bài rút ít đi 1 lá để Kiếm Trảm và Sinh Tử Lôi Đài tăng +1 sát thương.',
+          'Rút ít đi 1 lá để Kiếm Trảm, Phá Giáp Trảm và Lôi Đài tăng +1 sát thương, đồng thời giảm 1 khoảng cách trong lượt.',
         descriptionEn:
-          'Draw 1 fewer card to gain +1 damage on Blade Strikes and Trials this turn.',
+          'Draw 1 fewer card to gain +1 Strike/Trial damage and -1 offensive distance this turn.',
       },
     ],
   },
@@ -880,8 +884,10 @@ export const CUU_CHAU_HEROES: readonly CuuChauHeroDefinition[] = [
         id: 'tian_du',
         nameVi: 'Thiên Mệnh Thu',
         nameEn: 'Omen Harvest',
-        descriptionVi: 'Thu lấy lá phán xét của bản thân sau khi có hiệu lực.',
-        descriptionEn: 'Claim your own judgment card once it resolves.',
+        descriptionVi:
+          'Thu lá phán xét khi có hiệu lực; giới hạn giữ bài +1; cuối lượt nếu bị thương và tay ≤ 1 lá, rút 1 lá.',
+        descriptionEn:
+          'Claim your resolved judgment card; +1 max hand limit; draw 1 at turn end if wounded and hand ≤ 1.',
       },
       {
         id: 'yi_ji',
@@ -917,8 +923,10 @@ export const CUU_CHAU_HEROES: readonly CuuChauHeroDefinition[] = [
         id: 'qing_guo',
         nameVi: 'Thủy Bộ Pháp',
         nameEn: 'Waterglide Step',
-        descriptionVi: 'Dùng mọi lá chất Đen trên tay làm Thân Pháp.',
-        descriptionEn: 'Play any Black hand card as Shadow Step.',
+        descriptionVi:
+          'Dùng mọi lá Đen trên tay làm Thân Pháp; khi chưa mặc Giáp, khoảng cách phòng thủ tăng +1.',
+        descriptionEn:
+          'Play any Black hand card as Shadow Step; gain +1 defensive distance while wearing no Armor.',
       },
     ],
   },
@@ -973,8 +981,10 @@ export const CUU_CHAU_HEROES: readonly CuuChauHeroDefinition[] = [
         id: 'qi_xi',
         nameVi: 'Hắc Ảnh Phá',
         nameEn: 'Night Raid Break',
-        descriptionVi: 'Dùng mọi lá chất Đen làm Phá Trận Chưởng.',
-        descriptionEn: 'Play any Black card as Break Formation.',
+        descriptionVi:
+          'Dùng mọi lá Đen làm Phá Trận Chưởng; 1 lần/lượt khi dùng bí kíp còn ≤ 2 lá trên tay, rút 1 lá.',
+        descriptionEn:
+          'Play any Black card as Break Formation; once per turn, draw 1 card if a scroll leaves ≤ 2 hand cards.',
       },
     ],
   },
@@ -1017,8 +1027,10 @@ export const CUU_CHAU_HEROES: readonly CuuChauHeroDefinition[] = [
         id: 'ku_rou',
         nameVi: 'Phần Tâm Quyết',
         nameEn: 'Scorched Oath',
-        descriptionVi: 'Trong pha hành động, tự mất 1 Sinh Lực để rút 2 lá.',
-        descriptionEn: 'Lose 1 HP during your action phase to draw 2 cards.',
+        descriptionVi:
+          'Trong pha hành động, tự mất 1 Sinh Lực để rút 2 lá; lần đầu/lượt tăng +1 lượt Kiếm Trảm; khi HP ≤ 2, +1 giữ bài.',
+        descriptionEn:
+          'Lose 1 HP to draw 2 cards; first use each turn grants +1 Strike limit; +1 hand limit when HP ≤ 2.',
       },
     ],
   },
@@ -1038,17 +1050,17 @@ export const CUU_CHAU_HEROES: readonly CuuChauHeroDefinition[] = [
         id: 'ying_zi',
         nameVi: 'Liệt Diễm Huy',
         nameEn: 'Blaze Genius',
-        descriptionVi: 'Ở pha Rút bài được rút thêm +1 lá.',
-        descriptionEn: 'Draw 1 extra card during your draw phase.',
+        descriptionVi: 'Ở pha Rút bài rút thêm +1 lá; giới hạn giữ bài tăng +1.',
+        descriptionEn: 'Draw 1 extra card during Draw phase; gain +1 maximum hand limit.',
       },
       {
         id: 'fan_jian',
         nameVi: 'Ly Tâm Ấn',
         nameEn: 'Discord Mark',
         descriptionVi:
-          '1 lần/lượt, để 1 đối thủ đoán chất rồi rút 1 lá của bạn: sai chịu 1 sát thương.',
+          '1 lần/lượt, để 1 đối thủ đoán chất rồi rút 1 lá của bạn: đoán sai chịu 1 sát thương và bạn rút 1 lá.',
         descriptionEn:
-          'Once per turn, let an opponent guess a suit and take 1 of your hand cards; wrong guess deals 1 damage.',
+          'Once per turn, opponent guesses a suit and takes 1 hand card: wrong guess deals 1 damage and you draw 1.',
       },
     ],
   },
@@ -1076,9 +1088,9 @@ export const CUU_CHAU_HEROES: readonly CuuChauHeroDefinition[] = [
         nameVi: 'Chuyển Hoa Ảnh',
         nameEn: 'Petal Shift',
         descriptionVi:
-          'Khi làm mục tiêu Kiếm Trảm, bỏ 1 lá chuyển đòn sang người khác trong tầm.',
+          'Khi làm mục tiêu Kiếm Trảm, bỏ 1 lá chuyển đòn sang người khác; nếu tay còn ≤ 1 lá, rút 1 lá.',
         descriptionEn:
-          'Discard 1 card to redirect an incoming Blade Strike to another fighter in range.',
+          'Discard 1 card to redirect an incoming Strike; if ≤ 1 hand card remains, draw 1 card.',
       },
     ],
   },
@@ -1162,8 +1174,10 @@ export const CUU_CHAU_HEROES: readonly CuuChauHeroDefinition[] = [
         id: 'qing_nang',
         nameVi: 'Thanh Tâm Đan',
         nameEn: 'Pure Balm',
-        descriptionVi: '1 lần/lượt bỏ 1 lá trên tay giúp 1 người hồi 1 Sinh Lực.',
-        descriptionEn: 'Once per turn, discard 1 hand card to heal any fighter 1 HP.',
+        descriptionVi:
+          '1 lần/lượt bỏ 1 lá trên tay giúp 1 người hồi 1 Sinh Lực; nếu chữa cho đồng đội khác bản thân, rút 1 lá.',
+        descriptionEn:
+          'Once per turn, discard 1 card to heal any fighter 1 HP; healing another fighter also draws you 1 card.',
       },
       {
         id: 'ji_jiu',
@@ -1222,8 +1236,10 @@ export const CUU_CHAU_HEROES: readonly CuuChauHeroDefinition[] = [
         id: 'bi_yue',
         nameVi: 'Nguyệt Ẩn Ảnh',
         nameEn: 'Moonlit Veil',
-        descriptionVi: 'Cuối lượt rút thêm 1 lá bài.',
-        descriptionEn: 'Draw 1 extra card at the end of your turn.',
+        descriptionVi:
+          'Cuối lượt rút 1 lá; nếu bài trên tay còn ≤ 1 lá thì rút 2 lá.',
+        descriptionEn:
+          'At turn end, draw 2 cards if holding ≤ 1 hand card, otherwise draw 1 card.',
       },
     ],
   },
@@ -1276,23 +1292,80 @@ export function getCuuChauHeroDisplay(
   };
 }
 
-/** 10 bộ kỹ năng được remix cơ chế thực chất để chống reskin 1:1. */
-export const CUU_CHAU_REMIXED_HERO_IDS: readonly string[] = [
-  'lam_thanh_vu',
-  'loi_chan_son',
-  'to_mong_dao',
-  'han_thiet_phong',
-  'truong_huy_dieu',
-  'viem_liet_vuong',
-  'luc_tram_an',
-  'mo_dung_tuyet',
-  'bach_cam_y',
-  'tham_mac_ngon',
-];
+/** Toàn bộ 25/25 hiệp khách Cửu Châu đều có cơ chế remix bản sắc riêng (chống reskin 1:1). */
+export const CUU_CHAU_REMIXED_HERO_IDS: readonly string[] =
+  CUU_CHAU_HEROES.map((h) => h.id);
 
 export const CUU_CHAU_HERO_SKILLS: Readonly<
   Record<string, HeroSkillHandler>
 > = {
+  trieu_thien_hanh: {
+    heroId: 'trieu_thien_hanh',
+    onStrikeHit: (state, sourceSeat, _targetSeat, strikeCards, rng, rt) => {
+      if (state.turnFlags?.crimsonEdgeDrawnThisTurn) {
+        return state;
+      }
+      if (!strikeCards.some((c) => isRedSuit(c.suit))) {
+        return state;
+      }
+      const source = rt.getPlayerBySeat(state, sourceSeat);
+      if (!source.alive) return state;
+      const dealt = rt.dealCardsToSeat(state, sourceSeat, 1, rng);
+      return {
+        ...dealt.state,
+        turnFlags: {
+          satUsedThisTurn: dealt.state.turnFlags?.satUsedThisTurn ?? 0,
+          skipPlayPhase: dealt.state.turnFlags?.skipPlayPhase ?? false,
+          ...dealt.state.turnFlags,
+          crimsonEdgeDrawnThisTurn: true,
+        },
+        actionLog: [
+          ...dealt.state.actionLog,
+          `${source.displayName} kích hoạt Xích Khí Trảm, rút thêm ${dealt.dealt.length} lá.`,
+        ],
+      };
+    },
+  },
+  tham_tinh_ha: {
+    heroId: 'tham_tinh_ha',
+    maxHandLimitModifier: () => 1,
+    canBeTargetedBy: (_state, target, cardKey) => {
+      if (
+        target.handCards.length === 0 &&
+        (cardKey === 'sat' ||
+          cardKey === 'pha_giap_tram' ||
+          cardKey === 'quyet_dau' ||
+          cardKey === 'kinh_loi_chan')
+      ) {
+        return false;
+      }
+      return true;
+    },
+  },
+  bach_ngoc_thanh: {
+    heroId: 'bach_ngoc_thanh',
+    onDodgePlayed: (state, seatIndex, rng, rt) => {
+      if (state.currentTurnSeat === seatIndex) {
+        return state;
+      }
+      const player = rt.getPlayerBySeat(state, seatIndex);
+      if (!player.alive || player.handCards.length > 2) {
+        return state;
+      }
+      const dealt = rt.dealCardsToSeat(state, seatIndex, 1, rng);
+      return {
+        ...dealt.state,
+        actionLog: [
+          ...dealt.state.actionLog,
+          `${player.displayName} kích hoạt Du Long Thế, rút ${dealt.dealt.length} lá bài.`,
+        ],
+      };
+    },
+  },
+  khuong_vo_ta: {
+    heroId: 'khuong_vo_ta',
+    distanceModifier: () => -1,
+  },
   lam_thanh_vu: {
     heroId: 'lam_thanh_vu',
     onPeachRescueBonus: (_state, dyingPlayer, rescuer, rt) => {
@@ -1327,6 +1400,40 @@ export const CUU_CHAU_HERO_SKILLS: Readonly<
     onAfterDamageTaken: (state, targetSeat, _sourceSeat, _amount, _cards, rng, rt) =>
       rt.dealCardsToSeat(state, targetSeat, 1, rng).state,
   },
+  co_huyen_co: {
+    heroId: 'co_huyen_co',
+  },
+  nghiem_cuong: {
+    heroId: 'nghiem_cuong',
+    maxHandLimitModifier: (_state, player) => (player.hp < player.maxHp ? 1 : 0),
+  },
+  thach_pha_thien: {
+    heroId: 'thach_pha_thien',
+    distanceModifier: (from, _to, state) =>
+      state?.currentTurnSeat === from.seatIndex && state?.turnFlags?.luoYiActive ? -1 : 0,
+  },
+  ly_tri_vi: {
+    heroId: 'ly_tri_vi',
+    maxHandLimitModifier: () => 1,
+    onTurnEnd: (state, seatIndex, rng, rt) => {
+      const player = rt.getPlayerBySeat(state, seatIndex);
+      if (!player.alive || player.hp >= player.maxHp || player.handCards.length > 1) {
+        return state;
+      }
+      const dealt = rt.dealCardsToSeat(state, seatIndex, 1, rng);
+      return {
+        ...dealt.state,
+        actionLog: [
+          ...dealt.state.actionLog,
+          `${player.displayName} kích hoạt Thiên Mệnh Thu, rút ${dealt.dealt.length} lá cuối lượt.`,
+        ],
+      };
+    },
+  },
+  thuy_u_linh: {
+    heroId: 'thuy_u_linh',
+    defensiveDistanceModifier: (target) => (!target.equipments.armor ? 1 : 0),
+  },
   truong_huy_dieu: {
     heroId: 'truong_huy_dieu',
     distanceModifier: () => -1,
@@ -1347,6 +1454,43 @@ export const CUU_CHAU_HERO_SKILLS: Readonly<
       const faction = rt.getHeroFaction(rescuer.heroId);
       return faction === 'XICH_DIEM' || faction === 'WU' ? 1 : 0;
     },
+  },
+  cam_da_sat: {
+    heroId: 'cam_da_sat',
+    onNormalScrollPlayed: (state, seatIndex, rng, rt) => {
+      if (state.turnFlags?.qiXiDrawnThisTurn) {
+        return state;
+      }
+      const player = rt.getPlayerBySeat(state, seatIndex);
+      if (!player.alive || player.handCards.length > 2) {
+        return state;
+      }
+      const dealt = rt.dealCardsToSeat(state, seatIndex, 1, rng);
+      return {
+        ...dealt.state,
+        turnFlags: {
+          satUsedThisTurn: dealt.state.turnFlags?.satUsedThisTurn ?? 0,
+          skipPlayPhase: dealt.state.turnFlags?.skipPlayPhase ?? false,
+          ...dealt.state.turnFlags,
+          qiXiDrawnThisTurn: true,
+        },
+        actionLog: [
+          ...dealt.state.actionLog,
+          `${player.displayName} kích hoạt Hắc Ảnh Phá, rút thêm ${dealt.dealt.length} lá.`,
+        ],
+      };
+    },
+  },
+  hoang_bat_dich: {
+    heroId: 'hoang_bat_dich',
+    maxHandLimitModifier: (_state, player) => (player.hp <= 2 ? 1 : 0),
+  },
+  tieu_viem_lang: {
+    heroId: 'tieu_viem_lang',
+    maxHandLimitModifier: () => 1,
+  },
+  ha_tuyet_nghi: {
+    heroId: 'ha_tuyet_nghi',
   },
   luc_tram_an: {
     heroId: 'luc_tram_an',
@@ -1380,6 +1524,27 @@ export const CUU_CHAU_HERO_SKILLS: Readonly<
     strikeDodgeRequiredCount: () => 2,
     duelSatRequiredCount: () => 2,
     distanceModifier: () => -1,
+  },
+  duoc_vo_uu: {
+    heroId: 'duoc_vo_uu',
+  },
+  da_vo_ngan: {
+    heroId: 'da_vo_ngan',
+    onTurnEnd: (state, seatIndex, rng, rt) => {
+      const player = rt.getPlayerBySeat(state, seatIndex);
+      if (!player.alive) {
+        return state;
+      }
+      const drawCount = player.handCards.length <= 1 ? 2 : 1;
+      const dealt = rt.dealCardsToSeat(state, seatIndex, drawCount, rng);
+      return {
+        ...dealt.state,
+        actionLog: [
+          ...dealt.state.actionLog,
+          `${player.displayName} kích hoạt Nguyệt Ẩn Ảnh, rút ${dealt.dealt.length} lá bài.`,
+        ],
+      };
+    },
   },
 };
 

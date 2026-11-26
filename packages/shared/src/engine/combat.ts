@@ -21,6 +21,8 @@ import {
   canTargetPlayerWithCard,
   canUseCardAs,
   completeStrikeDodged,
+  getPlayerMaxHandLimit,
+  getPlayerMaxSatPerTurn,
   hasTruongBat,
   maybeOfferKyLanCung,
   notifyEquipLost,
@@ -239,7 +241,8 @@ function handlePlayCard(
       throw new Error('FIRST_ROUND_SAT_FORBIDDEN');
     }
     const satUsed = state.turnFlags?.satUsedThisTurn ?? 0;
-    if (!hasUnlimitedSat && satUsed >= 1) {
+    const maxSat = getPlayerMaxSatPerTurn(state, actor);
+    if (!hasUnlimitedSat && satUsed >= maxSat) {
       throw new Error('SAT_LIMIT_REACHED');
     }
     const targets = action.targetSeats ?? [];
@@ -403,7 +406,8 @@ function handlePlayCard(
       actorForStrikeCheck.equipments.weapon?.cardKey === 'gia_cat_lien_no';
 
     const satUsed = state.turnFlags?.satUsedThisTurn ?? 0;
-    if (!hasUnlimitedSatEffective && satUsed >= 1) {
+    const maxSat = getPlayerMaxSatPerTurn(stateForStrikeCheck, actorForStrikeCheck);
+    if (!hasUnlimitedSatEffective && satUsed >= maxSat) {
       throw new Error('SAT_LIMIT_REACHED');
     }
 
@@ -850,7 +854,7 @@ export function applyGameAction(
         throw new Error('NOT_IN_DISCARD_PHASE');
       }
       const actor = getPlayerBySeat(state, action.seatIndex);
-      const limit = Math.max(0, actor.hp);
+      const limit = getPlayerMaxHandLimit(state, actor);
       const excess = actor.handCards.length - limit;
       if (excess <= 0) {
         return stepEngine({ ...state, turnPhase: 'END' }, rng);
@@ -1076,6 +1080,10 @@ export function applyGameAction(
               : `${target.displayName} đánh Thiểm.`,
           ],
         };
+        const dodgeHandler = getHeroSkillHandler(target.heroId, next);
+        if (dodgeHandler?.onDodgePlayed) {
+          next = dodgeHandler.onDodgePlayed(next, top.targetSeat, rng, SKILL_RUNTIME);
+        }
         dodgedIncrement = 1;
       } else {
         // Không né -> Sát trúng mục tiêu!
@@ -1233,6 +1241,20 @@ export function applyGameAction(
           luoYiBonus > 0 ? 'Sát (Lỏa Y +1)' : 'Sát',
           top.sourceCards,
         );
+        const sourceAfterDmg = getPlayerBySeat(next, top.sourceSeat);
+        if (sourceAfterDmg.alive) {
+          const strikeHandler = getHeroSkillHandler(sourceAfterDmg.heroId, next);
+          if (strikeHandler?.onStrikeHit) {
+            next = strikeHandler.onStrikeHit(
+              next,
+              top.sourceSeat,
+              top.targetSeat,
+              top.sourceCards,
+              rng,
+              SKILL_RUNTIME,
+            );
+          }
+        }
         next = maybeOfferKyLanCung(next, top.sourceSeat, top.targetSeat);
         return stepEngine(next, rng);
       }
@@ -1646,6 +1668,10 @@ export function applyGameAction(
               : `${target.displayName} đánh Thiểm.`,
           ],
         };
+        const dodgeHandler = getHeroSkillHandler(target.heroId, next);
+        if (dodgeHandler?.onDodgePlayed) {
+          next = dodgeHandler.onDodgePlayed(next, top.targetSeat, rng, SKILL_RUNTIME);
+        }
         next = popInterrupt(next).state;
         return stepEngine(next, rng);
       }
@@ -2113,6 +2139,19 @@ export function applyGameAction(
           `${getPlayerBySeat(next, top.targetSeat).displayName} dùng Lưu Ly chuyển mục tiêu Sát sang ${newTarget.displayName}.`,
         ],
       };
+      if (isCuuChauRuleset(next)) {
+        const daQiaoAfter = getPlayerBySeat(next, top.targetSeat);
+        if (daQiaoAfter.alive && daQiaoAfter.handCards.length <= 1) {
+          const dealt = dealCardsToSeat(next, top.targetSeat, 1, rng);
+          next = {
+            ...dealt.state,
+            actionLog: [
+              ...dealt.state.actionLog,
+              `${daQiaoAfter.displayName} kích hoạt Chuyển Hoa Ảnh, rút ${dealt.dealt.length} lá bài.`,
+            ],
+          };
+        }
+      }
       next = beginStrikeAgainstTarget(
         next,
         top.sourceSeat,
@@ -2159,6 +2198,19 @@ export function applyGameAction(
             `${siMaYi.displayName} dùng Quỷ Tài đổi lá phán xét thành ${newJudgeCard.nameVi}!`,
           ],
         };
+        if (isCuuChauRuleset(next)) {
+          const updatedSiMaYi = getPlayerBySeat(next, top.targetSeat);
+          if (updatedSiMaYi.alive) {
+            const dealt = dealCardsToSeat(next, top.targetSeat, 1, rng);
+            next = {
+              ...dealt.state,
+              actionLog: [
+                ...dealt.state.actionLog,
+                `${updatedSiMaYi.displayName} kích hoạt Nghịch Mệnh Phù, rút thêm ${dealt.dealt.length} lá bài.`,
+              ],
+            };
+          }
+        }
       }
       return stepEngine(next, rng);
     }
@@ -2398,6 +2450,19 @@ export function applyGameAction(
           card: pickedCard,
         });
         next = applyDamage(next, top.sourceSeat, top.targetSeat, 1, 'Phản Gián');
+        if (isCuuChauRuleset(next)) {
+          const zhouYuAfter = getPlayerBySeat(next, top.sourceSeat);
+          if (zhouYuAfter.alive) {
+            const dealt = dealCardsToSeat(next, top.sourceSeat, 1, rng);
+            next = {
+              ...dealt.state,
+              actionLog: [
+                ...dealt.state.actionLog,
+                `${zhouYuAfter.displayName} kích hoạt Ly Tâm Ấn, rút thêm ${dealt.dealt.length} lá bài.`,
+              ],
+            };
+          }
+        }
       } else {
         next = updatePlayer(next, top.targetSeat, (p) => ({
           ...p,
