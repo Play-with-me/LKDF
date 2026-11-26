@@ -2,8 +2,8 @@ import { createHash, randomUUID } from 'node:crypto';
 import { createClient, type Client, type InStatement, type Row } from '@libsql/client';
 import {
   HERO_BY_ID,
-  HeroIdSchema,
   IdentityRoleSchema,
+  RegisteredHeroIdSchema,
   type HeroId,
   type IdentityRole,
   type MasterGameState,
@@ -723,7 +723,7 @@ export class LibsqlPersistenceStore implements PersistenceStore {
       const wins = rowToNumber(row, 'wins');
 
       const parsedIdentity = IdentityRoleSchema.safeParse(identityRaw);
-      const parsedHero = HeroIdSchema.safeParse(heroRaw);
+      const parsedHero = RegisteredHeroIdSchema.safeParse(heroRaw);
       if (!parsedIdentity.success || !parsedHero.success) {
         continue;
       }
@@ -856,7 +856,7 @@ export class LibsqlPersistenceStore implements PersistenceStore {
     for (const pRow of participantRows) {
       const mId = rowToString(pRow, 'match_id');
       const identity = IdentityRoleSchema.parse(rowToString(pRow, 'identity'));
-      const heroId = HeroIdSchema.parse(rowToString(pRow, 'hero_id'));
+      const heroId = RegisteredHeroIdSchema.parse(rowToString(pRow, 'hero_id'));
       const list = participantsByMatch.get(mId) ?? [];
       list.push({
         userId: rowToString(pRow, 'user_id'),

@@ -1,8 +1,8 @@
 import type { FastifyInstance } from 'fastify';
 import {
   HERO_CATALOG,
-  HeroIdSchema,
   IdentityRoleSchema,
+  RegisteredHeroIdSchema,
   type IdentityRole,
 } from '@lkdf/shared';
 import { z } from 'zod';
@@ -21,7 +21,7 @@ const IDENTITY_META: readonly {
 const StatsQuerySchema = z.object({
   userId: z.string().min(1).optional(),
   identity: IdentityRoleSchema.optional(),
-  heroId: HeroIdSchema.optional(),
+  heroId: RegisteredHeroIdSchema.optional(),
   includeMatches: z.enum(['true', 'false']).optional(),
   includeMonthly: z.enum(['true', 'false']).optional(),
   matchLimit: z.coerce.number().int().min(1).max(100).optional(),

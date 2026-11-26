@@ -1,5 +1,5 @@
 import type { CardCategory, CardInstance, Suit } from '../types/game.js';
-import { shuffleArray } from '../engine/setup.js';
+import { shuffleArray } from '../utils/shuffle.js';
 
 export type CardColor = 'RED' | 'BLACK' | 'NONE';
 

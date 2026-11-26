@@ -1,0 +1,115 @@
+{
+  "brand": {
+    "title": "Blades of the Nine Realms",
+    "subtitle": "Cửu Châu Ẩn Kiếm"
+  },
+  "common": {
+    "backToMenu": "Back to Menu",
+    "backToMainMenu": "Main Menu",
+    "settings": "Settings",
+    "language": "Language"
+  },
+  "lobby": {
+    "mainMenuAria": "Main menu",
+    "welcomeToast": "Signed in as {{name}}",
+    "dismissToast": "Dismiss",
+    "playOnlineTitle": "Play Online",
+    "playOnlineDesc": "Private rooms for 4–8 players",
+    "playOfflineTitle": "Play vs Bots",
+    "playOfflineDesc": "Offline 4–8 seat skirmish",
+    "referenceTitle": "Compendium",
+    "referenceDesc": "Heroes, cards, and hidden roles",
+    "profileTitle": "Profile",
+    "profileDesc": "Display name and match record",
+    "checkingRoom": "Checking active room…",
+    "createRoomHeading": "Create New Room",
+    "playerCountBadge": "4–8 players",
+    "createRoomDesc": "Choose turn timer speed and share the 6-character room seal to invite friends.",
+    "tempoLabel": "Turn Tempo",
+    "tempoFast": "Fast",
+    "tempoStandard": "Standard",
+    "tempoRelaxed": "Relaxed",
+    "secondsPerTurn": "{{seconds}}s/turn",
+    "creatingRoom": "Creating room…",
+    "createRoomCta": "Create Room (4–8 Players)",
+    "joinRoomHeading": "Join With Room Seal",
+    "joinRoomDesc": "Enter the 6-character seal from the room host to join immediately.",
+    "roomCodeLabel": "Room Seal (6 chars)",
+    "joiningRoom": "Joining room…",
+    "joinRoomCta": "Join Room",
+    "steamLobbyHint": "Peer-to-peer friend lobbies arrive in a later phase — choose Play vs Bots to test a full match right now."
+  },
+  "roles": {
+    "LORD": "Grand Sovereign",
+    "LOYALIST": "Oathbound Guardian",
+    "REBEL": "Crimson Insurgent",
+    "SPY": "Lone Phantom",
+    "UNKNOWN": "Hidden"
+  },
+  "compendium": {
+    "title": "Compendium",
+    "tabHeroes": "Warriors",
+    "tabCards": "Cards",
+    "tabRoles": "Roles",
+    "all": "All",
+    "seatCount": "Table Size",
+    "lordCandidate": "Sovereign Candidate"
+  },
+  "heroSelect": {
+    "waitingLord": "Waiting for Sovereign {{name}} to choose a warrior (1/5)...",
+    "lordPickTitle": "You are Sovereign — Choose 1 of 5 Warriors",
+    "pickTitle": "Choose 1 of 3 Warriors",
+    "lordBonus": " · Sovereign gains +1 Max HP",
+    "lordBadge": "Sovereign",
+    "lordHpBadge": "+1 Sovereign",
+    "lockedHero": "Locked in: {{name}} ({{faction}})"
+  },
+  "gameOver": {
+    "victorySeal": "VICTORY",
+    "defeatSeal": "DEFEAT",
+    "finished": "Match Ended",
+    "lordWin": "Sovereign & Guardians Victorious!",
+    "rebelWin": "Crimson Insurgents Victorious!",
+    "spyWin": "Lone Phantom Victorious!",
+    "returnMenu": "Back to Menu",
+    "playAgain": "Play Again",
+    "unpicked": "Unpicked"
+  },
+  "offlineSetup": {
+    "title": "Play vs Bots",
+    "subtitle": "Offline tactical skirmish — no internet or sign-in required.",
+    "seatLegend": "Table Size",
+    "seatOption": "{{count}} seats",
+    "lineupLabel": "Lineup:",
+    "lineupValue": "You & {{bots}} Bots",
+    "roleBalanceTitle": "Role Balance ({{count}} players)",
+    "roleBalanceHint": "Shuffled each match",
+    "roleBalanceAria": "Expected hidden role distribution",
+    "startMatch": "Start Match"
+  },
+  "match": {
+    "autoSkipNullify": "Auto-Pass Counter",
+    "autoSkipNullifyShort": "Auto-Pass",
+    "reduceMotion": "Reduce Motion",
+    "sfx": "Sound Effects",
+    "sfxShort": "SFX",
+    "bgm": "Music",
+    "log": "Log",
+    "rules": "Rules",
+    "referee": "Referee",
+    "exitTitle": "Leave skirmish?",
+    "exitDesc": "Current match progress will be lost if you return to menu.",
+    "stayInMatch": "Stay",
+    "faultMessage": "Unable to continue this match.",
+    "replay": "Play Again",
+    "prompt": {
+      "gameOver": "Match finished",
+      "selectHero": "Select your hero",
+      "waitHeroSelect": "Waiting for other players to pick",
+      "drawPhase": "Draw {{count}} cards",
+      "playPhase": "Your action phase",
+      "discardPhase": "Discard {{count}} cards",
+      "waitTurn": "Waiting for Seat {{seat}}"
+    }
+  }
+}

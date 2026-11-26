@@ -2,8 +2,10 @@ import { cardHover } from './MatchHoverTooltip.js';
 import { useEffect, useState } from 'react';
 import {
   formatRankLabel,
+  getCuuChauCardDisplay,
 } from '@lkdf/shared';
 import type { CardCategory, CardInstance } from '@lkdf/shared';
+import { useTranslation } from 'react-i18next';
 import { getCardArtUrl } from '../../lib/assetCatalog.js';
 import {
   GameIcon,
@@ -65,7 +67,9 @@ export function PlayingCardFace({
   compact = false,
   showCategoryTag = true,
 }: PlayingCardFaceProps) {
-
+  const { i18n } = useTranslation();
+  const locale = i18n.language === 'en' ? 'en' : 'vi';
+  const cardDisplay = getCuuChauCardDisplay(card.cardKey, locale, card.nameVi);
   const rankLabel = formatRankLabel(card.rank);
   const categoryLabel = getCardCategoryLabelVi(card.category, card.attackRange);
   const artUrl = getCardArtUrl(card.cardKey);
@@ -77,7 +81,7 @@ export function PlayingCardFace({
   }, [artUrl]);
 
   const isRed = card.suit === 'HEART' || card.suit === 'DIAMOND';
-  const isLongName = card.nameVi.length > 13;
+  const isLongName = cardDisplay.name.length > 13;
 
   return (
     <>
@@ -117,7 +121,7 @@ export function PlayingCardFace({
         {artUrl && !artFailed ? (
           <img
             src={artUrl}
-            alt={card.nameVi}
+            alt={cardDisplay.name}
             draggable={false}
             onError={() => setArtFailed(true)}
             className="h-full w-full object-cover object-center transition-transform duration-200 group-hover:scale-[1.04]"
@@ -150,7 +154,7 @@ export function PlayingCardFace({
               : 'text-[clamp(10px,0.86cqw,11.5px)] leading-[1.08]',
           ].join(' ')}
         >
-          {card.nameVi}
+          {cardDisplay.name}
         </div>
         {showCategoryTag ? (
           <div

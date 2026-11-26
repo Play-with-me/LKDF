@@ -1,4 +1,6 @@
-import { createStandard108Deck, isBlackSuit, isRedSuit } from '../cards/catalog.js';
+import { isBlackSuit, isRedSuit } from '../cards/catalog.js';
+import { DEFAULT_CONTENT_REGISTRY } from '../content/registry.js';
+import { appendGameEvent } from '../types/events.js';
 import {
   canReachForSnatch,
   canUseCollateralMurder,
@@ -69,18 +71,26 @@ function assertTopFrame<K extends InterruptFrame['kind']>(
   return top as Extract<InterruptFrame, { kind: K }>;
 }
 
+export interface StartCombatOptions {
+  readonly deckFactory?: (rng: () => number) => CardInstance[];
+}
+
 /** Khởi phát ván đấu sau khi tất cả đã chọn xong tướng: chia 4 lá mỗi người và vào lượt Chủ Công. */
 export function startMatchCombat(
   state: MasterGameState,
   rng: () => number = Math.random,
+  options?: StartCombatOptions,
 ): MasterGameState {
   if (!state.heroDraft || state.heroDraft.stage !== 'COMPLETED') {
     throw new Error('HERO_SELECTION_NOT_COMPLETED');
   }
 
+  const buildDeck =
+    options?.deckFactory ?? ((r: () => number) => DEFAULT_CONTENT_REGISTRY.createDeck(r));
+
   let next: MasterGameState = {
     ...state,
-    drawPile: createStandard108Deck(rng),
+    drawPile: buildDeck(rng),
     discardPile: [],
     turnPhase: 'JUDGE',
     roundNumber: 1,
@@ -96,13 +106,18 @@ export function startMatchCombat(
     next = dealt.state;
   }
 
-  next = {
-    ...next,
-    actionLog: [
-      ...next.actionLog,
-      'Đã chia mỗi người 4 lá bài khởi đầu. Lượt 1 của Chủ Công bắt đầu!',
-    ],
-  };
+  next = appendGameEvent(
+    {
+      ...next,
+      actionLog: [
+        ...next.actionLog,
+        'Đã chia mỗi người 4 lá bài khởi đầu. Lượt 1 của Chủ Công bắt đầu!',
+      ],
+    },
+    'combat.started',
+    { lordSeat: state.heroDraft.lordSeatIndex + 1 },
+    'Đã chia mỗi người 4 lá bài khởi đầu. Lượt 1 của Chủ Công bắt đầu!',
+  );
 
   return stepEngine(next, rng);
 }

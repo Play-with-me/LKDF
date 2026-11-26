@@ -1,4 +1,25 @@
 export type DevicePreferenceKey = 'reduceMotion' | 'taskbarFlash' | 'onboardingHints';
+export type AppLocale = 'vi' | 'en';
+
+export function readAppLocale(): AppLocale {
+  try {
+    const value = localStorage.getItem('lkdf.settings.locale');
+    if (value === 'vi' || value === 'en') return value;
+  } catch {
+    // Storage can be unavailable in headless previews.
+  }
+  return 'vi';
+}
+
+export function writeAppLocale(locale: AppLocale): boolean {
+  try {
+    localStorage.setItem('lkdf.settings.locale', locale);
+  } catch {
+    return false;
+  }
+  document.documentElement.lang = locale;
+  return true;
+}
 
 export function readDevicePreference(key: DevicePreferenceKey): boolean {
   try {

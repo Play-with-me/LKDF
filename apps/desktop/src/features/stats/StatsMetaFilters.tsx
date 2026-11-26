@@ -1,4 +1,6 @@
 import type { ReactElement } from 'react';
+import { getCuuChauFactionDisplay, getCuuChauHeroDisplay, getCuuChauRoleDisplay } from '@lkdf/shared';
+import { useTranslation } from 'react-i18next';
 import { GameIcon } from '../../components/icons/index.js';
 import { GuofengPillSelect } from '../../components/ui/GuofengPillSelect.js';
 import type {
@@ -33,10 +35,10 @@ const FACTION_DOT_CLASSES: Readonly<Record<HeroFaction, string>> = {
 };
 
 const IDENTITY_FALLBACK_LABELS: Readonly<Record<IdentityRole, string>> = {
-  LORD: 'Chủ Công',
-  LOYALIST: 'Trung Thần',
-  REBEL: 'Phản Tặc',
-  SPY: 'Nội Gián',
+  LORD: 'Minh Chủ',
+  LOYALIST: 'Hộ Pháp',
+  REBEL: 'Nghĩa Quân',
+  SPY: 'Ám Ảnh',
 };
 
 export function StatsMetaFilters({
@@ -49,6 +51,8 @@ export function StatsMetaFilters({
   onRefresh,
   onBack,
 }: StatsMetaFiltersProps): ReactElement {
+  const { i18n } = useTranslation();
+  const locale = i18n.language === 'en' ? 'en' : 'vi';
   const hasActiveFilter =
     filter.userId !== null || filter.identity !== null || filter.heroId !== null;
 
@@ -91,19 +95,19 @@ export function StatsMetaFilters({
   ];
 
   const identityOptions = [
-    { value: '', label: 'Tất cả thân phận' },
+    { value: '', label: locale === 'en' ? 'All Roles' : 'Tất cả thân phận' },
     ...(meta?.identities ?? []).map((identity) => ({
       value: identity.id,
-      label: identity.nameVi,
+      label: getCuuChauRoleDisplay(identity.id, locale).name,
     })),
   ];
 
   const heroOptions = [
-    { value: '', label: 'Tất cả 25 tướng' },
+    { value: '', label: locale === 'en' ? 'All 25 Warriors' : 'Tất cả 25 Hiệp Khách' },
     ...(meta?.heroes ?? []).map((hero) => ({
       value: hero.id,
-      label: hero.nameVi,
-      detail: hero.factionLabelVi,
+      label: getCuuChauHeroDisplay(hero.id, locale)?.name ?? hero.nameVi,
+      detail: getCuuChauFactionDisplay(hero.faction, locale).shortName,
     })),
   ];
 
@@ -260,11 +264,11 @@ export function StatsMetaFilters({
                 {selectedHero ? (
                   <span
                     aria-hidden="true"
-                    className={`inline-block h-2 w-2 rounded-full ${FACTION_DOT_CLASSES[selectedHero.faction]}`}
+                    className={`inline-block h-2 w-2 rounded-full ${FACTION_DOT_CLASSES[selectedHero.faction] ?? 'bg-[#9CA3AF]'}`}
                   />
                 ) : null}
                 <span>
-                  Tướng: {selectedHero ? selectedHero.nameVi : filter.heroId}
+                  {getCuuChauHeroDisplay(selectedHero?.id ?? filter.heroId, locale)?.name ?? filter.heroId}
                 </span>
                 <span aria-hidden="true" className="text-[#D5C3A5]">
                   ×

@@ -4,9 +4,12 @@ import {
   calculateDistance,
   formatRankLabel,
   formatSuitSymbol,
+  getCuuChauCardDisplay,
+  getCuuChauHeroDisplay,
   getHeroDefinition,
 } from '@lkdf/shared';
 import type { CardInstance, PlayerViewState, PublicPlayerView } from '@lkdf/shared';
+import { useTranslation } from 'react-i18next';
 import { getCardArtUrl, getHeroPortraitUrl } from '../../lib/assetCatalog.js';
 import {
   CardBack,
@@ -96,7 +99,10 @@ export function SeatCard({
   onInspectHero,
   onInspectCard,
 }: SeatCardProps) {
+  const { i18n } = useTranslation();
+  const locale = i18n.language === 'en' ? 'en' : 'vi';
   const hero = player.heroId ? getHeroDefinition(player.heroId) : null;
+  const heroDisplay = getCuuChauHeroDisplay(player.heroId, locale);
   const heroPortraitUrl = getHeroPortraitUrl(player.heroId);
 
   const [photoFailed, setPhotoFailed] = useState<boolean>(false);
@@ -462,7 +468,7 @@ export function SeatCard({
             <>
               <FactionSeal faction={hero.faction} size="xs" />
               <span className="font-serif-title min-w-0 flex-1 [overflow-wrap:anywhere] text-[clamp(11px,0.96cqw,13.5px)] font-bold leading-tight text-[#F5EBD6] drop-shadow-[0_1px_3px_rgba(0,0,0,0.98)]">
-                {hero.nameVi}
+                {heroDisplay?.name ?? hero.nameVi}
               </span>
             </>
           ) : (
@@ -472,7 +478,7 @@ export function SeatCard({
                 isSeatReady ? 'text-[#86EFAC]' : 'text-[#9CA3AF]',
               ].join(' ')}
             >
-              {isSeatReady ? 'Đã chốt tướng' : 'Đang chọn tướng…'}
+              {isSeatReady ? (locale === 'en' ? 'Locked' : 'Đã chốt') : (locale === 'en' ? 'Selecting…' : 'Đang chọn…')}
             </span>
           )}
           <span
@@ -484,10 +490,13 @@ export function SeatCard({
         </div>
       </div>
 
-      {/* Hàng 3: Kỹ năng tướng gọn + Trạng thái sống (Lỏa Y / Không Thành / Khiêm Tốn) */}
+      {/* Hàng 3: Kỹ năng gọn + Trạng thái sống */}
       {hero && (
         <div className="relative z-10 flex flex-wrap gap-0.5">
-          {hero.skills.map((skill) => {
+          {hero.skills.map((skill, sIdx) => {
+            const skillDisplay = heroDisplay?.skills[sIdx];
+            const skillName = skillDisplay?.name ?? skill.nameVi;
+            const skillDesc = skillDisplay?.description ?? skill.descriptionVi;
             const isPassive = isPassiveSkillId(skill.id) || undefined;
             const isLuoYiChip = skill.id === 'luo_yi' && isLuoYiActive;
             const isKongChengChip = skill.id === 'kong_cheng' && isKongChengActive;
@@ -504,15 +513,15 @@ export function SeatCard({
                 {isLuoYiChip ? <GameIcon name="broadsword" size={9} /> : null}
                 {isKongChengChip ? <GameIcon name="shield" size={9} /> : null}
                 {isQianXunChip ? <GameIcon name="bordered-shield" size={9} /> : null}
-                <span>{isLuoYiChip ? 'Lỏa Y +1 ST' : skill.nameVi}</span>
+                <span>{isLuoYiChip ? '+1 DMG' : skillName}</span>
               </>
             );
             const hoverTitle = isLuoYiChip
-              ? 'Lỏa Y đang kích hoạt: +1 sát thương cho Sát và Quyết Đấu trong lượt này'
+              ? skillDesc
               : isKongChengChip
-                ? 'Không Thành đang kích hoạt: Miễn nhiễm Sát và Quyết Đấu khi 0 bài tay'
+                ? skillDesc
                 : isQianXunChip
-                  ? 'Khiêm Tốn: Miễn nhiễm Thuận Thủ Khiên Dương và Lạc Bất Tư Thục'
+                  ? skillDesc
                   : undefined;
             if (canClick || !canInspectSeatHero) {
               return (
@@ -522,8 +531,8 @@ export function SeatCard({
                   data-passive-skill={isPassive}
                   data-kong-cheng={isKongChengChip ? 'true' : undefined}
                   data-qian-xun={isQianXunChip ? 'true' : undefined}
-                  data-hover-name={isLuoYiChip ? 'Lỏa Y +1 ST' : skill.nameVi}
-                  data-hover-description={hoverTitle ?? skill.descriptionVi}
+                  data-hover-name={skillName}
+                  data-hover-description={hoverTitle ?? skillDesc}
                 >
                   {labelContent}
                 </span>
@@ -538,8 +547,8 @@ export function SeatCard({
                 data-kong-cheng={isKongChengChip ? 'true' : undefined}
                 data-qian-xun={isQianXunChip ? 'true' : undefined}
                 data-inspected-trigger={isInspectedHero ? 'true' : undefined}
-                data-hover-name={isLuoYiChip ? 'Lỏa Y +1 ST' : skill.nameVi}
-                data-hover-description={hoverTitle ?? skill.descriptionVi}
+                data-hover-name={skillName}
+                data-hover-description={hoverTitle ?? skillDesc}
                 onClick={(event) => {
                   event.stopPropagation();
                   onInspectHero?.(player.seatIndex);
@@ -650,7 +659,7 @@ export function SeatCard({
                     </span>
                   ) : null}
                   <span className="min-w-0 flex-1 truncate font-semibold text-[#F5EBD6]">
-                    {item.card.nameVi}
+                    {getCuuChauCardDisplay(item.card.cardKey, locale, item.card.nameVi).name}
                   </span>
                 </>
               );
@@ -659,7 +668,7 @@ export function SeatCard({
                   <div
                     key={slot}
                     data-equipment-slot={slot}
-                    aria-label={`${label} · ${item.card.nameVi}`}
+                    aria-label={`${label} · ${getCuuChauCardDisplay(item.card.cardKey, locale, item.card.nameVi).name}`}
                     className={chipClass}
                   >
                     {content}
@@ -673,7 +682,7 @@ export function SeatCard({
                   data-equipment-slot={slot}
                   data-inspected-trigger={active ? 'true' : undefined}
                   {...cardHover(item.card)}
-                  aria-label={`${label} · ${item.card.nameVi}`}
+                  aria-label={`${label} · ${getCuuChauCardDisplay(item.card.cardKey, locale, item.card.nameVi).name}`}
                   onClick={(event) => {
                     event.stopPropagation();
                     onInspectCard?.(item.card, item.sourceId, item.sourceLabel);

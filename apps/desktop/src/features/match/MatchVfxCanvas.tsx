@@ -309,7 +309,7 @@ function spawnParticles(
     }
   } else if (kind === 'SKILL_BURST') {
     const t = targets[0] ?? { cx: center.x, cy: center.y, w: 120, h: 80 };
-    const pal = faction ? FACTION_PALETTE[faction] : { primary: '#E6BE6C', glow: '#FDE68A' };
+    const pal = (faction ? FACTION_PALETTE[faction] : undefined) ?? { primary: '#E6BE6C', glow: '#FDE68A' };
     for (let i = 0; i < 14; i++) {
       const ang = (i / 14) * Math.PI * 2;
       const spd = 55 + Math.random() * 95;
@@ -700,7 +700,7 @@ export function MatchVfxCanvas({ stageRef, events, duelSeats }: MatchVfxCanvasPr
           ctx.restore();
         } else if (eff.kind === 'SKILL_BURST' && eff.targets[0]) {
           const t = eff.targets[0];
-          const pal = eff.faction ? FACTION_PALETTE[eff.faction] : { primary: '#E6BE6C', glow: '#FDE68A' };
+          const pal = (eff.faction ? FACTION_PALETTE[eff.faction] : undefined) ?? { primary: '#E6BE6C', glow: '#FDE68A' };
           const r1 = Math.max(0.5, 22 + easeOut * 48);
           const r2 = Math.max(0.5, 14 + easeOut * 34);
           ctx.save();

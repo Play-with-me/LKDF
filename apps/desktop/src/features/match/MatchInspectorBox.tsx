@@ -1,6 +1,9 @@
+import { useTranslation } from 'react-i18next';
 import {
   formatRankLabel,
   formatSuitSymbol,
+  getCuuChauCardDisplay,
+  getCuuChauHeroDisplay,
   getHeroDefinition,
 } from '@lkdf/shared';
 import type { CardInstance, PublicPlayerView } from '@lkdf/shared';
@@ -32,15 +35,15 @@ export interface MatchInspectorBoxProps {
 function getCardRuleTip(card: CardInstance): string | null {
   switch (card.category) {
     case 'WEAPON':
-      return 'Mẹo: Vũ khí chỉ tăng tầm đánh Sát; Thuận Thủ Khiên Dương vẫn đòi hỏi khoảng cách ≤ 1.';
+      return 'Mẹo: Binh khí chỉ tăng tầm đánh Kiếm Trảm; Thám Nang Thủ vẫn đòi hỏi khoảng cách ≤ 1.';
     case 'ARMOR':
-      return 'Mẹo: Giáp tự động kích hoạt phòng thủ khi bạn bị nhắm, không tốn lượt.';
+      return 'Mẹo: Hộ giáp tự động kích hoạt phòng thủ khi bạn bị nhắm, không tốn lượt.';
     case 'PLUS_ONE_HORSE':
-      return 'Mẹo: Ngựa +1 khiến mọi đối thủ tính khoảng cách tới bạn xa thêm 1.';
+      return 'Mẹo: Thú cưỡi +1 khiến mọi đối thủ tính khoảng cách tới bạn xa thêm 1.';
     case 'MINUS_ONE_HORSE':
-      return 'Mẹo: Ngựa −1 giúp bạn tính khoảng cách tới mọi đối thủ gần hơn 1.';
+      return 'Mẹo: Thú cưỡi −1 giúp bạn tính khoảng cách tới mọi đối thủ gần hơn 1.';
     case 'DELAYED_SCROLL':
-      return 'Mẹo: Cẩm nang thời gian chờ phán xét ở pha đầu lượt, có thể bị Vô Giải Khả Kích chặn.';
+      return 'Mẹo: Bí kíp thời gian chờ phán xét ở pha đầu lượt, có thể bị Hóa Giải Chân Khí chặn.';
     default:
       return null;
   }
@@ -54,6 +57,8 @@ export function MatchInspectorBox({
   onClose,
   onResetToSelf,
 }: MatchInspectorBoxProps) {
+  const { i18n } = useTranslation();
+  const locale = i18n.language === 'en' ? 'en' : 'vi';
   if (!inspector) {
     return null;
   }
@@ -91,19 +96,20 @@ export function MatchInspectorBox({
 
   if (inspector.kind === 'card') {
     const { card, sourceLabel } = inspector;
+    const cardDisplay = getCuuChauCardDisplay(card.cardKey, locale, card.nameVi);
     const artUrl = getCardArtUrl(card.cardKey);
     const rankLabel = formatRankLabel(card.rank);
     const suitSym = formatSuitSymbol(card.suit);
     const red = isCardRed(card);
     const categoryLabel = getCardCategoryLabelVi(card.category, card.attackRange);
-    const description = getCardDescriptionVi(card.cardKey, card.nameVi);
+    const description = cardDisplay.description;
     const tip = getCardRuleTip(card);
 
     return (
       <aside
         data-match-inspector="true"
         role="region"
-        aria-label={`Chi tiết lá bài ${card.nameVi}`}
+        aria-label={cardDisplay.name}
         style={boxBgStyle}
         className="animate-lkdf-slide relative flex min-h-0 w-full flex-col overflow-hidden rounded-lg border border-[#C89B4B]/70 bg-[#140F0C] text-[#EFE6D5] shadow-[0_20px_48px_rgba(0,0,0,0.88),inset_0_1px_0_rgba(230,190,108,0.16)]"
       >
@@ -148,7 +154,7 @@ export function MatchInspectorBox({
               {artUrl ? (
                 <img
                   src={artUrl}
-                  alt={card.nameVi}
+                  alt={cardDisplay.name}
                   draggable={false}
                   className="h-full w-full object-cover"
                 />
@@ -163,7 +169,7 @@ export function MatchInspectorBox({
 
             <div className="min-w-0 flex-1">
               <div className="font-serif-title text-[14px] leading-snug font-bold text-[#F5EBD6]">
-                {card.nameVi}
+                {cardDisplay.name}
               </div>
               <div className="mt-1 flex flex-wrap items-center gap-1.5">
                 <span
@@ -207,6 +213,7 @@ export function MatchInspectorBox({
   const targetSeatPlayer = players.find((p) => p.seatIndex === inspector.seatIndex) ?? selfPlayer;
   const isSelf = Boolean(selfPlayer && targetSeatPlayer?.seatIndex === selfPlayer.seatIndex);
   const heroDef = targetSeatPlayer?.heroId ? getHeroDefinition(targetSeatPlayer.heroId) : null;
+  const heroDisplay = getCuuChauHeroDisplay(heroDef?.id, locale);
   const factionStyle = heroDef ? getFactionStyle(heroDef.faction) : null;
   const portraitUrl = getHeroPortraitUrl(targetSeatPlayer?.heroId);
 
@@ -214,7 +221,7 @@ export function MatchInspectorBox({
     <aside
       data-match-inspector="true"
       role="region"
-      aria-label={`Chi tiết tướng ${heroDef?.nameVi ?? ''}`}
+      aria-label={heroDisplay?.name ?? heroDef?.nameVi ?? ''}
       style={boxBgStyle}
       className="animate-lkdf-slide relative flex min-h-0 w-full flex-col overflow-hidden rounded-lg border border-[#C89B4B]/70 bg-[#140F0C] text-[#EFE6D5] shadow-[0_20px_48px_rgba(0,0,0,0.88),inset_0_1px_0_rgba(230,190,108,0.16)]"
     >
@@ -223,7 +230,7 @@ export function MatchInspectorBox({
         <div className="flex min-w-0 items-center gap-1.5">
           {heroDef ? <FactionSeal faction={heroDef.faction} size="xs" /> : null}
           <span className="truncate text-[10px] font-bold tracking-wide text-[#F3D38C] uppercase">
-            {title ?? (isSelf ? 'Tướng của bạn' : targetSeatPlayer?.displayName || 'Hồ sơ tướng')}
+            {title ?? (isSelf ? (locale === 'en' ? 'Your Warrior' : 'Hiệp khách của bạn') : targetSeatPlayer?.displayName || (locale === 'en' ? 'Warrior Dossier' : 'Hồ sơ hiệp khách'))}
           </span>
         </div>
         <div className="flex shrink-0 items-center gap-1">
@@ -233,18 +240,18 @@ export function MatchInspectorBox({
               onClick={onResetToSelf}
               className="cursor-pointer rounded border border-[#806345]/75 bg-[#231A14] px-1.5 py-0.5 text-[9.5px] font-semibold text-[#E6CFA3] transition-colors hover:border-[#E6BE6C] hover:text-[#FFF8ED]"
             >
-              Soi mình
+              {locale === 'en' ? 'Inspect Self' : 'Soi mình'}
             </button>
           ) : null}
           <button
             type="button"
             onClick={onClose}
-            title="Đóng (Esc)"
-            aria-label="Đóng bảng xem chi tiết (Esc)"
+            title="Esc"
+            aria-label="Close (Esc)"
             className="inline-flex cursor-pointer items-center gap-1 rounded border border-[#806345]/80 bg-[#231A14] px-1.5 py-0.5 text-[10px] font-semibold text-[#F5EBD6] transition-colors hover:border-[#E6BE6C] hover:text-[#FFF8ED] focus-visible:outline-2 focus-visible:outline-[#E6BE6C]"
           >
             <GameIcon name="ui:x" size={10} />
-            <span>Đóng</span>
+            <span>{locale === 'en' ? 'Close' : 'Đóng'}</span>
           </button>
         </div>
       </header>
@@ -259,7 +266,7 @@ export function MatchInspectorBox({
                 {portraitUrl ? (
                   <img
                     src={portraitUrl}
-                    alt={heroDef.nameVi}
+                    alt={heroDisplay?.name ?? heroDef.nameVi}
                     draggable={false}
                     className="h-full w-full object-cover object-[50%_18%]"
                   />
@@ -270,26 +277,26 @@ export function MatchInspectorBox({
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-1.5">
                   <span className={`font-serif-title text-[14px] leading-snug font-bold ${factionStyle.nameTextClass}`}>
-                    {heroDef.nameVi}
+                    {heroDisplay?.name ?? heroDef.nameVi}
                   </span>
                   <span className={`rounded border px-1.5 py-0 text-[9.5px] font-bold ${factionStyle.badgeClass}`}>
-                    {factionStyle.labelVi}
+                    {heroDisplay?.factionLabel ?? factionStyle.labelVi}
                   </span>
                 </div>
                 <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-[#D5C3A5]">
                   <span className="font-mono-num inline-flex items-center gap-1 font-bold text-[#FCA5A5] tabular-nums">
                     <GameIcon name="heart-plus" size={11} className="text-[#EF4444]" />
-                    {targetSeatPlayer.hp}/{targetSeatPlayer.maxHp} máu
+                    {targetSeatPlayer.hp}/{targetSeatPlayer.maxHp} HP
                   </span>
                   <span className="font-mono-num text-[#B5A792] tabular-nums">
-                    · {targetSeatPlayer.handCount} lá tay
+                    · {targetSeatPlayer.handCount} {locale === 'en' ? 'cards' : 'lá tay'}
                   </span>
                 </div>
               </div>
             </div>
 
             <div className="space-y-2">
-              {heroDef.skills.map((sk) => {
+              {(heroDisplay?.skills ?? heroDef.skills.map((s) => ({ id: s.id, name: s.nameVi, description: s.descriptionVi, isLordSkill: s.isLordSkill }))).map((sk) => {
                 const isPassive = isPassiveSkillId(sk.id);
                 return (
                   <div
@@ -298,22 +305,22 @@ export function MatchInspectorBox({
                   >
                     <div className="flex flex-wrap items-center gap-1.5">
                       <span className="font-serif-title text-[12px] font-bold text-[#F3D38C]">
-                        【{sk.nameVi}】
+                        【{sk.name}】
                       </span>
                       {sk.isLordSkill ? (
                         <span className="inline-flex items-center gap-0.5 rounded border border-[#D99B26]/60 bg-[#D99B26]/18 px-1.5 py-0 text-[9px] font-bold text-[#FDE68A]">
                           <GameIcon name="crown" size={9} />
-                          Kỹ năng Chủ Công
+                          {locale === 'en' ? 'Sovereign Skill' : 'Kỹ năng Minh Chủ'}
                         </span>
                       ) : null}
                       {isPassive ? (
                         <span className="inline-flex items-center rounded border border-[#6EE7B7]/45 bg-[#064E3B]/65 px-1.5 py-0 text-[9px] font-bold text-[#A7F3D0]">
-                          Bị động
+                          {locale === 'en' ? 'Passive' : 'Bị động'}
                         </span>
                       ) : null}
                     </div>
                     <p className="mt-1 text-[11.5px] leading-[1.45] text-[#EDE3D2]">
-                      {sk.descriptionVi}
+                      {sk.description}
                     </p>
                   </div>
                 );
@@ -322,12 +329,12 @@ export function MatchInspectorBox({
 
             <div className="flex items-start gap-1.5 rounded-md border border-[#806345]/35 bg-[#1B1410]/75 px-2.5 py-1.5 text-[10.5px] leading-snug text-[#B5A792]">
               <GameIcon name="ui:info" size={11} className="mt-0.5 shrink-0 text-[#E6BE6C]" />
-              <span>Bấm nút thông tin ghế khác hoặc lá trang bị/giữa bàn để đổi mục soi.</span>
+              <span>{locale === 'en' ? 'Click any seat, gear, or table card to inspect.' : 'Bấm ghế khác hoặc lá trang bị/giữa bàn để đổi mục soi.'}</span>
             </div>
           </>
         ) : (
           <div className="flex h-24 items-center justify-center text-center text-[11.5px] text-[#B5A792]">
-            Đang chọn Tướng đầu ván...
+            {locale === 'en' ? 'Selecting warriors...' : 'Đang chọn Hiệp Khách đầu ván...'}
           </div>
         )}
       </div>

@@ -1,5 +1,7 @@
 import { useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { GuofengModalShell } from '../../components/ui/GuofengModalShell.js';
+import { formatCuuChauDisplayText } from './matchTypes.js';
 
 export interface ActionLogDialogProps {
   readonly open: boolean;
@@ -15,6 +17,8 @@ export function ActionLogDialog({
   actionLog,
   onClose,
 }: ActionLogDialogProps) {
+  const { i18n } = useTranslation();
+  const locale = i18n.language === 'en' ? 'en' : 'vi';
   const logContainerRef = useRef<HTMLDivElement | null>(null);
 
   // Tự động cuộn xuống diễn biến mới nhất mỗi lần mở hộp thoại hoặc có nước đi mới
@@ -78,7 +82,7 @@ export function ActionLogDialog({
                 <span className="font-mono-num shrink-0 rounded border border-[#806345]/45 bg-[#140F0C] px-1.5 py-0.5 text-[11px] font-bold text-[#D5C3A5] tabular-nums">
                   #{startOrdinal + idx}
                 </span>
-                <span className="min-w-0 flex-1 break-words">{entry}</span>
+                <span className="min-w-0 flex-1 break-words">{formatCuuChauDisplayText(entry, locale)}</span>
               </div>
             );
           })

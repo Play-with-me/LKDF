@@ -2,6 +2,7 @@ import { orderHand } from './handOrder.js';
 import {
   TIMER_PRESETS,
   applyGameAction,
+  createCuuChau112Deck,
   createInitialMatchSetup,
   projectStateForPlayer,
   selectLordHero,
@@ -17,6 +18,8 @@ import type {
   RoomState,
 } from '@lkdf/shared';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { LanguageToggle } from '../../components/ui/LanguageToggle.js';
 import { readDevicePreference, writeDevicePreference } from '../../lib/devicePreferences.js';
 import { useGameAmbience } from '../../lib/useGameAmbience.js';
 import { useInterfaceSounds } from '../../lib/useInterfaceSounds.js';
@@ -74,6 +77,7 @@ export function OfflineMatchScreen({
   localPlayerName = 'Bạn',
   onExitMatch,
 }: OfflineMatchScreenProps) {
+  const { t } = useTranslation();
   const [masterState, setMasterState] = useState<MasterGameState>(() =>
     createInitialMatchSetup({
       matchId: crypto.randomUUID(),
@@ -146,7 +150,9 @@ export function OfflineMatchScreen({
         ) {
           return current;
         }
-        return startMatchCombat(current);
+        return startMatchCombat(current, Math.random, {
+          deckFactory: createCuuChau112Deck,
+        });
       });
     }, Math.max(0, openingDeadline - Date.now()));
   }, [openingDeadline, openingMatchId]);
@@ -499,13 +505,16 @@ export function OfflineMatchScreen({
     <section className="relative flex h-screen w-screen min-h-0 min-w-0 flex-col overflow-hidden bg-[#090807] text-[#EFE6D5]">
       <MatchSettings
         topRightExtra={
-          <MatchQuickHudPills
-            autoSkipNullification={autoSkipNullify}
-            onToggleAutoSkip={handleToggleAutoSkipNullify}
-            actionLogCount={playerView.actionLog.length}
-            onOpenLog={() => setShowLogDialog(true)}
-            onOpenRules={() => setShowRulesDialog(true)}
-          />
+          <div className="flex items-center gap-1">
+            <LanguageToggle />
+            <MatchQuickHudPills
+              autoSkipNullification={autoSkipNullify}
+              onToggleAutoSkip={handleToggleAutoSkipNullify}
+              actionLogCount={playerView.actionLog.length}
+              onOpenLog={() => setShowLogDialog(true)}
+              onOpenRules={() => setShowRulesDialog(true)}
+            />
+          </div>
         }
       >
         <div className="mb-3 flex flex-wrap items-center gap-4">
@@ -516,7 +525,7 @@ export function OfflineMatchScreen({
               onChange={(event) => handleToggleAutoSkipNullify(event.target.checked)}
               className="accent-[#D99B26]"
             />
-            Tự bỏ qua Vô Giải
+            {t('match.autoSkipNullify')}
           </label>
           <label className="flex cursor-pointer items-center gap-2 text-xs font-semibold text-[#EFE6D5]">
             <input
@@ -525,31 +534,31 @@ export function OfflineMatchScreen({
               onChange={(event) => handleToggleReduceMotion(event.target.checked)}
               className="accent-[#D99B26]"
             />
-            Giảm chuyển động
+            {t('match.reduceMotion')}
           </label>
         </div>
 
         <div className="flex flex-wrap items-center gap-1.5">
           <button
             type="button"
-            aria-label="Hiệu ứng âm thanh"
+            aria-label={t('match.sfx')}
             aria-pressed={soundEnabled}
             onClick={() => setSoundEnabled((enabled) => !enabled)}
             className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-[#9A7B4F]/40 bg-[#14100D]/90 px-2.5 py-1 text-[11px] font-medium text-[#EFE6D5] hover:border-[#D99B26] xl:text-xs"
           >
             <GameIcon name={soundEnabled ? 'ui:volume-on' : 'ui:volume-off'} size={13} />
-            <span className="lg:hidden">Âm thanh</span>
-            <span className="hidden lg:inline">Hiệu ứng âm thanh</span>
+            <span className="lg:hidden">{t('match.sfxShort')}</span>
+            <span className="hidden lg:inline">{t('match.sfx')}</span>
           </button>
           <button
             type="button"
-            aria-label="Nhạc nền"
+            aria-label={t('match.bgm')}
             aria-pressed={musicEnabled}
             onClick={() => setMusicEnabled((enabled) => !enabled)}
             className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-[#9A7B4F]/40 bg-[#14100D]/90 px-2.5 py-1 text-[11px] font-medium text-[#EFE6D5] hover:border-[#D99B26] xl:text-xs"
           >
             <GameIcon name={musicEnabled ? 'ui:volume-on' : 'ui:volume-off'} size={13} />
-            <span>Nhạc nền</span>
+            <span>{t('match.bgm')}</span>
           </button>
           <button
             type="button"
@@ -557,7 +566,7 @@ export function OfflineMatchScreen({
             className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-[#9A7B4F]/40 bg-[#14100D]/90 px-2.5 py-1 text-[11px] font-medium text-[#FCA5A5] hover:border-[#DC2626] xl:text-xs"
           >
             <GameIcon name="ui:undo" size={13} />
-            <span>Về menu</span>
+            <span>{t('common.backToMenu')}</span>
           </button>
         </div>
       </MatchSettings>
@@ -621,7 +630,7 @@ export function OfflineMatchScreen({
         onClose={() => setShowExitDialog(false)}
         ariaLabelledBy="offline-exit-title"
         icon="ui:door-open"
-        title="Rời ván tập?"
+        title={t('match.exitTitle')}
         maxWidthClass="max-w-sm"
         footer={
           <>
@@ -631,20 +640,20 @@ export function OfflineMatchScreen({
               onClick={() => setShowExitDialog(false)}
               className="lkdf-bronze-pill cursor-pointer rounded-lg px-3.5 py-2 text-xs font-semibold"
             >
-              Ở lại ván
+              {t('match.stayInMatch')}
             </button>
             <button
               type="button"
               onClick={onExitMatch}
               className="cursor-pointer rounded-lg border border-[#E6BE6C]/45 bg-[#9E2B25] px-3.5 py-2 text-xs font-bold text-[#FFF5EC] hover:bg-[#B8322B]"
             >
-              Về menu
+              {t('common.backToMenu')}
             </button>
           </>
         }
       >
         <p className="text-sm text-[#E8DCC8]">
-          Tiến độ ván này sẽ mất khi bạn về menu.
+          {t('match.exitDesc')}
         </p>
       </GuofengModalShell>
 
@@ -653,20 +662,20 @@ export function OfflineMatchScreen({
           role="alert"
           className="absolute left-1/2 top-14 z-40 flex w-max max-w-[calc(100%-2rem)] -translate-x-1/2 flex-wrap items-center gap-3 rounded border border-[#CA9A48] bg-[#14100D] p-3 text-sm"
         >
-          Không thể tiếp tục ván này.
+          {t('match.faultMessage')}
           <button
             type="button"
             onClick={restartMatch}
             className="rounded bg-[#9E2B25] px-3 py-2"
           >
-            Chơi lại
+            {t('match.replay')}
           </button>
           <button
             type="button"
             onClick={onExitMatch}
             className="rounded border border-[#9A7B4F] px-3 py-2"
           >
-            Về menu
+            {t('common.backToMenu')}
           </button>
         </div>
       ) : null}

@@ -33,7 +33,11 @@ Vì bạn là người mới và không lập trình, bạn **không cần đọ
 
 ## 2. Lộ Trình Từ Đầu Đến Cuối & Các Câu Lệnh "Copy – Dán" Cho Bạn
 
-**2026-11-25 · ✅ ĐÃ XONG Phase 0 (`Cửu Châu Ẩn Kiếm` / `Blades of the Nine Realms` — IP Purge, BrandConfig SSOT, BuildTarget Steam & OfflineMatchScreen, Steamworks Electron 45 Spike).** 👉 BẠN ĐANG Ở ĐÂY · Kiểm tra nhanh bản chạy thử mới (0 ảnh AI cũ, tách sạch màn Chơi với Máy, giữ nguyên 148+1 tests đạt 100%) rồi nhắn tôi **`Bắt đầu Phase 1`** (tách lõi `ContentRegistry`, song ngữ Việt–Anh `i18next`, thiết kế 4 thế lực/4 vai/phá ma trận 108 lá & remix 8–10 tướng, dựng Vertical Slice 4P)!
+**2026-11-25 · ✅ ĐÃ XONG Phase 1 (`Cửu Châu Ẩn Kiếm` / `Blades of the Nine Realms` — ContentRegistry, Song Ngữ Việt–Anh, Bộ Bài 112 Lá `28×4`, 25 Hiệp Khách Mới + 10 Bộ Chiêu Remix, Vertical Slice 4P & Bản Portable `.zip`).**
+- **File chơi thử trên mọi máy Windows (không cần cài, giải nén là chạy):** `apps/desktop/release/BladesOfTheNineRealms-Portable-0.1.0.zip` (**166.57 MB** — mở `Blades of the Nine Realms.exe` bên trong).
+- 👉 **BẠN ĐANG Ở ĐÂY — Kiểm tra bản Portable `.zip` trên máy Windows khác (Đấu với Máy 4–8 người, đổi nút VI/EN) rồi nhắn tôi:** `Bắt đầu Phase 2` *(tạo trọn bộ 25 chân dung hiệp khách + 32 tranh lá bài + 3 nền Cửu Châu Ẩn Kiếm sạch bản quyền và ra bản Portable `.zip` mới có hình ảnh hoàn chỉnh).*
+
+**2026-11-25 · ✅ ĐÃ XONG Phase 0 (`77d925a` — IP Purge, BrandConfig SSOT, BuildTarget Steam & OfflineMatchScreen, Steamworks Electron 45 Spike).**
 
 **2026-11-25 · ✅ ĐÃ PHÁT HÀNH `v1.1.0` (`TamQuocSat-Setup-1.1.0.exe` — 133 MB) trên GitHub Releases & Render Update Proxy + Cập nhật `README.md`.**
 

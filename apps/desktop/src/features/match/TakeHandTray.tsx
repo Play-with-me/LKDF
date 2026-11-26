@@ -14,12 +14,12 @@ interface Props {
 
 function getTakeHandSourceLabel(interrupt: PublicInterruptView): string {
   if (interrupt.id.startsWith('fankui_pick_')) {
-    return 'Phản Quỷ';
+    return 'Hồi Hưởng';
   }
   if (interrupt.id.startsWith('tu_xi_take')) {
-    return 'Đột Tập';
+    return 'Đoạt Lương';
   }
-  return 'Thuận Thủ Khiên Dương';
+  return 'Thám Nang Thủ';
 }
 
 export function TakeHandTray({

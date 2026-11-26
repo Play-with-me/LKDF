@@ -1,7 +1,8 @@
 import { clearHandOrder, orderHand, rememberHandOrder } from './handOrder.js';
 import { createPortal } from 'react-dom';
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
-import { formatRankLabel, getHeroDefinition } from '@lkdf/shared';
+import { formatRankLabel, getCuuChauCardDisplay, getCuuChauHeroDisplay, getCuuChauRoleDisplay, getHeroDefinition } from '@lkdf/shared';
+import { useTranslation } from 'react-i18next';
 import type {
   CardInstance,
   GameAction,
@@ -217,19 +218,10 @@ const EMPTY_AIMING_SEATS: readonly number[] = [];
 
 type OpeningCeremonyStage = 'IDENTITY_GACHA' | 'HERO_GACHA';
 
-function getIdentityMissionVi(identity: PublicPlayerView['identity']): string {
-  switch (identity) {
-    case 'LORD':
-      return 'Chủ Công (+1 Máu tối đa) — Tiêu diệt Phản Tặc & Nội Gián để giữ vững giang sơn.';
-    case 'LOYALIST':
-      return 'Trung Thần — Hộ giá Chủ Công đến thắng lợi cuối cùng.';
-    case 'REBEL':
-      return 'Phản Tặc — Hạ gục Chủ Công để giành chiến thắng cho toàn phe.';
-    case 'SPY':
-      return 'Nội Gián — Tiêu diệt tất cả phe khác rồi đối đầu đơn đấu Chủ Công sau cùng.';
-    default:
-      return 'Thân phận ẩn — Quan sát chiến cuộc và bảo vệ mục tiêu.';
-  }
+function getIdentityMissionVi(identity: PublicPlayerView['identity'], locale: 'vi' | 'en' = 'vi'): string {
+  const roleName = getCuuChauRoleDisplay(identity, locale).name;
+  const desc = getCuuChauRoleDisplay(identity, locale).description;
+  return desc ? `${roleName} — ${desc}` : roleName;
 }
 
 export function MatchArenaLayout({
@@ -255,6 +247,8 @@ export function MatchArenaLayout({
   onTargetLock,
   renderActionSidebar,
 }: MatchArenaLayoutProps) {
+  const { i18n } = useTranslation();
+  const locale = i18n.language === 'en' ? 'en' : 'vi';
   const arenaRef = useRef<HTMLDivElement>(null);
   const motionLayerRef = useRef<HTMLDivElement>(null);
   const pendingThrowRef = useRef<{ cardId: string; x: number; y: number; sentAt: number } | null>(null);
@@ -1311,18 +1305,21 @@ export function MatchArenaLayout({
       ) : null}
       {stagedDiscardCards.length > 0 ? (
         <div className="flex flex-wrap items-center justify-center gap-1" role="group" aria-label="Bài đã kéo chờ bỏ">
-          {stagedDiscardCards.map((card) => (
-            <button
-              key={card.id}
-              type="button"
-              onClick={() => setStagedDiscardIds((prev) => prev.filter((id) => id !== card.id))}
-              title={`Bấm để đưa ${card.nameVi} trở lại tay`}
-              className="inline-flex min-h-[30px] cursor-pointer items-center gap-1 rounded border border-[#D99B26]/70 bg-[#2C1F13]/95 px-2 py-0.5 text-[11px] font-semibold text-[#FDE68A] hover:border-[#FBBF24]"
-            >
-              <GameIcon name="ui:undo" size={11} className="shrink-0" />
-              <span>{card.nameVi}</span>
-            </button>
-          ))}
+                      {stagedDiscardCards.map((card) => {
+                        const cardName = getCuuChauCardDisplay(card.cardKey, locale, card.nameVi).name;
+                        return (
+                        <button
+                          key={card.id}
+                          type="button"
+                          onClick={() => setStagedDiscardIds((prev) => prev.filter((id) => id !== card.id))}
+                          title={cardName}
+                          className="inline-flex min-h-[30px] cursor-pointer items-center gap-1 rounded border border-[#D99B26]/70 bg-[#2C1F13]/95 px-2 py-0.5 text-[11px] font-semibold text-[#FDE68A] hover:border-[#FBBF24]"
+                        >
+                          <GameIcon name="ui:undo" size={11} className="shrink-0" />
+                          <span>{cardName}</span>
+                        </button>
+                        );
+                      })}
           {stagedDiscardCards.length > 1 ? (
             <button
               type="button"
@@ -1765,11 +1762,11 @@ export function MatchArenaLayout({
                           <>
                             <FactionSeal faction={selfHero.faction} size="xs" />
                             <span className="min-w-0 [overflow-wrap:anywhere] font-serif-title text-[clamp(11px,0.96cqw,13px)] leading-tight font-bold text-[#F5EBD6] drop-shadow-[0_1px_2px_rgba(0,0,0,0.98)]">
-                              {selfHero.nameVi}
+                              {getCuuChauHeroDisplay(selfHero.id, locale)?.name ?? selfHero.nameVi}
                             </span>
                           </>
                         ) : (
-                          <span className="truncate text-[10px] text-[#9CA3AF]">Đang chọn tướng…</span>
+                          <span className="truncate text-[10px] text-[#9CA3AF]">{locale === 'en' ? 'Selecting…' : 'Đang chọn…'}</span>
                         )}
                       </div>
                     </div>
@@ -1820,7 +1817,7 @@ export function MatchArenaLayout({
                           className="inline-flex items-center gap-0.5 rounded border border-[#F59E0B]/85 bg-[#78350F]/85 px-1.5 py-0 text-[8.5px] leading-[13px] font-extrabold text-[#FEF3C7]"
                         >
                           <GameIcon name="broadsword" size={9} />
-                          <span>Lỏa Y +1 ST</span>
+                          <span>{locale === 'en' ? 'Armor Break +1 DMG' : 'Phá Giáp +1 ST'}</span>
                         </span>
                       ) : null}
                       {isSelfKongChengActive ? (
@@ -1829,7 +1826,7 @@ export function MatchArenaLayout({
                           className="inline-flex items-center gap-0.5 rounded border border-[#38BDF8]/80 bg-[#0C4A6E]/80 px-1.5 py-0 text-[8.5px] leading-[13px] font-extrabold text-[#E0F2FE]"
                         >
                           <GameIcon name="bordered-shield" size={9} />
-                          <span>Không Thành</span>
+                          <span>{locale === 'en' ? 'Empty Ward' : 'Tĩnh Tâm Trận'}</span>
                         </span>
                       ) : null}
                       {isSelfQianXunActive ? (
@@ -1838,7 +1835,7 @@ export function MatchArenaLayout({
                           className="inline-flex items-center gap-0.5 rounded border border-[#34D399]/75 bg-[#064E3B]/80 px-1.5 py-0 text-[8.5px] leading-[13px] font-extrabold text-[#D1FAE5]"
                         >
                           <GameIcon name="shield" size={9} />
-                          <span>Khiêm Tốn</span>
+                          <span>{locale === 'en' ? 'Veiled' : 'Tàng Hình'}</span>
                         </span>
                       ) : null}
                       {isFirstRoundPeaceful ? (
@@ -1875,7 +1872,11 @@ export function MatchArenaLayout({
                       className="mt-0.5 flex flex-wrap gap-1"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      {selfHero.skills.map((skill) => (
+                      {selfHero.skills.map((skill, sIdx) => {
+                        const sd = getCuuChauHeroDisplay(selfHero.id, locale)?.skills[sIdx];
+                        const skillName = sd?.name ?? skill.nameVi;
+                        const skillDesc = sd?.description ?? skill.descriptionVi;
+                        return (
                         <button
                           key={skill.id}
                           type="button"
@@ -1884,15 +1885,16 @@ export function MatchArenaLayout({
                               ? 'true'
                               : undefined
                           }
-                          data-hover-name={skill.nameVi}
-                          data-hover-description={skill.descriptionVi}
+                          data-hover-name={skillName}
+                          data-hover-description={skillDesc}
                           data-passive-skill={isPassiveSkillId(skill.id) || undefined}
                           onClick={() => handleInspectHero(selfPlayer.seatIndex)}
                           className="lkdf-hero-skill-label cursor-pointer transition-colors hover:border-[#E6BE6C]"
                         >
-                          {skill.nameVi}
+                          {skillName}
                         </button>
-                      ))}
+                        );
+                      })}
                     </div>
                   ) : null}
                   {prompt.isMyTurn ? (
@@ -2026,7 +2028,7 @@ export function MatchArenaLayout({
                       <SuitGlyph suit={card.suit} size={11} tone="darkSurface" />
                     </span>
                     <span className="font-serif-title min-w-0 flex-1 truncate text-[clamp(10.5px,0.94cqw,12px)] font-bold text-[#F6DFA8]">
-                      {card.nameVi}
+                      {getCuuChauCardDisplay(card.cardKey, locale, card.nameVi).name}
                     </span>
                   </button>
                 );

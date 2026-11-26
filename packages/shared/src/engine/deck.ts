@@ -4,7 +4,7 @@ import type {
   PlayerCombatState,
   TargetCardZone,
 } from '../types/game.js';
-import { shuffleArray } from './setup.js';
+import { shuffleArray } from '../utils/shuffle.js';
 
 export function getPlayerBySeat(
   state: MasterGameState,

@@ -1,16 +1,15 @@
 import { useEffect, useState } from 'react';
-import { HERO_BY_ID, HeroIdSchema } from '@lkdf/shared';
+import { getCuuChauHeroDisplay, getCuuChauRoleDisplay, HeroIdSchema } from '@lkdf/shared';
+import i18n from '../../i18n/index.js';
 import { getHeroPortraitUrl } from '../../lib/assetCatalog.js';
 import type { LkdfApiClient } from '../../lib/api.js';
-import type { FilteredStatsResponse, IdentityRole, UserProfile } from '../../lib/types.js';
+import type { FilteredStatsResponse, UserProfile } from '../../lib/types.js';
 import { LobbyProfile, summarizeMonthlyResults, type LobbyRecord } from './LobbyProfile.js';
 
-const ROLE_LABELS: Record<IdentityRole, string> = {
-  LORD: 'Chủ công', LOYALIST: 'Trung thần', REBEL: 'Phản tặc', SPY: 'Nội gián',
-};
 const EMPTY_RECORD: LobbyRecord = { played: 0, wins: 0, topHeroes: [], monthlyResults: summarizeMonthlyResults([]), recent: [] };
 
 function toLobbyRecord(result: FilteredStatsResponse, userId: string): LobbyRecord {
+  const locale = i18n.language === 'en' ? 'en' : 'vi';
   const { summary } = result;
   const maxWins = Math.max(0, ...Object.values(summary.byHero).map(hero => hero.wins));
   return {
@@ -21,7 +20,7 @@ function toLobbyRecord(result: FilteredStatsResponse, userId: string): LobbyReco
       if (maxWins === 0 || stats.wins !== maxWins) return [];
       const hero = HeroIdSchema.safeParse(id);
       return hero.success ? [{
-        name: HERO_BY_ID[hero.data].nameVi, portrait: getHeroPortraitUrl(hero.data),
+        name: getCuuChauHeroDisplay(hero.data, locale)?.name ?? hero.data, portrait: getHeroPortraitUrl(hero.data),
         wins: stats.wins, played: stats.played,
       }] : [];
     }),
@@ -29,8 +28,8 @@ function toLobbyRecord(result: FilteredStatsResponse, userId: string): LobbyReco
       const player = match.participants.find(member => member.userId === userId);
       if (!player) return [];
       return [{
-        id: match.matchId, hero: HERO_BY_ID[player.heroId].nameVi, portrait: getHeroPortraitUrl(player.heroId),
-        role: ROLE_LABELS[player.identity], won: player.isWinner, date: match.finishedAt,
+        id: match.matchId, hero: getCuuChauHeroDisplay(player.heroId, locale)?.name ?? player.heroId, portrait: getHeroPortraitUrl(player.heroId),
+        role: getCuuChauRoleDisplay(player.identity, locale).name, won: player.isWinner, date: match.finishedAt,
         durationSeconds: match.durationSeconds,
       }];
     }),

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { getHeroDefinition } from '@lkdf/shared';
-import type { HeroId, PlayerViewState } from '@lkdf/shared';
+import { getCuuChauFactionDisplay, getCuuChauHeroDisplay, getHeroDefinition } from '@lkdf/shared';
+import type { HeroFaction, HeroId, PlayerViewState } from '@lkdf/shared';
+import { useTranslation } from 'react-i18next';
 import { getHeroPortraitUrl, getUiAssetUrl } from '../../lib/assetCatalog.js';
 import { isMatchSoundEnabled, playMatchCue } from '../../lib/soundFx.js';
 import { FactionSeal, GameIcon } from '../../components/icons/index.js';
@@ -22,7 +23,7 @@ function HeroCandidateAvatar({
 }: {
   readonly heroId: HeroId;
   readonly nameVi: string;
-  readonly faction: 'SHU' | 'WEI' | 'WU' | 'QUN';
+  readonly faction: HeroFaction;
   readonly borderClass: string;
 }) {
   const portraitUrl = getHeroPortraitUrl(heroId);
@@ -58,6 +59,8 @@ export function HeroSelectPanel({
   isTimerPaused,
   onSelectHero,
 }: HeroSelectPanelProps) {
+  const { i18n, t } = useTranslation();
+  const locale = i18n.language === 'en' ? 'en' : 'vi';
   const draft = playerView.heroDraft;
   const panelRef = useRef<HTMLDivElement>(null);
   const cardButtonRefs = useRef<Partial<Record<HeroId, HTMLButtonElement | null>>>({});
@@ -166,7 +169,7 @@ export function HeroSelectPanel({
       <div className="flex h-full min-h-0 flex-col items-center justify-center rounded-2xl border border-[#806345]/55 bg-[#16110E]/95 p-6 text-center shadow-2xl">
         <p className="inline-flex items-center gap-2 text-[15px] font-semibold text-[#F5EBD6]">
           <GameIcon name="ui:loader" size={16} className="animate-spin text-[#D99B26]" />
-          Đang khởi tạo danh sách chọn Tướng...
+          {locale === 'en' ? 'Preparing warrior draft...' : 'Đang khởi tạo danh sách chọn Hiệp Khách...'}
         </p>
       </div>
     );
@@ -180,6 +183,8 @@ export function HeroSelectPanel({
   const cloudBorderUrl = getUiAssetUrl('tex-cloud-border');
   const mountainDecoUrl = getUiAssetUrl('tex-mountain-deco');
 
+  const pickedHeroDisplay = getCuuChauHeroDisplay(pickedHeroDef?.id, locale);
+  const selectedHeroDisplay = getCuuChauHeroDisplay(selectedHeroDef?.id, locale);
   return (
     <div
       ref={panelRef}
@@ -217,17 +222,17 @@ export function HeroSelectPanel({
             />
             <span>
               {waitingForLord
-                ? `Đang chờ Chủ Công ${lordName} chọn Tướng (1/5)...`
-                : alreadyPicked && pickedHeroDef
-                  ? `Bạn đã chọn ${pickedHeroDef.nameVi} — Đang chờ người chơi khác`
+                ? t('heroSelect.waitingLord', { name: lordName })
+                : alreadyPicked && pickedHeroDisplay
+                  ? `${t('heroSelect.lockedHero', { name: pickedHeroDisplay.name, faction: pickedHeroDisplay.factionLabel })}`
                   : isLord
-                    ? 'Bạn là Chủ Công — Chọn 1 trong 5 Tướng'
-                    : 'Chọn 1 trong 3 Tướng của bạn'}
+                    ? t('heroSelect.lordPickTitle')
+                    : t('heroSelect.pickTitle')}
             </span>
           </h2>
           <p className="mt-0.5 text-[11.5px] text-[#C7B69B]">
-            Tiến độ sẵn sàng: {draft.readySeats.length}/{playerView.players.length} ghế
-            {isLord ? ' · Chủ Công được cộng +1 máu tối đa' : ''}
+            {locale === 'en' ? 'Ready' : 'Tiến độ sẵn sàng'}: {draft.readySeats.length}/{playerView.players.length}
+            {isLord ? t('heroSelect.lordBonus') : ''}
           </p>
         </div>
 
@@ -273,24 +278,24 @@ export function HeroSelectPanel({
         })}
       </div>
 
-      {/* Danh sách tướng ứng viên */}
+      {/* Danh sách Hiệp Khách ứng viên */}
       <div className="lkdf-hero-select-scroll lkdf-scroll relative z-10 min-h-0 flex-1 overflow-y-auto pr-1">
         {waitingForLord ? (
           <div className="flex h-full min-h-[140px] flex-col items-center justify-center rounded-lg border border-dashed border-[#806345]/60 bg-[#1B1410]/75 p-4 text-center">
             <p className="text-[14px] font-semibold text-[#F5EBD6]">
-              Chủ Công {lordName} đang suy nghĩ chọn Tướng đầu tiên...
+              {t('heroSelect.waitingLord', { name: lordName })}
             </p>
             <p className="mt-1 text-[13px] text-[#C7B69B]">
-              Sau khi Chủ Công chọn xong, bạn sẽ nhận được 3 Tướng để lựa chọn.
+              {locale === 'en' ? 'Once the Sovereign picks, you will choose from 3 warriors.' : 'Sau khi Minh Chủ chọn xong, bạn sẽ nhận 3 Hiệp Khách để lựa chọn.'}
             </p>
           </div>
-        ) : alreadyPicked && pickedHeroDef ? (
+        ) : alreadyPicked && pickedHeroDisplay ? (
           <div className="flex h-full min-h-[140px] flex-col items-center justify-center rounded-lg border border-[#16A34A]/40 bg-[#16A34A]/10 p-4 text-center">
             <p className="font-serif-title text-[18px] font-bold text-[#F5EBD6]">
-              Đã khóa Tướng: {pickedHeroDef.nameVi} ({pickedHeroDef.factionLabelVi})
+              {t('heroSelect.lockedHero', { name: pickedHeroDisplay.name, faction: pickedHeroDisplay.factionLabel })}
             </p>
             <p className="mt-1 text-[13px] text-[#EDE3D2]">
-              Vui lòng chờ các ghế còn lại hoàn tất chọn Tướng để vào ván đấu.
+              {locale === 'en' ? 'Waiting for the remaining seats to lock in.' : 'Vui lòng chờ các ghế còn lại hoàn tất chọn Hiệp Khách.'}
             </p>
           </div>
         ) : (
@@ -302,6 +307,7 @@ export function HeroSelectPanel({
           >
             {candidates.map((heroId, index) => {
               const hero = getHeroDefinition(heroId);
+              const heroDisplay = getCuuChauHeroDisplay(hero.id, locale);
               const factionStyle = getFactionStyle(hero.faction);
               const maxHp = isLord ? hero.baseMaxHp + 1 : hero.baseMaxHp;
               const portraitUrl = getHeroPortraitUrl(hero.id);
@@ -338,7 +344,7 @@ export function HeroSelectPanel({
                       <div className="flex min-w-0 flex-1 items-center gap-2">
                         <HeroCandidateAvatar
                           heroId={hero.id}
-                          nameVi={hero.nameVi}
+                          nameVi={heroDisplay?.name ?? hero.nameVi}
                           faction={hero.faction}
                           borderClass={factionStyle.borderClass}
                         />
@@ -352,7 +358,7 @@ export function HeroSelectPanel({
                               factionStyle.nameTextClass,
                             ].join(' ')}
                           >
-                            {hero.nameVi}
+                            {heroDisplay?.name ?? hero.nameVi}
                           </h3>
                           <div className="mt-0.5 flex flex-wrap items-center gap-1">
                             <span
@@ -361,11 +367,11 @@ export function HeroSelectPanel({
                                 factionStyle.badgeClass,
                               ].join(' ')}
                             >
-                              Phe {factionStyle.labelVi}
+                              {heroDisplay?.factionLabel ?? factionStyle.labelVi}
                             </span>
                             {candidates.length > 3 ? (
                               <span className="font-mono-num whitespace-nowrap text-[11px] font-bold text-[#FCA5A5]">
-                                {maxHp} máu
+                                {maxHp} HP
                                 {isLord ? <span className="ml-0.5 text-[9.5px] text-[#D99B26]">(+1)</span> : null}
                               </span>
                             ) : null}
@@ -375,11 +381,11 @@ export function HeroSelectPanel({
                       {candidates.length <= 3 ? (
                         <div className="shrink-0 text-right">
                           <span className="font-mono-num text-[12.5px] font-bold text-[#FCA5A5] sm:text-[13px]">
-                            {maxHp} máu
+                            {maxHp} HP
                           </span>
                           {isLord ? (
                             <div className="text-[10px] font-semibold text-[#D99B26]">
-                              +1 Chủ Công
+                              {t('heroSelect.lordHpBadge')}
                             </div>
                           ) : null}
                         </div>
@@ -387,20 +393,20 @@ export function HeroSelectPanel({
                     </div>
 
                     <div className="lkdf-hero-candidate-skills mt-2 space-y-1.5">
-                      {hero.skills.map((skill) => (
+                      {(heroDisplay?.skills ?? hero.skills.map(s => ({ id: s.id, name: s.nameVi, description: s.descriptionVi, isLordSkill: s.isLordSkill }))).map((skill) => (
                         <div
                           key={skill.id}
                           className="lkdf-hero-candidate-skill rounded border border-[#806345]/35 bg-[#120D0A]/86 p-1.5 text-[11px] leading-snug sm:p-2"
                         >
                           <div className="flex items-center gap-1.5 font-bold text-[#FDE68A]">
-                            <span>{skill.nameVi}</span>
+                            <span>{skill.name}</span>
                             {skill.isLordSkill ? (
                               <span className="rounded bg-[#D99B26]/20 px-1 py-0 text-[10px] text-[#FBBF24]">
-                                Chủ Công
+                                {t('heroSelect.lordBadge')}
                               </span>
                             ) : null}
                           </div>
-                          <p className="mt-0.5 text-[#E8DCC8]">{skill.descriptionVi}</p>
+                          <p className="mt-0.5 text-[#E8DCC8]">{skill.description}</p>
                         </div>
                       ))}
                     </div>
@@ -408,7 +414,7 @@ export function HeroSelectPanel({
 
                   <div className="lkdf-hero-candidate-card-footer relative z-10 flex w-full items-center justify-between gap-1 border-t border-[#806345]/30 pt-1.5 text-[10.5px]">
                     <span className="font-mono-num rounded border border-[#806345]/65 bg-[#120D0A]/85 px-1.5 py-0.5 font-bold text-[#E8DCC8]">
-                      Phím {index + 1}
+                      #{index + 1}
                     </span>
                     <span
                       className={
@@ -420,10 +426,10 @@ export function HeroSelectPanel({
                       {isSelected ? (
                         <>
                           <GameIcon name="ui:check" size={11} />
-                          Đang chọn
+                          {locale === 'en' ? 'Selected' : 'Đang chọn'}
                         </>
                       ) : (
-                        'Bấm để xem'
+                        locale === 'en' ? 'Inspect' : 'Bấm để xem'
                       )}
                     </span>
                   </div>
@@ -434,14 +440,14 @@ export function HeroSelectPanel({
         )}
       </div>
 
-      {/* Thanh chốt tướng cố định đáy để luôn nhìn thấy ở 960×600 */}
+      {/* Thanh chốt Hiệp Khách cố định đáy để luôn nhìn thấy ở 960×600 */}
       {isCandidatePickerActive && selectedHeroDef ? (
         <div className="lkdf-hero-select-footer relative z-10 flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-[#A68042]/35 pt-2">
           <div className="min-w-0 text-[11.5px] text-[#EDE3D2]">
-            <span className="font-semibold text-[#FDE68A]">{selectedHeroDef.nameVi}</span>
+            <span className="font-semibold text-[#FDE68A]">{selectedHeroDisplay?.name ?? selectedHeroDef.nameVi}</span>
             <span className="mx-1.5 text-[#806345]">·</span>
             <span className="text-[#C7B69B]">
-              Phím ←/→ hoặc 1–{candidates.length} để đổi · Enter để chốt
+              ←/→ · 1–{candidates.length} · Enter
             </span>
           </div>
           <button
@@ -451,7 +457,7 @@ export function HeroSelectPanel({
             className="inline-flex shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-[#FDE68A]/50 bg-[#C83E37] px-4 py-1.5 text-[13px] font-bold text-[#FFF8EB] shadow-lg transition-colors hover:bg-[#B2342E] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E6BE6C]"
           >
             <GameIcon name="crown" size={14} />
-            Chốt {selectedHeroDef.nameVi}
+            {locale === 'en' ? 'Confirm' : 'Chốt'} {selectedHeroDisplay?.name ?? selectedHeroDef.nameVi}
           </button>
         </div>
       ) : null}

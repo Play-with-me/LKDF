@@ -1,4 +1,5 @@
 import { useId, type ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import { GameIcon } from '../../components/icons/index.js';
 
 export function MatchQuickHudPills({
@@ -16,6 +17,7 @@ export function MatchQuickHudPills({
   readonly onOpenRules: () => void;
   readonly onOpenReferee?: () => void;
 }) {
+  const { t } = useTranslation();
   const pillClass =
     'inline-flex cursor-pointer items-center gap-0.5 min-[1080px]:gap-1 rounded-lg border border-[#9A7B4F]/65 bg-[#14100D]/95 px-1.5 py-0.5 text-[10px] min-[1080px]:px-2 min-[1080px]:py-1 min-[1080px]:text-[11px] leading-tight font-semibold whitespace-nowrap text-[#EFE6D5] shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] transition-colors hover:border-[#D99B26] focus-visible:outline-2 focus-visible:outline-[#E6BE6C]';
 
@@ -23,7 +25,7 @@ export function MatchQuickHudPills({
     <>
       <button
         type="button"
-        title="Tự động bỏ qua cơ hội Vô Giải Khả Kích toàn bàn"
+        title={t('match.autoSkipNullify')}
         aria-pressed={autoSkipNullification}
         onClick={() => onToggleAutoSkip(!autoSkipNullification)}
         className={`inline-flex cursor-pointer items-center gap-0.5 min-[1080px]:gap-1 rounded-lg border px-1.5 py-0.5 text-[10px] min-[1080px]:px-2 min-[1080px]:py-1 min-[1080px]:text-[11px] leading-tight font-semibold whitespace-nowrap transition-colors focus-visible:outline-2 focus-visible:outline-[#E6BE6C] ${
@@ -33,18 +35,18 @@ export function MatchQuickHudPills({
         }`}
       >
         {autoSkipNullification ? <GameIcon name="ui:check" size={10} /> : null}
-        <span className="hidden min-[1160px]:inline">Tự bỏ qua Vô Giải</span>
-        <span className="min-[1160px]:hidden">Bỏ Vô Giải</span>
+        <span className="hidden min-[1160px]:inline">{t('match.autoSkipNullify')}</span>
+        <span className="min-[1160px]:hidden">{t('match.autoSkipNullifyShort')}</span>
       </button>
 
       <button
         type="button"
-        title="Mở Nhật ký ván đấu"
+        title={t('match.log')}
         onClick={onOpenLog}
         className={pillClass}
       >
         <GameIcon name="scroll-unfurled" size={11} className="text-[#D99B26]" />
-        <span>Nhật ký</span>
+        <span>{t('match.log')}</span>
         <span className="font-mono-num rounded bg-[#272D35] px-1 py-0 text-[9.5px] min-[1080px]:text-[10px] font-bold text-[#FDE68A] tabular-nums">
           {actionLogCount}
         </span>
@@ -52,23 +54,23 @@ export function MatchQuickHudPills({
 
       <button
         type="button"
-        title="Xem Luật & Phím tắt"
+        title={t('match.rules')}
         onClick={onOpenRules}
         className={pillClass}
       >
         <GameIcon name="ui:book-open" size={11} className="text-[#D99B26]" />
-        <span>Luật</span>
+        <span>{t('match.rules')}</span>
       </button>
 
       {onOpenReferee ? (
         <button
           type="button"
-          title="Mở Bảng Trọng Tài"
+          title={t('match.referee')}
           onClick={onOpenReferee}
           className="inline-flex cursor-pointer items-center gap-0.5 min-[1080px]:gap-1 rounded-lg border border-[#CA9A48]/65 bg-[#1C140E]/95 px-1.5 py-0.5 text-[10px] min-[1080px]:px-2 min-[1080px]:py-1 min-[1080px]:text-[11px] leading-tight font-semibold whitespace-nowrap text-[#FDE68A] shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] transition-colors hover:border-[#FBBF24] hover:bg-[#2A1D12] focus-visible:outline-2 focus-visible:outline-[#E6BE6C]"
         >
           <GameIcon name="scales" size={11} className="text-[#E6BE6C]" />
-          <span>Trọng tài</span>
+          <span>{t('match.referee')}</span>
         </button>
       ) : null}
     </>
@@ -83,6 +85,7 @@ export function MatchSettings({
   readonly error?: string | null;
   readonly topRightExtra?: ReactNode;
 }) {
+  const { t } = useTranslation();
   const id = useId();
   return (
     <>
@@ -91,11 +94,11 @@ export function MatchSettings({
         <button
           type="button"
           popoverTarget={id}
-          title="Mở cài đặt bàn đấu"
+          title={t('common.settings')}
           className="inline-flex cursor-pointer items-center gap-0.5 min-[1080px]:gap-1 rounded-lg border border-[#9A7B4F]/65 bg-[#14100D]/95 px-1.5 py-0.5 text-[10px] min-[1080px]:px-2 min-[1080px]:py-1 min-[1080px]:text-[11px] leading-tight font-semibold whitespace-nowrap text-[#EFE6D5] transition-colors hover:border-[#D99B26] focus-visible:outline-2 focus-visible:outline-[#E6BE6C]"
         >
           <GameIcon name="ui:settings" size={13} className="text-[#D99B26]" />
-          <span>Cài đặt</span>
+          <span>{t('common.settings')}</span>
         </button>
       </div>
       <div

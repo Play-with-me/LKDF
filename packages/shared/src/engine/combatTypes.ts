@@ -1,21 +1,19 @@
 import type { CardInstance, Suit, TargetCardZone } from '../types/game.js';
 
-export type PlayPhaseSkillId =
-  | 'ren_de'
-  | 'ji_jiang'
-  | 'zhi_heng'
-  | 'ku_rou'
-  | 'fan_jian'
-  | 'jie_yin'
-  | 'qing_nang'
-  | 'li_jian';
+export const LEGACY_PLAY_PHASE_SKILL_IDS = [
+  'ren_de',
+  'ji_jiang',
+  'zhi_heng',
+  'ku_rou',
+  'fan_jian',
+  'jie_yin',
+  'qing_nang',
+  'li_jian',
+] as const;
 
-export type VirtualCardKey =
-  | 'sat'
-  | 'thiem'
-  | 'dao'
-  | 'qua_ha_sai_cau'
-  | 'lac_bat_tu_thuc';
+export type PlayPhaseSkillId = string;
+
+export type VirtualCardKey = string;
 
 export type GameAction =
   | { readonly type: 'DRAW_CARDS'; readonly seatIndex: number; readonly extra?: boolean }
@@ -25,7 +23,7 @@ export type GameAction =
       readonly cardIds: readonly string[];
       readonly targetSeats?: readonly number[];
       readonly secondarySeat?: number;
-      readonly asCardKey?: 'sat' | 'qua_ha_sai_cau' | 'lac_bat_tu_thuc';
+      readonly asCardKey?: string;
     }
   | {
       readonly type: 'ACTIVATE_HERO_SKILL';

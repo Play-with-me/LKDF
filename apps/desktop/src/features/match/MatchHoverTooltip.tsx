@@ -1,12 +1,15 @@
 import { useEffect, useRef } from 'react';
-import { formatRankLabel, formatSuitSymbol } from '@lkdf/shared';
+import { formatRankLabel, formatSuitSymbol, getCuuChauCardDisplay } from '@lkdf/shared';
 import type { CardInstance } from '@lkdf/shared';
+import i18n from '../../i18n/index.js';
 import { getCardDescriptionVi } from './matchTypes.js';
 
 export function cardHover(card: CardInstance) {
+  const locale = i18n.language === 'en' ? 'en' : 'vi';
+  const display = getCuuChauCardDisplay(card.cardKey, locale, card.nameVi);
   return {
-    'data-hover-name': formatRankLabel(card.rank) + formatSuitSymbol(card.suit) + ' · ' + card.nameVi,
-    'data-hover-description': getCardDescriptionVi(card.cardKey, card.nameVi),
+    'data-hover-name': formatRankLabel(card.rank) + formatSuitSymbol(card.suit) + ' · ' + display.name,
+    'data-hover-description': getCardDescriptionVi(card.cardKey, display.name),
   };
 }
 

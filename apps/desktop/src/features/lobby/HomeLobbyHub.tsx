@@ -1,4 +1,6 @@
 import { Fragment } from 'react';
+import { useTranslation } from 'react-i18next';
+import { LanguageToggle } from '../../components/ui/LanguageToggle.js';
 import { useBackNavigation } from '../../lib/useBackNavigation.js';
 import { Settings } from 'lucide-react';
 import { LiveLobbyProfile } from './LiveLobbyProfile.js';
@@ -38,28 +40,26 @@ export interface HomeLobbyHubProps {
 
 const PRESET_CARDS: readonly {
   readonly id: TimerPreset;
-  readonly label: string;
+  readonly labelKey: string;
 }[] = [
   {
     id: 'FAST',
-    label: 'Nhanh',
+    labelKey: 'lobby.tempoFast',
   },
   {
     id: 'STANDARD',
-    label: 'Chuẩn',
+    labelKey: 'lobby.tempoStandard',
   },
   {
     id: 'RELAXED',
-    label: 'Thong thả',
+    labelKey: 'lobby.tempoRelaxed',
   },
 ];
 
-
-
 const LOBBY_SECTIONS = [
-  ['online', 'Chơi online', 'Phòng riêng 4–8 người'],
-  ['reference', 'Tra cứu', 'Tướng, lá bài và thân phận'],
-  ['profile', 'Hồ sơ', 'Biệt danh và chiến tích'],
+  ['online', 'lobby.playOnlineTitle', 'lobby.playOnlineDesc'],
+  ['reference', 'lobby.referenceTitle', 'lobby.referenceDesc'],
+  ['profile', 'lobby.profileTitle', 'lobby.profileDesc'],
 ] as const;
 
 export function HomeLobbyHub({
@@ -78,6 +78,7 @@ export function HomeLobbyHub({
   onLoggedOut,
   onSessionInvalid,
 }: HomeLobbyHubProps) {
+  const { t } = useTranslation();
   const [selectedPreset, setSelectedPreset] = useState<TimerPreset>('STANDARD');
   const [roomCodeInput, setRoomCodeInput] = useState<string>('');
   const [isCheckingActiveRoom, setIsCheckingActiveRoom] = useState<boolean>(true);
@@ -208,7 +209,7 @@ export function HomeLobbyHub({
     if (!sessionToken) {
       setCreateError(
         isSteamBuildTarget()
-          ? 'Steam Lobby P2P đang chuẩn bị cho Phase 1 — hiện hãy chọn Chơi với Máy để trải nghiệm ngay.'
+          ? t('lobby.steamLobbyHint')
           : 'Hãy đăng nhập để tạo phòng chơi.',
       );
       return;
@@ -299,24 +300,27 @@ export function HomeLobbyHub({
       </div>
       {justLoggedIn ? (
         <div role="status" className="lkdf-lobby-camp-welcome">
-          <span>Đã đăng nhập với biệt danh {profile.displayName}</span>
-          <button type="button" onClick={onDismissWelcomeToast}>Ẩn thông báo</button>
+          <span>{t('lobby.welcomeToast', { name: profile.displayName })}</span>
+          <button type="button" onClick={onDismissWelcomeToast}>{t('lobby.dismissToast')}</button>
         </div>
       ) : null}
       <div className={`lkdf-lobby-camp-content ${lobbyScreen === 'reference' ? 'lkdf-lobby-reference-layout' : ''}`}>
         <div className="lkdf-lobby-camp-panel">
-          <div className="w-full">
-            {lobbyScreen !== 'menu' ? (
-              <button ref={backRef} type="button" onClick={requestBack}
-                className="mb-4 inline-flex min-h-9 cursor-pointer items-center gap-2 rounded-sm text-sm text-[#DFCAA9] hover:text-[#FFF0DA] focus-visible:outline-2 focus-visible:outline-[#E6BE6C]">
-                <span aria-hidden="true">‹</span> Về menu chính <kbd className="rounded border border-[#806345] px-1 text-xs">Esc</kbd>
-              </button>
-            ) : null}
+          <div className="w-full min-w-0">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+              {lobbyScreen !== 'menu' ? (
+                <button ref={backRef} type="button" onClick={requestBack}
+                  className="inline-flex min-h-9 cursor-pointer items-center gap-2 rounded-sm text-sm text-[#DFCAA9] hover:text-[#FFF0DA] focus-visible:outline-2 focus-visible:outline-[#E6BE6C]">
+                  <span aria-hidden="true">‹</span> {t('common.backToMainMenu')} <kbd className="rounded border border-[#806345] px-1 text-xs">Esc</kbd>
+                </button>
+              ) : <span />}
+              <LanguageToggle />
+            </div>
             {lobbyScreen === 'menu' ? (
               <>
                 <span className="lkdf-lobby-camp-seal font-serif-title" aria-hidden="true">{GAME_BRAND.emblem}</span>
-                <h1 className="lkdf-lobby-camp-title font-serif-title">{GAME_BRAND.title.vi}</h1>
-                <nav ref={menuRef} aria-label="Menu chính" className="lkdf-lobby-camp-menu"
+                <h1 className="lkdf-lobby-camp-title font-serif-title">{t('brand.title')}</h1>
+                <nav ref={menuRef} aria-label={t('lobby.mainMenuAria')} className="lkdf-lobby-camp-menu"
                   onKeyDown={event => {
                     const direction = event.key === 'ArrowDown' ? 1 : event.key === 'ArrowUp' ? -1 : 0;
                     if (!direction) return;
@@ -326,7 +330,7 @@ export function HomeLobbyHub({
                     event.preventDefault();
                     buttons[(index + direction + buttons.length) % buttons.length]?.focus();
                   }}>
-                  {LOBBY_SECTIONS.map(([view, label, detail]) => (
+                  {LOBBY_SECTIONS.map(([view, titleKey, descKey]) => (
                     <Fragment key={view}>
                     <button type="button" data-lobby-item={view} onClick={() => {
                       lastMenuItem.current = view;
@@ -334,11 +338,11 @@ export function HomeLobbyHub({
                     }}
                       data-primary={view === 'online' || undefined}
                       className="lkdf-lobby-camp-command">
-                      <span className="lkdf-lobby-camp-copy"><strong>{label}</strong><small>{detail}</small></span>
+                      <span className="lkdf-lobby-camp-copy min-w-0"><strong>{t(titleKey)}</strong><small>{t(descKey)}</small></span>
                     </button>
                     {view === 'online' && onPlayOffline ? (
                       <button type="button" data-lobby-item="offline" onClick={onPlayOffline} className="lkdf-lobby-camp-command">
-                        <span className="lkdf-lobby-camp-copy"><strong>Chơi với Máy</strong><small>Ván tập offline 4–8 ghế</small></span>
+                        <span className="lkdf-lobby-camp-copy min-w-0"><strong>{t('lobby.playOfflineTitle')}</strong><small>{t('lobby.playOfflineDesc')}</small></span>
                       </button>
                     ) : null}
                     </Fragment>
@@ -349,7 +353,7 @@ export function HomeLobbyHub({
                         setLobbyScreen('settings');
                       }}>
                       <Settings size={20} aria-hidden="true" />
-                      Cài đặt
+                      {t('common.settings')}
                   </button>
                 </nav>
               </>
@@ -357,17 +361,17 @@ export function HomeLobbyHub({
               <OnlinePreview control={control} playerName={profile.displayName} />
             ) : (
               <div className="lkdf-online-entry">
-                <h2 className="font-serif-title">Chơi online</h2>
+                <h2 className="font-serif-title">{t('lobby.playOnlineTitle')}</h2>
                 {isCheckingActiveRoom ? (
                   <p role="status" className="mb-3 inline-flex items-center gap-2 text-sm text-[#E6BE6C]">
                     <GameIcon name="ui:loader" size={14} className="animate-spin" />
-                    <span>Đang kiểm tra phòng đang chơi…</span>
+                    <span>{t('lobby.checkingRoom')}</span>
                   </p>
                 ) : null}
                 <div className="lkdf-online-grid">
                   {/* Thẻ Trái (Chính): Lập Phòng Mới */}
                   <section
-                    aria-label="Lập phòng mới"
+                    aria-label={t('lobby.createRoomHeading')}
                     className="lkdf-online-card lkdf-online-card-primary"
                   >
                     <div className="space-y-3">
@@ -379,18 +383,18 @@ export function HomeLobbyHub({
                           >
                             <GameIcon name="castle" size={16} />
                           </span>
-                          <h3 className="font-serif-title">Lập Phòng Mới</h3>
+                          <h3 className="font-serif-title">{t('lobby.createRoomHeading')}</h3>
                         </div>
-                        <span className="lkdf-online-card-badge">4–8 người</span>
+                        <span className="lkdf-online-card-badge">{t('lobby.playerCountBadge')}</span>
                       </div>
                       <p className="text-xs leading-relaxed text-[#DFCAA9]">
-                        Chọn nhịp đồng hồ bàn đấu và nhận mã Hổ Phù để mời bằng hữu vào sảnh.
+                        {t('lobby.createRoomDesc')}
                       </p>
                       <div>
                         <span className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.06em] text-[#E6BE6C]">
-                          Nhịp chơi
+                          {t('lobby.tempoLabel')}
                         </span>
-                        <div className="lkdf-online-presets" role="group" aria-label="Nhịp chơi">
+                        <div className="lkdf-online-presets" role="group" aria-label={t('lobby.tempoLabel')}>
                           {PRESET_CARDS.map((preset) => (
                             <button
                               key={preset.id}
@@ -399,9 +403,9 @@ export function HomeLobbyHub({
                               onClick={() => setSelectedPreset(preset.id)}
                               className={`${control} flex flex-col items-center justify-center px-1.5 py-2 text-center aria-pressed:border-[#E6BE6C]`}
                             >
-                              <span className="text-xs font-semibold">{preset.label}</span>
+                              <span className="text-xs font-semibold">{t(preset.labelKey)}</span>
                               <small className="font-mono-num tabular-nums">
-                                {TIMER_PRESETS[preset.id].mainTurnSeconds}s/lượt
+                                {t('lobby.secondsPerTurn', { seconds: TIMER_PRESETS[preset.id].mainTurnSeconds })}
                               </small>
                             </button>
                           ))}
@@ -418,7 +422,7 @@ export function HomeLobbyHub({
                       >
                         <GameIcon name="castle" size={16} />
                         <span>
-                          {isCreatingRoom ? 'Đang mở phòng…' : 'Lập Phòng Mới (4–8 người)'}
+                          {isCreatingRoom ? t('lobby.creatingRoom') : t('lobby.createRoomCta')}
                         </span>
                       </button>
                       {createError ? (
@@ -444,15 +448,15 @@ export function HomeLobbyHub({
                           >
                             <GameIcon name="ui:key" size={15} />
                           </span>
-                          <h3 className="font-serif-title">Vào Phòng Bằng Mã Hổ Phù</h3>
+                          <h3 className="font-serif-title">{t('lobby.joinRoomHeading')}</h3>
                         </div>
                       </div>
                       <label htmlFor="lobby-room-code" className="block text-xs leading-relaxed text-[#DFCAA9]">
-                        Nhập mã 6 ký tự nhận từ Chủ phòng để gia nhập bàn đấu ngay.
+                        {t('lobby.joinRoomDesc')}
                       </label>
                       <div>
                         <span className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.06em] text-[#D5C3A5]">
-                          Mã Hổ Phù (6 ký tự)
+                          {t('lobby.roomCodeLabel')}
                         </span>
                         <input
                           ref={roomInputRef}
@@ -480,7 +484,7 @@ export function HomeLobbyHub({
                         className="lkdf-online-join flex min-h-11 w-full items-center justify-center gap-2"
                       >
                         <GameIcon name="ui:door-open" size={16} />
-                        <span>{isJoiningRoom ? 'Đang vào phòng…' : 'Vào phòng'}</span>
+                        <span>{isJoiningRoom ? t('lobby.joiningRoom') : t('lobby.joinRoomCta')}</span>
                       </button>
                       {joinError ? (
                         <p id="lobby-join-error" role="alert" className="lkdf-online-error">

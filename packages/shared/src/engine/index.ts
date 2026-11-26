@@ -26,3 +26,12 @@ export { evaluateWinCondition, handlePlayerDeath, type WinEvaluation } from './w
 export { applyGameAction, startMatchCombat } from './combat.js';
 export { applyDamage, getPendingPrompt, stepEngine } from './combatCore.js';
 export type { GameAction, PendingPrompt } from './combatTypes.js';
+export {
+  classifyInterruptPrimitive,
+  type GenericInteractionPrimitive,
+  type GenericPrimitiveKind,
+} from './primitives.js';
+export {
+  describeAvailableActions,
+  type ActionDescriptor,
+} from './actionDescriptor.js';

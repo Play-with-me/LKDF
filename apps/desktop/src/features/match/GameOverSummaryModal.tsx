@@ -1,5 +1,6 @@
-import { HERO_CATALOG } from '@lkdf/shared';
+import { HERO_CATALOG, getCuuChauHeroDisplay, getCuuChauRoleDisplay } from '@lkdf/shared';
 import type { IdentityRole, PlayerViewState, RoomState, WinningFaction } from '@lkdf/shared';
+import { useTranslation } from 'react-i18next';
 import { getHeroPortraitUrl } from '../../lib/assetCatalog.js';
 import { FactionSeal, GameIcon, type GameIconName } from '../../components/icons/index.js';
 import { GuofengModalShell } from '../../components/ui/GuofengModalShell.js';
@@ -15,30 +16,30 @@ export interface GameOverSummaryModalProps {
 
 const IDENTITY_META: Record<
   IdentityRole | 'UNKNOWN',
-  { readonly icon: GameIconName; readonly label: string }
+  { readonly icon: GameIconName }
 > = {
-  LORD: { icon: 'crown', label: 'Chủ Công' },
-  LOYALIST: { icon: 'bordered-shield', label: 'Trung Thần' },
-  REBEL: { icon: 'crossed-swords', label: 'Phản Tặc' },
-  SPY: { icon: 'drama-masks', label: 'Nội Gián' },
-  UNKNOWN: { icon: 'spy', label: 'Chưa lộ' },
+  LORD: { icon: 'crown' },
+  LOYALIST: { icon: 'bordered-shield' },
+  REBEL: { icon: 'crossed-swords' },
+  SPY: { icon: 'drama-masks' },
+  UNKNOWN: { icon: 'spy' },
 };
 
 const FACTION_WINNER_META: Record<
   WinningFaction,
-  { readonly icon: GameIconName; readonly label: string }
+  { readonly icon: GameIconName; readonly key: string }
 > = {
   LORD_LOYALIST: {
     icon: 'crown',
-    label: 'Phe Chủ Công & Trung Thần chiến thắng!',
+    key: 'gameOver.lordWin',
   },
   REBEL: {
     icon: 'crossed-swords',
-    label: 'Phe Phản Tặc chiến thắng!',
+    key: 'gameOver.rebelWin',
   },
   SPY: {
     icon: 'drama-masks',
-    label: 'Nội Gián chiến thắng!',
+    key: 'gameOver.spyWin',
   },
 };
 
@@ -50,6 +51,8 @@ export function GameOverSummaryModal({
   onLeaveRoom,
   offline = false,
 }: GameOverSummaryModalProps) {
+  const { i18n, t } = useTranslation();
+  const locale = i18n.language === 'en' ? 'en' : 'vi';
   const winnerMeta = playerView.winningFaction
     ? FACTION_WINNER_META[playerView.winningFaction]
     : null;
@@ -69,15 +72,16 @@ export function GameOverSummaryModal({
   const mvpHero = mvpSeat?.heroId
     ? HERO_CATALOG.find((item) => item.id === mvpSeat.heroId) ?? null
     : null;
+  const mvpDisplay = getCuuChauHeroDisplay(mvpSeat?.heroId, locale);
   const mvpPortraitUrl = mvpSeat?.heroId ? getHeroPortraitUrl(mvpSeat.heroId) : null;
 
   const sealBadge = isViewerWinner ? (
     <span className="inline-flex items-center rounded border-2 border-[#E6BE6C] bg-gradient-to-br from-[#78350F] via-[#B45309] to-[#D97706] px-3 py-1 font-serif-title text-sm font-extrabold tracking-widest text-[#FEF3C7] shadow-[0_0_14px_rgba(230,190,108,0.45)]">
-      ĐẠI THẮNG
+      {t('gameOver.victorySeal')}
     </span>
   ) : (
     <span className="tqs-stone-chop inline-flex items-center rounded border border-[#E6BE6C]/45 px-3 py-1 font-serif-title text-sm font-extrabold tracking-widest text-[#FFF1E6]">
-      CHIẾN BẠI
+      {t('gameOver.defeatSeal')}
     </span>
   );
 
@@ -88,8 +92,8 @@ export function GameOverSummaryModal({
       disableClose={true}
       ariaLabelledBy="gameover-summary-title"
       icon={winnerMeta?.icon ?? 'crown'}
-      title={winnerMeta ? winnerMeta.label : 'Ván đấu đã kết thúc'}
-      subtitle={`Tổng kết ván đấu · Phòng #${roomState.roomCode}${offline ? ' · Đấu với Máy' : ''}`}
+      title={winnerMeta ? t(winnerMeta.key) : t('gameOver.finished')}
+      subtitle={`#${roomState.roomCode}${offline ? ` · ${t('offlineSetup.title')}` : ''}`}
       headerBadge={sealBadge}
       maxWidthClass="max-w-3xl"
       footer={
@@ -100,7 +104,7 @@ export function GameOverSummaryModal({
             className="lkdf-bronze-pill inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-4 py-2 text-xs font-semibold focus-visible:outline-2 focus-visible:outline-[#E6BE6C]"
           >
             <GameIcon name="ui:door-open" size={13} />
-            {offline ? 'Về menu' : 'Rời phòng về Sảnh chính'}
+            {offline ? t('gameOver.returnMenu') : t('common.backToMainMenu')}
           </button>
           <button
             type="button"
@@ -109,7 +113,7 @@ export function GameOverSummaryModal({
             className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[#E6BE6C]/50 bg-[#9E2B25] px-4 py-2 text-xs font-bold text-[#FFF5EC] shadow-md transition-colors hover:bg-[#B8322B] focus-visible:outline-2 focus-visible:outline-[#E6BE6C]"
           >
             <GameIcon name="ui:refresh" size={13} />
-            {offline ? 'Chơi lại' : 'Quay về phòng chờ chơi ván mới'}
+            {t('gameOver.playAgain')}
           </button>
         </>
       }
@@ -147,13 +151,13 @@ export function GameOverSummaryModal({
               </div>
               <div className="mt-1 truncate font-serif-title text-base font-bold text-[#F5EBD6]">
                 {mvpSeat.displayName}
-                {mvpHero ? ` · ${mvpHero.nameVi}` : ''}
+                {mvpDisplay ? ` · ${mvpDisplay.name}` : ''}
               </div>
               <div className="text-xs text-[#E8DCC8]">
-                {IDENTITY_META[mvpSeat.identity].label} ·{' '}
+                {getCuuChauRoleDisplay(mvpSeat.identity, locale).name} ·{' '}
                 {mvpSeat.alive
-                  ? `Sống sót (${mvpSeat.hp}/${mvpSeat.maxHp} máu)`
-                  : 'Đã tử trận'}
+                  ? `${mvpSeat.hp}/${mvpSeat.maxHp} HP`
+                  : locale === 'en' ? 'Fallen' : 'Tử trận'}
               </div>
             </div>
           </div>
@@ -164,6 +168,7 @@ export function GameOverSummaryModal({
             const hero = seat.heroId
               ? HERO_CATALOG.find((item) => item.id === seat.heroId)
               : null;
+            const heroDisplay = getCuuChauHeroDisplay(seat.heroId, locale);
             const portraitUrl = seat.heroId ? getHeroPortraitUrl(seat.heroId) : null;
             const isWinner = winnerSet.has(seat.userId);
             const isViewer = seat.seatIndex === playerView.viewerSeatIndex;
@@ -185,7 +190,7 @@ export function GameOverSummaryModal({
                     {portraitUrl ? (
                       <img
                         src={portraitUrl}
-                        alt={hero?.nameVi ?? seat.displayName}
+                        alt={heroDisplay?.name ?? seat.displayName}
                         className="h-full w-full object-cover object-[50%_18%]"
                       />
                     ) : (
@@ -199,13 +204,13 @@ export function GameOverSummaryModal({
                       <span className="truncate">{seat.displayName}</span>
                       {isViewer ? (
                         <span className="rounded border border-[#C89B4B]/40 bg-[#2A1E12] px-1.5 py-0.5 text-[10px] text-[#FDE68A]">
-                          Bạn
+                          {locale === 'en' ? 'You' : 'Bạn'}
                         </span>
                       ) : null}
                       {hero ? <FactionSeal faction={hero.faction} size="xs" /> : null}
                     </div>
                     <div className="text-[11px] text-[#D5C3A5]">
-                      {hero ? hero.nameVi : 'Chưa chọn'}
+                      {heroDisplay ? heroDisplay.name : t('gameOver.unpicked')}
                     </div>
                   </div>
                 </div>
@@ -213,15 +218,15 @@ export function GameOverSummaryModal({
                 <div className="flex flex-wrap items-center gap-3">
                   <span className="inline-flex items-center gap-1 rounded border border-[#C89B4B]/40 bg-[#140F0C] px-2 py-0.5 font-semibold text-[#FDE68A]">
                     <GameIcon name={IDENTITY_META[seat.identity].icon} size={12} />
-                    {IDENTITY_META[seat.identity].label}
+                    {getCuuChauRoleDisplay(seat.identity, locale).name}
                   </span>
                   <span className="font-mono-num min-w-[110px] text-[#E8DCC8] tabular-nums">
                     {seat.alive ? (
-                      `Còn sống (${seat.hp}/${seat.maxHp})`
+                      `${seat.hp}/${seat.maxHp} HP`
                     ) : (
                       <span className="inline-flex items-center gap-1 text-[#FCA5A5]">
                         <GameIcon name="death-skull" size={12} />
-                        Đã tử trận
+                        {locale === 'en' ? 'Fallen' : 'Tử trận'}
                       </span>
                     )}
                   </span>
@@ -229,10 +234,10 @@ export function GameOverSummaryModal({
                     {isWinner ? (
                       <span className="inline-flex items-center gap-1 text-[#86EFAC]">
                         <GameIcon name="crown" size={12} />
-                        Thắng
+                        {locale === 'en' ? 'Won' : 'Thắng'}
                       </span>
                     ) : (
-                      <span className="text-[#B5A792]">Thua</span>
+                      <span className="text-[#B5A792]">{locale === 'en' ? 'Lost' : 'Thua'}</span>
                     )}
                   </span>
                 </div>

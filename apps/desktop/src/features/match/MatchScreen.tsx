@@ -615,7 +615,7 @@ export function MatchScreen({
         <div className="mb-3 flex flex-wrap items-center gap-4">
           <label className="flex cursor-pointer items-center gap-2 text-xs font-semibold text-[#EFE6D5]">
             <input type="checkbox" checked={autoSkipNullification} onChange={(event) => handleToggleAutoSkipNullification(event.target.checked)} className="accent-[#D99B26]" />
-            Tự bỏ qua Vô Giải
+            Tự bỏ qua Hóa Giải
           </label>
           <label className="flex cursor-pointer items-center gap-2 text-xs font-semibold text-[#EFE6D5]">
             <input type="checkbox" checked={reduceMotion} onChange={(event) => handleToggleReduceMotion(event.target.checked)} className="accent-[#D99B26]" />

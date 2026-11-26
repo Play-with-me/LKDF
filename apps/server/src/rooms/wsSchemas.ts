@@ -1,4 +1,9 @@
-import { HeroIdSchema, RefereeActionTypeSchema, SuitSchema } from '@lkdf/shared';
+import {
+  RefereeActionTypeSchema,
+  RegisteredHeroIdSchema,
+  RegisteredPlaySkillIdSchema,
+  SuitSchema,
+} from '@lkdf/shared';
 import { z } from 'zod';
 
 const SeatIndexSchema = z.number().int().min(0).max(7);
@@ -20,17 +25,6 @@ const EquipOrHandZoneSchema = z.enum([
   'MINUS_ONE_HORSE',
 ]);
 
-const PlayPhaseSkillIdSchema = z.enum([
-  'ren_de',
-  'ji_jiang',
-  'zhi_heng',
-  'ku_rou',
-  'fan_jian',
-  'jie_yin',
-  'qing_nang',
-  'li_jian',
-]);
-
 /** Mọi hành động hợp lệ do máy khách gửi qua WebSocket (cố tình loại RESOLVE_SIMULATED_NULLIFICATION). */
 export const ClientGameActionSchema = z.discriminatedUnion('type', [
   z.object({
@@ -39,12 +33,12 @@ export const ClientGameActionSchema = z.discriminatedUnion('type', [
     cardIds: z.array(z.string().min(1)).min(1),
     targetSeats: z.array(SeatIndexSchema).optional(),
     secondarySeat: SeatIndexSchema.optional(),
-    asCardKey: z.enum(['sat', 'qua_ha_sai_cau', 'lac_bat_tu_thuc']).optional(),
+    asCardKey: z.string().min(1).optional(),
   }),
   z.object({
     type: z.literal('ACTIVATE_HERO_SKILL'),
     seatIndex: SeatIndexSchema,
-    skillId: PlayPhaseSkillIdSchema,
+    skillId: RegisteredPlaySkillIdSchema,
     cardIds: z.array(z.string().min(1)).optional(),
     targetSeats: z.array(SeatIndexSchema).optional(),
   }),
@@ -264,7 +258,7 @@ export const WsClientMessageSchema = z.discriminatedUnion('type', [
   z.object({
     type: z.literal('SELECT_HERO'),
     roomCode: z.string().trim().regex(/^[A-Za-z0-9]{6}$/),
-    heroId: HeroIdSchema,
+    heroId: RegisteredHeroIdSchema,
   }),
   z.object({
     type: z.literal('GAME_ACTION'),

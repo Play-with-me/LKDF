@@ -1,17 +1,22 @@
 import { prefersReducedMotion } from '../../lib/devicePreferences.js';
 import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
-import { HERO_CATALOG } from '@lkdf/shared';
+import {
+  CUU_CHAU_FACTIONS,
+  CUU_CHAU_HEROES,
+  getCuuChauFactionDisplay,
+  getCuuChauHeroDisplay,
+} from '@lkdf/shared';
+import { useTranslation } from 'react-i18next';
 import { Heart } from 'lucide-react';
 import { FactionSeal, GameIcon } from '../../components/icons/index.js';
 import { getHeroPortraitUrl } from '../../lib/assetCatalog.js';
 
-const factions = [
-  { name: 'Thục', seal: '蜀', crop: '32%', color: '#C83E37' },
-  { name: 'Ngụy', scene: 'camp', seal: '魏', crop: '52%', color: '#3B82F6' },
-  { name: 'Ngô', scene: 'river', seal: '吳', crop: '76%', color: '#10B981' },
-  { name: 'Quần', seal: '群', crop: '95%', color: '#9CA3AF' },
-];
-const all = 'Tất cả';
+const FACTION_GROUPS = [
+  { id: 'THANH_VAN', crop: '32%', color: '#10B981', scene: 'river' as const },
+  { id: 'HUYEN_THIET', crop: '52%', color: '#3B82F6', scene: 'camp' as const },
+  { id: 'XICH_DIEM', crop: '76%', color: '#C83E37', scene: undefined },
+  { id: 'U_MINH', crop: '95%', color: '#A855F7', scene: undefined },
+] as const;
 
 const PASSIVE_SKILL_IDS =
   /^(pao_xiao|kong_cheng|ma_shu|ji_zhi|qi_cai|jiu_yuan|ying_zi|qian_xun|lian_ying|xiao_ji|wu_shuang|bi_yue)$/;
@@ -20,15 +25,22 @@ export function foldName(value: string) {
   return value.toLocaleLowerCase('vi').normalize('NFD').replace(/\p{M}/gu, '').replace(/đ/g, 'd').trim();
 }
 
-const heroes = HERO_CATALOG.map(hero => ({
-  ...hero,
-  searchName: foldName(hero.nameVi),
-  portrait: getHeroPortraitUrl(hero.id),
-}));
-
 export function LobbyHeroCollection({ control }: { readonly control: string }) {
-  const [faction, setFaction] = useState(all);
-  const [viewedFaction, setViewedFaction] = useState('Thục');
+  const { i18n, t } = useTranslation();
+  const locale = i18n.language === 'en' ? 'en' : 'vi';
+  const heroes = CUU_CHAU_HEROES.map((hero) => {
+    const disp = getCuuChauHeroDisplay(hero.id, locale)!;
+    return {
+      ...hero,
+      displayName: disp.name,
+      displayFaction: disp.factionLabel,
+      displaySkills: disp.skills,
+      searchName: foldName(`${hero.nameVi} ${hero.nameEn ?? ''}`),
+      portrait: getHeroPortraitUrl(hero.legacySlotId),
+    };
+  });
+  const [faction, setFaction] = useState<string>('ALL');
+  const [viewedFaction, setViewedFaction] = useState('THANH_VAN');
   const browsePosition = useRef<number | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const toolbarRef = useRef<HTMLDivElement>(null);
@@ -43,7 +55,7 @@ export function LobbyHeroCollection({ control }: { readonly control: string }) {
   const needle = foldName(query);
   const searching = Boolean(needle);
   const matches = heroes.filter(hero =>
-    (faction === all || hero.factionLabelVi === faction) && hero.searchName.includes(needle),
+    (faction === 'ALL' || hero.faction === faction) && hero.searchName.includes(needle),
   );
   const suggestions = needle && suggesting ? matches.slice(0, 6) : [];
   const active = suggestions[activeIndex];
@@ -130,7 +142,7 @@ export function LobbyHeroCollection({ control }: { readonly control: string }) {
   }
 
   function chooseSuggestion(hero: typeof heroes[number]) {
-    setQuery(hero.nameVi);
+    setQuery(hero.displayName);
     setSelectedId(hero.id);
     setSuggesting(false);
     setActiveIndex(-1);
@@ -140,36 +152,40 @@ export function LobbyHeroCollection({ control }: { readonly control: string }) {
   return (
     <div className="lkdf-hero-collection" data-searching={searching}>
       <div ref={toolbarRef} className="lkdf-hero-toolbar">
-        <div className="lkdf-hero-filters" role="group" aria-label="Chương theo phe">
-          {faction !== all ? (
+        <div className="lkdf-hero-filters" role="group" aria-label={locale === 'en' ? 'Filter by sect' : 'Lọc theo môn phái'}>
+          {faction !== 'ALL' ? (
             <>
-              <span className="lkdf-faction-jump-label">Đang xem {faction}</span>
+              <span className="lkdf-faction-jump-label">{getCuuChauFactionDisplay(faction, locale).name}</span>
               <button
                 type="button"
                 className={`${control} lkdf-ref-chip`}
-                onClick={() => setFaction(all)}
+                onClick={() => setFaction('ALL')}
               >
-                Tất cả các phe
+                {t('compendium.all')}
               </button>
             </>
           ) : !searching ? (
             <>
-              <span className="lkdf-faction-jump-label">Đến phe</span>
-              {factions.map(group => (
+              <span className="lkdf-faction-jump-label">{locale === 'en' ? 'Sects' : 'Môn phái'}</span>
+              {FACTION_GROUPS.map(group => {
+                const fDef = CUU_CHAU_FACTIONS.find(f => f.id === group.id)!;
+                const label = fDef.name[locale];
+                return (
                 <button
-                  key={group.name}
+                  key={group.id}
                   type="button"
                   className={`${control} lkdf-ref-chip`}
-                  aria-current={group.name === viewedFaction ? 'location' : undefined}
-                  disabled={!matches.some(hero => hero.factionLabelVi === group.name)}
-                  onClick={() => jumpToFaction(group.name)}
+                  aria-current={group.id === viewedFaction ? 'location' : undefined}
+                  disabled={!matches.some(hero => hero.faction === group.id)}
+                  onClick={() => jumpToFaction(group.id)}
                 >
                   <span aria-hidden="true" className="lkdf-hero-seal font-serif-title" style={{ borderColor: group.color }}>
-                    {group.seal}
+                    {fDef.emblem}
                   </span>
-                  <span>{group.name}</span>
+                  <span>{fDef.shortName[locale]}</span>
                 </button>
-              ))}
+                );
+              })}
             </>
           ) : null}
         </div>
@@ -180,13 +196,15 @@ export function LobbyHeroCollection({ control }: { readonly control: string }) {
             if (!event.currentTarget.contains(event.relatedTarget)) setSuggesting(false);
           }}
         >
-          <label htmlFor={`${listId}-search`} className="mb-1 block text-sm">Tìm tướng</label>
+          <label htmlFor={`${listId}-search`} className="mb-1 block text-sm">
+            {locale === 'en' ? 'Search warriors' : 'Tìm hiệp khách'}
+          </label>
           <input
             ref={searchRef}
             id={`${listId}-search`}
             value={query}
             autoComplete="off"
-            placeholder="Tìm tướng…"
+            placeholder={locale === 'en' ? 'Search warriors…' : 'Tìm hiệp khách…'}
             className={`${control} w-full ${searching ? 'pr-12' : ''}`}
             role="combobox"
             aria-autocomplete="list"
@@ -239,8 +257,8 @@ export function LobbyHeroCollection({ control }: { readonly control: string }) {
                   onClick={() => chooseSuggestion(hero)}
                   className="cursor-pointer rounded px-3 py-2 text-sm text-[#F5EBD6] hover:bg-[#493221] aria-selected:bg-[#493221]"
                 >
-                  <span className="font-serif-title font-semibold">{hero.nameVi}</span>{' '}
-                  <span className="text-[#E6D4B8]">· {hero.factionLabelVi}</span>
+                  <span className="font-serif-title font-semibold">{hero.displayName}</span>{' '}
+                  <span className="text-[#E6D4B8]">· {hero.displayFaction}</span>
                 </li>
               ))}
             </ul>
@@ -251,23 +269,24 @@ export function LobbyHeroCollection({ control }: { readonly control: string }) {
       <p role="status" className="mt-3 text-sm text-[#E6D4B8]">
         {matches.length ? (
           <>
-            <span className="font-mono-num font-semibold text-[#F5EBD6] tabular-nums">{matches.length}</span> tướng
+            <span className="font-mono-num font-semibold text-[#F5EBD6] tabular-nums">{matches.length}</span> {locale === 'en' ? 'warriors' : 'hiệp khách'}
           </>
         ) : (
-          'Không tìm thấy tướng phù hợp.'
+          locale === 'en' ? 'No matching warriors found.' : 'Không tìm thấy hiệp khách phù hợp.'
         )}
       </p>
 
       <div className="lkdf-hero-library" data-selected={Boolean(selected)}>
         <div ref={galleryRef} className="min-w-0">
-          {factions.map(group => {
-            const members = matches.filter(hero => hero.factionLabelVi === group.name);
+          {FACTION_GROUPS.map(group => {
+            const fDef = CUU_CHAU_FACTIONS.find(f => f.id === group.id)!;
+            const members = matches.filter(hero => hero.faction === group.id);
             if (!members.length) return null;
             return (
               <section
-                key={group.name}
+                key={group.id}
                 className="lkdf-faction-scene"
-                data-faction={group.name}
+                data-faction={group.id}
                 data-scene={group.scene}
                 style={{ '--faction-color': group.color, '--faction-crop': group.crop } as CSSProperties}
               >
@@ -277,20 +296,20 @@ export function LobbyHeroCollection({ control }: { readonly control: string }) {
                   </div>
                 ) : null}
                 <header className="lkdf-faction-heading">
-                  <h3 className="lkdf-faction-title font-serif-title">{group.name}</h3>
-                  {faction === all && !searching ? (
+                  <h3 className="lkdf-faction-title font-serif-title">{fDef.name[locale]}</h3>
+                  {faction === 'ALL' && !searching ? (
                     <button
                       type="button"
                       className={`${control} lkdf-ref-chip lkdf-faction-filter`}
-                      aria-label={`Chỉ xem phe ${group.name}`}
-                      onClick={() => { setFaction(group.name); setActiveIndex(-1); }}
+                      aria-label={fDef.name[locale]}
+                      onClick={() => { setFaction(group.id); setActiveIndex(-1); }}
                     >
-                      Chỉ xem phe này
+                      {locale === 'en' ? 'Filter sect' : 'Chỉ xem phái này'}
                     </button>
                   ) : null}
                   {!searching ? (
                     <span className="lkdf-faction-banner-seal font-serif-title" aria-hidden="true">
-                      {group.seal}
+                      {fDef.emblem}
                     </span>
                   ) : null}
                 </header>
@@ -319,7 +338,7 @@ export function LobbyHeroCollection({ control }: { readonly control: string }) {
                           className="aspect-[10/13] w-full object-cover"
                         />
                       ) : null}
-                      <span className="lkdf-hero-card-name font-serif-title">{hero.nameVi}</span>
+                      <span className="lkdf-hero-card-name font-serif-title">{hero.displayName}</span>
                     </button>
                   ))}
                 </div>
@@ -344,13 +363,13 @@ export function LobbyHeroCollection({ control }: { readonly control: string }) {
                     id={`${listId}-detail`}
                     className="font-serif-title truncate text-xl font-bold leading-snug text-[#F5EBD6]"
                   >
-                    {selected.nameVi}
+                    {selected.displayName}
                   </h3>
                   <FactionSeal faction={selected.faction} size="sm" />
                 </div>
                 <p className="mt-0.5 text-xs font-medium text-[#E6D4B8]">
-                  Thế lực {selected.factionLabelVi}
-                  {selected.isLordCandidate ? ' · Ứng viên Chủ Công' : ''}
+                  {getCuuChauFactionDisplay(selected.faction, locale).name}
+                  {selected.isLordCandidate ? ` · ${t('compendium.lordCandidate')}` : ''}
                 </p>
                 <div className="lkdf-dossier-health">
                   <span className="lkdf-dossier-hearts" aria-hidden="true">
@@ -359,29 +378,29 @@ export function LobbyHeroCollection({ control }: { readonly control: string }) {
                     ))}
                   </span>
                   <span className="font-mono-num font-semibold tabular-nums">
-                    {selected.baseMaxHp} máu tối đa
+                    {selected.baseMaxHp} {locale === 'en' ? 'Max HP' : 'Sinh Lực tối đa'}
                   </span>
                 </div>
               </div>
               <button
                 type="button"
                 className="lkdf-bronze-pill shrink-0 cursor-pointer rounded-md px-2.5 py-1.5 text-xs font-semibold text-[#F5EBD6] focus-visible:outline-2 focus-visible:outline-[#E6BE6C]"
-                aria-label="Đóng hồ sơ tướng"
+                aria-label={locale === 'en' ? 'Close' : 'Đóng'}
                 onClick={() => {
                   setSelectedId('');
                   cardRefs.current.get(selected.id)?.focus({ preventScroll: true });
                 }}
               >
-                Đóng
+                {locale === 'en' ? 'Close' : 'Đóng'}
               </button>
             </header>
 
             <section className="lkdf-hero-skills" aria-labelledby={`${listId}-skills`}>
               <h4 id={`${listId}-skills`} className="lkdf-dossier-skills-label">
                 <GameIcon name="scroll-unfurled" size={15} />
-                <span>Kỹ năng tướng</span>
+                <span>{locale === 'en' ? 'Martial Arts' : 'Tuyệt kỹ'}</span>
               </h4>
-              {selected.skills.map(skill => {
+              {selected.displaySkills.map(skill => {
                 const isLord = Boolean(skill.isLordSkill);
                 const isPassive = PASSIVE_SKILL_IDS.test(skill.id);
                 return (
@@ -393,21 +412,21 @@ export function LobbyHeroCollection({ control }: { readonly control: string }) {
                   >
                     <div className="flex flex-wrap items-center gap-1.5">
                       <h5 className="font-serif-title text-[15px] font-bold leading-snug text-[#F3D38C]">
-                        【{skill.nameVi}】
+                        【{skill.name}】
                       </h5>
                       {isLord ? (
                         <span className="rounded border border-[#D99B26]/65 bg-[#3A290F]/80 px-1.5 py-0.5 text-[10px] font-bold text-[#FCD34D]">
-                          Chủ Công
+                          {t('roles.LORD')}
                         </span>
                       ) : null}
                       {isPassive ? (
                         <span className="rounded border border-[#88AB94]/65 bg-[#214C3D]/75 px-1.5 py-0.5 text-[10px] font-bold text-[#BAFFDF]">
-                          Bị động
+                          {locale === 'en' ? 'Passive' : 'Bị động'}
                         </span>
                       ) : null}
                     </div>
                     <p className="mt-1 text-[13px] leading-[1.52] text-[#EFE6D5]">
-                      {skill.descriptionVi}
+                      {skill.description}
                     </p>
                   </div>
                 );

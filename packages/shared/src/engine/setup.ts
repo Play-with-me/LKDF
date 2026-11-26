@@ -1,20 +1,21 @@
-import {
-  HERO_BY_ID,
-  LORD_HERO_IDS,
-} from '../heroes/catalog.js';
+import { DEFAULT_CONTENT_REGISTRY } from '../content/registry.js';
+import { getHeroDefinition } from '../heroes/catalog.js';
 import {
   IDENTITY_DISTRIBUTIONS,
   PlayerCountSchema,
   type IdentityRole,
   type PlayerCount,
 } from '../types/identity.js';
-import {
-  STANDARD_HERO_IDS,
-  type HeroDraftState,
-  type HeroId,
-  type MasterGameState,
-  type PlayerCombatState,
+import { appendGameEvent } from '../types/events.js';
+import type {
+  HeroDraftState,
+  HeroId,
+  MasterGameState,
+  PlayerCombatState,
 } from '../types/game.js';
+import { shuffleArray } from '../utils/shuffle.js';
+
+export { shuffleArray };
 
 export interface SetupSeatInput {
   readonly userId: string;
@@ -27,81 +28,6 @@ export interface CreateMatchSetupOptions {
   readonly matchId: string;
   readonly seats: readonly SetupSeatInput[];
   readonly rng?: () => number;
-}
-
-function cryptoUnitFloat(): number {
-  const cryptoApi = globalThis.crypto;
-  if (cryptoApi?.getRandomValues) {
-    const arr = new Uint32Array(1);
-    cryptoApi.getRandomValues(arr);
-    return (arr[0] ?? 0) / 0x1_0000_0000;
-  }
-  return Math.random();
-}
-
-function fisherYatesPass<T>(arr: T[], rand: () => number, reverseOrder = false): void {
-  if (reverseOrder) {
-    for (let i = 0; i < arr.length - 1; i += 1) {
-      const j = i + Math.floor(rand() * (arr.length - i));
-      const tmp = arr[i]!;
-      arr[i] = arr[j]!;
-      arr[j] = tmp;
-    }
-    return;
-  }
-  for (let i = arr.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(rand() * (i + 1));
-    const current = arr[i];
-    const swap = arr[j];
-    if (current !== undefined && swap !== undefined) {
-      arr[i] = swap;
-      arr[j] = current;
-    }
-  }
-}
-
-/**
- * Trộn mảng bất biến:
- * - Khi dùng bộ ngẫu nhiên mặc định (`rng === Math.random`), dùng `crypto.getRandomValues`
- *   với 3 lượt trộn sâu (Fisher-Yates -> Cắt & Xào kẹp -> Fisher-Yates đảo chiều).
- * - Khi truyền `rng` cố định (kiểm thử đơn vị), giữ Fisher-Yates tất định theo seed.
- */
-export function shuffleArray<T>(
-  items: readonly T[],
-  rng: () => number = Math.random,
-): T[] {
-  const copy = [...items];
-  if (copy.length <= 1) {
-    return copy;
-  }
-  if (rng !== Math.random) {
-    fisherYatesPass(copy, rng, false);
-    return copy;
-  }
-
-  // Lượt 1: Fisher-Yates bằng CSPRNG
-  fisherYatesPass(copy, cryptoUnitFloat, false);
-
-  // Lượt 2: Cắt đôi xấp bài + xào kẹp (Riffle) + cắt xoay vị trí
-  const split = Math.floor(copy.length / 2);
-  let leftIdx = 0;
-  let rightIdx = split;
-  const riffled: T[] = [];
-  while (leftIdx < split && rightIdx < copy.length) {
-    if (cryptoUnitFloat() < 0.5) {
-      riffled.push(copy[leftIdx++]!);
-    } else {
-      riffled.push(copy[rightIdx++]!);
-    }
-  }
-  while (leftIdx < split) riffled.push(copy[leftIdx++]!);
-  while (rightIdx < copy.length) riffled.push(copy[rightIdx++]!);
-  const cut = Math.floor(cryptoUnitFloat() * riffled.length);
-  const cutRotated = [...riffled.slice(cut), ...riffled.slice(0, cut)];
-
-  // Lượt 3: Fisher-Yates đảo chiều
-  fisherYatesPass(cutRotated, cryptoUnitFloat, true);
-  return cutRotated;
 }
 
 /** Chia và xáo trộn danh sách Thân Phận cho 4–8 người theo đúng tỷ lệ chuẩn. */
@@ -148,13 +74,15 @@ export function createInitialMatchSetup(
     throw new Error('INVALID_IDENTITY_DISTRIBUTION_NO_LORD');
   }
 
+  const lordHeroIds = DEFAULT_CONTENT_REGISTRY.getLordHeroIds();
+  const allHeroIds = DEFAULT_CONTENT_REGISTRY.listHeroes().map((h) => h.id);
   const nonLordPool = shuffleArray(
-    STANDARD_HERO_IDS.filter((id) => !LORD_HERO_IDS.includes(id)),
+    allHeroIds.filter((id) => !lordHeroIds.includes(id)),
     rng,
   );
   const lordRandomTwo = nonLordPool.slice(0, 2);
   const remainingPool = nonLordPool.slice(2);
-  const lordCandidates: HeroId[] = [...LORD_HERO_IDS, ...lordRandomTwo];
+  const lordCandidates: HeroId[] = [...lordHeroIds, ...lordRandomTwo];
 
   const players: PlayerCombatState[] = options.seats.map((seat, index) => {
     const identity = identities[index];
@@ -195,7 +123,10 @@ export function createInitialMatchSetup(
     selectedBySeat: {},
   };
 
-  return {
+  const initialState: MasterGameState = {
+    rulesetVersion: DEFAULT_CONTENT_REGISTRY.getRulesetVersion(),
+    enabledPacks: DEFAULT_CONTENT_REGISTRY.getEnabledPackIds(),
+    contentHash: DEFAULT_CONTENT_REGISTRY.getContentHash(),
     matchId: options.matchId,
     roundNumber: 1,
     currentTurnSeat: lordSeatIndex,
@@ -214,6 +145,13 @@ export function createInitialMatchSetup(
     winningFaction: null,
     winnerUserIds: [],
   };
+
+  return appendGameEvent(
+    initialState,
+    'match.started',
+    { playerCount, lordSeat: lordSeatIndex + 1 },
+    `Ván đấu ${playerCount} người bắt đầu. Đã công khai Chủ Công ở ghế số ${lordSeatIndex + 1}.`,
+  );
 }
 
 /**
@@ -239,7 +177,7 @@ export function selectLordHero(
     throw new Error('INVALID_HERO_CANDIDATE');
   }
 
-  const heroDef = HERO_BY_ID[heroId];
+  const heroDef = getHeroDefinition(heroId);
   const lordMaxHp = heroDef.baseMaxHp + 1;
 
   const returnedHeroes = lordCandidates.filter((id) => id !== heroId);
@@ -248,7 +186,7 @@ export function selectLordHero(
     rng,
   );
 
-  if (fullPoolAfterLord.length !== STANDARD_HERO_IDS.length - 1) {
+  if (fullPoolAfterLord.length !== DEFAULT_CONTENT_REGISTRY.listHeroes().length - 1) {
     throw new Error('INVALID_REMAINING_HERO_POOL_SIZE');
   }
 
@@ -351,7 +289,7 @@ export function selectPlayerHero(
     if (!pickedHeroId) {
       throw new Error('MISSING_SELECTED_HERO');
     }
-    const heroDef = HERO_BY_ID[pickedHeroId];
+    const heroDef = getHeroDefinition(pickedHeroId);
     return {
       ...player,
       heroId: pickedHeroId,

@@ -489,17 +489,29 @@ export const HERO_CATALOG: readonly HeroDefinition[] = [
   },
 ];
 
-export const HERO_BY_ID: Readonly<Record<HeroId, HeroDefinition>> = HERO_CATALOG.reduce(
+export const HERO_BY_ID: Readonly<Record<string, HeroDefinition>> = HERO_CATALOG.reduce(
   (acc, hero) => {
     acc[hero.id] = hero;
     return acc;
   },
-  {} as Record<HeroId, HeroDefinition>,
+  {} as Record<string, HeroDefinition>,
 );
 
 /** 3 tướng Chủ Công cố định luôn xuất hiện trong 5 lựa chọn đầu ván của Chủ Công. */
 export const LORD_HERO_IDS: readonly HeroId[] = ['liu_bei', 'cao_cao', 'sun_quan'];
 
+let heroLookupHook: ((heroId: HeroId) => HeroDefinition | undefined) | null = null;
+
+export function setHeroRegistryLookup(
+  fn: (heroId: HeroId) => HeroDefinition | undefined,
+): void {
+  heroLookupHook = fn;
+}
+
 export function getHeroDefinition(heroId: HeroId): HeroDefinition {
-  return HERO_BY_ID[heroId];
+  const found = heroLookupHook?.(heroId) ?? HERO_BY_ID[heroId];
+  if (!found) {
+    throw new Error(`UNKNOWN_HERO_ID:${heroId}`);
+  }
+  return found;
 }

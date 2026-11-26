@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import type { GameEvent } from './events.js';
 import type { IdentityRole, PlayerCount, TimerPreset, WinningFaction } from './identity.js';
 
 export const SuitSchema = z.enum(['SPADE', 'HEART', 'CLUB', 'DIAMOND']);
@@ -15,13 +16,13 @@ export const CardCategorySchema = z.enum([
 ]);
 export type CardCategory = z.infer<typeof CardCategorySchema>;
 
-export const HeroFactionSchema = z.enum(['SHU', 'WEI', 'WU', 'QUN']);
-export type HeroFaction = z.infer<typeof HeroFactionSchema>;
+export const HeroFactionSchema = z.string().min(1);
+export type HeroFaction = string;
 
 export const HeroGenderSchema = z.enum(['MALE', 'FEMALE']);
 export type HeroGender = z.infer<typeof HeroGenderSchema>;
 
-/** Toàn bộ 25 mã tướng Bản Tiêu Chuẩn gốc theo DATA_MODEL.md. */
+/** Toàn bộ 25 mã tướng Bản Tiêu Chuẩn (giữ cho tương thích kiểm thử Phase 1A, sẽ tách sang ContentPack ở Phase 1B). */
 export const STANDARD_HERO_IDS = [
   'liu_bei',
   'guan_yu',
@@ -50,21 +51,26 @@ export const STANDARD_HERO_IDS = [
   'diao_chan',
 ] as const;
 
-export const HeroIdSchema = z.enum(STANDARD_HERO_IDS);
-export type HeroId = z.infer<typeof HeroIdSchema>;
+export const HeroIdSchema = z.string().min(1);
+export type HeroId = string;
 
 export interface HeroSkillInfo {
   readonly id: string;
   readonly nameVi: string;
+  readonly nameEn?: string;
   readonly descriptionVi: string;
+  readonly descriptionEn?: string;
   readonly isLordSkill?: boolean;
 }
 
 export interface HeroDefinition {
   readonly id: HeroId;
   readonly nameVi: string;
+  readonly nameEn?: string;
   readonly faction: HeroFaction;
   readonly factionLabelVi: string;
+  readonly factionLabelEn?: string;
+  readonly packId?: string;
   readonly baseMaxHp: 3 | 4;
   readonly gender: HeroGender;
   readonly isLordCandidate: boolean;
@@ -118,6 +124,7 @@ export interface CardInstance {
   readonly id: string;
   readonly cardKey: string;
   readonly nameVi: string;
+  readonly nameEn?: string;
   readonly category: CardCategory;
   readonly suit: Suit;
   readonly rank: number;
@@ -452,6 +459,7 @@ export interface PublicInterruptView {
   readonly remainingDiscards?: number;
   readonly requiredCount?: number;
   readonly dodgedSoFar?: number;
+  readonly damageCards?: readonly CardInstance[];
 }
 
 export type JudgmentPurpose =
@@ -606,6 +614,11 @@ export interface PublicCardReveal {
 }
 
 export interface MasterGameState {
+  readonly rulesetVersion?: string;
+  readonly enabledPacks?: readonly string[];
+  readonly contentHash?: string;
+  readonly skillState?: Readonly<Record<string, unknown>>;
+  readonly events?: readonly GameEvent[];
   readonly manualDraw?: boolean;
   readonly publicReveals?: readonly PublicCardReveal[];
   readonly matchId: string;
@@ -629,6 +642,11 @@ export interface MasterGameState {
 }
 
 export interface PlayerViewState {
+  readonly rulesetVersion?: string;
+  readonly enabledPacks?: readonly string[];
+  readonly contentHash?: string;
+  readonly skillState?: Readonly<Record<string, unknown>>;
+  readonly events?: readonly GameEvent[];
   readonly availableDrawCount?: number;
   readonly publicReveals?: readonly PublicCardReveal[];
   readonly matchId: string;

@@ -1,0 +1,115 @@
+{
+  "brand": {
+    "title": "Cửu Châu Ẩn Kiếm",
+    "subtitle": "Blades of the Nine Realms"
+  },
+  "common": {
+    "backToMenu": "Về menu",
+    "backToMainMenu": "Về menu chính",
+    "settings": "Cài đặt",
+    "language": "Ngôn ngữ"
+  },
+  "lobby": {
+    "mainMenuAria": "Menu chính",
+    "welcomeToast": "Đã đăng nhập với biệt danh {{name}}",
+    "dismissToast": "Ẩn thông báo",
+    "playOnlineTitle": "Chơi online",
+    "playOnlineDesc": "Phòng riêng 4–8 người",
+    "playOfflineTitle": "Chơi với Máy",
+    "playOfflineDesc": "Ván tập offline 4–8 ghế",
+    "referenceTitle": "Tra cứu",
+    "referenceDesc": "Tướng, lá bài và thân phận",
+    "profileTitle": "Hồ sơ",
+    "profileDesc": "Biệt danh và chiến tích",
+    "checkingRoom": "Đang kiểm tra phòng đang chơi…",
+    "createRoomHeading": "Lập Phòng Mới",
+    "playerCountBadge": "4–8 người",
+    "createRoomDesc": "Chọn nhịp đồng hồ bàn đấu và nhận mã Hổ Phù để mời bằng hữu vào sảnh.",
+    "tempoLabel": "Nhịp chơi",
+    "tempoFast": "Nhanh",
+    "tempoStandard": "Chuẩn",
+    "tempoRelaxed": "Thong thả",
+    "secondsPerTurn": "{{seconds}}s/lượt",
+    "creatingRoom": "Đang mở phòng…",
+    "createRoomCta": "Lập Phòng Mới (4–8 người)",
+    "joinRoomHeading": "Vào Phòng Bằng Mã Hổ Phù",
+    "joinRoomDesc": "Nhập mã 6 ký tự nhận từ Chủ phòng để gia nhập bàn đấu ngay.",
+    "roomCodeLabel": "Mã Hổ Phù (6 ký tự)",
+    "joiningRoom": "Đang vào phòng…",
+    "joinRoomCta": "Vào phòng",
+    "steamLobbyHint": "Chơi mạng qua phòng bạn bè sẽ mở ở giai đoạn sau — hiện hãy chọn Chơi với Máy để trải nghiệm ngay."
+  },
+  "roles": {
+    "LORD": "Minh Chủ",
+    "LOYALIST": "Hộ Pháp",
+    "REBEL": "Nghĩa Quân",
+    "SPY": "Ám Ảnh",
+    "UNKNOWN": "Ẩn"
+  },
+  "compendium": {
+    "title": "Tra cứu",
+    "tabHeroes": "Hiệp khách",
+    "tabCards": "Lá bài",
+    "tabRoles": "Thân phận",
+    "all": "Tất cả",
+    "seatCount": "Sĩ số bàn",
+    "lordCandidate": "Ứng viên Minh Chủ"
+  },
+  "heroSelect": {
+    "waitingLord": "Đang chờ Minh Chủ {{name}} chọn Hiệp Khách (1/5)...",
+    "lordPickTitle": "Bạn là Minh Chủ — Chọn 1 trong 5 Hiệp Khách",
+    "pickTitle": "Chọn 1 trong 3 Hiệp Khách xuất chiến",
+    "lordBonus": " · Minh Chủ được cộng +1 Sinh Lực tối đa",
+    "lordBadge": "Minh Chủ",
+    "lordHpBadge": "+1 Minh Chủ",
+    "lockedHero": "Đã khóa Hiệp Khách: {{name}} ({{faction}})"
+  },
+  "gameOver": {
+    "victorySeal": "ĐẠI THẮNG",
+    "defeatSeal": "CHIẾN BẠI",
+    "finished": "Ván đấu đã kết thúc",
+    "lordWin": "Phe Minh Chủ & Hộ Pháp chiến thắng!",
+    "rebelWin": "Phe Nghĩa Quân chiến thắng!",
+    "spyWin": "Ám Ảnh chiến thắng!",
+    "returnMenu": "Về menu",
+    "playAgain": "Chơi lại",
+    "unpicked": "Chưa chọn"
+  },
+  "offlineSetup": {
+    "title": "Chơi với Máy",
+    "subtitle": "Ván tập chiến thuật ngoại tuyến — không cần Internet hay đăng nhập.",
+    "seatLegend": "Sĩ số bàn đấu",
+    "seatOption": "{{count}} ghế",
+    "lineupLabel": "Đội hình:",
+    "lineupValue": "Bạn và {{bots}} Máy",
+    "roleBalanceTitle": "Cân bằng Thân Phận ({{count}} người)",
+    "roleBalanceHint": "Chia ngẫu nhiên mỗi ván",
+    "roleBalanceAria": "Phân bổ Thân Phận dự kiến",
+    "startMatch": "Bắt đầu ván"
+  },
+  "match": {
+    "autoSkipNullify": "Tự bỏ qua Vô Giải",
+    "autoSkipNullifyShort": "Bỏ Vô Giải",
+    "reduceMotion": "Giảm chuyển động",
+    "sfx": "Hiệu ứng âm thanh",
+    "sfxShort": "Âm thanh",
+    "bgm": "Nhạc nền",
+    "log": "Nhật ký",
+    "rules": "Luật",
+    "referee": "Trọng tài",
+    "exitTitle": "Rời ván tập?",
+    "exitDesc": "Tiến độ ván này sẽ mất khi bạn về menu.",
+    "stayInMatch": "Ở lại ván",
+    "faultMessage": "Không thể tiếp tục ván này.",
+    "replay": "Chơi lại",
+    "prompt": {
+      "gameOver": "Ván đấu đã kết thúc",
+      "selectHero": "Hãy chọn nhân vật của bạn",
+      "waitHeroSelect": "Đang chờ người chơi khác chọn nhân vật",
+      "drawPhase": "Rút {{count}} lá bài",
+      "playPhase": "Lượt hành động của bạn",
+      "discardPhase": "Cần bỏ {{count}} lá bài",
+      "waitTurn": "Đang chờ lượt ghế {{seat}}"
+    }
+  }
+}

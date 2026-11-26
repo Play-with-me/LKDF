@@ -2,6 +2,7 @@ export * from './brand.js';
 export * from './types/index.js';
 export * from './cards/index.js';
 export * from './heroes/index.js';
+export * from './content/index.js';
 export * from './distance/index.js';
 export * from './projection/index.js';
 export * from './engine/index.js';

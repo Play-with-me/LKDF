@@ -1,5 +1,6 @@
 import { prefersReducedMotion } from '../../lib/devicePreferences.js';
-import { formatRankLabel, isRedSuit } from '@lkdf/shared';
+import { formatRankLabel, getCuuChauCardDisplay, isRedSuit } from '@lkdf/shared';
+import { useTranslation } from 'react-i18next';
 import type {
   CardInstance,
   GameAction,
@@ -22,6 +23,7 @@ import { PlayingCardFace } from './HandCardItem.js';
 import {
   describePendingActorPrompt,
   formatCardShort,
+  formatCuuChauDisplayText,
   getPlayerSeatLabel,
 } from './matchTypes.js';
 
@@ -451,7 +453,7 @@ function buildTargetedSelfAlert(
   if (interrupt.kind === 'WAIT_FAN_JIAN_GUESS' && interrupt.targetSeat === viewer) {
     return {
       icon: 'archery-target',
-      text: `${getName(interrupt.sourceSeat)} dùng Phản Gián nhắm BẠN · Chọn chất bài!`,
+      text: `${getName(interrupt.sourceSeat)} dùng Đoán Tâm Mưu nhắm BẠN · Chọn chất bài!`,
     };
   }
   if (
@@ -466,8 +468,8 @@ function buildTargetedSelfAlert(
       icon: 'archery-target',
       text:
         req >= 2
-          ? `${getName(interrupt.sourceSeat)} đang đánh Sát vào BẠN · Vô Song (Lữ Bố): Cần ${req} lá Thiểm (${dodged}/${req})!`
-          : `${getName(interrupt.sourceSeat)} đang đánh Sát vào BẠN!`,
+          ? `${getName(interrupt.sourceSeat)} đang đánh Kiếm Trảm vào BẠN · Bá Thể (Cửu Diện Vô Song): Cần ${req} lá Thân Pháp (${dodged}/${req})!`
+          : `${getName(interrupt.sourceSeat)} đang đánh Kiếm Trảm vào BẠN!`,
     };
   }
   if (
@@ -482,8 +484,8 @@ function buildTargetedSelfAlert(
       icon: 'archery-target',
       text:
         req >= 2
-          ? `${getName(interrupt.sourceSeat)} đang Quyết Đấu với BẠN · Vô Song (Lữ Bố): Cần ${req} lá Sát (${played}/${req})!`
-          : `${getName(interrupt.sourceSeat)} đang Quyết Đấu với BẠN!`,
+          ? `${getName(interrupt.sourceSeat)} đang Sinh Tử Lôi Đài với BẠN · Bá Thể: Cần ${req} lá Kiếm Trảm (${played}/${req})!`
+          : `${getName(interrupt.sourceSeat)} đang Sinh Tử Lôi Đài với BẠN!`,
     };
   }
   if (
@@ -494,7 +496,7 @@ function buildTargetedSelfAlert(
   ) {
     return {
       icon: 'archery-target',
-      text: `${getName(interrupt.sourceSeat)} dùng Nam Man Nhập Xâm nhắm BẠN!`,
+      text: `${getName(interrupt.sourceSeat)} dùng Thú Triều Công Thành nhắm BẠN!`,
     };
   }
   if (
@@ -505,7 +507,7 @@ function buildTargetedSelfAlert(
   ) {
     return {
       icon: 'archery-target',
-      text: `${getName(interrupt.sourceSeat)} dùng Vạn Tiễn Tề Phát nhắm BẠN!`,
+      text: `${getName(interrupt.sourceSeat)} dùng Mưa Tên Bão Vũ nhắm BẠN!`,
     };
   }
   if (
@@ -515,10 +517,10 @@ function buildTargetedSelfAlert(
     interrupt.sourceSeat !== viewer
   ) {
     const action = interrupt.id.startsWith('fankui_pick_')
-      ? 'Phản Quỷ'
+      ? 'Hồi Hưởng'
       : interrupt.id.startsWith('tu_xi_take')
-        ? 'Đột Tập'
-        : interrupt.stealing ? 'Thuận Thủ Khiên Dương' : 'Quá Hà Sái Cầu';
+        ? 'Đoạt Lương'
+        : interrupt.stealing ? 'Thám Nang Thủ' : 'Phá Trận Chưởng';
     return {
       icon: 'archery-target',
       text: `${getName(interrupt.sourceSeat)} dùng ${action} nhắm bài của BẠN!`,
@@ -532,7 +534,7 @@ function buildTargetedSelfAlert(
   ) {
     return {
       icon: 'archery-target',
-      text: `${getName(interrupt.sourceSeat)} dùng Tá Đao Sát Nhân lên BẠN!`,
+      text: `${getName(interrupt.sourceSeat)} dùng Tá Kiếm Trảm Phong lên BẠN!`,
     };
   }
   if (interrupt.kind === 'WAIT_NULLIFICATION') {
@@ -542,11 +544,11 @@ function buildTargetedSelfAlert(
       readonly nullifyDepth?: number;
     };
     const origTarget = nullifyInterrupt.originalTargetSeat ?? interrupt.targetSeat;
-    const origName = nullifyInterrupt.originalScrollNameVi ?? interrupt.scrollNameVi ?? 'Cẩm nang';
+    const origName = nullifyInterrupt.originalScrollNameVi ?? interrupt.scrollNameVi ?? 'Bí kíp';
     if (origTarget === viewer && (nullifyInterrupt.nullifyDepth ?? 0) % 2 === 0) {
       return {
         icon: 'ui:alert',
-        text: `Cẩm nang [${origName}] đang nhắm vào BẠN!`,
+        text: `Bí kíp [${origName}] đang nhắm vào BẠN!`,
       };
     }
   }
@@ -563,6 +565,7 @@ export function MatchCenterBoard({
   onSendAction,
   onInspectCard,
 }: MatchCenterBoardProps) {
+  const { i18n } = useTranslation();
   const [recentDiscards, setRecentDiscards] = useState<readonly CardInstance[]>(() =>
     playerView.discardPileTop ? [playerView.discardPileTop] : [],
   );
@@ -762,11 +765,15 @@ export function MatchCenterBoard({
       latestActionEntry &&
       /rút [1-9]\d* lá ở pha Rút bài/u.test(latestActionEntry),
   );
-  const spotlightText = distributionLines.length
-    ? distributionLines.join(' ')
-    : isSelfTurnPlayWithOnlyDrawLog
-      ? prompt.detailVi
-      : latestActionEntry ?? prompt.detailVi;
+  const locale = i18n.language === 'en' ? 'en' : 'vi';
+  const spotlightText = formatCuuChauDisplayText(
+    distributionLines.length
+      ? distributionLines.join(' ')
+      : isSelfTurnPlayWithOnlyDrawLog
+        ? prompt.detailVi
+        : latestActionEntry ?? prompt.detailVi,
+    locale,
+  );
   const showDrawNotice = Boolean(
     drawNotice &&
       !shownReveal &&
@@ -870,16 +877,22 @@ export function MatchCenterBoard({
         </div>
         {shownReveal || showDrawNotice ? (
           <div role="status" className="rounded border border-[#C89B4B]/55 bg-[#1B1410] px-2.5 py-0.5 text-[10px] font-medium text-[#FDE68A] shadow">
-            {shownReveal ? (shownReveal.label.startsWith('Phản Gián') ? shownReveal.label : `Phán xét · ${shownReveal.label}`) : drawNotice}
+            {shownReveal
+              ? (shownReveal.label.startsWith('Phản Gián')
+                  ? formatCuuChauDisplayText(shownReveal.label, locale)
+                  : `${locale === 'en' ? 'Judgment' : 'Phán xét'} · ${formatCuuChauDisplayText(shownReveal.label, locale)}`)
+              : formatCuuChauDisplayText(drawNotice ?? '', locale)}
           </div>
         ) : null}
         {liveRescue ? (
           <div role="status" className="rounded border border-red-400 bg-red-950 px-2.5 py-1 text-center text-xs font-bold text-red-100">
-            Hấp hối · {playerView.players.find(player => player.seatIndex === playerView.activeInterrupt?.targetSeat)?.displayName} cần Đào
+            {i18n.language === 'en'
+              ? `Critical · ${playerView.players.find(player => player.seatIndex === playerView.activeInterrupt?.targetSeat)?.displayName} needs Elixir`
+              : `Nguy kịch · ${playerView.players.find(player => player.seatIndex === playerView.activeInterrupt?.targetSeat)?.displayName} cần Hồi Xuân Đan`}
           </div>
         ) : criticalNotice.length ? (
           <div role="status" className="lkdf-critical-notice max-w-full rounded border border-[#D99B26]/70 bg-[#2E1A10] px-2.5 py-0.5 text-center text-[10px] font-bold text-[#FDE68A]">
-            {criticalNotice.slice(-2).join(' ')}
+            {formatCuuChauDisplayText(criticalNotice.slice(-2).join(' '), locale)}
           </div>
         ) : null}
         {(targetAlert || isFirstRoundPeaceful) ? (
@@ -895,7 +908,7 @@ export function MatchCenterBoard({
                   size={11}
                   className={targetAlert.icon === 'ui:alert' ? 'shrink-0 text-[#FBBF24]' : 'shrink-0 text-[#FCA5A5]'}
                 />
-                <span>{targetAlert.text}</span>
+                <span>{formatCuuChauDisplayText(targetAlert.text, locale)}</span>
               </div>
             ) : null}
             {isFirstRoundPeaceful ? (
@@ -904,7 +917,11 @@ export function MatchCenterBoard({
                 className="inline-flex items-center gap-1 rounded-full border border-[#34D399]/55 bg-[#064E3B]/75 px-2.5 py-0.5 text-[10px] font-bold text-[#A7F3D0]"
               >
                 <GameIcon name="ui:feather" size={11} className="shrink-0 text-[#6EE7B7]" />
-                <span>Vòng 1 Hòa Bình · Không rút bài &amp; Chưa đánh Sát</span>
+                <span>
+                  {i18n.language === 'en'
+                    ? 'Round 1 Truce · No Draw & No Blade Strike'
+                    : 'Vòng 1 Hòa Bình · Không rút bài & Chưa đánh Kiếm Trảm'}
+                </span>
               </span>
             ) : null}
           </div>
@@ -924,7 +941,7 @@ export function MatchCenterBoard({
       </div>
 
       {privateDraw.length ? (
-        <div ref={privateDrawRef} role="status" aria-label={`Bài bạn vừa rút: ${privateDraw.map(card => card.nameVi).join(', ')}`}
+        <div ref={privateDrawRef} role="status" aria-label={privateDraw.map(card => getCuuChauCardDisplay(card.cardKey, i18n.language === 'en' ? 'en' : 'vi', card.nameVi).name).join(', ')}
           className="pointer-events-none absolute left-1/2 top-1/2 z-40 flex -translate-x-1/2 -translate-y-1/2 gap-2">
           {privateDraw.map(card => (
             <div key={card.id} className="lkdf-private-draw relative h-[105px] w-[74px] rounded border border-[#E6BE6C] bg-[#211509] shadow-lg">
@@ -978,9 +995,9 @@ export function MatchCenterBoard({
                       {isLuoYiSecond ? 'Rút lá 2' : `Rút ${playerView.availableDrawCount} lá`}
                     </span>
                     {isAnhTuDraw ? (
-                      <span className="text-[8.5px] font-bold leading-none text-[#FBBF24]">Anh Tư</span>
+                      <span className="text-[8.5px] font-bold leading-none text-[#FBBF24]">Tâm Nhãn</span>
                     ) : isLuoYiSecond ? (
-                      <span className="text-[8.5px] font-bold leading-none text-[#FCA5A5]">Lỏa Y</span>
+                      <span className="text-[8.5px] font-bold leading-none text-[#FCA5A5]">Phá Giáp</span>
                     ) : null}
                   </span>
                 </button>
@@ -1020,7 +1037,7 @@ export function MatchCenterBoard({
                 <div className="flex h-[98px] w-[72px] flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-[#C89B4B]/40 bg-[#16110E]/45 text-center text-[#B5A792]">
                   <GameIcon name="card-play" size={20} className="text-[#D99B26]/65" />
                   <span className="text-[10px] font-medium leading-tight">
-                    Vùng đánh bài
+                    {i18n.language === 'en' ? 'Play Zone' : 'Vùng đánh bài'}
                   </span>
                 </div>
               )}
@@ -1029,11 +1046,11 @@ export function MatchCenterBoard({
               <GameIcon name="card-discard" size={11} className="text-[#C89B4B]" />
               {topDiscard ? (
                 <span className="max-w-[236px] truncate">
-                  {topDiscard.nameVi} · Bỏ: <strong className="text-[#F5EBD6]">{playerView.discardPileCount}</strong>
+                  {getCuuChauCardDisplay(topDiscard.cardKey, i18n.language === 'en' ? 'en' : 'vi', topDiscard.nameVi).name} · {i18n.language === 'en' ? 'Discard' : 'Bỏ'}: <strong className="text-[#F5EBD6]">{playerView.discardPileCount}</strong>
                 </span>
               ) : (
                 <span>
-                  Bỏ: <strong className="text-[#F5EBD6]">{playerView.discardPileCount}</strong>
+                  {i18n.language === 'en' ? 'Discard' : 'Bỏ'}: <strong className="text-[#F5EBD6]">{playerView.discardPileCount}</strong>
                 </span>
               )}
             </span>
@@ -1042,11 +1059,11 @@ export function MatchCenterBoard({
       ) : (
         /* Khu tương tác đặc biệt (chỉ bật nổi giữa bàn khi tới lượt chọn bài chung/mục tiêu/Quan Tinh/Di Kế) */
         <div className="lkdf-battle-choice lkdf-scroll min-h-0 w-full flex-1 space-y-1.5 overflow-y-auto rounded-xl border border-[#C89B4B]/70 bg-[#16110E]/96 p-2.5 shadow-2xl">
-          {/* Ngũ Cốc Phong Đăng */}
+          {/* Ngũ Cốc (Khai Kho Tàng Lương) */}
           {interrupt.kind === 'WAIT_HARVEST_PICK' &&
           playerView.harvestPool.length > 0 ? (
             <div>
-              <div className="lkdf-battle-harvest" aria-label="Các lá Ngũ Cốc để chọn">
+              <div className="lkdf-battle-harvest" aria-label={i18n.language === 'en' ? 'Shared Bounty Cards' : 'Các lá Khai Kho Tàng Lương để chọn'}>
                 {playerView.harvestPool.map((card) => (
                   <button
                     key={card.id}

@@ -1,8 +1,27 @@
-# Project Memory — Tam Quốc Sát (Windows Native Online 4–8 Người)
+# Project Memory — Cửu Châu Ẩn Kiếm (Blades of the Nine Realms)
 
-- **Ngày cập nhật:** 2026-11-19
-- **Trạng thái hiện tại:** Đã hoàn thành mã nguồn & đóng gói **Giai đoạn 0 → Bước 5.1**, vá xong 3 điểm tiền triển khai, hoàn tất **Mẫu B (Khung Thép Tối · Chân Dung Tràn Viền Kiểu Gwent)** trên toàn bộ bàn đấu/thẻ bài/sảnh, nâng cấp **Cổng Đăng nhập / Đăng ký / Đặt Biệt danh** lên **Mẫu 2 Toàn Màn Hình Vô Khung Quốc Phong** (`GuofengPortalStage.tsx`, ẩn thanh đầu trang trên cùng lúc ở `LOGIN` / `NICKNAME_SETUP`, Triệu Vân & Lữ Bố Parallax 3 lớp + 26 hạt tàn lửa Xích Bích + nút Google Lưu Quang + thanh đáy `44px`), giữ nguyên tên **`Tam Quốc Sát`** (`TamQuocSat-Setup-*.exe`, `TQS-...`), và vượt qua kiểm thử. Chỉ còn **Commit + Push**, bật **Cloud 0đ + Google OAuth** (`HUONG_DAN_CHO_TOI.md` Mục 5) và UAT 4–8 người để đóng dấu `[x]` Bước 5.2.
-- **Bản đầy đủ:** [`PROJECT_MEMORY.md`](../PROJECT_MEMORY.md) · [`HUONG_DAN_CHO_TOI.md`](../HUONG_DAN_CHO_TOI.md) · [`DESIGN.md`](../DESIGN.md) · [`TASKS.md`](../TASKS.md).
+- **Ngày cập nhật:** 2026-11-25
+- **Trạng thái hiện tại:**
+  - **Phase 0:** Đã commit sạch (`77d925a` — IP Purge ảnh AI cũ, `BrandConfig` SSOT, `OfflineMatchScreen`, Steamworks Electron 45 Spike).
+  - **Phase 1 (1A + 1B) ✅ HOÀN THÀNH (chưa commit trong working tree):** Đã tách lõi `ContentRegistry`, thêm `GameEvent` & 8 primitive phản ứng, triển khai `i18next` (`VI`/`EN` + `LanguageToggle`), tạo gói IP gốc `CUU_CHAU_CORE_PACK` (4 tông môn `雲/鐵/炎/影`, 4 vai, 25 hiệp khách song ngữ, bộ bài `112` lá `28♠/28♥/28♣/28♦`, 10 bộ chiêu remix), reskin toàn bộ desktop UI + thêm `formatCuuChauDisplayText`, và đóng gói **Windows Portable `.zip`** đa máy.
+- **Lộ trình đóng gói đã chốt:** Phase 1–3 xuất bản **Windows Portable `.zip`** để test trực tiếp trên nhiều máy Windows; **Phase 4** mới tích hợp & phát hành chính thức lên **Steam**.
+
+## Bằng chứng kiểm chứng sau lần sửa cuối (`2026-11-25`)
+- `npm.cmd run typecheck`: `0` lỗi (`shared`, `desktop` renderer+electron, `server`).
+- `npm.cmd run build`: `exit 0` (`2412` Vite modules).
+- `npm.cmd run test:unit`: **16/16 files · 122/122 tests** (`cuuChauPack.test.ts` 4/4 gồm 50/50 ván 112 lá).
+- `npm.cmd run test:fuzz`: **6/6 tests · 500/500 ván** (`0` deadlock).
+- `npm.cmd run test:integration`: **7/7 files · 26/26 tests**.
+- `offlineBot.test.ts`: **4/4 tests**. `assets:check`: **PASS** (`59` tệp, `60` manifest, `0` AI, `1.15 MB`).
+- Live Electron `45.3.3` UI Audit (`1280×720` & `960×600`, `VI` & `EN`): **8/8 checks PASS**, `0` console errors, `0` failed URLs, `0` từ Tam Quốc hiển thị, `0` overflow.
+- Build Portable: `apps/desktop/release/BladesOfTheNineRealms-Portable-0.1.0.zip` (**166.57 MB**).
+
+## Ghi chú bàn giao kỹ thuật cho Bước kế tiếp (Phase 2 Handoff Notes)
+- **Mục tiêu Phase 2:** AI Art Factory tạo **25/25 chân dung hiệp khách + 32/32 tranh lá bài + 3 nền UI** gốc *Cửu Châu Ẩn Kiếm*, cập nhật `scripts/assets-pipeline.mjs` & `assetCatalog.ts` vượt qua `assets:check`, và xuất Portable `.zip` mới.
+- **Kiến trúc cần giữ nguyên:** Engine giữ legacy ID (`liu_bei`, `sat`, `thiem`, ...) làm slot định danh để bảo toàn 150+ bài kiểm thử và tương thích `useMatchMotion.ts` / `matchSounds.ts`; tầng UI dịch sang tên `Cửu Châu` qua `getCuuChau*Display()` và `formatCuuChauDisplayText()` trong `apps/desktop/src/features/match/matchTypes.ts`.
+- **Ghi chú build trên Windows/PowerShell 5.1:** Dùng `npm.cmd`/`npx.cmd`, đặt `$env:CSC_IDENTITY_AUTO_DISCOVERY='false'` trước `npm.cmd run package:win:zip --workspace=@lkdf/desktop`. Nhớ nhắc hoặc hỏi khách trước khi chạy `git commit` cho Phase 1.
+
+*(Lịch sử bàn giao Phase 0 & các bước nền tảng trước đó giữ nguyên bên dưới)*
 
 ## Quyết định v1 đã khóa 100% (Tuyệt đối không tự ý thay đổi)
 1. **Nền tảng & Người chơi:** Windows Native Desktop App (NSIS `TamQuocSat-Setup-${version}.exe`), chỉ bắt đầu khi đủ **4–8 người thật**.

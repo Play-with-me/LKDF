@@ -1,13 +1,30 @@
 # TASKS.md — Kế Hoạch Thực Hiện Chi Tiết Theo Từng Bước Kiểm Tra Được
 
-> **Dự án:** LKDF — Game Thẻ Bài Tam Quốc Sát (Windows Native Online 4–8 Người)
-> **Cập nhật lần cuối:** 2026-11-18
+> **Dự án:** Cửu Châu Ẩn Kiếm / Blades of the Nine Realms (Standalone Portable Windows + Lộ trình lên Steam Phase 4)
+> **Cập nhật lần cuối:** 2026-11-25
 > **Quy tắc bắt buộc:** Chỉ đánh dấu hoàn thành (`[x]`) khi đã có sản phẩm bàn giao và đã chạy kiểm tra đạt điều kiện nghiệm thu của bước đó. Không đánh dấu hoàn thành chỉ vì đã viết xong mã nguồn.
-> **Tài liệu liên quan:** [REQUIREMENTS.md](./REQUIREMENTS.md) · [ARCHITECTURE.md](./ARCHITECTURE.md) · [TESTING.md](./TESTING.md) · [PROJECT_MEMORY.md](./PROJECT_MEMORY.md)
+> **Tài liệu liên quan:** [KE_HOACH_TONG_THE_CUU_CHAU_AN_KIEM.md](./KE_HOACH_TONG_THE_CUU_CHAU_AN_KIEM.md) · [REQUIREMENTS.md](./REQUIREMENTS.md) · [ARCHITECTURE.md](./ARCHITECTURE.md) · [TESTING.md](./TESTING.md) · [PROJECT_MEMORY.md](./PROJECT_MEMORY.md)
 
 ---
 
-## Tổng Quan Lộ Trình 6 Giai Đoạn
+## Tổng Quan Lộ Trình Cửu Châu Ẩn Kiếm (Phase 0–5)
+
+| Phase | Nội dung chính | Đóng gói kiểm thử | Trạng thái |
+| :---: | :--- | :---: | :---: |
+| **Phase 0** | IP Purge, BrandConfig SSOT, BuildTarget & Steamworks Spike (`77d925a`) | N/A | ✅ Hoàn thành & Commit (`77d925a`) |
+| **Phase 1** | Core `ContentRegistry`, `i18next` VI/EN, `CUU_CHAU_CORE_PACK` (`4` tông môn, `25` hiệp khách, `112` lá `28×4`, `10` bộ chiêu remix), Reskin UI & Vertical Slice 4P | Windows Portable `.zip` | ✅ Hoàn thành (`BladesOfTheNineRealms-Portable-0.1.0.zip` — `166.57 MB`) |
+| **Phase 2** | AI Art Factory: 25 chân dung + 32 tranh lá bài + 3 nền mới | Windows Portable `.zip` | 👉 Kế tiếp |
+| **Phase 3** | Audio Studio, Game Feel, Tái cấu trúc UI/UX + Chiến dịch cốt truyện | Windows Portable `.zip` | ⬜ Chờ |
+| **Phase 4** | Hoàn thiện Steamworks (Lobby P2P, Cloud Save, Achievements) + Xuất bản Steam | Steam Build + `.exe` | ⬜ Chờ |
+| **Phase 5** | Post-Launch LiveOps & Content Pack mở rộng | Steam Update | ⬜ Chờ |
+
+### Chi Tiết Phase 1 — Hoàn Thành & Kiểm Chứng Thực Tế (`2026-11-25`)
+- [x] **Phase 1A — Nền tảng mở rộng & Song ngữ:** Tạo `utils/shuffle.ts`, `GameEvent`, `ContentRegistry`, 8 primitive phản ứng (`primitives.ts`), `actionDescriptor.ts`, `IMatchTransport`, tích hợp `i18next` + `LanguageToggle` (`VI`/`EN`) và script `package:win:zip`.
+- [x] **Phase 1B — Gói IP gốc `CUU_CHAU_CORE_PACK`, Reskin UI & Portable `.zip`:** Hoàn thành 4 tông môn (`雲/鐵/炎/影`), 4 vai (`Minh Chủ/Hộ Pháp/Nghĩa Quân/Ám Ảnh`), 25 hiệp khách song ngữ, bộ bài 112 lá (`28♠/28♥/28♣/28♦`), 10 bộ chiêu remix, `formatCuuChauDisplayText` cho nhật ký/cảnh báo, test `cuuChauPack.test.ts` (4/4 gồm 50 ván fuzz 112 lá) và kiểm chứng Electron `45.3.3` ở `1280×720` & `960×600` (`VI` & `EN`).
+
+---
+
+## Tổng Quan Lộ Trình 6 Giai Đoạn (Nền Tảng Lõi Ban Đầu — Đã Hoàn Thành)
 
 | Giai đoạn | Tên giai đoạn | Phụ thuộc | Trạng thái |
 | :---: | :--- | :---: | :---: |

@@ -1,5 +1,6 @@
-import { getHeroDefinition } from '@lkdf/shared';
+import { getCuuChauCardDisplay, getCuuChauHeroDisplay, getCuuChauRoleDisplay, getHeroDefinition } from '@lkdf/shared';
 import type { CardInstance, GameAction, PlayerViewState, PublicPlayerView, Suit } from '@lkdf/shared';
+import { useTranslation } from 'react-i18next';
 import {
   CardBack,
   GameIcon,
@@ -12,6 +13,7 @@ import {
   describeJianXiongDamageCard,
   describePendingActorPrompt,
   formatCardShort,
+  formatCuuChauDisplayText,
   getConvertAsCardKey,
   getEffectivePlayCardKey,
   getPlayerOwnedCards,
@@ -127,35 +129,35 @@ function resolveReactionCardMatch(
         (selfPlayer.heroId === 'zhao_yun' || selection.activeConvertMode === 'long_dan_thiem') &&
         picked.cardKey === 'sat'
       ) {
-        return { cardId: picked.id, convertLabel: 'Long Đảm' };
+        return { cardId: picked.id, convertLabel: 'Ngân Thương Thế' };
       }
       if (
         preferredKey === 'sat' &&
         (selfPlayer.heroId === 'zhao_yun' || selection.activeConvertMode === 'long_dan_sat') &&
         picked.cardKey === 'thiem'
       ) {
-        return { cardId: picked.id, convertLabel: 'Long Đảm' };
+        return { cardId: picked.id, convertLabel: 'Ngân Thương Thế' };
       }
       if (
         preferredKey === 'sat' &&
         (selfPlayer.heroId === 'guan_yu' || selection.activeConvertMode === 'wu_sheng') &&
         isCardRed(picked)
       ) {
-        return { cardId: picked.id, convertLabel: 'Võ Thánh' };
+        return { cardId: picked.id, convertLabel: 'Thanh Long Trảm' };
       }
       if (
         preferredKey === 'thiem' &&
         (selfPlayer.heroId === 'zhen_ji' || selection.activeConvertMode === 'thanh_quoc') &&
         !isCardRed(picked)
       ) {
-        return { cardId: picked.id, convertLabel: 'Khuynh Quốc' };
+        return { cardId: picked.id, convertLabel: 'Huyền Bạch' };
       }
       if (
         preferredKey === 'dao' &&
         (allowCuuVien || selection.activeConvertMode === 'cuu_vien') &&
         isCardRed(picked)
       ) {
-        return { cardId: picked.id, convertLabel: 'Cấp Cứu' };
+        return { cardId: picked.id, convertLabel: 'Cứu Tử Phù' };
       }
     }
   }
@@ -212,71 +214,71 @@ function getPlayButtonSpec(
       if (selection.selectedTargets.length > 1) {
         return {
           icon: 'saber-slash',
-          label: `Đánh Sát vào ${selection.selectedTargets.length} mục tiêu`,
+          label: `Đánh Kiếm Trảm vào ${selection.selectedTargets.length} mục tiêu`,
         };
       }
       if (selection.selectedTargets.length === 1) {
-        return { icon: 'saber-slash', label: `Đánh Sát vào ${firstTargetName}` };
+        return { icon: 'saber-slash', label: `Đánh Kiếm Trảm vào ${firstTargetName}` };
       }
-      return { icon: 'saber-slash', label: 'Đánh Sát' };
+      return { icon: 'saber-slash', label: 'Đánh Kiếm Trảm' };
     case 'dao':
-      return { icon: 'heart-plus', label: 'Dùng Đào hồi 1 máu' };
+      return { icon: 'heart-plus', label: 'Dùng Hồi Xuân Đan (+1 sinh lực)' };
     case 'vo_trung_sinh_huu':
-      return { icon: 'card-draw', label: 'Dùng Vô Trung Sinh Hữu' };
+      return { icon: 'card-draw', label: 'Dùng Vô Ảnh Thủ' };
     case 'nam_man_nhap_xam':
-      return { icon: 'elephant', label: 'Phát động Nam Man Nhập Xâm' };
+      return { icon: 'elephant', label: 'Phát động Thú Triều Công Thành' };
     case 'van_tien_te_phat':
-      return { icon: 'arrow-cluster', label: 'Phát động Vạn Tiễn Tề Phát' };
+      return { icon: 'arrow-cluster', label: 'Phát động Mưa Tên Bão Vũ' };
     case 'dao_vien_ket_nghia':
-      return { icon: 'flower-twirl', label: 'Dùng Đào Viên Kết Nghĩa' };
+      return { icon: 'flower-twirl', label: 'Dùng Kết Nghĩa Đỉnh Hoa Sơn' };
     case 'ngu_coc_phong_dang':
-      return { icon: 'wheat', label: 'Dùng Ngũ Cốc Phong Đăng' };
+      return { icon: 'wheat', label: 'Dùng Khai Kho Tàng Lương' };
     case 'quyet_dau':
       return {
         icon: 'duel',
         label:
           selection.selectedTargets.length === 1
-            ? `Quyết Đấu với ${firstTargetName}`
-            : 'Khiêu chiến Quyết Đấu',
+            ? `Sinh Tử Lôi Đài với ${firstTargetName}`
+            : 'Khiêu chiến Sinh Tử Lôi Đài',
       };
     case 'qua_ha_sai_cau':
       return {
         icon: 'bridge',
         label:
           selection.selectedTargets.length === 1
-            ? `Quá Hà Sái Cầu lên ${firstTargetName}`
-            : 'Dùng Quá Hà Sái Cầu',
+            ? `Phá Trận Chưởng lên ${firstTargetName}`
+            : 'Dùng Phá Trận Chưởng',
       };
     case 'thuan_thu_khien_duong':
       return {
         icon: 'grab',
         label:
           selection.selectedTargets.length === 1
-            ? `Thuận Thủ lên ${firstTargetName}`
-            : 'Dùng Thuận Thủ Khiên Dương',
+            ? `Thám Nang Thủ lên ${firstTargetName}`
+            : 'Dùng Thám Nang Thủ',
       };
     case 'ta_dao_sat_nhan':
       return {
         icon: 'cloak-dagger',
         label:
           selection.selectedTargets.length === 2
-            ? `Tá Đao: ${firstTargetName} đánh ${secondTargetName}`
-            : 'Dùng Tá Đao Sát Nhân',
+            ? `Tá Kiếm: ${firstTargetName} đánh ${secondTargetName}`
+            : 'Dùng Tá Kiếm Trảm Phong',
       };
     case 'lac_bat_tu_thuc':
       return {
         icon: 'lantern',
         label:
           selection.selectedTargets.length === 1
-            ? `Đặt Lạc Bất Tư Thục lên ${firstTargetName}`
-            : 'Đặt Lạc Bất Tư Thục',
+            ? `Đặt Phong Mạch lên ${firstTargetName}`
+            : 'Đặt Điểm Huyệt Phong Mạch',
       };
     case 'thiem_dien':
-      return { icon: 'lightning-storm', label: 'Đặt Thiểm Điện lên bàn' };
+      return { icon: 'lightning-storm', label: 'Đặt Thiên Lôi Kiếp lên bàn' };
     default:
       return {
         icon: getCardGameIcon(selectedCard?.cardKey),
-        label: selectedCard ? `Dùng ${selectedCard.nameVi}` : 'Thực hiện hành động',
+        label: selectedCard ? `Dùng ${getCuuChauCardDisplay(selectedCard.cardKey, 'vi', selectedCard.nameVi).name}` : 'Thực hiện hành động',
       };
   }
 }
@@ -292,7 +294,7 @@ function resolveReactionSatMatch(
     selection.selectedCardIds.length === 2 &&
     selection.selectedCardIds.every((id) => handCards.some((c) => c.id === id))
   ) {
-    return { cardIds: selection.selectedCardIds, convertLabel: 'Trượng Bát' };
+    return { cardIds: selection.selectedCardIds, convertLabel: 'Xà Ảnh Mâu' };
   }
   const candidates = selfPlayer.heroId === 'guan_yu' ? ownedCards : handCards;
   const single = resolveReactionCardMatch(selfPlayer, candidates, selection, 'sat');
@@ -307,6 +309,9 @@ export function MatchActionSidebar({
   onSendAction,
   onEndPlayPhase,
 }: MatchActionSidebarProps) {
+  const { i18n } = useTranslation();
+  const locale = i18n.language === 'en' ? 'en' : 'vi';
+  void locale;
   const isBar = layout === 'bar';
   const selfSeat = view.viewerSeatIndex;
   const selfPlayer = view.players.find((p) => p.seatIndex === selfSeat);
@@ -344,7 +349,8 @@ export function MatchActionSidebar({
         readonly nullifyDepth?: number;
       };
       const origName =
-        nullifyInterrupt.originalScrollNameVi ?? interrupt.scrollNameVi ?? 'Cẩm nang';
+        nullifyInterrupt.originalScrollNameVi ?? interrupt.scrollNameVi ?? 'Bí kíp';
+      const displayOrigName = formatCuuChauDisplayText(origName, locale);
       const origTargetName = getShortName(
         view.players,
         nullifyInterrupt.originalTargetSeat ?? interrupt.targetSeat,
@@ -355,17 +361,17 @@ export function MatchActionSidebar({
           {!isBar ? (
             <div className="space-y-1">
               <span className="inline-block shrink-0 rounded bg-[#D99B26]/20 px-2 py-0.5 text-[11px] font-bold text-[#FDE68A]">
-                {isCounter ? 'Phản Vô Giải' : 'Chặn Cẩm nang'}
+                {isCounter ? 'Phản Hóa Giải' : 'Chặn Bí kíp'}
               </span>
               <p className="text-xs leading-snug text-[#D1D5DB]">
-                {isCounter ? 'Phản Vô Giải' : 'Chặn'}: <strong>{origName}</strong> →{' '}
+                {isCounter ? 'Phản Hóa Giải' : 'Chặn'}: <strong>{displayOrigName}</strong> →{' '}
                 <strong>{origTargetName}</strong>
               </p>
             </div>
           ) : null}
           <div className={btnGroupClass}>
             {canNullify && (origName === 'Nam Man Nhập Xâm' || origName === 'Vạn Tiễn Tề Phát') ? (
-              <span className="text-xs text-[#FDE68A]">Bấm lá Vô Giải trên tay để chặn</span>
+              <span className="text-xs text-[#FDE68A]">Bấm lá Hóa Giải Chân Khí trên tay để chặn</span>
             ) : canNullify ? (
               <button
                 type="button"
@@ -381,7 +387,7 @@ export function MatchActionSidebar({
                 className={`inline-flex ${reactBtnWidth} max-h-[42px] cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-lg bg-[#C83E37] px-3.5 py-2 text-xs font-bold text-white hover:bg-[#D84B43]`}
               >
                 <GameIcon name="eye-shield" size={14} />
-                <span>Đánh Vô Giải Khả Kích</span>
+                <span>Đánh Hóa Giải Chân Khí</span>
                 {isBar ? <kbd className="font-mono-num text-[10px] opacity-75">[Enter]</kbd> : null}
               </button>
             ) : null}
@@ -399,7 +405,7 @@ export function MatchActionSidebar({
                 className={`inline-flex ${reactBtnWidth} max-h-[42px] cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-lg px-3.5 py-2 text-xs font-semibold ${EBONY_ACTION_BTN}`}
               >
                 <GameIcon name="ui:skip" size={13} />
-                <span>Không dùng Vô Giải</span>
+                <span>Không dùng Hóa Giải</span>
                 {isBar ? <kbd className="font-mono-num text-[10px] opacity-75">[Esc]</kbd> : null}
               </button>
             ) : (
@@ -429,19 +435,19 @@ export function MatchActionSidebar({
           {!isBar ? (
             <div className="space-y-1">
               <span className="inline-block rounded bg-[#C83E37]/25 px-2 py-0.5 text-[11px] font-bold text-[#FCA5A5]">
-                {isVoSong ? `Vô Song (Lữ Bố): Cần ${reqCount} lá Thiểm` : 'Cần bạn né đòn'}
+                {isVoSong ? `Bá Thể (Cửu Diện Vô Song): Cần ${reqCount} lá Thân Pháp` : 'Cần bạn né đòn'}
               </span>
               <p className="text-xs text-[#D1D5DB]">
                 {isAoe
-                  ? 'Vạn Tiễn Tề Phát yêu cầu đánh 1 lá Thiểm.'
+                  ? 'Mưa Tên Bão Vũ yêu cầu đánh 1 lá Thân Pháp.'
                   : isVoSong
-                    ? `Vô Song: cần ${reqCount} lá Thiểm (${dodgedCount}/${reqCount}).`
-                    : `Cần Thiểm (${dodgedCount}/${reqCount}).`}
+                    ? `Bá Thể: cần ${reqCount} lá Thân Pháp (${dodgedCount}/${reqCount}).`
+                    : `Cần Thân Pháp (${dodgedCount}/${reqCount}).`}
               </p>
             </div>
           ) : isVoSong ? (
             <span className="inline-block shrink-0 rounded bg-[#C83E37]/25 px-2 py-0.5 text-[11px] font-bold text-[#FCA5A5]">
-              Vô Song (Lữ Bố): Cần {reqCount} lá Thiểm ({dodgedCount}/{reqCount})
+              Bá Thể: Cần {reqCount} lá Thân Pháp ({dodgedCount}/{reqCount})
             </span>
           ) : null}
           <div className={btnGroupClass}>
@@ -463,10 +469,10 @@ export function MatchActionSidebar({
               <GameIcon name="sprint" size={14} />
               <span>
                 {dodgeMatch?.convertLabel
-                  ? `Đánh Thiểm (${dodgeMatch.convertLabel})`
+                  ? `Đánh Thân Pháp (${dodgeMatch.convertLabel})`
                   : isAoe
-                    ? 'Đánh Thiểm né Vạn Tiễn'
-                    : 'Đánh Thiểm né đòn'}
+                    ? 'Đánh Thân Pháp né Mưa Tên'
+                    : 'Đánh Thân Pháp né đòn'}
               </span>
               {isBar && dodgeCardId ? <kbd className="font-mono-num text-[10px] opacity-75">[Enter]</kbd> : null}
             </button>
@@ -563,24 +569,24 @@ export function MatchActionSidebar({
             <div className="space-y-1">
               <span className="inline-block shrink-0 rounded bg-[#C83E37]/25 px-2 py-0.5 text-[11px] font-bold text-[#FCA5A5]">
                 {isDuelVoSong
-                  ? `Vô Song (Lữ Bố): Cần ${interrupt.requiredCount} lá Sát`
-                  : 'Cần đánh Sát'}
+                  ? `Bá Thể (Cửu Diện Vô Song): Cần ${interrupt.requiredCount} lá Kiếm Trảm`
+                  : 'Cần đánh Kiếm Trảm'}
               </span>
               <p className="text-xs text-[#D1D5DB]">
                 {isCollateral
-                  ? `Đánh Sát vào ${getShortName(view.players, interrupt.targetSeat)} hoặc giao Vũ khí.`
+                  ? `Đánh Kiếm Trảm vào ${getShortName(view.players, interrupt.targetSeat)} hoặc giao Binh khí.`
                   : isDuelVoSong
-                    ? `Vô Song (Lữ Bố): Cần ${interrupt.requiredCount} lá Sát (${interrupt.dodgedSoFar ?? 0}/${interrupt.requiredCount}).`
-                    : 'Chọn 1 lá Sát để hưởng ứng.'}
+                    ? `Bá Thể: Cần ${interrupt.requiredCount} lá Kiếm Trảm (${interrupt.dodgedSoFar ?? 0}/${interrupt.requiredCount}).`
+                    : 'Chọn 1 lá Kiếm Trảm để hưởng ứng.'}
               </p>
             </div>
           ) : isCollateral ? (
             <span className="inline-block shrink-0 rounded bg-[#C83E37]/25 px-2 py-0.5 text-[11px] font-bold text-[#FCA5A5]">
-              Tá Đao → {getShortName(view.players, interrupt.targetSeat)}
+              Tá Kiếm → {getShortName(view.players, interrupt.targetSeat)}
             </span>
           ) : isDuelVoSong ? (
             <span className="inline-block shrink-0 rounded bg-[#C83E37]/25 px-2 py-0.5 text-[11px] font-bold text-[#FCA5A5]">
-              Vô Song (Lữ Bố): Cần {interrupt.requiredCount} lá Sát ({interrupt.dodgedSoFar ?? 0}/{interrupt.requiredCount})
+              Bá Thể: Cần {interrupt.requiredCount} lá Kiếm Trảm ({interrupt.dodgedSoFar ?? 0}/{interrupt.requiredCount})
             </span>
           ) : null}
           <div className={btnGroupClass}>
@@ -602,10 +608,10 @@ export function MatchActionSidebar({
               <GameIcon name="saber-slash" size={14} />
               <span>
                 {satMatch?.convertLabel
-                  ? `Đánh Sát (${satMatch.convertLabel})`
+                  ? `Đánh Kiếm Trảm (${satMatch.convertLabel})`
                   : interrupt.kind === 'WAIT_AOE_SAT'
-                    ? 'Đánh Sát đáp Nam Man'
-                    : 'Đánh Sát để hưởng ứng'}
+                    ? 'Đánh Kiếm Trảm đáp Thú Triều'
+                    : 'Đánh Kiếm Trảm để hưởng ứng'}
               </span>
               {isBar && satCardIds ? <kbd className="font-mono-num text-[10px] opacity-75">[Enter]</kbd> : null}
             </button>
@@ -624,7 +630,7 @@ export function MatchActionSidebar({
                 className={`inline-flex ${reactBtnWidth} cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-[#C83E37]/60 bg-[#C83E37]/15 px-3.5 py-2 text-xs font-semibold text-[#FCA5A5] hover:bg-[#C83E37]/25`}
               >
                 <GameIcon name="saber-slash" size={13} />
-                Xin Thục Kích Tướng
+                Xin Thanh Vân Vân Lệnh
               </button>
             ) : null}
             <button
@@ -1189,7 +1195,7 @@ export function MatchActionSidebar({
           {!isBar ? (
             <div className="space-y-1">
               <span className="inline-block rounded bg-[#3B82F6]/20 px-2 py-0.5 text-[11px] font-bold text-[#93C5FD]">
-                Quỷ Tài (Tư Mã Ý)
+                Đảo Mệnh (Tà Hồn)
               </span>
               <p className="text-xs text-[#D1D5DB]">
                 Lá phán xét là <strong>{judgeText}</strong>
@@ -1198,7 +1204,7 @@ export function MatchActionSidebar({
             </div>
           ) : (
             <span className="inline-block shrink-0 rounded bg-[#3B82F6]/20 px-2 py-0.5 text-[11px] font-bold text-[#93C5FD]">
-              Quỷ Tài ({judgeText}{judgeReason})
+              Đảo Mệnh ({judgeText}{judgeReason})
             </span>
           )}
           <div className={btnGroupClass}>
@@ -1314,9 +1320,9 @@ export function MatchActionSidebar({
         <aside className={`${sidebarShellClass} border-[#10B981]/60`}>
           <div className="space-y-1">
             <span className="inline-block rounded bg-[#10B981]/20 px-2 py-0.5 text-[11px] font-bold text-[#34D399]">
-              Phản Gián (Chu Du)
+              Đoán Tâm Mưu (Mộc Phong)
             </span>
-            <p className="text-xs text-[#D1D5DB]">Bạn đang bị Chu Du nhắm. Chọn một chất trước khi bàn lật lá. Đoán sai mất 1 máu.</p>
+            <p className="text-xs text-[#D1D5DB]">Bạn đang bị Mộc Phong nhắm. Chọn một chất trước khi bàn lật lá. Đoán sai mất 1 sinh lực.</p>
           </div>
           <div className={isBar ? 'flex flex-wrap items-center gap-1.5' : 'grid grid-cols-2 gap-1.5'}>
             {suits.map((item) => (
@@ -1348,9 +1354,9 @@ export function MatchActionSidebar({
         <aside className={`${sidebarShellClass} border-[#C83E37]/60`}>
           <div className={isBar ? 'flex items-center gap-2' : 'space-y-1'}>
             <span className="inline-block shrink-0 rounded bg-[#C83E37]/25 px-2 py-0.5 text-[11px] font-bold text-[#FCA5A5]">
-              Kích Tướng
+              Vân Lệnh
             </span>
-            <p className="text-xs text-[#D1D5DB]">Chủ Công xin đánh Sát hộ.</p>
+            <p className="text-xs text-[#D1D5DB]">Minh Chủ xin đánh Kiếm Trảm hộ.</p>
           </div>
           <div className={btnGroupClass}>
             <button
@@ -1371,8 +1377,8 @@ export function MatchActionSidebar({
               <GameIcon name="saber-slash" size={14} />
               <span>
                 {satMatch?.convertLabel
-                  ? `Đánh Sát giúp Chủ Công (${satMatch.convertLabel})`
-                  : 'Đánh Sát giúp Chủ Công'}
+                  ? `Đánh Kiếm Trảm giúp Minh Chủ (${satMatch.convertLabel})`
+                  : 'Đánh Kiếm Trảm giúp Minh Chủ'}
               </span>
               {isBar && satCardIds ? <kbd className="font-mono-num text-[10px] opacity-75">[Enter]</kbd> : null}
             </button>
@@ -1389,7 +1395,7 @@ export function MatchActionSidebar({
               className={`inline-flex ${reactBtnWidth} cursor-pointer items-center justify-center gap-1.5 rounded-lg ${EBONY_ACTION_BTN} px-3 py-1.5 text-xs font-semibold`}
             >
               <GameIcon name="ui:skip" size={13} />
-              Không có Sát giúp
+              Không có Kiếm Trảm giúp
             </button>
           </div>
         </aside>
@@ -1407,13 +1413,13 @@ export function MatchActionSidebar({
           {!isBar ? (
             <div className="space-y-1">
               <span className="inline-block rounded bg-[#3B82F6]/20 px-2 py-0.5 text-[11px] font-bold text-[#93C5FD]">
-                Hộ Giá (Chủ Công Ngụy)
+                Huyền Giáp Vệ (Minh Chủ Huyền Thiết)
               </span>
-              <p className="text-xs text-[#D1D5DB]">Chủ Công xin đánh Thiểm hộ.</p>
+              <p className="text-xs text-[#D1D5DB]">Minh Chủ xin đánh Thân Pháp hộ.</p>
             </div>
           ) : (
             <span className="inline-block shrink-0 rounded bg-[#3B82F6]/20 px-2 py-0.5 text-[11px] font-bold text-[#93C5FD]">
-              Hộ Giá
+              Huyền Giáp Vệ
             </span>
           )}
           <div className={btnGroupClass}>
@@ -1435,8 +1441,8 @@ export function MatchActionSidebar({
               <GameIcon name="sprint" size={14} />
               <span>
                 {dodgeMatch?.convertLabel
-                  ? `Đánh Thiểm hộ Chủ Công (${dodgeMatch.convertLabel})`
-                  : 'Đánh Thiểm hộ Chủ Công'}
+                  ? `Đánh Thân Pháp hộ Minh Chủ (${dodgeMatch.convertLabel})`
+                  : 'Đánh Thân Pháp hộ Minh Chủ'}
               </span>
               {isBar && dodgeCardId ? <kbd className="font-mono-num text-[10px] opacity-75">[Enter]</kbd> : null}
             </button>
@@ -1508,75 +1514,75 @@ export function MatchActionSidebar({
       >
     > = {
       ASK_LUO_SHEN: {
-        title: 'Lạc Thần (Chân Cơ)',
+        title: 'Thủy Nguyệt (Lục Tịch)',
         desc: 'Phán xét lá đầu chồng bài rút (nếu Đen được giữ và lật tiếp).',
         yesIcon: 'ui:sparkles',
-        yesLabel: 'Bắt đầu Lạc Thần',
-        noLabel: 'Dừng Lạc Thần',
+        yesLabel: 'Bắt đầu Thủy Nguyệt',
+        noLabel: 'Dừng Thủy Nguyệt',
         actionType: 'RESPOND_LUO_SHEN',
       },
       ASK_LUO_YI: {
-        title: 'Lỏa Y (Hứa Chử)',
-        desc: 'Rút ít hơn 1 lá nhưng Sát & Quyết Đấu gây +1 sát thương lượt này.',
+        title: 'Phá Giáp (Hắc Hổ)',
+        desc: 'Rút ít hơn 1 lá nhưng Kiếm Trảm & Sinh Tử Lôi Đài gây +1 sát thương lượt này.',
         yesIcon: 'broadsword',
-        yesLabel: 'Kích hoạt Lỏa Y',
+        yesLabel: 'Kích hoạt Phá Giáp',
         noLabel: 'Rút bài bình thường',
         actionType: 'RESPOND_LUO_YI',
       },
       ASK_KE_JI: {
-        title: 'Khắc Kỷ (Lữ Mông)',
-        desc: 'Bạn chưa dùng Sát trong lượt — có thể bỏ qua pha bỏ bài.',
+        title: 'Tĩnh Thủ (Thẩm Phong)',
+        desc: 'Bạn chưa dùng Kiếm Trảm trong lượt — có thể bỏ qua pha bỏ bài.',
         yesIcon: 'bordered-shield',
-        yesLabel: 'Kích hoạt Khắc Kỷ',
+        yesLabel: 'Kích hoạt Tĩnh Thủ',
         noLabel: 'Bỏ bài bình thường',
         actionType: 'RESPOND_KE_JI',
       },
       ASK_TIE_QI: {
-        title: 'Thiết Kỵ (Mã Siêu)',
-        desc: 'Phán xét: nếu ra chất Đỏ, mục tiêu không thể dùng Thiểm.',
+        title: 'Thiết Kỵ Trảm (Bạch Mã Phong)',
+        desc: 'Phán xét: nếu ra chất Đỏ, mục tiêu không thể dùng Thân Pháp.',
         yesIcon: 'cavalry',
-        yesLabel: 'Phán xét Thiết Kỵ',
-        noLabel: 'Không dùng Thiết Kỵ',
+        yesLabel: 'Phán xét Thiết Kỵ Trảm',
+        noLabel: 'Không dùng Thiết Kỵ Trảm',
         actionType: 'RESPOND_TIE_QI',
       },
       ASK_TIAN_DO: {
-        title: 'Thiên Đố (Quách Gia)',
+        title: 'Thiên Mệnh Thu (Vũ Văn Mặc)',
         desc: tianDoCardText
           ? `Thu lấy lá phán xét ${tianDoCardText} về tay.`
           : 'Lấy lá bài phán xét vừa lật về tay.',
         yesIcon: 'card-draw',
         yesLabel: tianDoCardText
-          ? `Lấy ${tianDoCardText} (Thiên Đố)`
-          : 'Lấy lá phán xét (Thiên Đố)',
-        noLabel: 'Bỏ qua Thiên Đố',
+          ? `Lấy ${tianDoCardText} (Thiên Mệnh Thu)`
+          : 'Lấy lá phán xét (Thiên Mệnh Thu)',
+        noLabel: 'Bỏ qua Thiên Mệnh Thu',
         actionType: 'RESPOND_TIAN_DO',
       },
       ASK_JIAN_XIONG: {
-        title: 'Gian Hùng (Tào Tháo)',
+        title: 'Hấp Tinh Chiêu (Bá Tông)',
         desc: jianXiongCardText
           ? `Thu lấy ${jianXiongCardText} vừa gây sát thương cho bạn về tay.`
           : 'Lấy các lá bài vừa gây sát thương cho bạn về tay.',
         yesIcon: 'card-pickup',
         yesLabel: jianXiongCardText
-          ? `Lấy ${jianXiongCardText} (Gian Hùng)`
+          ? `Lấy ${jianXiongCardText} (Hấp Tinh Chiêu)`
           : 'Lấy bài gây sát thương',
         noLabel: 'Không lấy bài',
         actionType: 'RESPOND_JIAN_XIONG',
       },
       ASK_FAN_KUI: {
-        title: 'Phản Quỷ (Tư Mã Ý)',
+        title: 'Hồi Hưởng (Tà Hồn)',
         desc: `Lấy 1 lá bài từ ${getShortName(view.players, interrupt.sourceSeat)}.`,
         yesIcon: 'grab',
         yesLabel: `Lấy 1 lá của ${getShortName(view.players, interrupt.sourceSeat)}`,
-        noLabel: 'Không dùng Phản Quỷ',
+        noLabel: 'Không dùng Hồi Hưởng',
         actionType: 'RESPOND_FAN_KUI',
       },
       ASK_GANG_LIE: {
-        title: 'Cương Liệt (Hạ Hầu Đôn)',
+        title: 'Hàn Khí Phản (Thiết Liệt)',
         desc: 'Phán xét phản đòn người vừa gây sát thương cho bạn.',
         yesIcon: 'duel',
-        yesLabel: 'Phán xét Cương Liệt',
-        noLabel: 'Không dùng Cương Liệt',
+        yesLabel: 'Phán xét Hàn Khí Phản',
+        noLabel: 'Không dùng Hàn Khí Phản',
         actionType: 'RESPOND_GANG_LIE',
       },
     };
@@ -1714,19 +1720,19 @@ export function MatchActionSidebar({
         skillActionLabel =
           selection.selectedTargets.length === 1
             ? `Giao ${cardCount} lá cho ${firstTargetName}`
-            : 'Kích hoạt Nhân Đức';
+            : 'Kích hoạt Tặng Đan';
         if (cardCount === 0) cardHint = 'Chọn ít nhất 1 lá bài trên tay';
       } else if (skill === 'ji_jiang') {
         requiredCards = 0;
         skillIcon = 'saber-slash';
         skillActionLabel =
           selection.selectedTargets.length === 1
-            ? `Kích Tướng đánh ${firstTargetName}`
-            : 'Kích hoạt Kích Tướng';
+            ? `Vân Lệnh đánh ${firstTargetName}`
+            : 'Kích hoạt Vân Lệnh';
       } else if (skill === 'ku_rou') {
         requiredCards = 0;
         skillIcon = 'card-draw';
-        skillActionLabel = 'Khổ Nhục: mất 1 máu rút 2 lá';
+        skillActionLabel = 'Đoạn Cốt: mất 1 sinh lực rút 2 lá';
       } else if (skill === 'zhi_heng') {
         requiredCards = 1;
         skillIcon = 'ui:convert';
@@ -1736,31 +1742,31 @@ export function MatchActionSidebar({
         skillIcon = 'drama-masks';
         skillActionLabel =
           selection.selectedTargets.length === 1
-            ? `Chọn ${firstTargetName} (Phản Gián)`
-            : 'Kích hoạt Phản Gián';
+            ? `Chọn ${firstTargetName} (Đoán Tâm Mưu)`
+            : 'Kích hoạt Đoán Tâm Mưu';
       } else if (skill === 'jie_yin') {
         requiredCards = 2;
         skillIcon = 'heart-plus';
         skillActionLabel =
           selection.selectedTargets.length === 1
-            ? `Kết Hôn cùng ${firstTargetName}`
-            : 'Kích hoạt Kết Hôn';
+            ? `Hợp Đan cùng ${firstTargetName}`
+            : 'Kích hoạt Hợp Đan';
         if (cardCount !== 2) cardHint = `Cần chọn đúng 2 lá bài (${cardCount}/2)`;
       } else if (skill === 'qing_nang') {
         requiredCards = 1;
         skillIcon = 'heart-plus';
         skillActionLabel =
           selection.selectedTargets.length === 1
-            ? `Hồi 1 máu cho ${firstTargetName}`
-            : 'Kích hoạt Thanh Nang';
+            ? `Hồi 1 sinh lực cho ${firstTargetName}`
+            : 'Kích hoạt Dược Nang';
         if (cardCount !== 1) cardHint = 'Cần chọn đúng 1 lá bài trên tay';
       } else if (skill === 'li_jian') {
         requiredCards = 1;
         skillIcon = 'duel';
         skillActionLabel =
           selection.selectedTargets.length === 2
-            ? `Ly Gián: ${firstTargetName} vs ${secondTargetName}`
-            : 'Kích hoạt Ly Gián';
+            ? `Ly Tâm Kế: ${firstTargetName} vs ${secondTargetName}`
+            : 'Kích hoạt Ly Tâm Kế';
         if (cardCount !== 1) cardHint = 'Cần chọn 1 lá bài để bỏ';
       }
 
@@ -1852,15 +1858,15 @@ export function MatchActionSidebar({
     const convertModeHint =
       selection.activeConvertMode && effectiveKey === null
         ? selection.activeConvertMode === 'truong_bat'
-          ? `Trượng Bát: chọn đủ 2 lá (${selection.selectedCardIds.length}/2)`
+          ? `Xà Ảnh Mâu: chọn đủ 2 lá (${selection.selectedCardIds.length}/2)`
           : selection.activeConvertMode === 'wu_sheng'
-            ? 'Võ Thánh: chọn 1 lá chất Đỏ (♥/♦)'
+            ? 'Thanh Long Trảm: chọn 1 lá chất Đỏ (♥/♦)'
             : selection.activeConvertMode === 'long_dan_sat'
-              ? 'Long Đảm: chọn 1 lá Thiểm để đánh Sát'
+              ? 'Ngân Thương Thế: chọn 1 lá Thân Pháp để đánh Kiếm Trảm'
               : selection.activeConvertMode === 'ky_tap'
-                ? 'Kỳ Tập: chọn 1 lá chất Đen (♠/♣)'
+                ? 'Dạ Tập Doanh: chọn 1 lá chất Đen (♠/♣)'
                 : selection.activeConvertMode === 'quoc_sac'
-                  ? 'Quốc Sắc: chọn 1 lá chất Rô (♦)'
+                  ? 'Thiên Hương Phong: chọn 1 lá chất Rô (♦)'
                   : null
         : null;
     const canPlayCard =
@@ -1875,7 +1881,7 @@ export function MatchActionSidebar({
       : null;
 
     const hintText = isFirstRoundSatBlocked
-      ? 'Vòng 1 Hòa Bình: chưa được đánh Sát ở vòng đầu tiên.'
+      ? 'Vòng 1 Hòa Bình: chưa được đánh Kiếm Trảm ở vòng đầu tiên.'
       : convertModeHint
         ? convertModeHint
         : effectiveKey && !hasEnoughTargets
@@ -1883,8 +1889,8 @@ export function MatchActionSidebar({
           : effectiveKey
             ? 'Sẵn sàng thực hiện hành động.'
             : drawSecondAvailable
-              ? 'Hoặc đánh bài ngay để kích hoạt Lỏa Y (+1 sát thương).'
-              : 'Chọn lá bài bên dưới hoặc kỹ năng ở thẻ tướng.';
+              ? 'Hoặc đánh bài ngay để kích hoạt Phá Giáp (+1 sát thương).'
+              : 'Chọn lá bài bên dưới hoặc chiêu thức ở thẻ hiệp khách.';
 
     const showBarHint = Boolean(
       isFirstRoundSatBlocked ||
@@ -1954,7 +1960,7 @@ export function MatchActionSidebar({
               className={`inline-flex ${turnBtnWidth} max-h-[42px] cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border border-[#FBBF24]/75 bg-[#3A250E] px-3 py-1.5 text-xs font-bold text-[#FDE68A] hover:border-[#FDE68A] hover:bg-[#4A3012]`}
             >
               <GameIcon name="card-draw" size={14} />
-              <span>Rút lá thứ 2 (Bỏ Lỏa Y)</span>
+              <span>Rút lá thứ 2 (Bỏ Phá Giáp)</span>
             </button>
           ) : null}
 
@@ -1996,9 +2002,9 @@ export function MatchActionSidebar({
     const drawCount = view.availableDrawCount!;
     const skillNote =
       selfPlayer.heroId === 'zhou_yu'
-        ? 'Anh Tư (+1 lá)'
+        ? 'Tâm Nhãn (+1 lá)'
         : selfPlayer.heroId === 'xu_chu'
-          ? 'Lỏa Y (rút 1 lá đầu)'
+          ? 'Phá Giáp (rút 1 lá đầu)'
           : null;
     return (
       <aside className={`${sidebarShellClass} border-[#FBBF24]/70`}>

@@ -97,7 +97,7 @@ describe('Bước 1.1 — Chia Thân Phận 4–8 người, Máu Chủ Công & C
       state = selectLordHero(state, lordSeat, pickedLordHero, rng);
 
       const lordPlayer = state.players.find((p) => p.seatIndex === lordSeat)!;
-      const expectedLordHp = HERO_BY_ID[pickedLordHero].baseMaxHp + 1;
+      const expectedLordHp = HERO_BY_ID[pickedLordHero]!.baseMaxHp + 1;
       expect(lordPlayer.heroId).toBe(pickedLordHero);
       expect(lordPlayer.maxHp).toBe(expectedLordHp);
       expect(lordPlayer.hp).toBe(expectedLordHp);
@@ -129,7 +129,7 @@ describe('Bước 1.1 — Chia Thân Phận 4–8 người, Máu Chủ Công & C
       expect(new Set(allChosenHeroes).size).toBe(playerCount);
       for (const player of state.players) {
         expect(player.heroId).not.toBeNull();
-        const baseHp = HERO_BY_ID[player.heroId!].baseMaxHp;
+        const baseHp = HERO_BY_ID[player.heroId!]!.baseMaxHp;
         expect(player.maxHp).toBe(
           player.seatIndex === lordSeat ? baseHp + 1 : baseHp,
         );

@@ -1,10 +1,28 @@
 # PROJECT_MEMORY.md — Ghi Nhớ Dự Án và Bàn Giao Tiến Độ
 
-> **Dự án:** LKDF — Game Thẻ Bài Tam Quốc Sát (Windows Native Online 4–8 Người)
-> **Ngày cập nhật:** 2026-11-18
-> **Trạng thái hiện tại:** Đã hoàn thành mã nguồn & đóng gói từ **Giai đoạn 0 đến Bước 5.1** và hoàn tất **100% kiểm chứng kỹ thuật & đối chiếu 8/8 tiêu chí `AC-1`–`AC-8` (Bước 5.2)**; hiện chỉ chờ Khách hàng đẩy code lên GitHub, bật dịch vụ **Cloud 0đ + Google OAuth** ([HUONG_DAN_CHO_TOI.md](./HUONG_DAN_CHO_TOI.md) Mục 5) và chơi thử ván đầu cùng hội bạn 4–8 người (Mục 6) để đóng dấu nghiệm thu cuối cùng.
+> **Dự án:** Cửu Châu Ẩn Kiếm / Blades of the Nine Realms (Windows Standalone Portable + Lộ trình lên Steam Phase 4)
+> **Ngày cập nhật:** 2026-11-25
+> **Trạng thái hiện tại:** Đã hoàn thành **Phase 0 (`77d925a`)** và **Phase 1 (1A + 1B)** theo [KE_HOACH_TONG_THE_CUU_CHAU_AN_KIEM.md](./KE_HOACH_TONG_THE_CUU_CHAU_AN_KIEM.md). Đã xuất bản build chơi thử đa máy **Windows Portable `.zip`**: `apps/desktop/release/BladesOfTheNineRealms-Portable-0.1.0.zip` (**166.57 MB**). Chờ Sếp test đa máy và duyệt chuyển sang **Phase 2 (AI Art Factory: 25 chân dung + 32 tranh bài + 3 nền gốc)**.
+
+## 0. Bằng Chứng Kiểm Chứng Mới Nhất — Phase 1 (`2026-11-25`)
+- **Kiến trúc & Nội dung gốc Cửu Châu (`Phase 1A + 1B`):**
+  - `packages/shared`: `utils/shuffle.ts` (khử vòng phụ thuộc ESM), `types/events.ts` (`GameEvent`), `content/{types,registry,cuuChauPack}.ts` (`ContentRegistry`, `CUU_CHAU_CORE_PACK` gồm 4 tông môn `雲/鐵/炎/影`, 4 vai, 25 hiệp khách song ngữ VI/EN, 112 lá `28♠/28♥/28♣/28♦`, 10 bộ chiêu remix, `createCuuChau112Deck`), `engine/{primitives,actionDescriptor,setup,combat}.ts` (`deckFactory`), `projection/index.ts`.
+  - `apps/server`: xác thực action qua `RegisteredHeroIdSchema` & `RegisteredPlaySkillIdSchema`.
+  - `apps/desktop`: `IMatchTransport` (`lib/transport.ts`), `i18next` + `LanguageToggle` (`VI`/`EN`), reskin toàn bộ UI sang *Cửu Châu Ẩn Kiếm / Blades of the Nine Realms*, thêm `formatCuuChauDisplayText` tại tầng hiển thị nhật ký/cảnh báo (`MatchCenterBoard.tsx`, `ActionLogDialog.tsx`, `MatchActionSidebar.tsx`), và script `package:win:zip`.
+- **Kết quả kiểm chứng thực tế sau lần sửa cuối:**
+  - `npm.cmd run typecheck`: `0` lỗi (`@lkdf/shared`, `@lkdf/desktop` renderer+electron, `@lkdf/server`).
+  - `npm.cmd run build`: `exit code 0` (`2412` modules Vite + `tsc`).
+  - `npm.cmd run test:unit`: **16/16 files · 122/122 tests passed** (gồm `cuuChauPack.test.ts` 4/4 với 50/50 ván simulated 112 lá).
+  - `npm.cmd run test:fuzz`: **6/6 tests · 500/500 ván đạt 100%** (4–8 người, `0` deadlock).
+  - `npm.cmd run test:integration`: **7/7 files · 26/26 tests passed**.
+  - `npx.cmd vitest run apps/desktop/src/features/match/offlineBot.test.ts`: **4/4 tests passed**.
+  - `npm.cmd run assets:check`: **PASS** (`59` tệp runtime, `60` mục manifest, `0` ảnh AI cũ, `1.15 MB`).
+  - **Live Electron `45.3.3` UI Audit (`1280×720` & `960×600`, cả `VI` & `EN`):** **8/8 màn hình PASS** (Lobby, Compendium, Offline Setup, Hero Select, Match Arena), **`0` lỗi console, `0` URL lỗi, `0` chữ Tam Quốc lọt ra UI, `0` tràn khung**.
+  - **Portable Build:** `C:\Tam quốc sát\apps\desktop\release\BladesOfTheNineRealms-Portable-0.1.0.zip` (**166.57 MB**).
 
 ---
+
+*(Lịch sử nền tảng các giai đoạn đầu được lưu trữ bên dưới để tham chiếu)*
 
 ## 1. Mục Tiêu và Phạm Vi Đã Được Khách Hàng Xác Nhận
 

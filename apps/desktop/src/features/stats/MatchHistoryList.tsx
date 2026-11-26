@@ -1,5 +1,13 @@
 import type { ReactElement } from 'react';
-import { HERO_BY_ID, type HeroFaction, type WinningFaction } from '@lkdf/shared';
+import {
+  HERO_BY_ID,
+  getCuuChauFactionDisplay,
+  getCuuChauHeroDisplay,
+  getCuuChauRoleDisplay,
+  type HeroFaction,
+  type WinningFaction,
+} from '@lkdf/shared';
+import { useTranslation } from 'react-i18next';
 import { GameIcon, type GameIconName } from '../../components/icons/index.js';
 import type {
   HeroId,
@@ -22,10 +30,10 @@ const FACTION_BADGE_CLASSES: Readonly<Record<HeroFaction, string>> = {
 };
 
 const IDENTITY_LABELS: Readonly<Record<IdentityRole, string>> = {
-  LORD: 'Chủ Công',
-  LOYALIST: 'Trung Thần',
-  REBEL: 'Phản Tặc',
-  SPY: 'Nội Gián',
+  LORD: 'Minh Chủ',
+  LOYALIST: 'Hộ Pháp',
+  REBEL: 'Nghĩa Quân',
+  SPY: 'Ám Ảnh',
 };
 
 const IDENTITY_BADGE_CLASSES: Readonly<Record<IdentityRole, string>> = {
@@ -43,17 +51,17 @@ const WINNING_FACTION_META: Readonly<
 > = {
   LORD_LOYALIST: {
     icon: 'crown',
-    labelVi: 'Phe Chủ Công & Trung Thần thắng',
+    labelVi: 'Phe Minh Chủ & Hộ Pháp thắng',
     className: 'border-[#C89B4B]/70 bg-[#3A290F]/65 text-[#FCD34D]',
   },
   REBEL: {
     icon: 'crossed-swords',
-    labelVi: 'Phe Phản Tặc thắng',
+    labelVi: 'Phe Nghĩa Quân thắng',
     className: 'border-[#C83E37]/70 bg-[#C83E37]/20 text-[#FCA5A5]',
   },
   SPY: {
     icon: 'drama-masks',
-    labelVi: 'Nội Gián thắng',
+    labelVi: 'Ám Ảnh thắng',
     className: 'border-[#10B981]/60 bg-[#10B981]/15 text-[#6EE7B7]',
   },
 };
@@ -82,6 +90,8 @@ export function MatchHistoryList({
   onSelectPlayer,
   onSelectHero,
 }: MatchHistoryListProps): ReactElement {
+  const { i18n } = useTranslation();
+  const locale = i18n.language === 'en' ? 'en' : 'vi';
   if (matches.length === 0) {
     return (
       <div className="rounded-lg border border-[#806345]/60 bg-[#16110E]/94 p-6 text-center text-sm text-[#D5C3A5]">
@@ -159,7 +169,7 @@ export function MatchHistoryList({
                           <span
                             className={`rounded border px-1.5 py-0.5 text-[11px] font-medium ${IDENTITY_BADGE_CLASSES[participant.identity]}`}
                           >
-                            {IDENTITY_LABELS[participant.identity]}
+                            {getCuuChauRoleDisplay(participant.identity, locale).name}
                           </span>
                           {isSelf ? (
                             <span className="rounded border border-[#C89B4B]/70 bg-[#C89B4B]/15 px-1.5 py-0.5 text-[11px] font-semibold text-[#FCD34D]">
@@ -185,16 +195,16 @@ export function MatchHistoryList({
                         <button
                           type="button"
                           onClick={() => onSelectHero(participant.heroId)}
-                          className={`cursor-pointer truncate rounded border px-1.5 py-0.5 text-xs font-medium transition-opacity hover:opacity-85 focus-visible:outline-2 focus-visible:outline-[#E6BE6C] ${FACTION_BADGE_CLASSES[heroFaction]}`}
-                          title={`Lọc theo tướng ${hero?.nameVi ?? participant.heroId}`}
+                          className={`cursor-pointer truncate rounded border px-1.5 py-0.5 text-xs font-medium transition-opacity hover:opacity-85 focus-visible:outline-2 focus-visible:outline-[#E6BE6C] ${FACTION_BADGE_CLASSES[heroFaction] ?? 'border-[#9CA3AF]/60 bg-[#9CA3AF]/15 text-[#D1D5DB]'}`}
+                          title={getCuuChauHeroDisplay(participant.heroId, i18n.language === 'en' ? 'en' : 'vi')?.name ?? participant.heroId}
                         >
-                          {hero ? `${hero.nameVi} (${hero.factionLabelVi})` : participant.heroId}
+                          {hero ? `${getCuuChauHeroDisplay(participant.heroId, i18n.language === 'en' ? 'en' : 'vi')?.name ?? hero.nameVi} (${getCuuChauFactionDisplay(hero.faction, i18n.language === 'en' ? 'en' : 'vi').shortName})` : participant.heroId}
                         </button>
                       ) : (
                         <span
-                          className={`truncate rounded border px-1.5 py-0.5 text-xs font-medium ${FACTION_BADGE_CLASSES[heroFaction]}`}
+                          className={`truncate rounded border px-1.5 py-0.5 text-xs font-medium ${FACTION_BADGE_CLASSES[heroFaction] ?? 'border-[#9CA3AF]/60 bg-[#9CA3AF]/15 text-[#D1D5DB]'}`}
                         >
-                          {hero ? `${hero.nameVi} (${hero.factionLabelVi})` : participant.heroId}
+                          {hero ? `${getCuuChauHeroDisplay(participant.heroId, i18n.language === 'en' ? 'en' : 'vi')?.name ?? hero.nameVi} (${getCuuChauFactionDisplay(hero.faction, i18n.language === 'en' ? 'en' : 'vi').shortName})` : participant.heroId}
                         </span>
                       )}
 

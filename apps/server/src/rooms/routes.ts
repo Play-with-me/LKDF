@@ -1,6 +1,6 @@
 import {
-  HeroIdSchema,
   RefereeActionTypeSchema,
+  RegisteredHeroIdSchema,
   TIMER_PRESETS,
   TimerPresetSchema,
 } from '@lkdf/shared';
@@ -25,7 +25,7 @@ const UpdateTimerBodySchema = z.object({
 });
 
 const SelectHeroBodySchema = z.object({
-  heroId: HeroIdSchema,
+  heroId: RegisteredHeroIdSchema,
 });
 
 const RefereeActionBodySchema = z.object({

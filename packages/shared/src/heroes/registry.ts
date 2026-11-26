@@ -10,11 +10,19 @@ export const HERO_SKILL_REGISTRY: Partial<Record<HeroId, HeroSkillHandler>> = {
   ...WU_QUN_HERO_SKILLS,
 };
 
+let skillLookupHook: ((heroId: HeroId | null) => HeroSkillHandler | undefined) | null = null;
+
+export function setHeroSkillRegistryLookup(
+  fn: (heroId: HeroId | null) => HeroSkillHandler | undefined,
+): void {
+  skillLookupHook = fn;
+}
+
 export function getHeroSkillHandler(
   heroId: HeroId | null,
 ): HeroSkillHandler | undefined {
   if (!heroId) {
     return undefined;
   }
-  return HERO_SKILL_REGISTRY[heroId];
+  return skillLookupHook?.(heroId) ?? HERO_SKILL_REGISTRY[heroId];
 }

@@ -1,5 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
-import { HERO_BY_ID, HERO_CATALOG, type HeroFaction } from '@lkdf/shared';
+import {
+  HERO_BY_ID,
+  HERO_CATALOG,
+  getCuuChauFactionDisplay,
+  getCuuChauHeroDisplay,
+  getCuuChauRoleDisplay,
+  type HeroFaction,
+} from '@lkdf/shared';
+import { useTranslation } from 'react-i18next';
 import { GameIcon } from '../../components/icons/index.js';
 import { ApiError, type LkdfApiClient } from '../../lib/api.js';
 import type {
@@ -33,10 +41,10 @@ const IDENTITY_ORDER: readonly {
   readonly nameVi: string;
   readonly accentClass: string;
 }[] = [
-  { id: 'LORD', nameVi: 'Chủ Công', accentClass: 'border-[#C89B4B]/70 bg-[#3A290F]/60 text-[#FCD34D]' },
-  { id: 'LOYALIST', nameVi: 'Trung Thần', accentClass: 'border-[#3B82F6]/60 bg-[#162C48]/60 text-[#93C5FD]' },
-  { id: 'REBEL', nameVi: 'Phản Tặc', accentClass: 'border-[#C83E37]/70 bg-[#3D2022]/60 text-[#FCA5A5]' },
-  { id: 'SPY', nameVi: 'Nội Gián', accentClass: 'border-[#A78BFA]/55 bg-[#30213E]/60 text-[#DDD6FE]' },
+  { id: 'LORD', nameVi: 'Minh Chủ', accentClass: 'border-[#C89B4B]/70 bg-[#3A290F]/60 text-[#FCD34D]' },
+  { id: 'LOYALIST', nameVi: 'Hộ Pháp', accentClass: 'border-[#3B82F6]/60 bg-[#162C48]/60 text-[#93C5FD]' },
+  { id: 'REBEL', nameVi: 'Nghĩa Quân', accentClass: 'border-[#C83E37]/70 bg-[#3D2022]/60 text-[#FCA5A5]' },
+  { id: 'SPY', nameVi: 'Ám Ảnh', accentClass: 'border-[#A78BFA]/55 bg-[#30213E]/60 text-[#DDD6FE]' },
 ];
 
 const FACTION_STYLE: Readonly<
@@ -48,22 +56,22 @@ const FACTION_STYLE: Readonly<
   SHU: {
     dot: 'bg-[#C83E37]',
     badge: 'border-[#C83E37]/60 bg-[#C83E37]/15 text-[#FCA5A5]',
-    labelVi: 'Thục',
+    labelVi: 'Thanh Vân',
   },
   WEI: {
     dot: 'bg-[#3B82F6]',
     badge: 'border-[#3B82F6]/60 bg-[#3B82F6]/15 text-[#93C5FD]',
-    labelVi: 'Ngụy',
+    labelVi: 'Huyền Thiết',
   },
   WU: {
     dot: 'bg-[#10B981]',
     badge: 'border-[#10B981]/60 bg-[#10B981]/15 text-[#6EE7B7]',
-    labelVi: 'Ngô',
+    labelVi: 'Xích Diệm',
   },
   QUN: {
     dot: 'bg-[#9CA3AF]',
     badge: 'border-[#9CA3AF]/60 bg-[#9CA3AF]/15 text-[#D1D5DB]',
-    labelVi: 'Quần',
+    labelVi: 'U Minh',
   },
 };
 
@@ -97,6 +105,7 @@ export function StatsPage({
   startWithCurrentUser,
   onBack,
 }: StatsPageProps): ReactElement {
+  const { i18n } = useTranslation();
   const [meta, setMeta] = useState<StatsMetaResponse | null>(null);
   const [stats, setStats] = useState<FilteredStatsResponse | null>(null);
   const [filter, setFilter] = useState<StatsFilterState>(() => ({
@@ -629,29 +638,27 @@ export function StatsPage({
                   >
                     <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                       <h2 className="font-serif-title text-sm font-bold text-[#F5EBD6]">
-                        Thống kê theo Tướng (4 Thế lực)
+                        {i18n.language === 'en' ? 'Warriors (4 Sects)' : 'Thống kê theo Hiệp Khách (4 Môn phái)'}
                       </h2>
                       <div className="flex items-center gap-2 text-[11px] text-[#D5C3A5]">
-                        <span className="inline-flex items-center gap-1">
-                          <span className="h-2 w-2 rounded-full bg-[#C83E37]" /> Thục
-                        </span>
-                        <span className="inline-flex items-center gap-1">
-                          <span className="h-2 w-2 rounded-full bg-[#3B82F6]" /> Ngụy
-                        </span>
-                        <span className="inline-flex items-center gap-1">
-                          <span className="h-2 w-2 rounded-full bg-[#10B981]" /> Ngô
-                        </span>
-                        <span className="inline-flex items-center gap-1">
-                          <span className="h-2 w-2 rounded-full bg-[#9CA3AF]" /> Quần
-                        </span>
+                        {(['SHU', 'WEI', 'WU', 'QUN'] as const).map((f) => {
+                          const fd = getCuuChauFactionDisplay(f, i18n.language === 'en' ? 'en' : 'vi');
+                          return (
+                            <span key={f} className="inline-flex items-center gap-1">
+                              <span className={`h-2 w-2 rounded-full ${fd.palette.dotClass}`} /> {fd.shortName}
+                            </span>
+                          );
+                        })}
                       </div>
                     </div>
 
                     <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 min-w-0">
                       {heroEntries.map(({ hero, entry }) => {
-                        const style = FACTION_STYLE[hero.faction];
+                        const style = FACTION_STYLE[hero.faction] ?? FACTION_STYLE['QUN']!;
                         const isSelected = filter.heroId === hero.id;
                         const catalogHero = HERO_BY_ID[hero.id];
+                        const hd = getCuuChauHeroDisplay(hero.id, i18n.language === 'en' ? 'en' : 'vi');
+                        const fd = getCuuChauFactionDisplay(hero.faction, i18n.language === 'en' ? 'en' : 'vi');
                         return (
                           <button
                             key={hero.id}
@@ -678,12 +685,12 @@ export function StatsPage({
                               />
                               <div className="min-w-0">
                                 <p className="font-serif-title truncate text-sm font-semibold text-[#F5EBD6]">
-                                  {catalogHero?.nameVi ?? hero.nameVi}
+                                  {hd?.name ?? catalogHero?.nameVi ?? hero.nameVi}
                                 </p>
                                 <span
-                                  className={`inline-block rounded border px-1.5 py-0 text-[10px] font-medium ${style.badge}`}
+                                  className={`inline-block rounded border px-1.5 py-0 text-[10px] font-medium ${fd.palette.badgeClass}`}
                                 >
-                                  {style.labelVi}
+                                  {fd.shortName}
                                 </span>
                               </div>
                             </div>

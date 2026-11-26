@@ -30,16 +30,16 @@ const TACTICAL_TIPS: readonly { readonly title: string; readonly body: string }[
     body: 'Khi một tướng tụt về 0 máu (hấp hối), bất kỳ ai còn Đào trên tay đều có thể dùng để cứu +1 máu.',
   },
   {
-    title: 'Vô Giải Khả Kích',
-    body: 'Có thể chặn Cẩm nang thường lẫn Cẩm nang chậm (Lạc Bất Tư Thục, Thiểm Điện) ngay trước lúc phát huy hiệu lực.',
+    title: 'Hóa Giải Chân Khí',
+    body: 'Có thể chặn Bí kíp thường lẫn Bí kíp chậm (Phong Mạch Tán, Thiên Lôi Chú) ngay trước lúc phát huy hiệu lực.',
   },
   {
-    title: 'Gia Cát Liên Nỏ & Thanh Công Kiếm',
-    body: 'Liên Nỏ cho phép đánh không giới hạn lá Sát trong lượt; Thanh Công Kiếm chém xuyên hiệu ứng Giáp đối thủ.',
+    title: 'Nỗ Liên Hoàn & Thanh Cang Kiếm',
+    body: 'Nỗ Liên Hoàn cho phép đánh không giới hạn lá Kiếm Trảm trong lượt; Thanh Cang Kiếm chém xuyên hiệu ứng Hộ giáp đối thủ.',
   },
   {
     title: 'Mục tiêu chiến thắng theo Phe',
-    body: 'Phản Tặc thắng ngay khi hạ được Chủ Công; Nội Gián chỉ thắng khi trở thành người sống sót cuối cùng.',
+    body: 'Nghĩa Quân thắng ngay khi hạ được Minh Chủ; Ám Ảnh chỉ thắng khi trở thành người sống sót cuối cùng.',
   },
 ];
 

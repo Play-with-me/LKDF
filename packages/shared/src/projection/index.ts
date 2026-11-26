@@ -1,5 +1,5 @@
 import { turnDrawCount } from '../engine/combatCore.js';
-import { STANDARD_DECK_TEMPLATES } from '../cards/catalog.js';
+import { DEFAULT_CONTENT_REGISTRY } from '../content/registry.js';
 import type {
   HeroDraftState,
   InterruptFrame,
@@ -186,11 +186,17 @@ function projectTopInterrupt(
     case 'WAIT_TU_XI':
     case 'ASK_LUO_YI':
     case 'ASK_KE_JI':
+      return {
+        id: topFrame.id,
+        kind: topFrame.kind,
+        targetSeat: topFrame.targetSeat,
+      };
     case 'ASK_JIAN_XIONG':
       return {
         id: topFrame.id,
         kind: topFrame.kind,
         targetSeat: topFrame.targetSeat,
+        damageCards: topFrame.damageCards.map((c) => ({ ...c })),
       };
     case 'WAIT_DODGE':
       return {
@@ -286,10 +292,25 @@ export function projectStateForPlayer(
 
   const { discardDisplayAs, ...physicalFace } = topDiscard ?? {};
   const discardFace = discardDisplayAs
-    ? STANDARD_DECK_TEMPLATES.find(card => card.cardKey === discardDisplayAs)
+    ? DEFAULT_CONTENT_REGISTRY.getCardTemplate(discardDisplayAs)
     : undefined;
 
   return {
+    ...(masterState.rulesetVersion !== undefined
+      ? { rulesetVersion: masterState.rulesetVersion }
+      : {}),
+    ...(masterState.enabledPacks !== undefined
+      ? { enabledPacks: [...masterState.enabledPacks] }
+      : {}),
+    ...(masterState.contentHash !== undefined
+      ? { contentHash: masterState.contentHash }
+      : {}),
+    ...(masterState.skillState !== undefined
+      ? { skillState: { ...masterState.skillState } }
+      : {}),
+    ...(masterState.events !== undefined
+      ? { events: [...masterState.events] }
+      : {}),
     matchId: masterState.matchId,
     viewerSeatIndex,
     roundNumber: masterState.roundNumber,
