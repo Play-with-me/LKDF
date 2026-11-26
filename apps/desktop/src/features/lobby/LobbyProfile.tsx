@@ -1,3 +1,4 @@
+import { CreditsLicensesModal } from '../../components/ui/CreditsLicensesModal.js';
 import { GuofengPillSelect } from '../../components/ui/GuofengPillSelect.js';
 import { readDevicePreference, writeDevicePreference, type DevicePreferenceKey } from '../../lib/devicePreferences.js';
 import { useEffect, useImperativeHandle, useRef, useState, type Ref, type FormEvent } from 'react';
@@ -520,6 +521,8 @@ export function LobbySettings({ profile, onSavePreferences, onLogout, onBack, re
     }
   }
 
+  const [creditsOpen, setCreditsOpen] = useState(false);
+
   return (
     <section className="lkdf-lobby-profile lkdf-lobby-settings" aria-labelledby="lobby-settings-title">
       <h2 id="lobby-settings-title" className="font-serif-title">{isEn ? 'Game Settings' : 'Cài đặt game'}</h2>
@@ -626,9 +629,37 @@ export function LobbySettings({ profile, onSavePreferences, onLogout, onBack, re
               try { await onLogout(); } finally { setLoggingOut(false); }
             }}>{loggingOut ? (isEn ? 'Signing out…' : 'Đang đăng xuất…') : (isEn ? 'Sign Out' : 'Đăng xuất')}</button>
           </div>
-          {!onLogout && <p>{isEn ? 'Sample account · Sign in to enable Sign Out.' : 'Tài khoản mẫu · Đăng nhập để dùng Đăng xuất.'}</p>}
+          {!onLogout && (
+            <p>
+              {profile.userId === 'dev_preview_user'
+                ? isEn
+                  ? 'Sample account · Sign in to enable Sign Out.'
+                  : 'Tài khoản mẫu · Đăng nhập để dùng Đăng xuất.'
+                : isEn
+                  ? 'Local device profile · Nickname & battle record saved automatically.'
+                  : 'Hồ sơ cục bộ trên máy này · Tự lưu biệt danh & chiến tích.'}
+            </p>
+          )}
+        </div>
+        <div className="lkdf-lobby-profile-section lkdf-lobby-settings-compact-row">
+          <div className="lkdf-lobby-profile-row lkdf-lobby-profile-sound">
+            <strong>{isEn ? 'Credits & Licenses' : 'Thông tin bản quyền'}</strong>
+            <button
+              type="button"
+              data-testid="settings-open-credits"
+              onClick={() => setCreditsOpen(true)}
+            >
+              {isEn ? 'View Notices' : 'Xem giấy phép'}
+            </button>
+          </div>
+          <p>
+            {isEn
+              ? 'Attribution for bundled icons, typography, and studio audio'
+              : 'Ghi công biểu tượng, phông chữ đóng gói sẵn và âm thanh gốc'}
+          </p>
         </div>
       </div>
+      <CreditsLicensesModal open={creditsOpen} onClose={() => setCreditsOpen(false)} />
     </section>
   );
 }

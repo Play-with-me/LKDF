@@ -3,7 +3,15 @@ import { useInterfaceSounds } from './lib/useInterfaceSounds.js';
 import { useBackNavigation } from './lib/useBackNavigation.js';
 import { prefersReducedMotion } from './lib/devicePreferences.js';
 import './features/lobby/lobby-online.css';
-import { GAME_BRAND, type PlayerCount } from '@lkdf/shared';
+import {
+  GAME_BRAND,
+  HERO_CATALOG,
+  getCuuChauHeroDisplay,
+  getCuuChauRoleDisplay,
+  type HeroId,
+  type IdentityRole,
+  type PlayerCount,
+} from '@lkdf/shared';
 import { getBuildTarget } from './lib/buildTarget.js';
 import { createLocalSteamProfile } from './features/lobby/localSteamProfile.js';
 import {
@@ -21,10 +29,12 @@ import { LoginScreen } from './features/auth/LoginScreen.js';
 import { GameIcon } from './components/icons/index.js';
 import { ServerWakeScreen } from './features/auth/ServerWakeScreen.js';
 import { LOBBY_PREVIEW_PROFILE } from './features/lobby/lobbyPreviewProfile.js';
-import { HomeLobbyHub } from './features/lobby/HomeLobbyHub.js';
+import {
+  HomeLobbyHub,
+  type ConnectedRoomTransition,
+} from './features/lobby/HomeLobbyHub.js';
 import { WaitingRoomScreen } from './features/lobby/WaitingRoomScreen.js';
 import { OfflineMatchSetup } from './features/match/OfflineMatchSetup.js';
-import { MatchScreen } from './features/match/MatchScreen.js';
 import { StatsPage } from './features/stats/StatsPage.js';
 import { UpdateModal } from './features/update/UpdateModal.js';
 import { getUiAssetUrl } from './lib/assetCatalog.js';
@@ -32,12 +42,15 @@ import {
   ApiError,
   DEFAULT_SERVER_URL,
   createApiClient,
+  createEmptyLocalOfflineStats,
   loadInitialClientState,
   saveClientStatePatch,
 } from './lib/api.js';
 import type {
   DesktopUpdateState,
   HealthCheckResponse,
+  LanHostStatus,
+  LocalOfflineStats,
   RoomViewerPayload,
   UserProfile,
 } from './lib/types.js';
@@ -45,6 +58,12 @@ import type {
 const DevMatchPreviewLazy = lazy(() =>
   import('./features/match/DevMatchPreview.js').then((mod) => ({
     default: mod.DevMatchPreview,
+  })),
+);
+
+const MatchScreenLazy = lazy(() =>
+  import('./features/match/MatchScreen.js').then((mod) => ({
+    default: mod.MatchScreen,
   })),
 );
 
@@ -98,6 +117,63 @@ function readDevPreviewModeFromUrl(): 'nickname' | 'wake' | 'home' | null {
   return null;
 }
 
+const HERO_NAME_LOOKUP: ReadonlyMap<string, HeroId> = (() => {
+  const map = new Map<string, HeroId>();
+  for (const hero of HERO_CATALOG) {
+    map.set(hero.nameVi.trim().toLowerCase(), hero.id);
+    const vi = getCuuChauHeroDisplay(hero.id, 'vi')?.name;
+    const en = getCuuChauHeroDisplay(hero.id, 'en')?.name;
+    if (vi) map.set(vi.trim().toLowerCase(), hero.id);
+    if (en) map.set(en.trim().toLowerCase(), hero.id);
+  }
+  return map;
+})();
+
+const ROLE_NAME_LOOKUP: ReadonlyMap<string, IdentityRole> = (() => {
+  const map = new Map<string, IdentityRole>();
+  for (const role of ['LORD', 'LOYALIST', 'REBEL', 'SPY'] as const) {
+    map.set(getCuuChauRoleDisplay(role, 'vi').name.trim().toLowerCase(), role);
+    map.set(getCuuChauRoleDisplay(role, 'en').name.trim().toLowerCase(), role);
+  }
+  return map;
+})();
+
+function extractOfflineViewerOutcomeFromDom(
+  root: HTMLElement,
+): { readonly heroId: HeroId; readonly role: IdentityRole; readonly won: boolean } | null {
+  const titleEl = root.querySelector('#gameover-summary-title');
+  const dialogEl = titleEl?.closest('[role="dialog"]');
+  if (!dialogEl) {
+    return null;
+  }
+
+  const seatMarkers = Array.from(dialogEl.querySelectorAll('span'));
+  const seatOneMarker = seatMarkers.find((el) => el.textContent?.trim() === '#1');
+  const seatRow = seatOneMarker?.parentElement?.parentElement;
+  if (!seatRow) {
+    return null;
+  }
+
+  const won = seatRow.className.includes('16A34A');
+  let matchedHero: HeroId = HERO_CATALOG[0]?.id ?? 'liu_bei';
+  let matchedRole: IdentityRole = 'LORD';
+
+  const textNodes = Array.from(seatRow.querySelectorAll('div, span'));
+  for (const node of textNodes) {
+    const raw = node.textContent?.trim().toLowerCase();
+    if (!raw) continue;
+    const heroHit = HERO_NAME_LOOKUP.get(raw);
+    if (heroHit) {
+      matchedHero = heroHit;
+    }
+    const roleHit = ROLE_NAME_LOOKUP.get(raw);
+    if (roleHit) {
+      matchedRole = roleHit;
+    }
+  }
+
+  return { heroId: matchedHero, role: matchedRole, won };
+}
 
 type AppScreen =
   | 'BOOT'
@@ -133,11 +209,20 @@ export function App() {
     initialDevSeats ?? 8,
   );
   const lobbyRef = useRef<HTMLDivElement>(null);
+  const offlineMainRef = useRef<HTMLElement>(null);
   const restoreProfileFocus = useRef(false);
   const [statsReturnScreen, setStatsReturnScreen] = useState<'LOGIN' | 'HOME'>('LOGIN');
 
   const [serverUrl, setServerUrl] = useState<string>(DEFAULT_SERVER_URL);
   const [sessionToken, setSessionToken] = useState<string | null>(null);
+  const [clientDeviceId, setClientDeviceId] = useState<string>('');
+  const [localDisplayName, setLocalDisplayName] = useState<string | null>(null);
+  const localDisplayNameRef = useRef<string | null>(null);
+  const [localOfflineStats, setLocalOfflineStats] = useState<LocalOfflineStats>(() =>
+    createEmptyLocalOfflineStats(),
+  );
+  const [lanHostStatus, setLanHostStatus] = useState<LanHostStatus | null>(null);
+
   const { i18n } = useTranslation();
   const isEn = i18n.language === 'en';
   const [health, setHealth] = useState<HealthCheckResponse | null>(null);
@@ -149,6 +234,8 @@ export function App() {
         : null,
   );
   const [offlineMode, setOfflineMode] = useState<PlayerCount | 'setup' | null>(null);
+  const offlineMatchStartRef = useRef<number>(Date.now());
+  const offlineRecordedRef = useRef<boolean>(false);
   const openOfflineSetup = useCallback(() => setOfflineMode('setup'), []);
   const closeOffline = useCallback(() => setOfflineMode(null), []);
   const restoreAbortRef = useRef<AbortController | null>(null);
@@ -160,7 +247,9 @@ export function App() {
   const [showMatchCrossing, setShowMatchCrossing] = useState(false);
   const effectsEnabled = profile?.preferences.soundEnabled ?? false;
   const musicEnabled = profile?.preferences.musicEnabled ?? effectsEnabled;
-  const lobbyMusicActive = offlineMode === null && musicEnabled &&
+  const lobbyMusicActive =
+    offlineMode === null &&
+    musicEnabled &&
     (screen === 'HOME' || screen === 'WAITING_ROOM');
   useInterfaceSounds(
     effectsEnabled && offlineMode === null && screen !== 'DEV_PREVIEW',
@@ -186,14 +275,18 @@ export function App() {
   }, [isEn]);
 
   useEffect(() => {
-    if (!isSteamMode) return;
+    if (!isSteamMode || localDisplayNameRef.current) return;
     setProfile((prev) => {
       if (!prev || prev.userId !== 'steam_local_player') return prev;
-      if (prev.displayName !== 'Hiệp Khách' && prev.displayName !== 'Wanderer') return prev;
+      if (prev.displayName !== 'Hiệp Khách' && prev.displayName !== 'Wanderer') {
+        return prev;
+      }
       const localized = isEn ? 'Wanderer' : 'Hiệp Khách';
-      return prev.displayName === localized ? prev : { ...prev, displayName: localized };
+      return prev.displayName === localized
+        ? prev
+        : { ...prev, displayName: localized };
     });
-  }, [isEn]);
+  }, [isEn, isSteamMode]);
 
   useEffect(() => {
     let active = true;
@@ -211,24 +304,16 @@ export function App() {
           // Giữ phiên bản mặc định nếu cầu IPC chưa phản hồi
         });
 
-      if (isSteamMode && bridge.getSteamStatus) {
+      if (bridge.getLanHostStatus) {
         void bridge
-          .getSteamStatus()
-          .then((steamStatus) => {
-            if (active && steamStatus?.personaName) {
-              setProfile((prev) =>
-                prev ? { ...prev, displayName: steamStatus.personaName! } : prev,
-              );
+          .getLanHostStatus()
+          .then((status) => {
+            if (active) {
+              setLanHostStatus(status);
             }
           })
           .catch(() => undefined);
       }
-    }
-
-    if (isSteamMode) {
-      return () => {
-        active = false;
-      };
     }
 
     void loadInitialClientState()
@@ -236,14 +321,54 @@ export function App() {
         if (!active) {
           return;
         }
+        setClientDeviceId(initialState.clientDeviceId);
+        setLocalOfflineStats(initialState.localOfflineStats);
+        if (initialState.localDisplayName) {
+          localDisplayNameRef.current = initialState.localDisplayName;
+          setLocalDisplayName(initialState.localDisplayName);
+        }
         setServerUrl(initialState.serverUrl);
+
+        if (isSteamMode) {
+          if (initialState.localDisplayName) {
+            setProfile((prev) =>
+              prev
+                ? { ...prev, displayName: initialState.localDisplayName! }
+                : createLocalSteamProfile(initialState.localDisplayName),
+            );
+          } else if (bridge?.getSteamStatus) {
+            void bridge
+              .getSteamStatus()
+              .then((steamStatus) => {
+                if (
+                  active &&
+                  steamStatus?.personaName &&
+                  !localDisplayNameRef.current
+                ) {
+                  setProfile((prev) =>
+                    prev
+                      ? { ...prev, displayName: steamStatus.personaName! }
+                      : prev,
+                  );
+                }
+              })
+              .catch(() => undefined);
+          }
+          return;
+        }
+
         setSessionToken(initialState.sessionToken);
         if (initialDevSeats === null && initialDevPreviewMode === null) {
           setScreen('WAKE');
         }
       })
       .catch(() => {
-        if (active && initialDevSeats === null && initialDevPreviewMode === null) {
+        if (
+          active &&
+          !isSteamMode &&
+          initialDevSeats === null &&
+          initialDevPreviewMode === null
+        ) {
           setScreen('WAKE');
         }
       });
@@ -251,7 +376,86 @@ export function App() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [initialDevPreviewMode, initialDevSeats, isSteamMode]);
+
+  useEffect(() => {
+    if (typeof offlineMode !== 'number') {
+      offlineRecordedRef.current = false;
+      return undefined;
+    }
+    offlineMatchStartRef.current = Date.now();
+    offlineRecordedRef.current = false;
+
+    const container = offlineMainRef.current;
+    if (!container) {
+      return undefined;
+    }
+
+    const checkGameOverDom = () => {
+      const outcome = extractOfflineViewerOutcomeFromDom(container);
+      if (!outcome) {
+        if (offlineRecordedRef.current) {
+          offlineRecordedRef.current = false;
+          offlineMatchStartRef.current = Date.now();
+        }
+        return;
+      }
+      if (offlineRecordedRef.current) {
+        return;
+      }
+      offlineRecordedRef.current = true;
+      const durationSeconds = Math.max(
+        1,
+        Math.round((Date.now() - offlineMatchStartRef.current) / 1000),
+      );
+      const finishedAt = new Date().toISOString();
+      const entryId = `solo_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+
+      setLocalOfflineStats((prev) => {
+        const prevRole = prev.byRole[outcome.role] ?? { played: 0, wins: 0 };
+        const prevHero = prev.byHero[outcome.heroId] ?? { played: 0, wins: 0 };
+        const nextStats: LocalOfflineStats = {
+          played: prev.played + 1,
+          wins: prev.wins + (outcome.won ? 1 : 0),
+          byRole: {
+            ...prev.byRole,
+            [outcome.role]: {
+              played: prevRole.played + 1,
+              wins: prevRole.wins + (outcome.won ? 1 : 0),
+            },
+          },
+          byHero: {
+            ...prev.byHero,
+            [outcome.heroId]: {
+              played: prevHero.played + 1,
+              wins: prevHero.wins + (outcome.won ? 1 : 0),
+            },
+          },
+          recentMatches: [
+            {
+              id: entryId,
+              heroId: outcome.heroId,
+              role: outcome.role,
+              won: outcome.won,
+              finishedAt,
+              durationSeconds,
+              playerCount: offlineMode,
+            },
+            ...prev.recentMatches,
+          ].slice(0, 60),
+        };
+        void saveClientStatePatch({ localOfflineStats: nextStats }).catch(
+          () => undefined,
+        );
+        return nextStats;
+      });
+    };
+
+    const observer = new MutationObserver(checkGameOverDom);
+    observer.observe(container, { childList: true, subtree: true });
+    checkGameOverDom();
+    return () => observer.disconnect();
+  }, [offlineMode]);
 
   useEffect(() => {
     const bridge = window.lkdfDesktop;
@@ -378,7 +582,7 @@ export function App() {
     }
     checkedUpdateServerRef.current = serverUrl;
     void runUpdateCheck({ silentIfUpToDate: true });
-  }, [health, runUpdateCheck, screen, serverUrl]);
+  }, [health, isSteamMode, runUpdateCheck, screen, serverUrl]);
 
   const handleStartOneClickUpdate = useCallback(() => {
     const bridge = window.lkdfDesktop;
@@ -404,6 +608,25 @@ export function App() {
     const bridge = window.lkdfDesktop;
     if (bridge) {
       void bridge.quitAndInstallUpdate();
+    }
+  }, []);
+
+  const handleProfileUpdated = useCallback((nextProfile: UserProfile) => {
+    setProfile(nextProfile);
+    if (nextProfile.userId !== 'dev_preview_user') {
+      const cleanName = nextProfile.displayName.trim().normalize('NFC');
+      if (
+        cleanName.length >= 2 &&
+        cleanName.length <= 20 &&
+        cleanName !== 'Hiệp Khách' &&
+        cleanName !== 'Wanderer'
+      ) {
+        localDisplayNameRef.current = cleanName;
+        setLocalDisplayName(cleanName);
+        void saveClientStatePatch({ localDisplayName: cleanName }).catch(
+          () => undefined,
+        );
+      }
     }
   }, []);
 
@@ -480,7 +703,7 @@ export function App() {
           }
         });
     },
-    [api, sessionToken],
+    [api, isEn, sessionToken],
   );
 
   const handleLoggedIn = useCallback(
@@ -496,37 +719,57 @@ export function App() {
 
   const handleCompleteNicknameSetup = useCallback(
     (updatedProfile: UserProfile) => {
-      setProfile(updatedProfile);
+      handleProfileUpdated(updatedProfile);
       setJustLoggedIn(true);
-      if (import.meta.env.DEV && initialDevPreviewMode === 'nickname' && !sessionToken) {
+      if (
+        import.meta.env.DEV &&
+        initialDevPreviewMode === 'nickname' &&
+        !sessionToken
+      ) {
         setProfile(null);
         setScreen('WAKE');
         return;
       }
       setScreen('HOME');
     },
-    [initialDevPreviewMode, sessionToken],
+    [handleProfileUpdated, initialDevPreviewMode, sessionToken],
   );
 
-  const handleSessionInvalid = useCallback((messageVi: string) => {
-    void saveClientStatePatch({ sessionToken: null }).catch(() => undefined);
-    setSessionToken(null);
-    setProfile(null);
-    setActiveRoom(null);
-    setJustLoggedIn(false);
-    setLoginNotice(messageVi);
-    setScreen('LOGIN');
-  }, []);
+  const handleSessionInvalid = useCallback(
+    (messageVi: string) => {
+      void saveClientStatePatch({ sessionToken: null }).catch(() => undefined);
+      setSessionToken(null);
+      setActiveRoom(null);
+      setJustLoggedIn(false);
+      if (isSteamMode) {
+        setProfile(createLocalSteamProfile(localDisplayNameRef.current ?? localDisplayName));
+        setScreen('HOME');
+        return;
+      }
+      setProfile(null);
+      setLoginNotice(messageVi);
+      setScreen('LOGIN');
+    },
+    [isSteamMode, localDisplayName],
+  );
 
-  const handleLoggedOut = useCallback((notice?: string) => {
-    void saveClientStatePatch({ sessionToken: null }).catch(() => undefined);
-    setSessionToken(null);
-    setProfile(null);
-    setActiveRoom(null);
-    setJustLoggedIn(false);
-    setLoginNotice(notice ?? null);
-    setScreen('LOGIN');
-  }, []);
+  const handleLoggedOut = useCallback(
+    (notice?: string) => {
+      void saveClientStatePatch({ sessionToken: null }).catch(() => undefined);
+      setSessionToken(null);
+      setActiveRoom(null);
+      setJustLoggedIn(false);
+      if (isSteamMode) {
+        setProfile(createLocalSteamProfile(localDisplayNameRef.current ?? localDisplayName));
+        setScreen('HOME');
+        return;
+      }
+      setProfile(null);
+      setLoginNotice(notice ?? null);
+      setScreen('LOGIN');
+    },
+    [isSteamMode, localDisplayName],
+  );
 
   const handleRecheckServer = useCallback(() => {
     setHealth(null);
@@ -544,6 +787,21 @@ export function App() {
       roomPayload.roomState.status === 'IN_GAME' ? 'MATCH' : 'WAITING_ROOM',
     );
   }, []);
+
+  const handleEnterConnectedRoom = useCallback(
+    (transition: ConnectedRoomTransition) => {
+      setServerUrl(transition.serverUrl);
+      setSessionToken(transition.sessionToken);
+      setProfile(transition.profile);
+      setActiveRoom(transition.roomPayload);
+      setScreen(
+        transition.roomPayload.roomState.status === 'IN_GAME'
+          ? 'MATCH'
+          : 'WAITING_ROOM',
+      );
+    },
+    [],
+  );
 
   const handleMatchStarted = useCallback((roomPayload: RoomViewerPayload) => {
     setShowMatchCrossing(!prefersReducedMotion());
@@ -569,11 +827,16 @@ export function App() {
     restoreProfileFocus.current = statsReturnScreen === 'HOME';
     setScreen(statsReturnScreen);
   }, [statsReturnScreen]);
-  useBackNavigation(offlineMode === null && screen === 'STATS' && !isUpdateModalOpen, backFromStats);
+  useBackNavigation(
+    offlineMode === null && screen === 'STATS' && !isUpdateModalOpen,
+    backFromStats,
+  );
   useEffect(() => {
     if (!isHomeLobby || !restoreProfileFocus.current) return;
     restoreProfileFocus.current = false;
-    lobbyRef.current?.querySelector<HTMLButtonElement>('[data-profile-stats-trigger]')?.focus();
+    lobbyRef.current
+      ?.querySelector<HTMLButtonElement>('[data-profile-stats-trigger]')
+      ?.focus();
   }, [isHomeLobby]);
   const isLobbySurface = screen !== 'MATCH' && screen !== 'DEV_PREVIEW';
   const isAuthPortalScreen =
@@ -583,10 +846,29 @@ export function App() {
 
   if (offlineMode !== null) {
     return (
-      <main className="relative flex h-screen w-screen min-h-0 min-w-0 flex-col overflow-hidden bg-[#090807] text-[#EFE6D5]"
-        style={offlineMode === 'setup' && lobbyBannerUrl ? { backgroundImage: `linear-gradient(#09080799, #090807df), url("${lobbyBannerUrl}")`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}>
-        {offlineMode === 'setup' ? <OfflineMatchSetup onStart={setOfflineMode} onBack={closeOffline} /> : (
-          <Suspense fallback={<div role="status" className="m-auto">{isEn ? 'Preparing practice match…' : 'Đang chuẩn bị ván tập…'}</div>}>
+      <main
+        ref={offlineMainRef}
+        className="relative flex h-screen w-screen min-h-0 min-w-0 flex-col overflow-hidden bg-[#090807] text-[#EFE6D5]"
+        style={
+          offlineMode === 'setup' && lobbyBannerUrl
+            ? {
+                backgroundImage: `linear-gradient(#09080799, #090807df), url("${lobbyBannerUrl}")`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+              }
+            : undefined
+        }
+      >
+        {offlineMode === 'setup' ? (
+          <OfflineMatchSetup onStart={setOfflineMode} onBack={closeOffline} />
+        ) : (
+          <Suspense
+            fallback={
+              <div role="status" className="m-auto">
+                {isEn ? 'Preparing practice match…' : 'Đang chuẩn bị ván tập…'}
+              </div>
+            }
+          >
             <OfflineMatchScreenLazy
               playerCount={offlineMode}
               localPlayerName={profile?.displayName}
@@ -627,7 +909,9 @@ export function App() {
         </div>
       ) : null}
 
-      {isLobbySurface && !isAuthPortalScreen && !(isHomeLobby && isLobbyPreview) ? (
+      {isLobbySurface &&
+      !isAuthPortalScreen &&
+      !(isHomeLobby && isLobbyPreview) ? (
         <header
           style={
             headerBgUrl
@@ -639,273 +923,329 @@ export function App() {
           }
           className="relative z-10 flex h-11 shrink-0 items-center justify-between border-b border-[#94A3B8]/28 bg-[#10141B] px-5"
         >
-        <div className="flex items-center gap-3 min-w-0">
-          <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-[5px] border border-[#D4A451]/75 bg-gradient-to-b from-[#B8332C] to-[#7D1A16] font-serif-title text-[13px] font-bold text-[#F8EFDF] shadow-inner">
-            {GAME_BRAND.emblem}
-          </span>
-          {isHomeLobby ? (
-            <span className="truncate font-serif-title text-base font-semibold tracking-wide text-[#F4EBD8]">
-              {isEn ? GAME_BRAND.title.en : GAME_BRAND.title.vi}
+          <div className="flex items-center gap-3 min-w-0">
+            <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-[5px] border border-[#D4A451]/75 bg-gradient-to-b from-[#B8332C] to-[#7D1A16] font-serif-title text-[13px] font-bold text-[#F8EFDF] shadow-inner">
+              {GAME_BRAND.emblem}
             </span>
-          ) : (
-            <h1 className="truncate font-serif-title text-base font-semibold tracking-wide text-[#F4EBD8]">
-              {isEn ? GAME_BRAND.title.en : GAME_BRAND.title.vi}
-            </h1>
-          )}
-          {activeRoom && screen === 'WAITING_ROOM' ? (
-            <span className="hidden rounded border border-[#B89352]/45 bg-[#12161E] px-2 py-0.5 font-mono-num text-xs text-[#E6BE6C] sm:inline-block">
-              {isEn ? `Room #${activeRoom.roomState.roomCode}` : `Phòng #${activeRoom.roomState.roomCode}`}
-            </span>
-          ) : null}
-        </div>
+            {isHomeLobby ? (
+              <span className="truncate font-serif-title text-base font-semibold tracking-wide text-[#F4EBD8]">
+                {isEn ? GAME_BRAND.title.en : GAME_BRAND.title.vi}
+              </span>
+            ) : (
+              <h1 className="truncate font-serif-title text-base font-semibold tracking-wide text-[#F4EBD8]">
+                {isEn ? GAME_BRAND.title.en : GAME_BRAND.title.vi}
+              </h1>
+            )}
+            {activeRoom && screen === 'WAITING_ROOM' ? (
+              <span className="hidden rounded border border-[#B89352]/45 bg-[#12161E] px-2 py-0.5 font-mono-num text-xs text-[#E6BE6C] sm:inline-block">
+                {isEn
+                  ? `Room #${activeRoom.roomState.roomCode}`
+                  : `Phòng #${activeRoom.roomState.roomCode}`}
+              </span>
+            ) : null}
+          </div>
 
-        <div className="flex items-center gap-3 shrink-0">
-          {profile ? (
-            <span className="hidden items-center gap-1.5 text-xs font-medium text-[#E2E8F0] md:inline-flex">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#22C55E]" />
-              {profile.displayName}
-            </span>
-          ) : null}
+          <div className="flex items-center gap-3 shrink-0">
+            {profile ? (
+              <span className="hidden items-center gap-1.5 text-xs font-medium text-[#E2E8F0] md:inline-flex">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#22C55E]" />
+                {profile.displayName}
+              </span>
+            ) : null}
 
-          {isSteamMode ? (
-            <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-[#A7E3B9]">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#22C55E]" />
-              Steam Offline / P2P
-            </span>
-          ) : (
-            <span
-              className={`inline-flex items-center gap-1.5 text-[11px] font-medium ${
-                health ? 'text-[#A7E3B9]' : 'text-[#FDE68A]'
-              }`}
-            >
+            {lanHostStatus?.running && lanHostStatus.port ? (
+              <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-[#86EFAC]">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#22C55E]" />
+                {isEn
+                  ? `Hosting LAN :${lanHostStatus.port}`
+                  : `Đang mở bàn LAN :${lanHostStatus.port}`}
+              </span>
+            ) : isSteamMode ? (
+              <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-[#A7E3B9]">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#22C55E]" />
+                {isEn ? 'Standalone & LAN' : 'Độc lập & LAN'}
+              </span>
+            ) : (
               <span
-                className={`h-1.5 w-1.5 rounded-full ${
-                  health ? 'bg-[#22C55E]' : 'bg-[#D97706]'
+                className={`inline-flex items-center gap-1.5 text-[11px] font-medium ${
+                  health ? 'text-[#A7E3B9]' : 'text-[#FDE68A]'
                 }`}
-              />
-              {health ? (isEn ? 'Server Ready' : 'Máy chủ sẵn sàng') : (isEn ? 'Connecting' : 'Đang kết nối')}
-            </span>
-          )}
-
-          {isSteamMode ? (
-            <span className="inline-flex items-center rounded-[5px] border border-[#94A3B8]/32 bg-[#12161E]/90 px-2.5 py-0.5 font-mono-num text-xs tabular-nums text-[#D8DEE9]">
-              v{appVersion}
-            </span>
-          ) : updateState.phase === 'AVAILABLE' && updateState.latestVersion ? (
-            <button
-              type="button"
-              onClick={() => setIsUpdateModalOpen(true)}
-              className="inline-flex cursor-pointer items-center gap-1.5 rounded-[5px] border border-[#E6BE6C] bg-[#B8332C] px-3 py-1 font-mono-num text-[11px] font-semibold tabular-nums text-[#F4EFE6] shadow transition-colors hover:bg-[#C83E37]"
-            >
-              <GameIcon name="ui:download" size={12} />
-              {isEn ? `Update v${updateState.latestVersion}` : `Có bản v${updateState.latestVersion}`}
-            </button>
-          ) : (
-            <button
-              type="button"
-              disabled={!health}
-              title={
-                health
+              >
+                <span
+                  className={`h-1.5 w-1.5 rounded-full ${
+                    health ? 'bg-[#22C55E]' : 'bg-[#D97706]'
+                  }`}
+                />
+                {health
                   ? isEn
-                    ? 'Check for new updates'
-                    : 'Kiểm tra phiên bản cập nhật mới'
+                    ? 'Server Ready'
+                    : 'Máy chủ sẵn sàng'
                   : isEn
-                    ? 'Wait for server connection to check updates'
-                    : 'Chờ kết nối máy chủ để kiểm tra cập nhật'
-              }
-              onClick={() => {
-                void runUpdateCheck({
-                  silentIfUpToDate: false,
-                  forceRefresh: true,
-                });
-              }}
-              className="inline-flex cursor-pointer items-center gap-1.5 rounded-[5px] border border-[#94A3B8]/32 bg-[#12161E]/90 px-2.5 py-0.5 font-mono-num text-xs tabular-nums text-[#D8DEE9] transition-colors hover:border-[#E6BE6C] disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              <GameIcon name="ui:refresh" size={11} />
-              v{appVersion}
-            </button>
-          )}
-        </div>
-      </header>
+                    ? 'Connecting'
+                    : 'Đang kết nối'}
+              </span>
+            )}
+
+            {isSteamMode ? (
+              <span className="inline-flex items-center rounded-[5px] border border-[#94A3B8]/32 bg-[#12161E]/90 px-2.5 py-0.5 font-mono-num text-xs tabular-nums text-[#D8DEE9]">
+                v{appVersion}
+              </span>
+            ) : updateState.phase === 'AVAILABLE' && updateState.latestVersion ? (
+              <button
+                type="button"
+                onClick={() => setIsUpdateModalOpen(true)}
+                className="inline-flex cursor-pointer items-center gap-1.5 rounded-[5px] border border-[#E6BE6C] bg-[#B8332C] px-3 py-1 font-mono-num text-[11px] font-semibold tabular-nums text-[#F4EFE6] shadow transition-colors hover:bg-[#C83E37]"
+              >
+                <GameIcon name="ui:download" size={12} />
+                {isEn
+                  ? `Update v${updateState.latestVersion}`
+                  : `Có bản v${updateState.latestVersion}`}
+              </button>
+            ) : (
+              <button
+                type="button"
+                disabled={!health}
+                title={
+                  health
+                    ? isEn
+                      ? 'Check for new updates'
+                      : 'Kiểm tra phiên bản cập nhật mới'
+                    : isEn
+                      ? 'Wait for server connection to check updates'
+                      : 'Chờ kết nối máy chủ để kiểm tra cập nhật'
+                }
+                onClick={() => {
+                  void runUpdateCheck({
+                    silentIfUpToDate: false,
+                    forceRefresh: true,
+                  });
+                }}
+                className="inline-flex cursor-pointer items-center gap-1.5 rounded-[5px] border border-[#94A3B8]/32 bg-[#12161E]/90 px-2.5 py-0.5 font-mono-num text-xs tabular-nums text-[#D8DEE9] transition-colors hover:border-[#E6BE6C] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <GameIcon name="ui:refresh" size={11} />
+                v{appVersion}
+              </button>
+            )}
+          </div>
+        </header>
       ) : null}
 
       <div className="relative z-10 flex flex-1 min-h-0 min-w-0 flex-col">
-      {screen === 'BOOT' || isRestoringSession ? (
-        <section className="flex flex-1 min-h-0 min-w-0 items-center justify-center p-6">
-          <div className="flex flex-col items-center gap-4 rounded-lg border border-[#C89B4B]/60 bg-[#16110E]/95 px-6 py-5 text-sm text-[#F5EBD6] shadow-2xl">
-            <div className="inline-flex items-center gap-2">
-              <GameIcon name="ui:loader" size={16} className="animate-spin text-[#E6BE6C]" />
-              <span>
-                {isRestoringSession
-                  ? isEn
-                    ? 'Restoring Google sign-in session...'
-                    : 'Đang khôi phục phiên đăng nhập Google...'
-                  : isEn
-                    ? `Launching ${GAME_BRAND.title.en}...`
-                    : `Đang khởi động ứng dụng ${GAME_BRAND.title.vi}...`}
-              </span>
+        {screen === 'BOOT' || isRestoringSession ? (
+          <section className="flex flex-1 min-h-0 min-w-0 items-center justify-center p-6">
+            <div className="flex flex-col items-center gap-4 rounded-lg border border-[#C89B4B]/60 bg-[#16110E]/95 px-6 py-5 text-sm text-[#F5EBD6] shadow-2xl">
+              <div className="inline-flex items-center gap-2">
+                <GameIcon
+                  name="ui:loader"
+                  size={16}
+                  className="animate-spin text-[#E6BE6C]"
+                />
+                <span>
+                  {isRestoringSession
+                    ? isEn
+                      ? 'Restoring Google sign-in session...'
+                      : 'Đang khôi phục phiên đăng nhập Google...'
+                    : isEn
+                      ? `Launching ${GAME_BRAND.title.en}...`
+                      : `Đang khởi động ứng dụng ${GAME_BRAND.title.vi}...`}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={openOfflineSetup}
+                className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-[#C89B4B]/70 bg-[#241813] px-4 py-2 text-sm font-semibold text-[#F5EBD6] transition-colors hover:border-[#E6BE6C] hover:bg-[#6C2521] focus-visible:outline-2 focus-visible:outline-[#E6BE6C]"
+              >
+                <GameIcon name="ui:bot" size={15} />
+                {isEn ? 'Play vs Bots' : 'Chơi với Máy'}
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={openOfflineSetup}
-              className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-[#C89B4B]/70 bg-[#241813] px-4 py-2 text-sm font-semibold text-[#F5EBD6] transition-colors hover:border-[#E6BE6C] hover:bg-[#6C2521] focus-visible:outline-2 focus-visible:outline-[#E6BE6C]"
-            >
-              <GameIcon name="ui:bot" size={15} />
-              {isEn ? 'Play vs Bots' : 'Chơi với Máy'}
-            </button>
-          </div>
-        </section>
-      ) : null}
+          </section>
+        ) : null}
 
-      {screen === 'WAKE' && !isRestoringSession ? (
-        <ServerWakeScreen
-          serverUrl={serverUrl}
-          onServerUrlChange={handleServerUrlChange}
-          onServerReady={handleServerReady}
-          onPlayOffline={openOfflineSetup}
-        />
-      ) : null}
-
-      {screen === 'LOGIN' && health ? (
-        <LoginScreen
-          api={api}
-          health={health}
-          appVersion={appVersion}
-          updateState={updateState}
-          initialNotice={loginNotice}
-          onLoggedIn={handleLoggedIn}
-          onOpenStats={() => handleOpenStatsFrom('LOGIN')}
-          onRecheckServer={handleRecheckServer}
-          onPlayOffline={openOfflineSetup}
-          onOpenUpdateModal={() => setIsUpdateModalOpen(true)}
-          onCheckUpdate={() => {
-            void runUpdateCheck({
-              silentIfUpToDate: false,
-              forceRefresh: true,
-            });
-          }}
-          onOpenDevPreview={
-            import.meta.env.DEV
-              ? () => {
-                  setDevPreviewSeats(8);
-                  setScreen('DEV_PREVIEW');
-                }
-              : undefined
-          }
-        />
-      ) : null}
-
-      {screen === 'NICKNAME_SETUP' && profile ? (
-        <FirstTimeNicknameCard
-          api={api}
-          sessionToken={sessionToken}
-          profile={profile}
-          serverConnected={Boolean(health)}
-          appVersion={appVersion}
-          updateState={updateState}
-          onOpenUpdateModal={() => setIsUpdateModalOpen(true)}
-          onCheckUpdate={() => {
-            void runUpdateCheck({
-              silentIfUpToDate: false,
-              forceRefresh: true,
-            });
-          }}
-          onPlayOffline={openOfflineSetup}
-          isPreviewMode={import.meta.env.DEV && !sessionToken}
-          onComplete={handleCompleteNicknameSetup}
-        />
-      ) : null}
-
-      {(isHomeLobby || (screen === 'STATS' && statsReturnScreen === 'HOME')) && (sessionToken || isLobbyPreview || isSteamMode) && profile ? (
-        <div ref={lobbyRef} className={isHomeLobby ? "flex min-h-0 min-w-0 flex-1" : "hidden"}>
-          <HomeLobbyHub
-            navigationActive={isHomeLobby && !isUpdateModalOpen}
-            api={api}
-            sessionToken={isLobbyPreview ? null : sessionToken}
-            profile={profile}
-            justLoggedIn={justLoggedIn}
-            onDismissWelcomeToast={() => setJustLoggedIn(false)}
-            onProfileUpdated={setProfile}
-            onEnterRoom={handleEnterRoom}
-            onOpenStats={() => handleOpenStatsFrom('HOME')}
+        {screen === 'WAKE' && !isRestoringSession ? (
+          <ServerWakeScreen
+            serverUrl={serverUrl}
+            onServerUrlChange={handleServerUrlChange}
+            onServerReady={handleServerReady}
             onPlayOffline={openOfflineSetup}
-            onLoggedOut={handleLoggedOut}
+          />
+        ) : null}
+
+        {screen === 'LOGIN' && health ? (
+          <LoginScreen
+            api={api}
+            health={health}
+            appVersion={appVersion}
+            updateState={updateState}
+            initialNotice={loginNotice}
+            onLoggedIn={handleLoggedIn}
+            onOpenStats={() => handleOpenStatsFrom('LOGIN')}
+            onRecheckServer={handleRecheckServer}
+            onPlayOffline={openOfflineSetup}
+            onOpenUpdateModal={() => setIsUpdateModalOpen(true)}
+            onCheckUpdate={() => {
+              void runUpdateCheck({
+                silentIfUpToDate: false,
+                forceRefresh: true,
+              });
+            }}
+            onOpenDevPreview={
+              import.meta.env.DEV
+                ? () => {
+                    setDevPreviewSeats(8);
+                    setScreen('DEV_PREVIEW');
+                  }
+                : undefined
+            }
+          />
+        ) : null}
+
+        {screen === 'NICKNAME_SETUP' && profile ? (
+          <FirstTimeNicknameCard
+            api={api}
+            sessionToken={sessionToken}
+            profile={profile}
+            serverConnected={Boolean(health)}
+            appVersion={appVersion}
+            updateState={updateState}
+            onOpenUpdateModal={() => setIsUpdateModalOpen(true)}
+            onCheckUpdate={() => {
+              void runUpdateCheck({
+                silentIfUpToDate: false,
+                forceRefresh: true,
+              });
+            }}
+            onPlayOffline={openOfflineSetup}
+            isPreviewMode={import.meta.env.DEV && !sessionToken}
+            onComplete={handleCompleteNicknameSetup}
+          />
+        ) : null}
+
+        {(isHomeLobby || (screen === 'STATS' && statsReturnScreen === 'HOME')) &&
+        (sessionToken || isLobbyPreview || isSteamMode) &&
+        profile ? (
+          <div
+            ref={lobbyRef}
+            className={isHomeLobby ? 'flex min-h-0 min-w-0 flex-1' : 'hidden'}
+          >
+            <HomeLobbyHub
+              navigationActive={isHomeLobby && !isUpdateModalOpen}
+              api={api}
+              sessionToken={isLobbyPreview ? null : sessionToken}
+              profile={profile}
+              clientDeviceId={clientDeviceId}
+              localOfflineStats={localOfflineStats}
+              lanHostStatus={lanHostStatus}
+              onLanHostStatusChange={setLanHostStatus}
+              justLoggedIn={justLoggedIn}
+              onDismissWelcomeToast={() => setJustLoggedIn(false)}
+              onProfileUpdated={handleProfileUpdated}
+              onEnterRoom={handleEnterRoom}
+              onEnterConnectedRoom={handleEnterConnectedRoom}
+              onOpenStats={() => handleOpenStatsFrom('HOME')}
+              onPlayOffline={openOfflineSetup}
+              onLoggedOut={handleLoggedOut}
+              onSessionInvalid={handleSessionInvalid}
+            />
+          </div>
+        ) : null}
+
+        {screen === 'WAITING_ROOM' && sessionToken && profile && activeRoom ? (
+          <WaitingRoomScreen
+            api={api}
+            serverUrl={serverUrl}
+            sessionToken={sessionToken}
+            currentUser={profile}
+            initialRoom={activeRoom}
+            onMatchStarted={handleMatchStarted}
+            onLeftRoom={handleLeftRoom}
             onSessionInvalid={handleSessionInvalid}
           />
-        </div>
-      ) : null}
+        ) : null}
 
-      {screen === 'WAITING_ROOM' && sessionToken && profile && activeRoom ? (
-        <WaitingRoomScreen
-          api={api}
-          serverUrl={serverUrl}
-          sessionToken={sessionToken}
-          currentUser={profile}
-          initialRoom={activeRoom}
-          onMatchStarted={handleMatchStarted}
-          onLeftRoom={handleLeftRoom}
-          onSessionInvalid={handleSessionInvalid}
-        />
-      ) : null}
+        {screen === 'MATCH' && sessionToken && profile && activeRoom ? (
+          <Suspense
+            fallback={
+              <section className="flex flex-1 min-h-0 min-w-0 items-center justify-center p-6">
+                <div className="inline-flex items-center gap-2 rounded-xl border border-[#2D343C] bg-[#1E2328] px-6 py-4 text-sm text-[#D1D5DB]">
+                  <GameIcon
+                    name="ui:loader"
+                    size={16}
+                    className="animate-spin text-[#D99B26]"
+                  />
+                  {isEn ? 'Entering match arena...' : 'Đang vào Bàn đấu...'}
+                </div>
+              </section>
+            }
+          >
+            <MatchScreenLazy
+              api={api}
+              serverUrl={serverUrl}
+              sessionToken={sessionToken}
+              currentUser={profile}
+              initialRoom={activeRoom}
+              onProfileUpdated={handleProfileUpdated}
+              onReturnToLobby={handleReturnToLobby}
+              onLeftRoom={handleLeftRoom}
+              onSessionInvalid={handleSessionInvalid}
+            />
+          </Suspense>
+        ) : null}
 
-      {screen === 'MATCH' && sessionToken && profile && activeRoom ? (
-        <MatchScreen
-          api={api}
-          serverUrl={serverUrl}
-          sessionToken={sessionToken}
-          currentUser={profile}
-          initialRoom={activeRoom}
-          onProfileUpdated={setProfile}
-          onReturnToLobby={handleReturnToLobby}
-          onLeftRoom={handleLeftRoom}
-          onSessionInvalid={handleSessionInvalid}
-        />
-      ) : null}
-
-      {screen === 'MATCH' && showMatchCrossing ? (
-        <div className="lkdf-online-fog" aria-hidden="true" onAnimationEnd={() => setShowMatchCrossing(false)} />
-      ) : null}
-
-      {import.meta.env.DEV && screen === 'DEV_PREVIEW' ? (
-        <Suspense
-          fallback={
-            <section className="flex flex-1 min-h-0 min-w-0 items-center justify-center p-6">
-              <div className="inline-flex items-center gap-2 rounded-xl border border-[#2D343C] bg-[#1E2328] px-6 py-4 text-sm text-[#D1D5DB]">
-                <GameIcon name="ui:loader" size={16} className="animate-spin text-[#D99B26]" />
-                {isEn ? 'Opening arena preview...' : 'Đang mở bản xem thử Bàn đấu...'}
-              </div>
-            </section>
-          }
-        >
-          <DevMatchPreviewLazy
-            initialPlayerCount={devPreviewSeats}
-            onExitPreview={() => setScreen(health ? 'LOGIN' : 'WAKE')}
+        {screen === 'MATCH' && showMatchCrossing ? (
+          <div
+            className="lkdf-online-fog"
+            aria-hidden="true"
+            onAnimationEnd={() => setShowMatchCrossing(false)}
           />
-        </Suspense>
-      ) : null}
+        ) : null}
 
-      {screen === 'STATS' ? (
-        <StatsPage
-          api={api}
-          currentUserId={profile?.userId ?? null}
-          startWithCurrentUser={statsReturnScreen === 'HOME'}
-          onBack={backFromStats}
+        {import.meta.env.DEV && screen === 'DEV_PREVIEW' ? (
+          <Suspense
+            fallback={
+              <section className="flex flex-1 min-h-0 min-w-0 items-center justify-center p-6">
+                <div className="inline-flex items-center gap-2 rounded-xl border border-[#2D343C] bg-[#1E2328] px-6 py-4 text-sm text-[#D1D5DB]">
+                  <GameIcon
+                    name="ui:loader"
+                    size={16}
+                    className="animate-spin text-[#D99B26]"
+                  />
+                  {isEn
+                    ? 'Opening arena preview...'
+                    : 'Đang mở bản xem thử Bàn đấu...'}
+                </div>
+              </section>
+            }
+          >
+            <DevMatchPreviewLazy
+              initialPlayerCount={devPreviewSeats}
+              onExitPreview={() => setScreen(health ? 'LOGIN' : 'WAKE')}
+            />
+          </Suspense>
+        ) : null}
+
+        {screen === 'STATS' ? (
+          <StatsPage
+            api={api}
+            currentUserId={profile?.userId ?? null}
+            startWithCurrentUser={statsReturnScreen === 'HOME'}
+            onBack={backFromStats}
+          />
+        ) : null}
+
+        <UpdateModal
+          open={isUpdateModalOpen}
+          updateState={updateState}
+          onStartUpdate={handleStartOneClickUpdate}
+          onRecheck={() => {
+            void runUpdateCheck({
+              silentIfUpToDate: false,
+              forceRefresh: true,
+            });
+          }}
+          onInstallNow={handleInstallUpdateNow}
+          onClose={() => setIsUpdateModalOpen(false)}
         />
-      ) : null}
-
-      <UpdateModal
-        open={isUpdateModalOpen}
-        updateState={updateState}
-        onStartUpdate={handleStartOneClickUpdate}
-        onRecheck={() => {
-          void runUpdateCheck({
-            silentIfUpToDate: false,
-            forceRefresh: true,
-          });
-        }}
-        onInstallNow={handleInstallUpdateNow}
-        onClose={() => setIsUpdateModalOpen(false)}
-      />
       </div>
     </main>
   );

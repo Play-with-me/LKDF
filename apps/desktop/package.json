@@ -23,6 +23,7 @@
     "@fontsource/jetbrains-mono": "^5.3.0",
     "@fontsource/noto-serif": "^5.3.0",
     "@iconify/react": "^6.0.4",
+    "@lkdf/server": "*",
     "@lkdf/shared": "*",
     "electron-updater": "^6.8.11",
     "i18next": "^27.2.9",

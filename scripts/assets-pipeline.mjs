@@ -8,8 +8,8 @@ const ROOT_DIR = process.cwd();
 const BRAND_CONFIG_PATH = path.join(ROOT_DIR, 'config/game.brand.json');
 const MANIFEST_PATH = path.join(ROOT_DIR, 'assets-manifest.json');
 const NOTICES_PATH = path.join(ROOT_DIR, 'THIRD_PARTY_NOTICES.txt');
-const SHARED_DIST_CARDS = path.join(ROOT_DIR, 'packages/shared/dist/cards/catalog.js');
-const SHARED_DIST_HEROES = path.join(ROOT_DIR, 'packages/shared/dist/heroes/catalog.js');
+const SHARED_DIST_CUU_CHAU = path.join(ROOT_DIR, 'packages/shared/dist/content/cuuChauPack.js');
+const SHARED_SRC_CUU_CHAU = path.join(ROOT_DIR, 'packages/shared/src/content/cuuChauPack.ts');
 
 const RAW_ROOT = path.join(ROOT_DIR, 'raw-assets');
 const ASSETS_ROOT = path.join(ROOT_DIR, 'apps/desktop/src/assets');
@@ -50,19 +50,39 @@ function sha256File(filePath) {
 }
 
 async function loadExpectedKeys() {
-  if (!fs.existsSync(SHARED_DIST_HEROES) || !fs.existsSync(SHARED_DIST_CARDS)) {
-    return { heroIds: [], cardKeys: [] };
+  if (fs.existsSync(SHARED_DIST_CUU_CHAU)) {
+    const mod = await import(
+      new URL(`file:///${SHARED_DIST_CUU_CHAU.replaceAll('\\', '/')}`).href
+    );
+    const heroIds =
+      mod.CUU_CHAU_CORE_PACK?.manifest?.heroIds ??
+      (mod.CUU_CHAU_HEROES ?? []).map((h) => h.id);
+    const cardKeys =
+      mod.CUU_CHAU_CORE_PACK?.manifest?.cardKeys ??
+      [...new Set((mod.CUU_CHAU_DECK_TEMPLATES ?? []).map((c) => c.cardKey))];
+    return { heroIds, cardKeys };
   }
-  const { HERO_CATALOG } = await import(
-    new URL(`file:///${SHARED_DIST_HEROES.replaceAll('\\', '/')}`).href
-  );
-  const { STANDARD_DECK_TEMPLATES } = await import(
-    new URL(`file:///${SHARED_DIST_CARDS.replaceAll('\\', '/')}`).href
-  );
 
-  const heroIds = HERO_CATALOG.map((h) => h.id);
-  const cardKeys = [...new Set(STANDARD_DECK_TEMPLATES.map((c) => c.cardKey))];
-  return { heroIds, cardKeys };
+  if (fs.existsSync(SHARED_SRC_CUU_CHAU)) {
+    const src = fs.readFileSync(SHARED_SRC_CUU_CHAU, 'utf8');
+    const heroMatches = [
+      ...src.matchAll(/id:\s*'([a-z0-9_]+)',\s*\r?\n\s*legacySlotId:/g),
+    ].map((m) => m[1]);
+    const cardBlockMatch = src.match(
+      /CUU_CHAU_CARD_DISPLAY_BY_KEY[\s\S]*?=\s*\{([\s\S]*?)\r?\n\};/,
+    );
+    const allCardKeys = cardBlockMatch
+      ? [...cardBlockMatch[1].matchAll(/^\s{2}([a-z0-9_]+):\s*\{/gm)]
+          .map((m) => m[1])
+          .filter((k) => k !== 'nhan_vuong_thuan')
+      : [];
+    return {
+      heroIds: [...new Set(heroMatches)],
+      cardKeys: [...new Set(allCardKeys)],
+    };
+  }
+
+  return { heroIds: [], cardKeys: [] };
 }
 
 function getDirFiles(dirPath, allowedExts) {
@@ -138,7 +158,18 @@ function validateManifestStrict() {
   }
 
   for (const [relPath, entry] of byPath.entries()) {
-    if (entry.kind !== 'icon-pack' && !seenRuntime.has(relPath)) {
+    if (entry.kind === 'icon-pack') {
+      const iconFullPath = path.join(ROOT_DIR, relPath);
+      if (!fs.existsSync(iconFullPath)) {
+        throw new Error(`Tệp icon-pack khai báo trong assets-manifest.json không tồn tại: ${relPath}`);
+      }
+      const actualIconHash = sha256File(iconFullPath);
+      if (entry.sha256 !== actualIconHash) {
+        throw new Error(
+          `Sai lệch sha256 cho ${relPath} (manifest=${entry.sha256}, actual=${actualIconHash}).`,
+        );
+      }
+    } else if (!seenRuntime.has(relPath)) {
       throw new Error(`Tệp khai báo trong assets-manifest.json không tồn tại trên đĩa: ${relPath}`);
     }
   }
@@ -352,10 +383,11 @@ function runNotices() {
     `THIRD-PARTY NOTICES — ${brand.title.en} (${brand.title.vi})`,
     '='.repeat(72),
     '',
-    '1. Gameplay Vector Icons (46 icons)',
+    '1. Gameplay Vector Icons (56 icons)',
     '   - Source: Game-icons.net (@iconify-json/game-icons)',
-    '   - Authors: Lorc, Delapouite, Skoll, Viscious Speed & contributors',
+    '   - Authors: Lorc, Delapouite, Skoll, Viscious Speed, Caro Asercion, sbed & contributors',
     '   - License: CC BY 3.0 (https://creativecommons.org/licenses/by/3.0/)',
+    '   - Modification: Vector SVG paths extracted and recolored for dark-jade cards',
     '',
     '2. UI Icons & Offline Typography',
     '   - Lucide React Icons — ISC License',

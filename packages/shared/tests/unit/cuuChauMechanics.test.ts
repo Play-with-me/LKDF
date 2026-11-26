@@ -2,11 +2,14 @@ import { describe, expect, it } from 'vitest';
 import {
   CUU_CHAU_CARD_DISPLAY_BY_KEY,
   CUU_CHAU_DECK_TEMPLATES,
+  CUU_CHAU_HEROES,
   applyGameAction,
   calculateDistance,
   canReachForSnatch,
   createCuuChau112Deck,
   createInitialMatchSetup,
+  decideBotAction,
+  describeAvailableActions,
   getPlayerMaxHandLimit,
   getPlayerMaxSatPerTurn,
   isCuuChauRuleset,
@@ -1032,5 +1035,186 @@ describe('Phase 2B Slice 4 — U Minh Cốc Remaining 2 Remixes & Legacy Non-Reg
       players: legacy.players.map((p) => (p.seatIndex === dc.seatIndex ? { ...p, handCards: [] } : p)),
     };
     expect(stepEngine(dcEnd, createSeededRng(36)).players[dc.seatIndex]!.handCards).toHaveLength(1);
+  });
+
+  it('Step 1 Balance & Engine Sync: auto 112-card deck, Trương Huy Diệu (<=1), Mộ Dung Tuyết (+1 hand limit), SSOT ActionDescriptor & Bot AI', () => {
+    const rng = createSeededRng(108112);
+    const seats = makeSeats(4);
+    let autoDeckState = createInitialMatchSetup({
+      matchId: 'cc-auto-112',
+      seats,
+      rng,
+      enabledPacks: ['cuu_chau_core'],
+    });
+    const lordSeat = autoDeckState.heroDraft!.lordSeatIndex;
+    const otherSeats = [0, 1, 2, 3].filter((s) => s !== lordSeat);
+    const pickHeroes: readonly HeroId[] = ['liu_bei', 'zhang_liao', 'lu_xun', 'huang_gai'];
+    autoDeckState = {
+      ...autoDeckState,
+      heroDraft: {
+        ...autoDeckState.heroDraft!,
+        candidatesBySeat: {
+          ...autoDeckState.heroDraft!.candidatesBySeat,
+          [lordSeat]: [pickHeroes[0]!, ...autoDeckState.heroDraft!.candidatesBySeat[lordSeat]!.filter((h) => h !== pickHeroes[0])].slice(0, 5),
+        },
+      },
+    };
+    autoDeckState = selectLordHero(autoDeckState, lordSeat, pickHeroes[0]!, rng);
+    otherSeats.forEach((seat, idx) => {
+      const hid = pickHeroes[idx + 1]!;
+      autoDeckState = {
+        ...autoDeckState,
+        heroDraft: {
+          ...autoDeckState.heroDraft!,
+          candidatesBySeat: {
+            ...autoDeckState.heroDraft!.candidatesBySeat,
+            [seat]: [hid, ...autoDeckState.heroDraft!.candidatesBySeat[seat]!.filter((h) => h !== hid)].slice(0, 3),
+          },
+        },
+      };
+      autoDeckState = selectPlayerHero(autoDeckState, seat, hid);
+    });
+
+    // startMatchCombat WITHOUT options.deckFactory automatically uses createCuuChau112Deck!
+    autoDeckState = startMatchCombat(autoDeckState, rng);
+    const totalCards =
+      autoDeckState.drawPile.length +
+      autoDeckState.discardPile.length +
+      autoDeckState.players.reduce((sum, p) => sum + p.handCards.length, 0);
+    expect(totalCards).toBe(112);
+    expect(autoDeckState.drawPile.every((c) => c.id.startsWith('cc_'))).toBe(true);
+
+    // Trương Huy Diệu (zhang_liao): draws +1 at END only when handCards.length <= 1 (not 2)
+    const zlSeat = autoDeckState.players.find((p) => p.heroId === 'zhang_liao')!.seatIndex;
+    const cA = card('zla', 'thiem', 'Thân Pháp', 'BASIC', 'DIAMOND', 2);
+    const cB = card('zlb', 'thiem', 'Thân Pháp', 'BASIC', 'HEART', 3);
+    const zlEndWith2: MasterGameState = {
+      ...autoDeckState,
+      currentTurnSeat: zlSeat,
+      turnPhase: 'END',
+      interruptStack: [],
+      pendingEffects: [],
+      players: autoDeckState.players.map((p) =>
+        p.seatIndex === zlSeat ? { ...p, handCards: [cA, cB] } : p,
+      ),
+    };
+    expect(stepEngine(zlEndWith2, createSeededRng(40)).players[zlSeat]!.handCards).toHaveLength(2);
+
+    const zlEndWith1: MasterGameState = {
+      ...zlEndWith2,
+      players: autoDeckState.players.map((p) =>
+        p.seatIndex === zlSeat ? { ...p, handCards: [cA] } : p,
+      ),
+    };
+    expect(stepEngine(zlEndWith1, createSeededRng(41)).players[zlSeat]!.handCards).toHaveLength(2);
+
+    // Mộ Dung Tuyết (lu_xun): +1 max hand limit in both MasterGameState and ActionDescriptor
+    const lx = autoDeckState.players.find((p) => p.heroId === 'lu_xun')!;
+    expect(getPlayerMaxHandLimit(autoDeckState, lx)).toBe(lx.hp + 1);
+    const lxCards = Array.from({ length: lx.hp + 2 }, (_, idx) =>
+      card(`lxc_${idx}`, 'thiem', 'Thân Pháp', 'BASIC', 'DIAMOND', idx + 2),
+    );
+    const lxDiscardState: MasterGameState = {
+      ...autoDeckState,
+      currentTurnSeat: lx.seatIndex,
+      turnPhase: 'DISCARD',
+      interruptStack: [],
+      pendingEffects: [],
+      players: autoDeckState.players.map((p) =>
+        p.seatIndex === lx.seatIndex ? { ...p, handCards: lxCards } : p,
+      ),
+    };
+    const lxDesc = describeAvailableActions(projectStateForPlayer(lxDiscardState, lx.userId));
+    expect(lxDesc.discardRequiredCount).toBe(1);
+
+    // English descriptions of tuned heroes have 0 Vietnamese diacritics
+    const vietDiacriticRe = /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i;
+    for (const hid of ['truong_huy_dieu', 'mo_dung_tuyet']) {
+      const hDef = CUU_CHAU_HEROES.find((h) => h.id === hid)!;
+      for (const s of hDef.skills) {
+        expect(vietDiacriticRe.test(s.descriptionEn ?? '')).toBe(false);
+      }
+    }
+
+    // ActionDescriptor uses getPlayerMaxSatPerTurn (bonusSatLimitThisTurn)
+    const hg = autoDeckState.players.find((p) => p.heroId === 'huang_gai')!;
+    const hgStrike = card('hgs_1', 'sat', 'Kiếm Trảm', 'BASIC', 'SPADE', 7);
+    const hgPlayState: MasterGameState = {
+      ...autoDeckState,
+      roundNumber: 2,
+      peacefulFirstRound: false,
+      currentTurnSeat: hg.seatIndex,
+      turnPhase: 'PLAY',
+      interruptStack: [],
+      pendingEffects: [],
+      turnFlags: { satUsedThisTurn: 1, bonusSatLimitThisTurn: 1, skipPlayPhase: false },
+      players: autoDeckState.players.map((p) =>
+        p.seatIndex === hg.seatIndex ? { ...p, handCards: [hgStrike] } : p,
+      ),
+    };
+    const hgDesc = describeAvailableActions(projectStateForPlayer(hgPlayState, hg.userId));
+    expect(hgDesc.playableCardIds).toContain('hgs_1');
+
+    // Bot AI: never nullifies friendly Cửu Châu beneficial scrolls & randomizes Fan Jian suit guess
+    const vgCard = card('vg_b1', 'vo_giai_kha_kich', 'Hóa Giải Chân Khí', 'NORMAL_SCROLL', 'SPADE', 11);
+    for (const scrollNameVi of [
+      'Đào Viên Kết Nghĩa',
+      'Hội Minh Tụ Nghĩa',
+      'Ngũ Cốc Phong Đăng',
+      'Thiên Bảo Xuất Thế',
+      'Vô Trung Sinh Hữu',
+      'Tụ Khí Quyết',
+      'Chân Khí Hộ Thể',
+    ]) {
+      const nullifyState: MasterGameState = {
+        ...autoDeckState,
+        players: autoDeckState.players.map((p) =>
+          p.seatIndex === lordSeat ? { ...p, handCards: [vgCard] } : p,
+        ),
+        interruptStack: [
+          {
+            id: 'wn_test',
+            kind: 'WAIT_NULLIFICATION',
+            targetSeat: lordSeat,
+            sourceSeat: lordSeat,
+            scrollNameVi,
+            isSimulatedDelay: false,
+            eligibleSeats: [lordSeat],
+            passedSeats: [],
+          },
+        ],
+      };
+      const botDec = decideBotAction(
+        projectStateForPlayer(nullifyState, autoDeckState.players[lordSeat]!.userId),
+        createSeededRng(77),
+      );
+      expect(botDec).toEqual({
+        type: 'RESPOND_NULLIFICATION',
+        seatIndex: lordSeat,
+        cardId: null,
+      });
+    }
+
+    const fanJianState: MasterGameState = {
+      ...autoDeckState,
+      interruptStack: [
+        {
+          id: 'fj_test',
+          kind: 'WAIT_FAN_JIAN_GUESS',
+          targetSeat: lordSeat,
+          sourceSeat: zlSeat,
+        },
+      ],
+    };
+    const fjView = projectStateForPlayer(fanJianState, autoDeckState.players[lordSeat]!.userId);
+    const guessedSuits = new Set<string>();
+    const rngFanJian = createSeededRng(999);
+    for (let i = 0; i < 30; i += 1) {
+      const act = decideBotAction(fjView, rngFanJian);
+      if (act.type === 'RESPOND_FAN_JIAN_GUESS') {
+        guessedSuits.add(act.suit);
+      }
+    }
+    expect(guessedSuits.size).toBe(4);
   });
 });

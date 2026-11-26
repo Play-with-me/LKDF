@@ -2,8 +2,13 @@ import { readAppLocale } from './devicePreferences.js';
 import type {
   ExchangeManualCodeResponse,
   FilteredStatsResponse,
+  GuestLoginResponse,
   HealthCheckResponse,
+  HeroId,
+  IdentityRole,
   LatestUpdateInfoResponse,
+  LocalOfflineMatchEntry,
+  LocalOfflineStats,
   PersistedClientState,
   PollAuthStatusResponse,
   RoomViewerPayload,
@@ -16,6 +21,120 @@ import type {
   UserProfile,
   UserStatsDetailResponse,
 } from './types.js';
+
+export function createEmptyLocalOfflineStats(): LocalOfflineStats {
+  return {
+    played: 0,
+    wins: 0,
+    byRole: {
+      LORD: { played: 0, wins: 0 },
+      LOYALIST: { played: 0, wins: 0 },
+      REBEL: { played: 0, wins: 0 },
+      SPY: { played: 0, wins: 0 },
+    },
+    byHero: {},
+    recentMatches: [],
+  };
+}
+
+function generateFallbackDeviceId(): string {
+  try {
+    return crypto.randomUUID();
+  } catch {
+    return `dev_${Date.now()}_${Math.random().toString(36).slice(2, 12)}`;
+  }
+}
+
+function sanitizeBrowserOfflineStats(raw: unknown): LocalOfflineStats {
+  const base = createEmptyLocalOfflineStats();
+  if (!raw || typeof raw !== 'object') {
+    return base;
+  }
+  const obj = raw as Record<string, unknown>;
+  const played =
+    typeof obj['played'] === 'number' && obj['played'] >= 0
+      ? Math.floor(obj['played'])
+      : 0;
+  const wins =
+    typeof obj['wins'] === 'number' && obj['wins'] >= 0
+      ? Math.min(played, Math.floor(obj['wins']))
+      : 0;
+  const byRole: Record<IdentityRole, { played: number; wins: number }> = {
+    LORD: { ...base.byRole.LORD },
+    LOYALIST: { ...base.byRole.LOYALIST },
+    REBEL: { ...base.byRole.REBEL },
+    SPY: { ...base.byRole.SPY },
+  };
+  if (obj['byRole'] && typeof obj['byRole'] === 'object') {
+    const rr = obj['byRole'] as Record<string, unknown>;
+    for (const role of ['LORD', 'LOYALIST', 'REBEL', 'SPY'] as const) {
+      const item = rr[role];
+      if (item && typeof item === 'object') {
+        const entry = item as Record<string, unknown>;
+        const p =
+          typeof entry['played'] === 'number' && entry['played'] >= 0
+            ? Math.floor(entry['played'])
+            : 0;
+        const w =
+          typeof entry['wins'] === 'number' && entry['wins'] >= 0
+            ? Math.min(p, Math.floor(entry['wins']))
+            : 0;
+        byRole[role] = { played: p, wins: w };
+      }
+    }
+  }
+  const byHero: Record<string, { played: number; wins: number }> = {};
+  if (obj['byHero'] && typeof obj['byHero'] === 'object') {
+    for (const [heroId, val] of Object.entries(
+      obj['byHero'] as Record<string, unknown>,
+    )) {
+      if (val && typeof val === 'object') {
+        const entry = val as Record<string, unknown>;
+        const p =
+          typeof entry['played'] === 'number' && entry['played'] >= 0
+            ? Math.floor(entry['played'])
+            : 0;
+        const w =
+          typeof entry['wins'] === 'number' && entry['wins'] >= 0
+            ? Math.min(p, Math.floor(entry['wins']))
+            : 0;
+        byHero[heroId] = { played: p, wins: w };
+      }
+    }
+  }
+  const recentMatches: LocalOfflineMatchEntry[] = [];
+  if (Array.isArray(obj['recentMatches'])) {
+    for (const item of obj['recentMatches'].slice(0, 60)) {
+      if (!item || typeof item !== 'object') continue;
+      const e = item as Record<string, unknown>;
+      const role = e['role'];
+      if (
+        typeof e['id'] === 'string' &&
+        typeof e['heroId'] === 'string' &&
+        (role === 'LORD' || role === 'LOYALIST' || role === 'REBEL' || role === 'SPY') &&
+        typeof e['won'] === 'boolean' &&
+        typeof e['finishedAt'] === 'string'
+      ) {
+        recentMatches.push({
+          id: e['id'],
+          heroId: e['heroId'] as HeroId,
+          role,
+          won: e['won'],
+          finishedAt: e['finishedAt'],
+          durationSeconds:
+            typeof e['durationSeconds'] === 'number' && e['durationSeconds'] >= 0
+              ? Math.floor(e['durationSeconds'])
+              : 0,
+          playerCount:
+            typeof e['playerCount'] === 'number' && e['playerCount'] >= 4
+              ? Math.floor(e['playerCount'])
+              : 4,
+        });
+      }
+    }
+  }
+  return { played, wins, byRole, byHero, recentMatches };
+}
 
 export const DEFAULT_SERVER_URL =
   (import.meta.env.VITE_LKDF_SERVER_URL as string | undefined)?.trim() ||
@@ -73,13 +192,68 @@ export function normalizeServerUrl(raw: string): string {
   return `${parsed.origin}${cleanPath}`;
 }
 
+function normalizeHostEndpoint(rawHost: string): string {
+  const trimmed = rawHost.trim();
+  if (!trimmed) {
+    return DEFAULT_SERVER_URL;
+  }
+  const hasHttps = /^https:\/\//i.test(trimmed);
+  const withoutProto = trimmed.replace(/^https?:\/\//i, '').replace(/\/+$/, '');
+  const hasPort = /:\d+$/.test(withoutProto);
+  if (!hasHttps && !hasPort && /^(?:\d{1,3}(?:\.\d{1,3}){3}|localhost)$/i.test(withoutProto)) {
+    return normalizeServerUrl(`http://${withoutProto}:3001`);
+  }
+  return normalizeServerUrl(hasHttps ? `https://${withoutProto}` : `http://${withoutProto}`);
+}
+
+export function parseSmartRoomInvite(
+  rawInviteOrCode: string,
+  rawHostAddress = '',
+  fallbackServerUrl = DEFAULT_SERVER_URL,
+): { readonly serverUrl: string; readonly roomCode: string } | null {
+  const cleaned = rawInviteOrCode.trim();
+  const hostField = rawHostAddress.trim();
+
+  if (cleaned.includes('#')) {
+    const hashIdx = cleaned.lastIndexOf('#');
+    const hostPart = cleaned.slice(0, hashIdx).trim();
+    const codePart = cleaned.slice(hashIdx + 1).trim().toUpperCase();
+    if (!/^[A-Z0-9]{6}$/.test(codePart)) {
+      return null;
+    }
+    const serverUrl = hostPart
+      ? normalizeHostEndpoint(hostPart)
+      : hostField
+        ? normalizeHostEndpoint(hostField)
+        : normalizeServerUrl(fallbackServerUrl);
+    return { serverUrl, roomCode: codePart };
+  }
+
+  const slashOrSpaceMatch = /^(https?:\/\/[^\s/]+|[^\s/#:]+\.[^\s/#]+(?::\d+)?|localhost(?::\d+)?)[/\s]+([A-Za-z0-9]{6})$/.exec(
+    cleaned,
+  );
+  if (slashOrSpaceMatch && slashOrSpaceMatch[1] && slashOrSpaceMatch[2]) {
+    return {
+      serverUrl: normalizeHostEndpoint(slashOrSpaceMatch[1]),
+      roomCode: slashOrSpaceMatch[2].toUpperCase(),
+    };
+  }
+
+  const codeOnly = cleaned.replace(/\s+/g, '').toUpperCase();
+  if (!/^[A-Z0-9]{6}$/.test(codeOnly)) {
+    return null;
+  }
+
+  const serverUrl = hostField
+    ? normalizeHostEndpoint(hostField)
+    : normalizeServerUrl(fallbackServerUrl);
+  return { serverUrl, roomCode: codeOnly };
+}
+
 function readBrowserStorageState(): PersistedClientState {
   try {
     const raw = window.localStorage.getItem(LOCAL_STORAGE_KEY);
-    if (!raw) {
-      return { serverUrl: DEFAULT_SERVER_URL, sessionToken: null };
-    }
-    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    const parsed = raw ? (JSON.parse(raw) as Record<string, unknown>) : {};
     const serverUrl =
       typeof parsed['serverUrl'] === 'string' && parsed['serverUrl'].trim()
         ? parsed['serverUrl'].trim()
@@ -88,9 +262,43 @@ function readBrowserStorageState(): PersistedClientState {
       typeof parsed['sessionToken'] === 'string' && parsed['sessionToken'].trim()
         ? parsed['sessionToken']
         : null;
-    return { serverUrl, sessionToken };
+    const existingDeviceId =
+      typeof parsed['clientDeviceId'] === 'string' &&
+      parsed['clientDeviceId'].trim().length >= 8 &&
+      parsed['clientDeviceId'].trim().length <= 80
+        ? parsed['clientDeviceId'].trim()
+        : null;
+    const clientDeviceId = existingDeviceId ?? generateFallbackDeviceId();
+    const rawName =
+      typeof parsed['localDisplayName'] === 'string'
+        ? parsed['localDisplayName'].trim().normalize('NFC')
+        : '';
+    const localDisplayName =
+      rawName.length >= 2 && rawName.length <= 20 ? rawName : null;
+    const localOfflineStats = sanitizeBrowserOfflineStats(parsed['localOfflineStats']);
+    const state: PersistedClientState = {
+      serverUrl,
+      sessionToken,
+      clientDeviceId,
+      localDisplayName,
+      localOfflineStats,
+    };
+    if (!existingDeviceId) {
+      try {
+        window.localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(state));
+      } catch {
+        // Bỏ qua nếu localStorage bị khóa
+      }
+    }
+    return state;
   } catch {
-    return { serverUrl: DEFAULT_SERVER_URL, sessionToken: null };
+    return {
+      serverUrl: DEFAULT_SERVER_URL,
+      sessionToken: null,
+      clientDeviceId: generateFallbackDeviceId(),
+      localDisplayName: null,
+      localOfflineStats: createEmptyLocalOfflineStats(),
+    };
   }
 }
 
@@ -101,9 +309,15 @@ export async function loadInitialClientState(): Promise<PersistedClientState> {
       return {
         serverUrl: normalizeServerUrl(state.serverUrl),
         sessionToken: state.sessionToken ?? null,
+        clientDeviceId:
+          state.clientDeviceId && state.clientDeviceId.trim().length >= 8
+            ? state.clientDeviceId.trim()
+            : generateFallbackDeviceId(),
+        localDisplayName: state.localDisplayName ?? null,
+        localOfflineStats: sanitizeBrowserOfflineStats(state.localOfflineStats),
       };
     } catch {
-      return { serverUrl: DEFAULT_SERVER_URL, sessionToken: null };
+      return readBrowserStorageState();
     }
   }
   return readBrowserStorageState();
@@ -117,6 +331,9 @@ export async function saveClientStatePatch(
     return {
       serverUrl: normalizeServerUrl(updated.serverUrl),
       sessionToken: updated.sessionToken ?? null,
+      clientDeviceId: updated.clientDeviceId,
+      localDisplayName: updated.localDisplayName ?? null,
+      localOfflineStats: sanitizeBrowserOfflineStats(updated.localOfflineStats),
     };
   }
 
@@ -128,6 +345,18 @@ export async function saveClientStatePatch(
         : current.serverUrl,
     sessionToken:
       patch.sessionToken !== undefined ? patch.sessionToken : current.sessionToken,
+    clientDeviceId:
+      patch.clientDeviceId !== undefined
+        ? patch.clientDeviceId
+        : current.clientDeviceId,
+    localDisplayName:
+      patch.localDisplayName !== undefined
+        ? patch.localDisplayName
+        : current.localDisplayName,
+    localOfflineStats:
+      patch.localOfflineStats !== undefined
+        ? sanitizeBrowserOfflineStats(patch.localOfflineStats)
+        : current.localOfflineStats,
   };
   try {
     window.localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(next));
@@ -140,6 +369,10 @@ export async function saveClientStatePatch(
 export interface LkdfApiClient {
   readonly baseUrl: string;
   checkHealth(signal?: AbortSignal): Promise<HealthCheckResponse>;
+  guestLogin(params: {
+    readonly clientDeviceId: string;
+    readonly displayName: string;
+  }): Promise<GuestLoginResponse>;
   startGoogleLogin(desktopCallbackPort?: number): Promise<StartGoogleLoginResponse>;
   pollGoogleStatus(
     authSessionId: string,
@@ -290,6 +523,16 @@ export function createApiClient(serverUrl: string): LkdfApiClient {
         '/api/health',
         signal ? { signal } : {},
       );
+    },
+
+    guestLogin(params) {
+      return requestJson<GuestLoginResponse>('/api/auth/guest', {
+        method: 'POST',
+        body: {
+          clientDeviceId: params.clientDeviceId.trim(),
+          displayName: params.displayName.trim(),
+        },
+      });
     },
 
     startGoogleLogin(desktopCallbackPort) {

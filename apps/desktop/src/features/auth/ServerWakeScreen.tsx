@@ -25,39 +25,39 @@ const TACTICAL_TIPS: readonly {
 }[] = [
   {
     title: 'Vòng 1 Hòa Bình',
-    body: 'Trong vòng đầu tiên toàn bàn, không thể đánh Sát hay Quyết Đấu — hãy ưu tiên rút bài, lắp Vũ khí và Giáp.',
+    body: 'Trong vòng đầu tiên toàn bàn, chưa xuất Kiếm Trảm hay Sinh Tử Lôi Đài — hãy ưu tiên tích trữ bài, lắp Binh khí và Hộ giáp.',
     titleEn: 'Round 1 Peace Pact',
-    bodyEn: 'During Round 1 across the table, Strikes and Duels are sealed — focus on drawing cards, equipping weapons, and armor.',
+    bodyEn: 'During Round 1 across the table, Blade Strikes and Trials by Combat are sealed — focus on equipping Weapons and Armor.',
   },
   {
-    title: 'Khoảng cách & Chiến mã',
-    body: 'Ngựa -1 giúp bạn áp sát mục tiêu thuận lợi hơn; Ngựa +1 giữ khoảng cách khiến đối thủ khó với tới.',
-    titleEn: 'Distance & Steeds',
-    bodyEn: 'Steeds -1 shorten your attack reach to targets; Steeds +1 push enemies farther away from reaching you.',
+    title: 'Khoảng cách & Khinh công',
+    body: 'Thân pháp -1 (Truy Ảnh Hài, Xích Diễm Câu) giúp áp sát mục tiêu; Khinh công +1 (Đạp Tuyết Vô Ngân) khiến đối thủ nhìn bạn xa hơn 1 ô.',
+    titleEn: 'Distance & Martial Footwork',
+    bodyEn: 'Offensive Footwork -1 (Shadowchase Boots) shortens reach to targets; Defensive Footwork +1 (Snowstep Boots) pushes attackers away.',
   },
   {
-    title: 'Đào cứu nguy toàn bàn',
-    body: 'Khi một tướng tụt về 0 máu (hấp hối), bất kỳ ai còn Đào trên tay đều có thể dùng để cứu +1 máu.',
-    titleEn: 'Global Spirit Peach Rescue',
-    bodyEn: 'Whenever any general drops to 0 HP (brink of death), anyone holding a Spirit Peach may play it to restore +1 HP.',
+    title: 'Hồi Xuân Đan cứu nguy toàn bàn',
+    body: 'Khi một hiệp khách tụt về 0 Sinh Lực (hấp hối), bất kỳ ai còn Hồi Xuân Đan trên tay đều có thể tung ra cứu +1 Sinh Lực.',
+    titleEn: 'Global Elixir Pill Rescue',
+    bodyEn: 'Whenever any warrior drops to 0 HP (dying), anyone holding an Elixir Pill may play it to restore +1 HP.',
   },
   {
     title: 'Hóa Giải Chân Khí',
-    body: 'Có thể chặn Bí kíp thường lẫn Bí kíp chậm (Phong Mạch Tán, Thiên Lôi Chú) ngay trước lúc phát huy hiệu lực.',
-    titleEn: 'True Qi Negation',
-    bodyEn: 'Negates both instant Scrolls and delayed Scrolls (Qi Lock Seal, Celestial Thunder) right before resolution.',
+    body: 'Triệt tiêu được cả Bí kíp thường (Tụ Khí Quyết, Kinh Lôi Chấn) lẫn Ấn chú thời gian (Điểm Huyệt Phong Mạch, Thiên Lôi Kiếp).',
+    titleEn: 'Qi Negation Counterplay',
+    bodyEn: 'Cancels both instant Scrolls (Qi Surge, Thunderclap Pulse) and delayed Seals (Acupoint Seal, Sky Tribulation) right before resolution.',
   },
   {
-    title: 'Liên Châu Nỏ & Thanh Cang Kiếm',
-    body: 'Liên Châu Nỏ cho phép đánh không giới hạn lá Kiếm Trảm trong lượt; Thanh Cang Kiếm chém xuyên hiệu ứng Hộ giáp đối thủ.',
-    titleEn: 'Repeating Crossbow & Blue Steel Blade',
-    bodyEn: 'Repeating Crossbow removes the Strike limit per turn; Blue Steel Blade pierces straight through defender Armor.',
+    title: 'Liên Hoàn Nỏ & Phá Giáp Trảm',
+    body: 'Liên Hoàn Nỏ cho phép xuất Kiếm Trảm không giới hạn trong lượt; Phá Giáp Trảm và Thanh Phong Kiếm chém xuyên Hộ giáp đối thủ.',
+    titleEn: 'Repeating Crossbow & Armor-Piercing',
+    bodyEn: 'Repeating Crossbow removes the Strike limit per turn; Armor-Piercing Strike and Azure Wind Blade bypass equipped Armor.',
   },
   {
-    title: 'Mục tiêu chiến thắng theo Phe',
-    body: 'Nghĩa Quân thắng ngay khi hạ được Minh Chủ; Ám Ảnh chỉ thắng khi trở thành người sống sót cuối cùng.',
-    titleEn: 'Allegiance Victory Conditions',
-    bodyEn: 'Rebels win immediately upon slaying the Sovereign; Traitors win only as the sole survivor at the end.',
+    title: 'Mục tiêu chiến thắng theo Thân Phận',
+    body: 'Nghĩa Quân thắng ngay khi hạ được Minh Chủ; Ám Ảnh chỉ thắng khi trở thành cao thủ sống sót duy nhất cuối cùng.',
+    titleEn: 'Hidden Role Victory Conditions',
+    bodyEn: 'Crimson Insurgents win upon defeating the Grand Sovereign; the Lone Phantom wins only as the sole surviving fighter.',
   },
 ];
 
@@ -67,7 +67,7 @@ export function ServerWakeScreen({
   onServerReady,
   onPlayOffline,
 }: ServerWakeScreenProps) {
-  const { i18n } = useTranslation();
+  const { i18n, t } = useTranslation();
   const isEn = i18n.language === 'en';
   const [status, setStatus] = useState<'WAKING' | 'ERROR'>('WAKING');
   const [elapsedSeconds, setElapsedSeconds] = useState<number>(0);
@@ -159,7 +159,7 @@ export function ServerWakeScreen({
         const message =
           err instanceof Error
             ? err.message
-            : 'Chưa nhận được phản hồi từ máy chủ phòng chơi.';
+            : t('wake.noResponse');
         setLastError(message);
 
         retryTimerRef.current = window.setTimeout(() => {
@@ -220,7 +220,7 @@ export function ServerWakeScreen({
       setUrlError(
         err instanceof Error
           ? err.message
-          : 'Không thể lưu địa chỉ máy chủ mới.',
+          : t('wake.saveUrlFailed'),
       );
     } finally {
       setIsSavingUrl(false);
@@ -274,7 +274,7 @@ export function ServerWakeScreen({
             className="lkdf-bronze-pill inline-flex cursor-pointer items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium text-[#EFE6D5] focus-visible:outline-2 focus-visible:outline-[#E6BE6C]"
           >
             <GameIcon name="ui:convert" size={12} className="text-[#E6BE6C]" />
-            <span>{isEditingUrl ? 'Đóng cấu hình' : 'Đổi máy chủ'}</span>
+            <span>{isEditingUrl ? t('wake.closeConfig') : t('wake.switchServer')}</span>
           </button>
 
           {isEditingUrl ? (

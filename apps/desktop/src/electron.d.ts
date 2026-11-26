@@ -1,5 +1,6 @@
 import type {
   DesktopUpdateState,
+  LanHostStatus,
   PersistedClientState,
 } from './lib/types.js';
 
@@ -23,6 +24,9 @@ export interface LkdfDesktopBridge {
   getAppVersion: () => Promise<string>;
   getBuildTarget?: () => Promise<'steam' | 'standalone'>;
   getSteamStatus?: () => Promise<SteamRuntimeStatus>;
+  startLanHost?: () => Promise<LanHostStatus>;
+  stopLanHost?: () => Promise<LanHostStatus>;
+  getLanHostStatus?: (fallbackPort?: number) => Promise<LanHostStatus>;
   flashTaskbarFrame: (flash: boolean) => Promise<void>;
   setMatchCloseGuard: (active: boolean, offline?: boolean) => Promise<void>;
   openExternalUrl: (url: string) => Promise<void>;

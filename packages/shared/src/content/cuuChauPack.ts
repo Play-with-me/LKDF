@@ -839,9 +839,9 @@ export const CUU_CHAU_HEROES: readonly CuuChauHeroDefinition[] = [
         nameVi: 'Kỳ Tập Đạo',
         nameEn: 'Night Raid',
         descriptionVi:
-          'Ở pha Rút bài, có thể bỏ rút để đoạt 1 lá trên tay tối đa 2 đối thủ; giảm 1 tầm công.',
+          'Ở pha Rút bài, có thể bỏ rút để đoạt 1 lá trên tay tối đa 2 đối thủ; giảm 1 tầm công và cuối lượt nếu tay còn ≤ 1 lá thì rút 1 lá.',
         descriptionEn:
-          'Replace your draw phase to snatch 1 card each from up to 2 fighters; -1 offensive distance.',
+          'Replace your draw phase to snatch 1 card each from up to 2 fighters; -1 offensive distance, and draw 1 card at turn end if holding ≤ 1 hand card.',
       },
     ],
   },
@@ -1111,9 +1111,9 @@ export const CUU_CHAU_HEROES: readonly CuuChauHeroDefinition[] = [
         nameVi: 'Băng Tâm Cảnh',
         nameEn: 'Serene Ward',
         descriptionVi:
-          'Miễn nhiễm Thám Nang Thủ & Điểm Huyệt Phong Mạch; bí kíp bỏ qua khoảng cách.',
+          'Miễn nhiễm Thám Nang Thủ & Điểm Huyệt Phong Mạch; bí kíp bỏ qua khoảng cách và giới hạn giữ bài tăng +1.',
         descriptionEn:
-          'Immune to Sleight of Hand & Acupoint Seal; your scrolls ignore distance.',
+          'Immune to Sleight of Hand & Acupoint Seal; your scrolls ignore distance and gain +1 maximum hand limit.',
       },
       {
         id: 'lian_ying',
@@ -1439,7 +1439,7 @@ export const CUU_CHAU_HERO_SKILLS: Readonly<
     distanceModifier: () => -1,
     onTurnEnd: (state, seatIndex, rng, rt) => {
       const player = rt.getPlayerBySeat(state, seatIndex);
-      if (player.handCards.length <= 2) {
+      if (player.alive && player.handCards.length <= 1) {
         return rt.dealCardsToSeat(state, seatIndex, 1, rng).state;
       }
       return state;
@@ -1504,6 +1504,7 @@ export const CUU_CHAU_HERO_SKILLS: Readonly<
   mo_dung_tuyet: {
     heroId: 'mo_dung_tuyet',
     ignoreScrollDistance: true,
+    maxHandLimitModifier: () => 1,
     onHandCardsLost: (state, seatIndex, prevHandCount, rng, rt) => {
       const player = rt.getPlayerBySeat(state, seatIndex);
       if (prevHandCount > 0 && player.handCards.length === 0) {

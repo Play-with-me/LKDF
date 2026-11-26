@@ -93,12 +93,21 @@
     "startMatch": "Bắt đầu ván"
   },
   "match": {
-    "autoSkipNullify": "Tự bỏ qua Vô Giải",
-    "autoSkipNullifyShort": "Bỏ Vô Giải",
+    "autoSkipNullify": "Tự bỏ qua Hóa Giải",
+    "autoSkipNullifyShort": "Bỏ Hóa Giải",
     "reduceMotion": "Giảm chuyển động",
     "sfx": "Hiệu ứng âm thanh",
     "sfxShort": "Âm thanh",
     "bgm": "Nhạc nền",
+    "sync": "Đồng bộ",
+    "syncing": "Đồng bộ...",
+    "leaveRoom": "Rời bàn",
+    "leavingRoom": "Đang rời...",
+    "roomBadge": "Phòng #{{code}}",
+    "playerCountShort": "({{count}} người)",
+    "roundLabel": "Vòng {{round}}",
+    "deckLabel": "Rút: {{count}}",
+    "loadingState": "Đang tải trạng thái bàn đấu...",
     "log": "Nhật ký",
     "rules": "Luật",
     "referee": "Trọng tài",
@@ -116,5 +125,48 @@
       "discardPhase": "Cần bỏ {{count}} lá bài",
       "waitTurn": "Đang chờ lượt ghế {{seat}}"
     }
+  },
+  "rulesDialog": {
+    "title": "Sổ Tra Cứu Nhanh & Phím Tắt Bàn Đấu",
+    "subtitle": "Tra nhanh phím tắt, 36 lá bài (bộ 112 lá) và 25 hiệp khách ngay trong ván",
+    "tabRules": "Luật & Phím tắt",
+    "tabCards": "36 Lá Bài (112 Lá)",
+    "tabHeroes": "25 Hiệp Khách",
+    "filterAllCards": "Tất cả (36)",
+    "filterNewCards": "5 Lá Mới Cửu Châu",
+    "filterBasic": "Cơ bản",
+    "filterScrolls": "Bí kíp & Ấn chú",
+    "filterGear": "Trang bị",
+    "searchCardsPlaceholder": "Lọc nhanh tên lá bài hoặc tác dụng…",
+    "searchHeroesPlaceholder": "Lọc nhanh hiệp khách hoặc chiêu thức…",
+    "newCardBadge": "MỚI · CỬU CHÂU",
+    "copiesBadge": "×{{count}} lá",
+    "noCardsMatch": "Không có lá bài nào khớp từ khóa lọc.",
+    "noHeroesMatch": "Không có hiệp khách nào khớp từ khóa lọc.",
+    "lordSkillBadge": "Minh Chủ",
+    "returnBtn": "Đã hiểu · Quay lại bàn"
+  },
+  "credits": {
+    "openBtn": "Bản quyền & Giấy phép",
+    "title": "Bản Quyền & Giấy Phép Nguồn Mở",
+    "subtitle": "Ghi công biểu tượng, phông chữ và âm thanh đóng gói trong trò chơi",
+    "closeBtn": "Đóng bảng bản quyền",
+    "gameIconsHeading": "{{count}} Biểu Tượng Vector Lá Bài & Bàn Đấu",
+    "gameIconsCreators": "Tác giả Game-icons.net: Lorc, Delapouite, Skoll, Viscious Speed, Caro Asercion, sbed & cộng tác viên.",
+    "modificationLabel": "Ghi chú chỉnh sửa:",
+    "gameIconsModification": "Trích xuất đường nét SVG vector và phối lại sắc màu trên nền thẻ hắc ngọc (Vector SVG paths extracted and recolored for dark-jade cards).",
+    "uiIconsHeading": "Biểu Tượng Giao Diện (lucide-react)",
+    "uiIconsBody": "Bộ biểu tượng điều hướng và bảng điều khiển từ lucide-react theo giấy phép ISC License.",
+    "fontsHeading": "Phông Chữ Đóng Gói Offline",
+    "fontsBody": "Be Vietnam Pro, Noto Serif và JetBrains Mono đóng gói qua Fontsource (SIL Open Font License 1.1).",
+    "audioHeading": "Âm Thanh & Hiệu Ứng Chiến Trường",
+    "audioBody": "Hiệu ứng âm thanh chiến trường và giao diện nguyên bản của Studio (earshot synthesized/foley cues · 0 tệp AI).",
+    "noticesFileHint": "Văn bản pháp lý đầy đủ được đóng gói kèm thư mục trò chơi tại tệp THIRD_PARTY_NOTICES.txt."
+  },
+  "wake": {
+    "switchServer": "Đổi máy chủ",
+    "closeConfig": "Đóng cấu hình",
+    "noResponse": "Chưa nhận được phản hồi từ máy chủ phòng chơi.",
+    "saveUrlFailed": "Không thể lưu địa chỉ máy chủ mới."
   }
 }

@@ -497,7 +497,7 @@ describe('Bước 2.2 — Phòng chờ 4–8 người thật, 3 mức Đồng h�
     const liveDrawCountOnSrv2 = combatViewOnSrv2.playerView?.drawPileCount ?? -1;
     expect(livePhaseOnSrv2).toBeTruthy();
     expect(livePhaseOnSrv2).not.toBe('HERO_SELECT');
-    expect(liveDrawCountOnSrv2).toBeLessThanOrEqual(108 - 16);
+    expect(liveDrawCountOnSrv2).toBeLessThanOrEqual(112 - 16);
     const p1SelfHandIds =
       combatViewOnSrv2.playerView?.players[
         combatViewOnSrv2.playerView.viewerSeatIndex

@@ -30,9 +30,54 @@ export type {
   UserStats,
 };
 
+export interface LocalOfflineMatchEntry {
+  readonly id: string;
+  readonly heroId: HeroId;
+  readonly role: IdentityRole;
+  readonly won: boolean;
+  readonly finishedAt: string;
+  readonly durationSeconds: number;
+  readonly playerCount: number;
+}
+
+export interface LocalOfflineStats {
+  readonly played: number;
+  readonly wins: number;
+  readonly byRole: Readonly<
+    Record<IdentityRole, { readonly played: number; readonly wins: number }>
+  >;
+  readonly byHero: Readonly<
+    Record<string, { readonly played: number; readonly wins: number }>
+  >;
+  readonly recentMatches: readonly LocalOfflineMatchEntry[];
+}
+
 export interface PersistedClientState {
   readonly serverUrl: string;
   readonly sessionToken: string | null;
+  readonly clientDeviceId: string;
+  readonly localDisplayName: string | null;
+  readonly localOfflineStats: LocalOfflineStats;
+}
+
+export interface LanHostAddressInfo {
+  readonly label: string;
+  readonly ip: string;
+  readonly url: string;
+}
+
+export interface LanHostStatus {
+  readonly running: boolean;
+  readonly port: number | null;
+  readonly localUrl: string | null;
+  readonly addresses: readonly LanHostAddressInfo[];
+}
+
+export interface GuestLoginResponse {
+  readonly ok: true;
+  readonly sessionToken: string;
+  readonly profile: UserProfile;
+  readonly isNewUser?: boolean;
 }
 
 export interface HealthCheckResponse {

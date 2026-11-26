@@ -3,14 +3,14 @@
   "policy": "aiGenerated=false required for all runtime media",
   "assets": [
     {
-      "assetKey": "icons:game-icons-46",
+      "assetKey": "icons:game-icons-56",
       "kind": "icon-pack",
       "path": "apps/desktop/src/components/icons/gameIconsData.ts",
       "license": "CC-BY-3.0-ATTRIBUTED",
       "provenanceUrl": "https://github.com/game-icons/icons",
       "aiGenerated": false,
-      "attributionText": "46 gameplay icons by Lorc, Delapouite, Skoll & contributors via Game-icons.net (CC BY 3.0)",
-      "sha256": "5a95fb9ab71135f5f39ed8781e89498254bb63a4d3300fc7759eb61af3d80db6"
+      "attributionText": "56 gameplay icons by Lorc, Delapouite, Skoll, Viscious Speed, Caro Asercion, sbed & contributors via Game-icons.net (CC BY 3.0) — vector SVG paths extracted and recolored for dark-jade cards",
+      "sha256": "b26352c35961b68c9d2f62daa3101f9d3c26d34e7c40db1d9c3635703893d7c3"
     },
     {
       "assetKey": "audio:bgm-battle",

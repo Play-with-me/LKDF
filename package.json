@@ -10,8 +10,9 @@
   "scripts": {
     "build:shared": "npm run build --workspace=@lkdf/shared",
     "build": "npm run build:shared && npm run build --workspace=@lkdf/server && npm run build --workspace=@lkdf/desktop",
-    "package:win:dir": "npm run build:shared && npm run package:win:dir --workspace=@lkdf/desktop",
-    "package:win": "npm run build:shared && npm run package:win --workspace=@lkdf/desktop",
+    "package:win:dir": "npm run build:shared && npm run build --workspace=@lkdf/server && npm run package:win:dir --workspace=@lkdf/desktop",
+    "package:win:zip": "npm run build:shared && npm run build --workspace=@lkdf/server && npm run package:win:zip --workspace=@lkdf/desktop",
+    "package:win": "npm run build:shared && npm run build --workspace=@lkdf/server && npm run package:win --workspace=@lkdf/desktop",
     "typecheck": "npm run build:shared && npm run typecheck --workspaces --if-present",
     "test:unit": "npm run test:unit --workspace=@lkdf/shared",
     "test:fuzz": "npm run test:fuzz --workspace=@lkdf/shared",

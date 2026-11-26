@@ -3,6 +3,7 @@ import {
   TIMER_PRESETS,
   applyGameAction,
   autoSelectTimedOutHeroes,
+  createCuuChau112Deck,
   createInitialMatchSetup,
   decideBotAction,
   getPendingPrompt,
@@ -87,6 +88,7 @@ function createPreviewMatchState(
   const seats = buildPreviewSeats(count);
   let state = createInitialMatchSetup({
     matchId: `dev_preview_${count}`,
+    enabledPacks: ['cuu_chau_core'],
     seats,
   });
 
@@ -102,7 +104,7 @@ function createPreviewMatchState(
   }
 
   state = autoSelectTimedOutHeroes(state);
-  state = startMatchCombat(state);
+  state = startMatchCombat(state, Math.random, { deckFactory: createCuuChau112Deck });
 
   if (mode === 'GUAN_XING') {
     const gxCount = Math.min(5, count);
@@ -174,7 +176,12 @@ export function DevMatchPreview({
   const [previewStage, setPreviewStage] = useState<PreviewStage>('IN_PLAY');
   const [masterState, setMasterState] = useState<MasterGameState>(() =>
     offline
-      ? createInitialMatchSetup({ matchId: crypto.randomUUID(), manualDraw: true, seats: buildPreviewSeats(initialPlayerCount, true) })
+      ? createInitialMatchSetup({
+          matchId: crypto.randomUUID(),
+          manualDraw: true,
+          enabledPacks: ['cuu_chau_core'],
+          seats: buildPreviewSeats(initialPlayerCount, true),
+        })
       : createPreviewMatchState(initialPlayerCount, 'IN_PLAY'),
   );
   const [undoHistory, setUndoHistory] = useState<MasterGameState[]>([]);
@@ -205,7 +212,12 @@ export function DevMatchPreview({
       setPlayerCount(nextCount);
       setPreviewStage(nextStage);
       setMasterState(offline
-        ? createInitialMatchSetup({ matchId: crypto.randomUUID(), manualDraw: true, seats: buildPreviewSeats(nextCount, true) })
+        ? createInitialMatchSetup({
+            matchId: crypto.randomUUID(),
+            manualDraw: true,
+            enabledPacks: ['cuu_chau_core'],
+            seats: buildPreviewSeats(nextCount, true),
+          })
         : createPreviewMatchState(nextCount, nextStage));
       lastBotTurn.current = null;
       setBotFault(false);
@@ -311,7 +323,7 @@ export function DevMatchPreview({
         ) {
           return current;
         }
-        return startMatchCombat(current);
+        return startMatchCombat(current, Math.random, { deckFactory: createCuuChau112Deck });
       });
     }, Math.max(0, openingDeadline - Date.now()));
   }, [openingDeadline, openingMatchId]);

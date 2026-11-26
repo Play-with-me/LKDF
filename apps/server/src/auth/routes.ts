@@ -1,3 +1,4 @@
+import { GAME_BRAND } from '@lkdf/shared';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import type { PersistenceStore } from '../persistence/index.js';
@@ -5,6 +6,19 @@ import type { AuthService } from './index.js';
 
 const StartGoogleLoginBodySchema = z.object({
   desktopCallbackPort: z.number().int().min(1024).max(65535).optional(),
+});
+
+const GuestLoginBodySchema = z.object({
+  clientDeviceId: z
+    .string()
+    .trim()
+    .min(8, 'Mã định danh thiết bị phải có từ 8 đến 80 ký tự.')
+    .max(80, 'Mã định danh thiết bị tối đa 80 ký tự.'),
+  displayName: z
+    .string()
+    .trim()
+    .min(2, 'Biệt danh phải có từ 2 đến 20 ký tự.')
+    .max(20, 'Biệt danh tối đa 20 ký tự.'),
 });
 
 const GoogleCallbackQuerySchema = z.object({
@@ -57,16 +71,16 @@ function renderCallbackSuccessHtml(params: {
     : null;
 
   const autoRedirectBlock = safeCallbackJson
-    ? `<p class="hint">Đang tự động đưa phiên đăng nhập về ứng dụng Tam Quốc Sát trên Windows...</p>
+    ? `<p class="hint">Đang tự động đưa phiên đăng nhập về ứng dụng ${escapeHtml(GAME_BRAND.title.vi)} trên Windows...</p>
        <script>try{fetch(${safeCallbackJson},{mode:'no-cors'}).catch(function(){});}catch(e){}</script>`
-    : `<p class="hint">Ứng dụng Tam Quốc Sát sẽ tự đồng bộ phiên đăng nhập trong giây lát.</p>`;
+    : `<p class="hint">Ứng dụng ${escapeHtml(GAME_BRAND.title.vi)} sẽ tự đồng bộ phiên đăng nhập trong giây lát.</p>`;
 
   return `<!doctype html>
 <html lang="vi">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Đăng nhập Tam Quốc Sát thành công</title>
+  <title>Đăng nhập ${escapeHtml(GAME_BRAND.title.vi)} thành công</title>
   <style>
     body { margin:0; font-family: system-ui, -apple-system, sans-serif; background:#14171A; color:#F3F4F6; display:flex; align-items:center; justify-content:center; min-height:100vh; }
     .card { max-width:460px; background:#1E2328; border:1px solid #30363D; border-radius:12px; padding:28px; text-align:center; }
@@ -79,7 +93,7 @@ function renderCallbackSuccessHtml(params: {
 <body>
   <main class="card">
     <h1>Đăng nhập thành công</h1>
-    <p>Xin chào <strong>${safeName}</strong>. Tài khoản Google của bạn đã được liên kết với Tam Quốc Sát.</p>
+    <p>Xin chào <strong>${safeName}</strong>. Tài khoản Google của bạn đã được liên kết với ${escapeHtml(GAME_BRAND.title.vi)}.</p>
     ${autoRedirectBlock}
     <p>Nếu ứng dụng chưa tự mở lại, hãy sao chép mã đăng nhập dự phòng bên dưới và dán vào app:</p>
     <div class="code-box">${safeCode}</div>
@@ -96,7 +110,7 @@ function renderCallbackErrorHtml(messageVi: string): string {
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Đăng nhập Tam Quốc Sát không thành công</title>
+  <title>Đăng nhập ${escapeHtml(GAME_BRAND.title.vi)} không thành công</title>
   <style>
     body { margin:0; font-family: system-ui, -apple-system, sans-serif; background:#14171A; color:#F3F4F6; display:flex; align-items:center; justify-content:center; min-height:100vh; }
     .card { max-width:460px; background:#1E2328; border:1px solid #C83E37; border-radius:12px; padding:28px; text-align:center; }
@@ -128,6 +142,34 @@ export function registerAuthRoutes(
       ok: true,
       googleConfigured: authService.isGoogleConfigured,
     };
+  });
+
+  app.post('/api/auth/guest', async (request, reply) => {
+    const parsed = GuestLoginBodySchema.safeParse(request.body ?? {});
+    if (!parsed.success) {
+      const firstIssue = parsed.error.issues[0];
+      const code =
+        firstIssue?.path[0] === 'clientDeviceId'
+          ? 'INVALID_DEVICE_ID'
+          : 'INVALID_DISPLAY_NAME';
+      return reply.status(400).send({
+        ok: false,
+        code,
+        messageVi:
+          firstIssue?.message ??
+          'Thông tin định danh thiết bị hoặc biệt danh không hợp lệ.',
+      });
+    }
+
+    const result = await authService.loginAsGuest({
+      clientDeviceId: parsed.data.clientDeviceId,
+      displayName: parsed.data.displayName,
+    });
+    if (!result.ok) {
+      return reply.status(result.statusCode).send(result);
+    }
+
+    return result;
   });
 
   app.post('/api/auth/google/start', async (request, reply) => {
@@ -172,7 +214,11 @@ export function registerAuthRoutes(
       return reply
         .status(400)
         .type('text/html; charset=utf-8')
-        .send(renderCallbackErrorHtml('Bạn đã hủy đăng nhập Google. Hãy thử lại từ ứng dụng Tam Quốc Sát.'));
+        .send(
+          renderCallbackErrorHtml(
+            `Bạn đã hủy đăng nhập Google. Hãy thử lại từ ứng dụng ${GAME_BRAND.title.vi}.`,
+          ),
+        );
     }
 
     const result = await authService.completeGoogleCallback({

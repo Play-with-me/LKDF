@@ -56,6 +56,16 @@ const SELECTED_ICONS = [
   'dragon-head',
   'spy',
   'castle',
+  'broken-shield',
+  'lotus',
+  'chain-lightning',
+  'cape-armor',
+  'chakram',
+  'sword-array',
+  'fur-boot',
+  'cloud-ring',
+  'pegasus',
+  'fire-dash',
 ];
 
 const picked = {};

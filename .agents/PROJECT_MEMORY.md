@@ -2,26 +2,23 @@
 
 - **Ngày cập nhật:** 2026-11-26
 - **Trạng thái hiện tại:**
-  - **Phase 0:** Đã commit sạch (`77d925a`).
-  - **Phase 1 (1A + 1B):** Đã commit sạch (`c9944d0`, 71 files).
-  - **Phase 2A:** Đã commit sạch (`4facc12`, 59 files — 10 chiêu remix, 5 lá bài mới 112 lá, Bot AI, VI/EN 100%).
-  - **Phase 2B ✅ HOÀN THÀNH (đang giữ uncommitted trong working tree):** Remix nốt **15 bộ chiêu còn lại** -> **25/25 hiệp khách Cửu Châu** có cơ chế riêng, thêm SSOT `getPlayerMaxHandLimit` / `getPlayerMaxSatPerTurn`, tự map skill VI→EN trong `matchTypes.ts`, đo **500 ván fuzz cân bằng** (`24.4%–62.1%` đều 25 tướng), và xuất Portable `.zip` mới (`166.61 MB`).
-- **Lộ trình đóng gói đã chốt:** Hoàn thiện gameplay & art ở bản Windows/Portable trên máy trước; **Phase 4** mới đưa lên **Steam**.
+  - **Phase 0 (`77d925a`), Phase 1 (`c9944d0`), Phase 2A (`4facc12`), Phase 2B (`120faa9`):** Đều đã commit sạch trên `main`.
+  - **Bước 1 + Bước 2 + Bước 3 (Lộ trình 6 bước) ✅ HOÀN THÀNH (giữ uncommitted trong working tree):** (1) Đồng bộ Cửu Châu 112 lá mặc định trên `apps/server` (Online = Offline 100%) + vá Bot tự Hóa Giải *Tụ Khí Quyết* + cân chỉnh 2 đầu bảng (`LORD=29.8% REBEL=52.0% SPY=18.2%`); (2) Mở khóa **Chơi Đa Máy LAN/VPN 1 chạm** không cần Steam/Google OAuth (`jsonStore.ts` thuần JS + `POST /api/auth/guest` + `lanHost:start` dò IP Radmin/Tailscale/Wi-Fi + sao chép `IP:Port#ROOMCODE` + lưu Biệt danh & Chiến tích cục bộ); (3) 56 icon độc nhất cho `36/36` mặt bài, Sổ tra cứu 3 Tab giữa ván (`RulesHotkeysDialog.tsx`), `CreditsLicensesModal.tsx` + `THIRD_PARTY_NOTICES.txt`, chuẩn hóa `assets:check` (`0/25` tướng, `0/36` bài), và xuất `BladesOfTheNineRealms-Portable-0.1.0.zip` (`167.61 MB`).
+- **Lộ trình còn lại đã chốt (6 bước):** Còn **Bước 4** (Playwright Electron E2E & Playtest đa máy) -> **Bước 5** (64 tranh `25+36+3` + 3 BGM chuẩn) -> **Bước 6** (Đưa lên Steam Phase 4–5; hoãn đại phẫu `InterruptFrame`/`matchTypes.ts` sang DLC 1).
 
-## Bằng chứng kiểm chứng Phase 2B sau lần sửa cuối (`2026-11-26`)
-- `npm.cmd run typecheck`: `0` lỗi (`shared`, `desktop` renderer+electron, `server`).
-- `npm.cmd run build`: `exit 0` (`2412` Vite modules + `tsc`).
-- `npm.cmd run test:unit`: **17/17 files · 153/153 tests** (`cuuChauMechanics.test.ts` 31/31 + `cuuChauPack.test.ts` 4/4).
-- `npm.cmd run test:fuzz`: **2/2 files · 12/12 tests = 1.000/1.000 ván** (`avgRounds=8.95`, `LORD=29.6% REBEL=56.4% SPY=14.0%`, 25 tướng `24.4%–62.1%`, `0` deadlock, `0` rò rỉ).
-- `npm.cmd run test:integration`: **7/7 files · 26/26 tests**.
-- `vitest run` (`offlineBot.test.ts` + `i18nParity.test.ts`): **2/2 files · 7/7 tests**.
-- `assets:check`: **PASS** (`59` tệp, `60` manifest, `0` AI, `1.15 MB`).
-- Live Electron `45.3.3` UI Audit (`1280×720` & `960×600`, `VI` & `EN`): **14/14 checks PASS**, `0` console errors, `0` failed URLs, `0` overflow.
-- Windows Portable `.zip`: `apps/desktop/release/BladesOfTheNineRealms-Portable-0.1.0.zip` (`166.61 MB`, built `2026-11-26 19:59:36`).
+## Bằng chứng kiểm chứng Bước 1–3 sau lần sửa cuối (`2026-11-26`)
+- `npm.cmd run typecheck` & `npm.cmd run build`: `0` lỗi (`2413` Vite modules, `0` cảnh báo chunk >500kB).
+- `npm.cmd run test:unit`: **17/17 files · 154/154 tests PASS**.
+- `npm.cmd run test:fuzz`: **2/2 files · 12/12 tests = 1.000/1.000 ván PASS** (`avgRounds=9.27`, `0` deadlock, `0` rò rỉ).
+- `npm.cmd run test:integration`: **9/9 files · 31/31 tests PASS** (gồm `ws-cuu-chau-112.test.ts` 2/2 & `guest-lan-auth.test.ts` 3/3).
+- `vitest run` (`offlineBot.test.ts` + `i18nParity.test.ts`): **2/2 files · 7/7 tests PASS**.
+- `npm.cmd run assets:check`: **PASS** (`0/25` tướng, `0/36` bài, `0/3` nền, `59` runtime / `60` manifest / `0` AI, `1.15 MB`).
+- Live Electron `45.3.3` UI + Packaged `app.asar` LAN Audit: **14/14 checks UI PASS** (`1280×720` & `960×600`, VI/EN) + `app.asar` LAN server `201 Created`.
+- Windows Portable `.zip`: `apps/desktop/release/BladesOfTheNineRealms-Portable-0.1.0.zip` (`167.61 MB`, kèm `THIRD_PARTY_NOTICES.txt`, built `2026-11-26 21:09:40`).
 
-## Ghi chú bàn giao kỹ thuật cho Bước kế tiếp (Phase 2C Handoff Notes)
-- **Mục tiêu Phase 2C:** Commit Phase 2B nếu Sếp duyệt, rồi dựng quy trình & tài nguyên **AI Art Factory** (25 chân dung tướng Cửu Châu + 32 tranh bài + 3 nền Doanh Trại) qua `scripts/assets-pipeline.mjs` & `assets-manifest.json`, giữ dung lượng media gọn cho Portable `.zip` & Steam.
-- **Móc vừa thêm ở Phase 2B cần giữ nguyên:** `getPlayerMaxHandLimit`, `getPlayerMaxSatPerTurn` (`packages/shared/src/engine/combatCore.ts`), `defensiveDistanceModifier` / `maxHandLimitModifier` / `onDodgePlayed` / `onStrikeHit` (`skillContracts.ts`), và `isCuuChauRuleset(state)` giữ 108-card legacy nguyên vẹn.
+## Ghi chú bàn giao kỹ thuật cho Bước kế tiếp (Bước 4 & Bước 5 Handoff Notes)
+- **Mục tiêu Bước 4:** Commit Bước 1–3 nếu Sếp duyệt, thiết lập bộ test tự động **Playwright Electron E2E** kiểm tra luồng mở `.exe` -> đặt biệt danh -> ván Offline + 2 cửa sổ nối LAN `IP:Port#MãPhòng` trên `960×600` & `1280×720` (cả VI & EN), và chốt thông số sau khi Sếp test thực tế trên nhiều máy.
+- **Móc vừa thêm ở Bước 1–3 cần giữ nguyên:** `loadEmbeddedCreateServer()` (`main.cts` nạp `@lkdf/server/dist/server.js`), `createJsonPersistenceStore` (`json:<path>`), `POST /api/auth/guest` (`clientDeviceId` cố định `userId`), `parseSmartRoomInvite` (`api.ts`), và danh mục `25` tướng + `36` `cardKey` trong `scripts/assets-pipeline.mjs` & `assetCatalog.ts`.
 - **Quy ước quan trọng cần giữ:** `MasterGameState.actionLog` giữ chuỗi tiếng Việt gốc để không làm gãy regex trong `useMatchMotion.ts` & `matchSounds.ts`; mọi dịch hiển thị (EN + Cửu Châu) đi qua `formatCuuChauDisplayText()` trong `matchTypes.ts`.
 - **Tên mặc định Steam Offline:** `App.tsx` tự chuyển đổi `'Hiệp Khách'` <-> `'Wanderer'` khi đổi ngôn ngữ `VI`/`EN` cho `steam_local_player`.
 - **Lệnh Windows/PowerShell 5.1:** Luôn dùng `npm.cmd`/`npx.cmd`, kiểm tra `if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }`, và chạy Electron audit từ `.\node_modules\.bin\electron.cmd`.

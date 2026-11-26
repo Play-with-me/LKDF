@@ -13,10 +13,25 @@ import type {
   HeroId,
   PlayerViewState,
   PublicPlayerView,
+  Suit,
   TargetCardZone,
 } from '../types/game.js';
 
 export const BOT_MODULE_READY = true;
+
+const ALL_SUITS: readonly Suit[] = ['SPADE', 'HEART', 'CLUB', 'DIAMOND'];
+
+const NON_HOSTILE_ALLY_SCROLL_NAMES_VI: ReadonlySet<string> = new Set([
+  'Đào Viên Kết Nghĩa',
+  'Hội Minh Tụ Nghĩa',
+  'Ngũ Cốc Phong Đăng',
+  'Thiên Bảo Xuất Thế',
+  'Vô Trung Sinh Hữu',
+  'Tụ Khí Quyết',
+  'Chân Khí Hộ Thể',
+  'Vô Giải Khả Kích',
+  'Hóa Giải Chân Khí',
+]);
 
 const CARD_KEEP_PRIORITY: Readonly<Record<string, number>> = {
   dao: 100,
@@ -752,10 +767,7 @@ export function decideBotAction(
         const vg = hand.find((c) => c.cardKey === 'vo_giai_kha_kich');
         const hostileToAlly =
           isAllySeat(view, active.targetSeat) &&
-          active.scrollNameVi !== 'Đào Viên Kết Nghĩa' &&
-          active.scrollNameVi !== 'Ngũ Cốc Phong Đăng' &&
-          active.scrollNameVi !== 'Vô Trung Sinh Hữu' &&
-          active.scrollNameVi !== 'Chân Khí Hộ Thể';
+          !NON_HOSTILE_ALLY_SCROLL_NAMES_VI.has(active.scrollNameVi ?? '');
         if (vg && hostileToAlly) {
           return { type: 'RESPOND_NULLIFICATION', seatIndex, cardId: vg.id };
         }
@@ -1116,8 +1128,17 @@ export function decideBotAction(
         };
       }
 
-      case 'WAIT_FAN_JIAN_GUESS':
-        return { type: 'RESPOND_FAN_JIAN_GUESS', seatIndex, suit: 'SPADE' };
+      case 'WAIT_FAN_JIAN_GUESS': {
+        const suitIdx = Math.min(
+          ALL_SUITS.length - 1,
+          Math.max(0, Math.floor(_rng() * ALL_SUITS.length)),
+        );
+        return {
+          type: 'RESPOND_FAN_JIAN_GUESS',
+          seatIndex,
+          suit: ALL_SUITS[suitIdx]!,
+        };
+      }
 
       case 'WAIT_JI_JIANG': {
         if (isAllySeat(view, active.sourceSeat ?? seatIndex)) {

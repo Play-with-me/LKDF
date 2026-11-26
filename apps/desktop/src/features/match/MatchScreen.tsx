@@ -1,9 +1,10 @@
 import { orderHand } from './handOrder.js';
 import { readDevicePreference, writeDevicePreference } from '../../lib/devicePreferences.js';
-import type {
-  GameAction,
-  HeroId,
-  RefereeActionType,
+import {
+  GAME_BRAND,
+  type GameAction,
+  type HeroId,
+  type RefereeActionType,
 } from '@lkdf/shared';
 import { useCallback, useEffect, useEffectEvent, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -16,6 +17,7 @@ import { createRoomWsClient } from '../../lib/wsClient.js';
 import type { RoomWsClient, WsConnectionStatus } from '../../lib/wsClient.js';
 import { MatchQuickHudPills, MatchSettings } from './MatchSettings.js';
 import { GameIcon } from '../../components/icons/index.js';
+import { LanguageToggle } from '../../components/ui/LanguageToggle.js';
 import { ActionLogDialog } from './ActionLogDialog.js';
 import { GameOverSummaryModal } from './GameOverSummaryModal.js';
 import { MatchActionSidebar } from './MatchActionSidebar.js';
@@ -58,7 +60,7 @@ export function MatchScreen({
   onLeftRoom,
   onSessionInvalid,
 }: MatchScreenProps) {
-  const { i18n } = useTranslation();
+  const { i18n, t } = useTranslation();
   const isEn = i18n.language === 'en';
   const [roomPayload, setRoomPayload] = useState<RoomViewerPayload>(initialRoom);
   const [wsStatus, setWsStatus] = useState<WsConnectionStatus>('CONNECTING');
@@ -71,6 +73,8 @@ export function MatchScreen({
   const [actionError, setActionError] = useState<string | null>(null);
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
   const [isTogglingSound, setIsTogglingSound] = useState<boolean>(false);
+  const [isTogglingMusic, setIsTogglingMusic] = useState<boolean>(false);
+  const [musicOverride, setMusicOverride] = useState<boolean | null>(null);
   const [isLeavingRoom, setIsLeavingRoom] = useState<boolean>(false);
   const [showLogDialog, setShowLogDialog] = useState<boolean>(false);
   const [showRulesDialog, setShowRulesDialog] = useState<boolean>(false);
@@ -89,7 +93,10 @@ export function MatchScreen({
     roomPayload.roomState.status === 'FINISHED';
   const isMatchActive =
     roomPayload.roomState.status === 'IN_GAME' && !isGameOver;
-  const musicEnabled = currentUser.preferences.musicEnabled ?? currentUser.preferences.soundEnabled;
+  const musicEnabled =
+    musicOverride ??
+    currentUser.preferences.musicEnabled ??
+    currentUser.preferences.soundEnabled;
   const aliveCount = playerView ? playerView.players.filter((p) => p.alive).length : 0;
   const selfPlayer = playerView?.players.find((p) => p.seatIndex === playerView.viewerSeatIndex) ?? null;
   const isClimax = Boolean(
@@ -99,6 +106,10 @@ export function MatchScreen({
     (aliveCount <= 3 || (selfPlayer?.alive && selfPlayer.hp <= 1)),
   );
   useGameAmbience(isMatchActive && musicEnabled ? 0.16 : 0, isClimax ? 'climax' : 'battle');
+
+  useEffect(() => {
+    setMusicOverride(null);
+  }, [currentUser.preferences.musicEnabled]);
 
   useEffect(() => {
     setMatchSoundEnabled(currentUser.preferences.soundEnabled);
@@ -340,6 +351,26 @@ export function MatchScreen({
     }
   }, [api, currentUser.preferences.soundEnabled, isEn, onProfileUpdated, onSessionInvalid, sessionToken]);
 
+  const handleToggleMusic = useCallback(async () => {
+    const nextMusic = !musicEnabled;
+    setMusicOverride(nextMusic);
+    setIsTogglingMusic(true);
+    setActionError(null);
+    try {
+      const updatedProfile = await api.updatePreferences(sessionToken, {
+        musicEnabled: nextMusic,
+      });
+      onProfileUpdated(updatedProfile);
+    } catch (err: unknown) {
+      if (err instanceof ApiError && err.statusCode === 401) {
+        onSessionInvalid(err.message);
+        return;
+      }
+    } finally {
+      setIsTogglingMusic(false);
+    }
+  }, [api, musicEnabled, onProfileUpdated, onSessionInvalid, sessionToken]);
+
   const handleLeaveRoom = useCallback(async () => {
     setIsLeavingRoom(true);
     setActionError(null);
@@ -511,6 +542,9 @@ export function MatchScreen({
 
       if (showLogDialog || showRulesDialog || showRefereeDialog || isGameOver) {
         if (event.key === 'Escape') {
+          if (document.querySelectorAll('dialog[open]').length > 1) {
+            return;
+          }
           if (showLogDialog) {
             setShowLogDialog(false);
           } else if (showRulesDialog) {
@@ -617,50 +651,63 @@ export function MatchScreen({
     <section className="relative flex h-screen w-screen min-h-0 min-w-0 flex-col overflow-hidden bg-[#090807] text-[#EFE6D5]">
       <MatchSettings
         topRightExtra={
-          <MatchQuickHudPills
-            autoSkipNullification={autoSkipNullification}
-            onToggleAutoSkip={handleToggleAutoSkipNullification}
-            actionLogCount={playerView?.actionLog.length ?? 0}
-            onOpenLog={() => setShowLogDialog(true)}
-            onOpenRules={() => setShowRulesDialog(true)}
-            onOpenReferee={() => setShowRefereeDialog(true)}
-          />
+          <div className="flex items-center gap-1">
+            <LanguageToggle />
+            <MatchQuickHudPills
+              autoSkipNullification={autoSkipNullification}
+              onToggleAutoSkip={handleToggleAutoSkipNullification}
+              actionLogCount={playerView?.actionLog.length ?? 0}
+              onOpenLog={() => setShowLogDialog(true)}
+              onOpenRules={() => setShowRulesDialog(true)}
+              onOpenReferee={() => setShowRefereeDialog(true)}
+            />
+          </div>
         }
       >
         <div className="mb-3 flex flex-wrap items-center gap-4">
           <label className="flex cursor-pointer items-center gap-2 text-xs font-semibold text-[#EFE6D5]">
-            <input type="checkbox" checked={autoSkipNullification} onChange={(event) => handleToggleAutoSkipNullification(event.target.checked)} className="accent-[#D99B26]" />
-            {isEn ? 'Auto-pass Negation' : 'Tự bỏ qua Hóa Giải'}
+            <input
+              type="checkbox"
+              checked={autoSkipNullification}
+              onChange={(event) => handleToggleAutoSkipNullification(event.target.checked)}
+              className="accent-[#D99B26]"
+            />
+            {t('match.autoSkipNullify')}
           </label>
           <label className="flex cursor-pointer items-center gap-2 text-xs font-semibold text-[#EFE6D5]">
-            <input type="checkbox" checked={reduceMotion} onChange={(event) => handleToggleReduceMotion(event.target.checked)} className="accent-[#D99B26]" />
-            {isEn ? 'Reduce Motion' : 'Giảm chuyển động'}
+            <input
+              type="checkbox"
+              checked={reduceMotion}
+              onChange={(event) => handleToggleReduceMotion(event.target.checked)}
+              className="accent-[#D99B26]"
+            />
+            {t('match.reduceMotion')}
           </label>
         </div>
         <div className="mb-3 flex min-w-0 flex-wrap items-center gap-2 text-xs">
           <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded border border-[#CA9A48]/60 bg-[#9E2B25] font-serif-title text-[12px] font-bold text-[#F5EBDC] shadow-inner">
-            殺
+            {GAME_BRAND.emblem}
           </span>
           <span className="font-mono-num shrink-0 font-bold text-[#D4A451]">
-            {isEn ? `Room #${roomCode}` : `Phòng #${roomCode}`}{' '}
+            {t('match.roomBadge', { code: roomCode })}{' '}
             <span className="hidden lg:inline">
-              ({isEn ? `${seatCount} players` : `${seatCount} người`})
+              {t('match.playerCountShort', { count: seatCount })}
             </span>
           </span>
           <span className="text-[#4B5563]">·</span>
           <span className="font-mono-num shrink-0 font-semibold text-[#EFE6D5] tabular-nums">
-            {isEn ? `Round ${roundNumber}` : `Vòng ${roundNumber}`}
+            {t('match.roundLabel', { round: roundNumber })}
           </span>
           <span className="text-[#4B5563]">·</span>
           <span className="font-mono-num shrink-0 text-[#B5A792] tabular-nums">
-            {isEn ? `Deck: ${drawPileCount}` : `Rút: ${drawPileCount}`}
+            {t('match.deckLabel', { count: drawPileCount })}
           </span>
         </div>
 
         <div className="flex flex-wrap items-center gap-1.5">
           <button
             type="button"
-            aria-label={isEn ? 'Sound Effects' : 'Hiệu ứng âm thanh'}
+            aria-label={t('match.sfx')}
             aria-pressed={currentUser.preferences.soundEnabled}
             disabled={isTogglingSound}
             onClick={() => {
@@ -672,8 +719,25 @@ export function MatchScreen({
               name={currentUser.preferences.soundEnabled ? 'ui:volume-on' : 'ui:volume-off'}
               size={13}
             />
-            <span className="lg:hidden">{isEn ? 'Sound' : 'Âm thanh'}</span>
-            <span className="hidden lg:inline">{isEn ? 'Sound Effects' : 'Hiệu ứng âm thanh'}</span>
+            <span className="lg:hidden">{t('match.sfxShort')}</span>
+            <span className="hidden lg:inline">{t('match.sfx')}</span>
+          </button>
+
+          <button
+            type="button"
+            aria-label={t('match.bgm')}
+            aria-pressed={musicEnabled}
+            disabled={isTogglingMusic}
+            onClick={() => {
+              void handleToggleMusic();
+            }}
+            className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-[#9A7B4F]/40 bg-[#14100D]/90 px-2.5 py-1 text-[11px] font-medium text-[#EFE6D5] hover:border-[#D99B26] disabled:opacity-50 xl:text-xs"
+          >
+            <GameIcon
+              name={musicEnabled ? 'ui:volume-on' : 'ui:volume-off'}
+              size={13}
+            />
+            <span>{t('match.bgm')}</span>
           </button>
 
           <button
@@ -689,7 +753,7 @@ export function MatchScreen({
               size={13}
               className={isSyncing ? 'animate-spin' : ''}
             />
-            <span>{isSyncing ? 'Đồng bộ...' : 'Đồng bộ'}</span>
+            <span>{isSyncing ? t('match.syncing') : t('match.sync')}</span>
           </button>
 
           <button
@@ -701,7 +765,7 @@ export function MatchScreen({
             className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-[#9A7B4F]/40 bg-[#14100D]/90 px-2.5 py-1 text-[11px] font-medium text-[#FCA5A5] hover:border-[#DC2626] disabled:opacity-50 xl:text-xs"
           >
             <GameIcon name="ui:door-open" size={13} />
-            <span>{isLeavingRoom ? 'Đang rời...' : 'Rời bàn'}</span>
+            <span>{isLeavingRoom ? t('match.leavingRoom') : t('match.leaveRoom')}</span>
           </button>
         </div>
       </MatchSettings>
@@ -749,7 +813,7 @@ export function MatchScreen({
         <div className="flex flex-1 min-h-0 min-w-0 items-center justify-center p-6">
           <div className="inline-flex items-center gap-2 rounded-xl border border-[#806345]/60 bg-[#18120E] px-6 py-4 text-sm text-[#EDE3D2]">
             <GameIcon name="ui:loader" size={16} className="animate-spin text-[#D99B26]" />
-            {isEn ? 'Loading match state...' : 'Đang tải trạng thái bàn đấu...'}
+            {t('match.loadingState')}
           </div>
         </div>
       )}

@@ -29,6 +29,13 @@ export function getCardFrameStyle(
       badgeBg: 'text-[#86EFAC]',
     };
   }
+  if (cardKey === 'pha_giap_tram') {
+    return {
+      tintBg: 'bg-gradient-to-b from-[#2A150E] to-[#12161E]',
+      emblemColor: 'text-[#FB923C]',
+      badgeBg: 'text-[#FDBA74]',
+    };
+  }
   if (category === 'BASIC') {
     return {
       tintBg: 'bg-[#12161E]',
@@ -36,7 +43,14 @@ export function getCardFrameStyle(
       badgeBg: 'text-[#CFA661]',
     };
   }
-  if (category === 'NORMAL_SCROLL' || category === 'DELAYED_SCROLL') {
+  if (category === 'DELAYED_SCROLL') {
+    return {
+      tintBg: 'bg-gradient-to-b from-[#1E132B] to-[#12161E]',
+      emblemColor: 'text-[#C084FC]',
+      badgeBg: 'text-[#D8B4FE]',
+    };
+  }
+  if (category === 'NORMAL_SCROLL') {
     return {
       tintBg: 'bg-[#12161E]',
       emblemColor: 'text-[#FDE68A]',

@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto';
-import { createClient, type Client, type InStatement, type Row } from '@libsql/client';
+import type { Client, InStatement, Row } from '@libsql/client';
 import {
   HERO_BY_ID,
   IdentityRoleSchema,
@@ -17,7 +17,10 @@ import {
   type UserStats,
   type WinningFaction,
 } from '@lkdf/shared';
+import { createJsonPersistenceStore } from './jsonStore.js';
 import { initializeSchema } from './schema.js';
+
+export { createJsonPersistenceStore };
 
 export const PERSISTENCE_MODULE_READY = true;
 
@@ -260,16 +263,19 @@ interface MutablePlayerAccumulator {
 
 /** Kho lưu trữ dữ liệu Cloud 0đ dựa trên @libsql/client (Turso libsql:// hoặc SQLite file/:memory:). */
 export class LibsqlPersistenceStore implements PersistenceStore {
-  private readonly client: Client;
+  private _client: Client | null = null;
   private initialized = false;
   private writeQueue: Promise<unknown> = Promise.resolve();
 
-  constructor(options: { readonly url: string; readonly authToken?: string }) {
-    this.client = createClient(
-      options.authToken
-        ? { url: options.url, authToken: options.authToken }
-        : { url: options.url },
-    );
+  constructor(
+    private readonly options: { readonly url: string; readonly authToken?: string },
+  ) {}
+
+  private get client(): Client {
+    if (!this._client) {
+      throw new Error('LibsqlPersistenceStore chưa được khởi tạo qua init().');
+    }
+    return this._client;
   }
 
   private enqueueWrite<T>(task: () => Promise<T>): Promise<T> {
@@ -282,15 +288,27 @@ export class LibsqlPersistenceStore implements PersistenceStore {
   }
 
   async init(): Promise<void> {
-    if (this.initialized) {
+    if (this.initialized && this._client) {
       return;
     }
-    await initializeSchema(this.client);
+    if (!this._client) {
+      const { createClient } = await import('@libsql/client');
+      this._client = createClient(
+        this.options.authToken
+          ? { url: this.options.url, authToken: this.options.authToken }
+          : { url: this.options.url },
+      );
+    }
+    await initializeSchema(this._client);
     this.initialized = true;
   }
 
   async close(): Promise<void> {
-    this.client.close();
+    if (this._client) {
+      this._client.close();
+      this._client = null;
+      this.initialized = false;
+    }
   }
 
   async upsertGoogleUser(input: GoogleIdentityInput): Promise<UpsertGoogleUserResult> {
@@ -1049,5 +1067,10 @@ export function createPersistenceStore(options: {
   readonly url: string;
   readonly authToken?: string;
 }): PersistenceStore {
+  const trimmedUrl = options.url.trim();
+  if (trimmedUrl.startsWith('json:')) {
+    const targetPath = trimmedUrl.slice('json:'.length).trim() || ':memory:';
+    return createJsonPersistenceStore(targetPath);
+  }
   return new LibsqlPersistenceStore(options);
 }

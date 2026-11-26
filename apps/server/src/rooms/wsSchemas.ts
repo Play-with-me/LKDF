@@ -134,7 +134,7 @@ export const ClientGameActionSchema = z.discriminatedUnion('type', [
   z.object({
     type: z.literal('CONFIRM_STEAL_HAND'),
     seatIndex: SeatIndexSchema,
-    orderedCardIds: z.array(z.string().min(1)).max(108).optional(),
+    orderedCardIds: z.array(z.string().min(1)).max(112).optional(),
   }),
   z.object({
     type: z.literal('RESPOND_PICK_TARGET_CARD'),

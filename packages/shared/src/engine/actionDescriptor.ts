@@ -2,6 +2,7 @@ import { DEFAULT_CONTENT_REGISTRY } from '../content/registry.js';
 import { isInAttackRange } from '../distance/index.js';
 import { getHeroSkillHandler } from '../heroes/registry.js';
 import type { MasterGameState, PlayerViewState, PublicPlayerView } from '../types/game.js';
+import { getPlayerMaxHandLimit, getPlayerMaxSatPerTurn } from './combatCore.js';
 import {
   classifyInterruptPrimitive,
   type GenericInteractionPrimitive,
@@ -27,11 +28,8 @@ function getPlayableCardIdsInPlayPhase(
   const hand = viewer.handCards ?? [];
   if (hand.length === 0) return [];
 
-  const handler = getHeroSkillHandler(viewer.heroId, view);
   const satUsed = view.turnFlags?.satUsedThisTurn ?? 0;
-  const hasUnlimitedSat =
-    Boolean(handler?.unlimitedSat) ||
-    viewer.equipments.weapon?.cardKey === 'gia_cat_lien_no';
+  const maxSat = getPlayerMaxSatPerTurn(view, viewer);
   const isFirstRoundPeaceful =
     Boolean(view.peacefulFirstRound) && view.roundNumber === 1;
   const aliveOthers = view.players.filter(
@@ -61,7 +59,7 @@ function getPlayableCardIdsInPlayPhase(
       case 'sat':
       case 'pha_giap_tram': {
         if (isFirstRoundPeaceful) break;
-        if (!hasUnlimitedSat && satUsed >= 1) break;
+        if (satUsed >= maxSat) break;
         const hasTarget = aliveOthers.some((other) => {
           const targetHandler = getHeroSkillHandler(other.heroId, view);
           const immune =
@@ -273,10 +271,8 @@ export function describeAvailableActions(
   }
 
   if (view.turnPhase === 'DISCARD' && isMyTurn && viewer) {
-    const discardRequiredCount = Math.max(
-      0,
-      viewer.handCount - Math.max(0, viewer.hp),
-    );
+    const maxHandLimit = getPlayerMaxHandLimit(view, viewer);
+    const discardRequiredCount = Math.max(0, viewer.handCount - maxHandLimit);
     return {
       phase: view.turnPhase,
       isViewerActor: true,

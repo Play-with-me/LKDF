@@ -1,10 +1,32 @@
 # PROJECT_MEMORY.md — Ghi Nhớ Dự Án và Bàn Giao Tiến Độ
 
-> **Dự án:** Cửu Châu Ẩn Kiếm / Blades of the Nine Realms (Windows Standalone Portable + Lộ trình lên Steam Phase 4)
+> **Dự án:** Cửu Châu Ẩn Kiếm / Blades of the Nine Realms (Windows Standalone Portable + Lộ trình lên Steam ở Bước 6)
 > **Ngày cập nhật:** 2026-11-26
-> **Trạng thái hiện tại:** Đã commit **Phase 2A (`4facc12`)** và hoàn thành **Phase 2B** *(25/25 hiệp khách remix + 500 ván fuzz đo cân bằng + Portable `.zip` `166.61 MB`, giữ trong working tree chưa commit để Sếp kiểm tra)* theo [KE_HOACH_TONG_THE_CUU_CHAU_AN_KIEM.md](./KE_HOACH_TONG_THE_CUU_CHAU_AN_KIEM.md). Bước kế tiếp là **Phase 2C** (AI Art Factory: 25 chân dung + 32 tranh bài + 3 nền Doanh Trại).
+> **Trạng thái hiện tại:** Đã commit **Phase 2B (`120faa9`)** và hoàn thành trọn vẹn **Bước 1 + Bước 2 + Bước 3** của lộ trình 6 bước *(Đồng bộ 112 lá Online = Offline, Mở khóa Đa máy LAN/VPN 1 chạm không cần Steam/Google OAuth, Sổ tra cứu 3 Tab giữa ván + Credits CC BY 3.0 + Pipeline 36 mặt bài, kèm gói `BladesOfTheNineRealms-Portable-0.1.0.zip` `167.61 MB`, giữ sạch trong working tree chưa commit để Sếp kiểm tra)*. Bước kế tiếp là **Bước 4** (Playwright Electron E2E & Playtest đa máy) -> **Bước 5** (64 tranh + 3 BGM) -> **Bước 6** (Đưa lên Steam).
 
-## 0. Bằng Chứng Kiểm Chứng Mới Nhất — Phase 2B (`2026-11-26`)
+## 0. Bằng Chứng Kiểm Chứng Mới Nhất — Bước 1, Bước 2 & Bước 3 (`2026-11-26` · Swarm 3 Agent)
+- **Commit nền:** `[main 120faa9]` (Phase 2B — 20 files). Toàn bộ thay đổi Bước 1–3 đang giữ sạch trong working tree để Sếp chép bản Portable `.zip` sang máy khác trải nghiệm trước khi commit.
+- **Bước 1 — Đồng bộ Lõi Cửu Châu 112 Lá Toàn Hệ Thống (`engine-server`):**
+  - `startMatchCombat` (`combat.ts`) tự chọn `createCuuChau112Deck` khi `isCuuChauRuleset(state)`; `RoomManager.startMatch` (`apps/server/src/rooms/index.ts`) bật mặc định `enabledPacks: ['cuu_chau_core']`; `wsSchemas.ts` mở `.max(112)`; đồng bộ `DevMatchPreview.tsx`.
+  - Vá lỗi Bot AI (`bot/index.ts`) tự quăng *Hóa Giải* vào *Tụ Khí Quyết* của phe mình + ngẫu nhiên hóa đoán chất *Ly Tâm Ấn*; dùng SSOT trong `actionDescriptor.ts`; vi chỉnh cân bằng *Trương Huy Diệu* (`<= 1` lá rút cuối lượt -> winrate `54.4%`) và *Mộ Dung Tuyết* (`+1` giữ bài -> winrate `28.6%`).
+- **Bước 2 — Mở Khóa Chơi Đa Máy 4–8P Không Cần Steam / Không Cần Google OAuth (`lan-host`):**
+  - Kho lưu trữ thuần JS `apps/server/src/persistence/jsonStore.ts` (`json:<path>` & `json::memory:`) + dynamic import `@libsql/client` chống crash native binary trong `app.asar`; thêm `POST /api/auth/guest` (`clientDeviceId` băm SHA-256 giữ cố định `userId` khi rớt mạng nối lại).
+  - Nhúng IPC `lanHost:start/stop/getStatus` trong `apps/desktop/electron/main.cts` khởi chạy `@lkdf/server` trên `0.0.0.0:3001..3010`, tự phân loại IP Radmin VPN (`26.x`), Tailscale (`100.x`), Wi-Fi LAN (`192.168.x`) kèm thanh sao chép nhanh `IP:Port#MÃPHÒNG` ở `WaitingRoomScreen.tsx` và ô dán thông minh ở `HomeLobbyHub.tsx`; gỡ nhãn giả `"Steam Offline / P2P"`, lưu bền Biệt danh & Chiến tích cục bộ xuống `lkdf-client-state.json`.
+- **Bước 3 — Nhận Diện 36 Mặt Bài, Sổ Tra Cứu Giữa Ván, Hộp Thoại Credits & Pipeline (`ux-legal-assets` + Coordinator):**
+  - Mở rộng `build-game-icons.mjs` lên **56 icon** (`0` trùng lặp trên toàn bộ `36/36` mặt bài Cửu Châu) + tách màu khung `DELAYED_SCROLL` tím `#C084FC` và `pha_giap_tram` cam-đỏ trong `HandCardItem.tsx`.
+  - Nâng cấp `RulesHotkeysDialog.tsx` thành **Sổ Tra Cứu 3 Tab ngay trong trận** (Luật & Phím tắt / 36 Lá Bài / 25 Hiệp Khách), tạo `CreditsLicensesModal.tsx` mở từ Sảnh chính, Cài đặt và Trong trận + đính kèm `THIRD_PARTY_NOTICES.txt` ra gốc `.zip`; xóa sạch chữ `殺` ở `MatchScreen.tsx` + thêm `LanguageToggle`/`BGM` + lazy-load `MatchScreen` (dứt cảnh báo chunk >500kB); chuẩn hóa `scripts/assets-pipeline.mjs` nhận đúng `25` tướng + `36` mặt bài và map 2 chiều trong `assetCatalog.ts`.
+- **Kết quả kiểm chứng thực tế sau lần sửa cuối:**
+  - `npm.cmd run typecheck`: `0` lỗi (`shared`, `desktop` renderer+electron, `server`).
+  - `npm.cmd run build`: `exit code 0` (`2413` Vite modules, **`0` cảnh báo chunk >500kB**).
+  - `npm.cmd run test:unit`: **17/17 files · 154/154 tests passed**.
+  - `npm.cmd run test:fuzz`: **2/2 files · 12/12 tests = 1.000/1.000 ván passed** (`avgRounds=9.27`, `LORD=29.8% REBEL=52.0% SPY=18.2%`, `0` deadlock, `0` rò rỉ).
+  - `npm.cmd run test:integration`: **9/9 files · 31/31 tests passed** (thêm `ws-cuu-chau-112.test.ts` **2/2** & `guest-lan-auth.test.ts` **3/3**).
+  - `npx.cmd vitest run apps/desktop/src/features/match/offlineBot.test.ts apps/desktop/src/i18n/i18nParity.test.ts`: **2/2 files · 7/7 tests passed**.
+  - `npm.cmd run assets:check`: **PASS** (`0/25` tướng, `0/36` bài, `0/3` nền, `59` runtime / `60` manifest / `0` AI, `1.15 MB`).
+  - **Live Electron `45.3.3` UI + Packaged `app.asar` LAN Audit:** **14/14 checks UI PASS** (`1280×720` & `960×600`, VI & EN, `0` lỗi console/URL) + xác minh nạp `@lkdf/server` trực tiếp từ `win-unpacked/resources/app.asar` mở phòng LAN Guest trả `201 Created` + kèm `THIRD_PARTY_NOTICES.txt`.
+  - **Portable `.zip` Đa Máy Mới:** `C:\Tam quốc sát\apps\desktop\release\BladesOfTheNineRealms-Portable-0.1.0.zip` (**167.61 MB**, tạo lúc `2026-11-26 21:09:40`).
+
+## 0B. Bằng Chứng Kiểm Chứng Phase 2B (`2026-11-26`) — Đã Commit `120faa9`
 - **Commit nền:** `[main 4facc12]` (Phase 2A — 59 files). Toàn bộ thay đổi Phase 2B đang giữ sạch trong working tree để Sếp trải nghiệm bản Portable `.zip` trước khi commit.
 - **25/25 Bộ Chiêu Remix Độc Bản (`packages/shared`):**
   - Thêm Single Source of Truth `getPlayerMaxHandLimit` & `getPlayerMaxSatPerTurn` dùng chung xuyên suốt Lõi trận, Bot AI (`bot/index.ts`) và Giao diện (`MatchArenaLayout.tsx`, `matchTypes.ts`), cùng 4 hook mở rộng trong `skillContracts.ts` & `distance/index.ts` (`defensiveDistanceModifier`, `maxHandLimitModifier`, `onDodgePlayed`, `onStrikeHit`) và miễn nhiễm `kinh_loi_chan` cho *Thẩm Tinh Hà* khi hết bài.

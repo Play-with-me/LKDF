@@ -1,5 +1,5 @@
 import { isBlackSuit, isRedSuit } from '../cards/catalog.js';
-import { isCuuChauRuleset } from '../content/cuuChauPack.js';
+import { createCuuChau112Deck, isCuuChauRuleset } from '../content/cuuChauPack.js';
 import { DEFAULT_CONTENT_REGISTRY } from '../content/registry.js';
 import { appendGameEvent } from '../types/events.js';
 import {
@@ -89,7 +89,10 @@ export function startMatchCombat(
   }
 
   const buildDeck =
-    options?.deckFactory ?? ((r: () => number) => DEFAULT_CONTENT_REGISTRY.createDeck(r));
+    options?.deckFactory ??
+    (isCuuChauRuleset(state)
+      ? createCuuChau112Deck
+      : (r: () => number) => DEFAULT_CONTENT_REGISTRY.createDeck(r));
 
   let next: MasterGameState = {
     ...state,

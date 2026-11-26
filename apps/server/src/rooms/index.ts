@@ -74,6 +74,11 @@ interface MutableRoomRecord {
   updatedAt: string;
 }
 
+export interface StartMatchOptions {
+  readonly rng?: () => number;
+  readonly enabledPacks?: readonly string[];
+}
+
 export interface RoomManager {
   restoreFromPersistence(): Promise<number>;
   getAllActiveRoomCodes(): readonly string[];
@@ -106,7 +111,7 @@ export interface RoomManager {
   startMatch(
     userId: string,
     roomCode: string,
-    options?: { readonly rng?: () => number },
+    options?: StartMatchOptions,
   ): Promise<RoomOperationResult<RoomViewerPayload>>;
   resetRoomToLobby(
     userId: string,
@@ -950,7 +955,7 @@ export function createRoomManager(deps: {
     async startMatch(
       userId: string,
       roomCodeRaw: string,
-      options?: { readonly rng?: () => number },
+      options?: StartMatchOptions,
     ): Promise<RoomOperationResult<RoomViewerPayload>> {
       const roomCode = normalizeRoomCode(roomCodeRaw);
       return runWithRoomLock(roomCode, async () => {
@@ -1034,6 +1039,7 @@ export function createRoomManager(deps: {
         const setupState = createInitialMatchSetup({
           matchId,
           manualDraw: true,
+          enabledPacks: options?.enabledPacks ?? ['cuu_chau_core'],
           seats: record.roomState.seats.map((seat) => ({
             userId: seat.userId,
             displayName: seat.displayName,

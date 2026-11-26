@@ -1,4 +1,4 @@
-import { randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
+import { createHash, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
 import type { UserProfile } from '@lkdf/shared';
 import type { PersistenceStore } from '../persistence/index.js';
 import type { GoogleOAuthProvider } from './googleProvider.js';
@@ -140,6 +140,20 @@ function constantTimeStringEqual(a: string, b: string): boolean {
   return timingSafeEqual(bufA, bufB);
 }
 
+export type GuestLoginResult =
+  | {
+      readonly ok: true;
+      readonly sessionToken: string;
+      readonly profile: UserProfile;
+      readonly isNewUser: boolean;
+    }
+  | {
+      readonly ok: false;
+      readonly statusCode: 400;
+      readonly code: 'INVALID_DEVICE_ID' | 'INVALID_DISPLAY_NAME';
+      readonly messageVi: string;
+    };
+
 function generateManualLoginCode(): string {
   const bytes = randomBytes(8);
   let part1 = '';
@@ -148,11 +162,15 @@ function generateManualLoginCode(): string {
     part1 += MANUAL_CODE_ALPHABET[(bytes[i] ?? 0) % MANUAL_CODE_ALPHABET.length];
     part2 += MANUAL_CODE_ALPHABET[(bytes[i + 4] ?? 0) % MANUAL_CODE_ALPHABET.length];
   }
-  return `TQS-${part1}-${part2}`;
+  return `LKDF-${part1}-${part2}`;
 }
 
 export interface AuthService {
   readonly isGoogleConfigured: boolean;
+  loginAsGuest(params: {
+    readonly clientDeviceId: string;
+    readonly displayName: string;
+  }): Promise<GuestLoginResult>;
   startGoogleLogin(desktopCallbackPort?: number): StartLoginResult;
   completeGoogleCallback(params: {
     readonly code: string;
@@ -215,6 +233,78 @@ export function createAuthService(options: {
       listeners.add(listener);
       return () => {
         listeners.delete(listener);
+      };
+    },
+
+    async loginAsGuest(params: {
+      readonly clientDeviceId: string;
+      readonly displayName: string;
+    }): Promise<GuestLoginResult> {
+      const cleanDeviceId = params.clientDeviceId.trim();
+      if (cleanDeviceId.length < 8 || cleanDeviceId.length > 80) {
+        return {
+          ok: false,
+          statusCode: 400,
+          code: 'INVALID_DEVICE_ID',
+          messageVi: 'Mã định danh thiết bị phải có từ 8 đến 80 ký tự.',
+        };
+      }
+
+      const cleanDisplayName = params.displayName.trim().normalize('NFC');
+      if (cleanDisplayName.length < 2 || cleanDisplayName.length > 20) {
+        return {
+          ok: false,
+          statusCode: 400,
+          code: 'INVALID_DISPLAY_NAME',
+          messageVi: 'Biệt danh phải có từ 2 đến 20 ký tự.',
+        };
+      }
+
+      const deviceHash = createHash('sha256')
+        .update(cleanDeviceId, 'utf8')
+        .digest('hex')
+        .slice(0, 24);
+      const googleSub = `guest_${deviceHash}`;
+      const upserted = await options.persistence.upsertGoogleUser({
+        googleSub,
+        email: `${googleSub}@lan.local`,
+        displayName: cleanDisplayName,
+        avatarUrl: '',
+      });
+
+      let profile = upserted.profile;
+      if (profile.displayName !== cleanDisplayName) {
+        profile =
+          (await options.persistence.updateUserDisplayName(
+            profile.userId,
+            cleanDisplayName,
+          )) ?? profile;
+      }
+
+      const previousSessionId = await options.persistence.getUserActiveSessionId(
+        profile.userId,
+      );
+      const newSessionId = randomUUID();
+      await options.persistence.setUserActiveSession(profile.userId, newSessionId);
+
+      if (previousSessionId) {
+        notifyInvalidated(profile.userId, 'SESSION_REPLACED');
+      }
+
+      const sessionToken = signSessionJwt(
+        {
+          userId: profile.userId,
+          googleSub: profile.googleSub,
+          sessionId: newSessionId,
+        },
+        options.jwtSessionSecret,
+      );
+
+      return {
+        ok: true,
+        sessionToken,
+        profile,
+        isNewUser: upserted.isNewUser,
       };
     },
 

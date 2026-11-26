@@ -1,4 +1,4 @@
-import type { HeroId } from '@lkdf/shared';
+import { CUU_CHAU_HEROES, type HeroId } from '@lkdf/shared';
 
 const heroGlob = import.meta.glob<string>('../assets/art/heroes/*.webp', {
   eager: true,
@@ -39,6 +39,15 @@ const CARD_ILLUSTRATIONS = buildLookupByStem(cardGlob);
 const UI_TEXTURES = buildLookupByStem(uiGlob);
 const SFX_FILES = buildLookupByStem(sfxGlob);
 
+const HERO_ID_ALIASES: Readonly<Record<string, string>> = (() => {
+  const aliases: Record<string, string> = {};
+  for (const hero of CUU_CHAU_HEROES) {
+    aliases[hero.id] = hero.legacySlotId;
+    aliases[hero.legacySlotId] = hero.id;
+  }
+  return aliases;
+})();
+
 export type UiArtAssetKey =
   | 'table-bg'
   | 'card-back'
@@ -56,7 +65,15 @@ export function getHeroPortraitUrl(heroId: HeroId | string | null | undefined): 
   if (!heroId) {
     return null;
   }
-  return HERO_PORTRAITS[heroId] ?? null;
+  const direct = HERO_PORTRAITS[heroId];
+  if (direct) {
+    return direct;
+  }
+  const alias = HERO_ID_ALIASES[heroId];
+  if (alias && HERO_PORTRAITS[alias]) {
+    return HERO_PORTRAITS[alias]!;
+  }
+  return null;
 }
 
 export function getCardArtUrl(cardKey: string | null | undefined): string | null {
