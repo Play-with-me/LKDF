@@ -1,8 +1,92 @@
 # PROJECT_MEMORY.md — Ghi Nhớ Dự Án và Bàn Giao Tiến Độ
 
-> **Dự án:** Cửu Châu Ẩn Kiếm / Blades of the Nine Realms (Windows Standalone Portable + Lộ trình lên Steam ở Bước 6)
-> **Ngày cập nhật:** 2026-11-26
-> **Trạng thái hiện tại:** Đã commit **Phase 2B (`120faa9`)** + **Bước 1–3 (`f3d1c45`)** + **Bước 4 (`0de6589`)**, và vừa hoàn thành **Bước 5** *(Swarm 3 Agent sản xuất trọn bộ **64 tranh minh họa Cửu Châu `0% AI`** gồm `25/25` hiệp khách + `36/36` mặt bài + `3/3` cảnh nền & lưng bài, cùng **3 bản nhạc nền dài chuẩn `-20.0 LUFS`** đồng bộ mẫu `108 BPM`, vượt `assets:check` `4.60 MB` + `5/5` Playwright Electron E2E và xuất bản **`BladesOfTheNineRealms-Portable-0.1.0.zip` `171.02 MB`**, giữ sạch trong working tree để Sếp nghiệm thu)*. Toàn bộ bản chơi độc lập & đa máy trên PC (`Bước 1–5`) đã hoàn chỉnh 100%; chỉ còn **Bước 6** (Đưa lên Steam) khi Sếp sẵn sàng.
+> **Dự án:** Cửu Châu Ẩn Kiếm / Blades of the Nine Realms (Unity 6 LTS 2.5D Tabletop Client + Lõi Luật 112 Lá Sidecar + Lộ trình lên Steam)
+> **Ngày cập nhật:** 2026-11-27
+> **Trạng thái hiện tại:** Đã hoàn thành **100% Lộ trình 7 Chặng Unity 6 (`U0–U6`) + 100% Tranh Công Bút Gongbi (`64/64`)**: Dự án `apps/unity-client` (`6000.3.29f1 LTS`), `64/64` tranh (`25/25` tướng + `36/36` lá bài + `3/3` đại cảnh + vẽ lại `nghiem_cuong`) đóng `3 SpriteAtlasV2`, kiểm định chống AI ([docs/U6_ANTI_SLOP_VISUAL_AUDIT.md](./docs/U6_ANTI_SLOP_VISUAL_AUDIT.md)), PlayMode E2E **`2/2` PASS (`17.54s`)** (gồm Solo Bots + **4 Người Thật LAN `0` Bot + Reconnect + Trọng Tài**), `623` tệp Unity **`0` lỗi / `0` cảnh báo**, `typecheck` **`0` lỗi**, và bản chơi độc lập tự chứa **`CuuChauAnKiem-Unity6-Win64-Portable-0.6.0.zip` (`113.56 MB`)** đã kiểm thử chạy `.exe` thật (`heroCount=25, deckTotal=108`) + xuất ra Desktop!
+
+## 0-U6. Bằng Chứng Kiểm Chứng Chặng U6 (`2026-11-28` · Swarm 4 Agent)
+- **Kiểm định chống Slop (`u6-slop-auditor`):**
+  - Xuất bản `docs/U6_ANTI_SLOP_VISUAL_AUDIT.md` kiểm toán cả 8 Cổng Chất Lượng Gọn (`no-ai-design-slop`) dựa trên ảnh GPU thực tế.
+  - Khắc phục lớp phủ tối `0.20f` & ẩn bài `0f` trong `CuuChauU5AtlasBuilder.CaptureU5Showcases` (`SetShowcaseCanvasGroup`), loại bỏ bóng chữ HUD góc trên-trái ở `u5_lobby_1080p.png` và khôi phục trọn vẹn độ sáng 8 ghế + quạt bài đáy ở `u5_arena_8p_showcase_1080p.png` (đã chạy lại `ImportPackAndVerify` thoát `0` & kiểm tra bằng mắt).
+- **Kiểm thử 4 Người Thật LAN Unity PlayMode (`u6-lan-e2e-qa` · `CuuChauU6MultiClientLanPlayModeTests.cs`):**
+  - Xác thực toàn bộ luồng LAN: `HostLanRoomAsync` -> chặn `<4` người thật (`INSUFFICIENT_REAL_PLAYERS`) -> `LobbyHallView.ParseInviteInput` (`IP:Port#Mã`) -> 3 khách độc lập (`LkdfApiClient` + `RoomWsClient` + Guest Auth + Join + Ready) -> `StartMatchAsync` 4 người `0` Bot -> Hero Draft 4 người -> Combat 112 lá -> 4-way `HandCards == null` & không hiện nhãn `"Máy Đánh Hộ"` -> chụp `Screenshots/u6_lan_4p_match_1080p.png` -> Client 3 ngắt & nối lại WS (`takeover: true`) bảo toàn ghế/tướng/bài -> Trọng Tài `PAUSE`/`RESUME`/`ABORT_MATCH` đồng bộ 4 màn hình -> tắt Sidecar sạch.
+  - Kết quả (`Logs/u6-playmode-results.xml`): **`Passed` · `2/2` (`duration="17.33s"` — U4 `11.30s` + U6 `6.01s`)**.
+- **Đóng gói Windows x64 Standalone tự chứa (`u6-standalone-packer` · `Assets/link.xml`, `CuuChauU6WindowsBuild.cs`, `scripts/build-unity-windows.ps1`):**
+  - `CuuChauAnKiem.exe` (`Mono2x`, Minimal stripping, `1280×720` Windowed, `PackAllAtlases`): **`BuildResult.Succeeded` (`183.38 MB` tổng build trong `89.12s`)**.
+  - Stage `ServerSidecar/` trực tiếp sau build (`node.exe` + `@lkdf/server` + `@lkdf/shared` + `67` gói production, `0` devDependencies, không làm bẩn `Assets/.meta`).
+  - Smoke test Sidecar độc lập cổng `3098` (`DATABASE_URL=json::memory:`): `heroCount=25, deckTotal=108`.
+  - **Smoke test chạy `CuuChauAnKiem.exe` thật cổng `3001`:** Cửa sổ game tự kéo lên Sidecar `heroCount=25` (PID `32688`), và khi tắt `.exe`, **Win32 Job Object tự dọn sạch `node.exe` trong `<5s`**.
+  - Gói `.zip` hoàn chỉnh (`100% Gongbi 64/64`, build `CuuChauAnKiem.exe` + `67` gói prod + test cổng `3001` `heroCount=25, deckTotal=108`, PID `35248`): `releases/CuuChauAnKiem-Unity6-Win64-Portable-0.6.0.zip` (`113.56 MB`, `119,079,564` bytes) & `C:\Users\kyuu4\OneDrive\Desktop\CuuChauAnKiem-Unity6-Win64-Portable-0.6.0.zip`; PlayMode E2E **`2/2` PASS (`17.54s` — U4 `11.49s` + U6 4P LAN `6.02s`)** & `check_unity_project.py` **`0 errors, 0 warnings in 623 files checked`**.
+- **Kiểm tra tĩnh & đồng bộ GitHub (`2026-11-28`):** `check_unity_project.py` **`0 errors, 0 warnings in 623 files checked`** · `npm.cmd run typecheck` **`0` lỗi** · `@lkdf/server test:integration` **`10/10` files, `33/33` tests PASS** · đã rà `.gitignore` (`Library/`, `Builds/`, `Logs/`, `Screenshots/`, `releases/`, `art-studio/` nhị phân trùng & `ServerSidecar/` nhị phân, tệp lớn nhất `8.33 MB`, `0` bí mật) và đồng bộ 4 commit nguyên tử sạch lên `origin/main`.
+
+## 0-U5. Bằng Chứng Kiểm Chứng Chặng U5 (Phương Án 1 · `2026-11-27`)
+- **Kho tài nguyên `art-studio/u5-production/` (`process_u5_art.py`, `assemble_u5_option1.py`, `gongbi_upgrade_manifest.json`):**
+  - `asset_report.py`: **88/88 ảnh đạt 100%** (`25` `*_fg.png` `800×1040` RGBA `--require-alpha`, `25` `*_full.png` `800×1040` RGB, `36` `card_*.png` `640×520` RGB, `lobby_hall_backdrop.png` `1920×1080`, `card_back_cuu_chau.png` `640×880`).
+  - `18` tác phẩm Gongbi chuẩn U1 + `4` Nền Tông Môn (`bg_{thanh_van,huyen_thiet,xich_diem,u_minh}`) đã vẽ & tách nền; `46` vị trí còn lại (`14` tướng + `32` lá từ kho Bước 5) lấp đủ tạm để mở khóa toàn bộ đường ống Unity và có danh sách chép đè dần (`nghiem_cuong` ghi chú vẽ lại cán kích).
+- **C# & Unity `SpriteAtlasV2` (`u5-atlas-unity-dev` + Coordinator):**
+  - `VisualCatalogSO.cs` (đồng bộ sang `unity-u2-kit/`): `lobbyHallBackdrop`, `legacyId`, `FindHero` đa alias & `FindCardArt`.
+  - `LobbyHallView.cs`: Hiển thị `lobbyHallBackdrop` sau 3 Lệnh Bài.
+  - `SeatPlaqueView.cs`: Nới `ObsidianNameplate` (`0.67f`) & `IdentityBadge` (`0.61f`, auto-size `12..15f`, màu ngà khi là Chủ Công), và sửa lỗi `ResolveHeroDisplayName`/`ResolveHeroFaction` dùng SSOT `CuuChauLoreLookup.GetHeroInfo` (sửa nhầm lẫn cũ `zhao_yun -> Triệu Thiên Hành`).
+  - `CuuChauU5AtlasBuilder.cs`: Đóng `CuuChau_Heroes_Atlas.spriteatlasv2`, `CuuChau_Cards_Atlas.spriteatlasv2`, `CuuChau_UI_Atlas.spriteatlasv2` qua `SpriteAtlasImporter` + `PackAllAtlases(BuildTarget.StandaloneWindows64, false)`.
+- **Kết quả kiểm chứng sau lần sửa cuối:**
+  - `CuuChauU5AtlasBuilder.ImportPackAndVerify`: **exit 0** (`U4_FullGame_App.unity` lưu sạch, `25/25` tướng, `36/36` lá, `3/3` đại cảnh, `0` sprite null).
+  - Unity PlayMode E2E (`Logs/u5-playmode-results.xml`): **`Passed` (`1/1`, `duration="13.09s"`)** — xác thực trong RAM đủ `25` hero portraits, `36` card arts, `3` backdrops, mọi ghế + mọi lá trên tay đều ánh xạ ra sprite thật, bảo mật `HandCards == null`, Trọng Tài `PAUSE/RESUME/ABORT_MATCH`.
+  - `check_unity_project.py`: **`Summary: 0 errors, 0 warnings in 617 files checked`**.
+  - `npm.cmd run typecheck`: **`0` lỗi**.
+  - Soi trực tiếp cả `6` ảnh (`u5_heroes_25_sheet.png`, `u5_cards_36_sheet.png`, `u5_lobby_1080p.png`, `u5_hero_draft_1080p.png`, `u5_arena_8p_showcase_1080p.png`, `u5_live_sidecar_match_1080p.png`): khớp `Hàn Thiết Phong / Tiêu Viêm Lãng / Khương Vô Tà / Lâm Thanh Vũ (Chủ Công)` và `4` lá bài tay `2♣ / 2♣ / 1♥ / 7♦`.
+
+## 0-U4. Bằng Chứng Kiểm Chứng Chặng U4 Trên Unity 6.3 + Sidecar Thật (`2026-11-27` · Swarm 4 Agent)
+- **3 Phân Hệ Chặng U4 & Tích Hợp Coordinator:**
+  - `Assets/Scripts/Lobby/` (`LobbyHallView.cs`, `WaitingRoomView.cs`): Sảnh Đại Điện 3 Lệnh Bài, ô dán `IP:Port#MãPhòng`, chọn số ghế Solo `4–8P`, phòng chờ LAN Ready / Thêm Máy (`/fill-bots`) / Bắt đầu / Rời phòng.
+  - `Assets/Scripts/Modals/` (`CuuChauLoreLookup.cs`, `HeroDraftModalView.cs`, `RefereeModalView.cs`, `HandbookModalView.cs`, `MatchSummaryModalView.cs`): Khớp 100% ID `25` Hiệp Khách & `36` mặt bài `112` lá Cửu Châu, lật thẻ 2.5D, Bảng Trọng Tài 4 nút có xác nhận Hủy ván, Sổ Tay 3 tab cỡ chữ `>= 15f`, Tổng kết ván.
+  - `Assets/Scripts/Match/` (`CuuChauMatchDirector.cs`, `CuuChauCombatRules.cs`) + `Assets/Scripts/Net/LkdfApiClient.cs` (`LeaveRoomAsync`, đồng bộ sang `unity-u2-kit/`): Điều phối Sidecar (`_sidecarStartInFlight` chống khởi chạy trùng), tự dọn phòng treo khi bấm Đấu Với Máy (`ClearStaleRoomIfNeededAsync`), chuyển pha mượt từ HeroDraft (`stage == "COMPLETED"` && `turnPhase != "HERO_SELECT"`) sang bàn combat thật qua WebSocket.
+  - `CuuChauU4AppAssembler.cs` + 3 `.asmdef` (`CuuChau.Runtime`, `CuuChau.Editor`, `CuuChau.Tests.PlayMode`) + `CuuChauU4LiveSidecarPlayModeTests.cs`: Đưa `Assets/Scenes/U4_FullGame_App.unity` lên Scene `0`.
+- **Kết quả kiểm chứng thực tế sau lần sửa cuối:**
+  - Unity PlayMode E2E (`unity test ... --mode PlayMode --output Logs/u4-playmode-results.xml`): **`Passed` (`total="1" passed="1" failed="0"`, `duration="9.06s"`)** — mở `U4_FullGame_App`, dựng Sidecar `@lkdf/server`, tự thu hồi phòng cũ `Q87TZ6`, `/api/health` xác nhận `25` tướng & `>= 108` bài nền, tạo phòng 4P `/fill-bots`, Chọn Tướng, vào combat thật bật gói `cuu_chau_core` `112` lá (`Rút: 96` + `16` lá trên 4 ghế), kiểm chứng bảo mật đối thủ `HandCards == null`, chụp `u4_live_sidecar_match_1080p.png`, Trọng Tài `PAUSE` -> `RESUME` -> `ABORT_MATCH`, tắt Sidecar sạch.
+  - `check_unity_project.py apps/unity-client`: **`Summary: 0 errors, 0 warnings in 394 files checked`**.
+  - `npm.cmd run typecheck`: **`0` lỗi** (`@lkdf/shared`, `@lkdf/desktop`, `@lkdf/server`, `tsconfig.e2e.json`).
+  - Kiểm tra thị giác 4 ảnh `1920×1080` (`u4_lobby_1080p.png`, `u4_hero_draft_1080p.png`, `u4_referee_handbook_1080p.png`, `u4_live_sidecar_match_1080p.png`): Hiển thị rõ nét, không vỡ chữ hay tràn khung; phát hiện 1 chi tiết cần tinh chỉnh ở Chặng U5 là nhãn `Minh Chủ` trên ô đỏ ở `SeatPlaqueView` đang hơi hẹp (`~58px`) làm chữ bị che bớt bên trái/phải.
+
+## 0-U3. Bằng Chứng Kiểm Chứng Chặng U2 + Chặng U3 Trên Unity 6.3 Thật (`2026-11-27` · Swarm 4 Agent)
+- **Môi trường & Khởi tạo Unity 6.3 (`apps/unity-client`):**
+  - Tạo sạch project `Unity 6000.3.29f1` (`com.unity.template.universal-2d` + `com.unity.pipeline 1.0.1` + `com.unity.nuget.newtonsoft-json 3.2.1`) qua `scripts/bootstrap-unity-client.ps1`, tự nạp `TMP Essential Resources.unitypackage`, cắt 9-slice `64px`/`32px` vào `TextureImporter.spriteBorder` + `ISpriteEditorDataProvider`, dựng `Assets/Scenes/U1_VerticalSlice_Arena.unity` và chụp `Screenshots/u2_unity6_live_1080p.png` (`check_unity_project.py`: `0 errors, 0 warnings in 318 files`).
+- **3 Phân Hệ Chặng U3 (Swarm tách vùng file độc lập + `u3-monitor`):**
+  - `arena-table-dev` (`Assets/Scripts/Arena/`): `ArenaTableController.cs` (móng ngựa `4–8` chỗ `PlayerViewStateDto` + `PopulateDemoPreview`), `SeatPlaqueView.cs` (9-slice, `RectMask2D` parallax 2 lớp, ngọc HP, bảng obsidian chống chìm chữ), `EquipmentSlotGrid.cs` (4 ô ngửa `>= 15f`), `SpecialCardTrayView.cs`, `FuseTimerBar.cs`, `ArenaHudController.cs` (Header lề an toàn, đúng **2 Ấn Đồng** trên-phải mở BattleLog Drawer & Settings Modal, Center Draw/Discard, nút chính Chu Sa).
+  - `card-hand-physics` (`Assets/Scripts/Cards/`): `CardView25D.cs` (`1.7×` SmoothDamp, chữ mực obsidian `#1C140F` trên giấy dó, viền 9-slice ôm sát khung), `ArcFanHandLayout.cs` (`1–12` lá cung tròn + rẽ quạt né lá + `ForceLayoutImmediate`), `SilkTargetArrow.cs` (Bézier bậc 2 + `arrowHeadSilk`), `SilkScrollTooltipView.cs` (lề `56px` tránh trục gỗ + tự kẹp màn hình).
+  - `vfx-shader-artist` (`Assets/Shaders/` + `Assets/Scripts/VFX/`): `CardBurnInkDissolve.shader` (`CuuChau/CardBurnInkDissolve`), `SilkRibbonGlow.shader` (`CuuChau/SilkRibbonGlow`), `ArenaFeelController.cs` (`Anticipation 40ms -> Hit-stop 45ms -> Trauma^2 -> Follow-through` + `ReducedMotion` + `OnDestroy` trả `Time.timeScale = 1`), `VfxBurstOverlay.cs` (object pool 0 cấp phát).
+  - `CuuChauU3ArenaAssembler.cs`: Lắp ráp `Assets/Scenes/U3_LiveArena.unity`, tạo `.mat` thật, đảm bảo `NewScene()` trước khi nạp `VisualCatalogSO` nên 100% Sprite + Texture + Font giữ nguyên, sửa world-vs-local offset cho dây lụa Bézier, bỏ `Ellipsis` tránh cảnh báo TMP.
+- **Kết quả kiểm chứng thực tế sau lần sửa cuối:**
+  - `unity run ... CuuChauU3ArenaAssembler.BuildAndCapture`: **exit code 0** (`Sprite check: frame=True, seat=True, seal=True, spade=True`, 0 CS errors, 0 Shader errors, 0 TMP Ellipsis warnings).
+  - `check_unity_project.py apps/unity-client`: **`Summary: 0 errors, 0 warnings in 359 files checked`**.
+  - Kiểm tra thị giác trực tiếp cả `u2_unity6_live_1080p.png` (`1920×1080`), `u3_unity6_arena_1080p.png` (`1920×1080`), và `u3_unity6_arena_720p.png` (`1280×720`) -> sắc nét, zero chữ cắt, zero tofu `□`, zero hộp vuông thừa, zero tràn khung.
+  - `npm.cmd run typecheck`: **0 lỗi** (bảo toàn 100% `@lkdf/shared`, `@lkdf/server`, `@lkdf/desktop`).
+
+## 0-U2. Bằng Chứng Kiểm Chứng Lõi & Mã C# Chặng U2 (`2026-11-27`)
+- **Kiểm tra môi trường Unity trên máy thực tế (`10:08`):** `unity editors --installed` trả `[]`, `unity auth status` trả `NOT_SIGNED_IN`, `unity license status` trả `LICENSE_NOT_ACTIVE`, `Test-Path "D:\Unity Hub\Installs\6000.3.29f1\Editor\Unity.exe"` trả `False`, nhưng tệp `UnitySetup64-6000.3.29f1.exe` (`4.01 GB`) đang sẵn sàng tại `C:\Users\kyuu4\AppData\Roaming\UnityHub\downloads\`.
+- **Nâng cấp `@lkdf/server` cho luồng thống nhất Offline/LAN (`apps/server/src/rooms/`):**
+  - `rooms/index.ts`: Bổ sung `isPermanentBotUserId`, `RoomManager.fillRoomWithBots` (giữ cờ `isBotTakeover: true` xuyên suốt `startMatch` & `resetRoomToLobby`, tự xóa phòng khi người chơi thật rời hết khỏi bàn có bot trong `leaveRoom`).
+  - `rooms/routes.ts`: Thêm endpoint nội bộ `POST /api/rooms/:roomCode/fill-bots` (chặn IP ngoài loopback trừ khi bật `LKDF_ALLOW_LAN_FILL_BOTS=1`, hỗ trợ `4–8` ghế).
+  - `tests/integration/fill-bots.test.ts`: Test mới **2/2 PASS** — mở Sidecar, guest auth, fill 4 ghế, WS `AUTH` + `SUBSCRIBE_ROOM`, `startMatch` 112 lá, Bot tự chọn tướng, người chơi vào combat giữ nguyên bảo mật `handCards: null` cho 3 ghế bot; kiểm tra chặn non-host `403` và xóa phòng sạch khi chủ rời.
+- **Bộ 7 Mô-đun C# Unity 6.3 LTS (`unity-u2-kit/Scripts/`) + Bootstrapper (`scripts/bootstrap-unity-client.ps1`):**
+  - `Sidecar/LkdfSidecarProcess.cs` (Windows Win32 Job Object `JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE`), `Net/LkdfModels.cs` (khớp 100% tên trường JSON trong `packages/shared/src/projection/index.ts`), `Net/LkdfApiClient.cs` (`Awaitable` + `UnityWebRequest`), `Net/RoomWsClient.cs` (`ClientWebSocket` + `ConcurrentQueue` + `actionLogDeltas` + `ping 25s` + reconnect backoff), `Data/VisualCatalogSO.cs`, `Audio/CuuChauAudioController.cs` (sample-locked `bgmClimaxDrums` + 8-voice spatial SFX), `Editor/CuuChauU1SliceBuilder.cs` (tự nhập 27 PNG + 5 TTF + 56 `.ogg`, cắt 9-slice qua `ISpriteEditorDataProvider` + dựng `U1_VerticalSlice_Arena.unity`).
+- **Kết quả kiểm thử thực tế sau lần sửa cuối (`2026-11-27`):**
+  - `npm.cmd run test:integration --workspace=@lkdf/server`: **10/10 files · 33/33 tests passed** (`7.81s`).
+  - `npm.cmd run test:unit`: **17/17 files · 154/154 tests passed** (`1.03s`).
+  - `npm.cmd run typecheck`: **0 lỗi** (`shared`, `desktop`, `server`, `tsconfig.e2e.json`).
+  - `npm.cmd run build`: **exit code 0** (`@lkdf/shared`, `@lkdf/server`, `@lkdf/desktop` 2.477 modules trong `712ms`).
+  - *Chưa kiểm chứng trên máy:* Biên dịch C# & dựng scene thật trong Unity Editor vì chưa tìm thấy `Unity.exe` đã cài & giấy phép kích hoạt.
+
+## 0-U0U1. Bằng Chứng Kiểm Chứng Chặng U0 (90%) & Chặng U1 Bộ Mẫu 2.5D (`2026-11-27` · Swarm 3 Nghệ Sĩ)
+- **Commit mốc nền:** `[main 1dec06c]` (`chore(u0): checkpoint studio -20 LUFS bgm tracks and electron fallback before Unity 6 client`).
+- **Chặng U0 (Nền tảng Unity 6 & 14 Skills):**
+  - Cài đủ **14/14 skills** vào `~\.gemini\config\skills\`: `antislop-ui`, `card-game`, `create-game-assets`, `create-game-vfx`, `install-anti-slop`, `layer-game-ui`, `no-ai-design-slop`, `shader-programming`, `steam-publish`, `unity-animation`, `unity-build-pipeline`, `unity-csharp-scripting`, `unity-input-system`, `unity-scriptableobjects`.
+  - Cài `Unity CLI 1.1.0` (`C:\Users\kyuu4\AppData\Local\Unity\bin\unity.exe`), đặt `install-path = D:\Unity Hub\Installs` (`144.55 GB` trống), tải sẵn & kiểm tra mã băm `UnitySetup64-6000.3.29f1.exe` (`4.01 GB` tại `AppData\Roaming\UnityHub\downloads\`), tải 5 phông SIL OFL `.ttf` (`BeVietnamPro-Regular/SemiBold/Bold`, `NotoSerif-Bold`, `JetBrainsMono-Bold`) vào `art-studio/u1-slice/fonts/`.
+  - *Điểm chặn hợp pháp cần 1 cú click của Sếp:* Sandbox của Agent bị Windows chặn UAC (`ELEVATION_FAILED`) và trình duyệt đăng nhập Unity Personal cần thao tác người dùng → đã đóng gói sẵn `scripts/Cai_Unity6_Chang_U0.cmd` + `scripts/finish-unity-u0-setup.ps1` cài trực tiếp từ file `4.01 GB` đã tải sẵn.
+- **Chặng U1 (Xưởng Đồ Họa Thật — `art-studio/u1-slice/`):**
+  - `blender-3d-artisan` (`Blender 4.2 Portable` tại `C:\Badminton\tools\blender\blender.exe`): Xuất `10/10` vật liệu PBR ánh sáng 35° trái-trên (`table_board_25d.png`, `card_frame_9slice.png`, `seat_frame_9slice.png`, `silk_scroll_tooltip_9slice.png`, 4 hạt ngọc máu `hp_*`, 2 ấn đồng `seal_*`) + `blender_u1_contact_sheet.png`.
+  - `figma-ui-framer` + Coordinator: Xuất `11/11` huy hiệu vector Cửu Châu (`suit_*`, `faction_*`, `target_reticle_ring`, `arrow_head_silk`, `action_button_primary_9slice`) chuẩn kích thước chia hết cho 4 (`128×128`, `256×256`, `360×96`) + `ui-layout-spec.json` (`1920×1080`) + `figma-plugin-build.js` + `figma_icons_contact_sheet.png`. *(Ghi nhận: tài khoản Figma hiện đang ở View seat nên `create_new_file` trả quyền chỉ xem; đã giữ sẵn `figma-plugin-build.js` và xuất raster sắc nét bằng `sharp` tại `density: 72` từ 11 SVG gốc).*
+  - `wuxia-illustrator` + Coordinator (`image-generator` + SciPy EDT alpha matting): Xuất `6/6` tranh hội họa thủy mặc khoáng sắc tách lớp 2.5D (`hero_trieu_thien_hanh_bg/fg/full.png`, `card_sat.png`, `card_dao.png`, `card_back_cuu_chau.png`) + `illustrations_u1_sheet.png`. *(Ghi nhận: Canva `remove-background` đòi gói Pro nên đã thay bằng SciPy EDT matte + khử viền 0đ đạt alpha sạch 100%).*
+  - **Kiểm chứng thực tế:** `ASSET_QA_TOTAL_PASS = 27/27` qua `create-game-assets/scripts/asset_report.py` (`--require-alpha` cho cả 21 sprite trong suốt); dựng và soi bằng mắt trực tiếp 2 ảnh `art-studio/u1-slice/u1_tabletop_preview_1080p.png` & `u1_closeup_showcase.png` (đã sửa lỗi thiếu ký tự mũi tên `→` trong `NotoSerif-Bold.ttf`, căn gọn cuộn lụa và vòng la bàn nhắm mục tiêu).
 
 ## 0. Bằng Chứng Kiểm Chứng Mới Nhất — Bước 5: 64 Tranh Minh Họa Cửu Châu (`0% AI`) & 3 BGM Chuẩn `-20 LUFS` (`2026-11-26` · Swarm 3 Agent)
 - **Commit nền:** `[main 0de6589]` (Bước 4 — 14 files). Thay đổi Bước 5 đang giữ sạch trong working tree.
