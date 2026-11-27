@@ -1,0 +1,42 @@
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="tr_aura" cx="128" cy="128" r="124" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#D99B26" stop-opacity="0"/>
+      <stop offset="0.60" stop-color="#D99B26" stop-opacity="0"/>
+      <stop offset="0.76" stop-color="#F2C86B" stop-opacity="0.46"/>
+      <stop offset="0.90" stop-color="#D99B26" stop-opacity="0.18"/>
+      <stop offset="1" stop-color="#D99B26" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="tr_gold" x1="28" y1="24" x2="228" y2="232" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFF2C2"/>
+      <stop offset="0.48" stop-color="#DFB35B"/>
+      <stop offset="1" stop-color="#8F6320"/>
+    </linearGradient>
+  </defs>
+  <circle cx="128" cy="128" r="124" fill="url(#tr_aura)"/>
+  <circle cx="128" cy="128" r="98" stroke="url(#tr_gold)" stroke-width="5.5"/>
+  <circle cx="128" cy="128" r="85" stroke="#F6DE9C" stroke-width="2.2" stroke-opacity="0.82"/>
+  <!-- 8 Compass Degree Ticks -->
+  <line x1="74" y1="46" x2="80" y2="55" stroke="#F6DE9C" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="182" y1="46" x2="176" y2="55" stroke="#F6DE9C" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="210" y1="74" x2="201" y2="80" stroke="#E6BE6C" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="210" y1="182" x2="201" y2="176" stroke="#C89B4B" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="182" y1="210" x2="176" y2="201" stroke="#C89B4B" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="74" y1="210" x2="80" y2="201" stroke="#DFB35B" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="46" y1="182" x2="55" y2="176" stroke="#E6BE6C" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="46" y1="74" x2="55" y2="80" stroke="#FFF2C2" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- 4 Diagonal Qi Diamond Nodes -->
+  <polygon points="59,51 67,59 59,67 51,59" fill="url(#tr_gold)" stroke="#2A1C08" stroke-width="1.6"/>
+  <polygon points="197,51 205,59 197,67 189,59" fill="url(#tr_gold)" stroke="#2A1C08" stroke-width="1.6"/>
+  <polygon points="197,189 205,197 197,205 189,197" fill="url(#tr_gold)" stroke="#2A1C08" stroke-width="1.6"/>
+  <polygon points="59,189 67,197 59,205 51,197" fill="url(#tr_gold)" stroke="#2A1C08" stroke-width="1.6"/>
+  <!-- 4 Split-Bevel Cardinal Inward Sword Pointers -->
+  <polygon points="128,52 116,16 128,24" fill="#FFF4CC"/><polygon points="128,52 140,16 128,24" fill="#B58330"/>
+  <polygon points="128,52 140,16 128,24 116,16" stroke="#2A1C08" stroke-width="1.8" stroke-linejoin="round"/>
+  <polygon points="128,204 116,240 128,232" fill="#E6BE6C"/><polygon points="128,204 140,240 128,232" fill="#8C601E"/>
+  <polygon points="128,204 140,240 128,232 116,240" stroke="#2A1C08" stroke-width="1.8" stroke-linejoin="round"/>
+  <polygon points="52,128 16,116 24,128" fill="#FFF4CC"/><polygon points="52,128 16,140 24,128" fill="#B58330"/>
+  <polygon points="52,128 16,140 24,128 16,116" stroke="#2A1C08" stroke-width="1.8" stroke-linejoin="round"/>
+  <polygon points="204,128 240,116 232,128" fill="#E6BE6C"/><polygon points="204,128 240,140 232,128" fill="#8C601E"/>
+  <polygon points="204,128 240,140 232,128 240,116" stroke="#2A1C08" stroke-width="1.8" stroke-linejoin="round"/>
+</svg>

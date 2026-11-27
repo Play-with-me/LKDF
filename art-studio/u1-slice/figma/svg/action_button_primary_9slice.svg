@@ -1,0 +1,45 @@
+<svg width="360" height="96" viewBox="0 0 360 96" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="ab_bronze_v" x1="180" y1="2" x2="180" y2="94" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#F6DE9C"/>
+      <stop offset="0.18" stop-color="#D4A653"/>
+      <stop offset="0.82" stop-color="#9E7027"/>
+      <stop offset="1" stop-color="#6B4815"/>
+    </linearGradient>
+    <linearGradient id="ab_lacquer_v" x1="180" y1="10" x2="180" y2="86" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#CC4038"/>
+      <stop offset="0.18" stop-color="#B02E28"/>
+      <stop offset="0.82" stop-color="#8A1E19"/>
+      <stop offset="1" stop-color="#661410"/>
+    </linearGradient>
+    <linearGradient id="ab_corner_tl" x1="2" y1="2" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFF4CC"/>
+      <stop offset="1" stop-color="#C89B4B"/>
+    </linearGradient>
+    <linearGradient id="ab_corner_br" x1="328" y1="64" x2="358" y2="94" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#C89B4B"/>
+      <stop offset="1" stop-color="#6E4A16"/>
+    </linearGradient>
+  </defs>
+  <polygon points="18,2 342,2 358,18 358,78 342,94 18,94 2,78 2,18" fill="url(#ab_bronze_v)" stroke="#241607" stroke-width="2"/>
+  <polygon points="22,9 338,9 351,22 351,74 338,87 22,87 9,74 9,22" fill="url(#ab_lacquer_v)" stroke="#4E0F0B" stroke-width="1.6"/>
+  <!-- Top Specular Luster Line (horizontally uniform across x=26..334) -->
+  <line x1="25" y1="12" x2="335" y2="12" stroke="#F79B94" stroke-width="1.2" stroke-opacity="0.45"/>
+  <polygon points="25,14 335,14 347,26 347,70 335,82 25,82 13,70 13,26" stroke="#E8C274" stroke-width="1.2" stroke-opacity="0.68"/>
+  <!-- 4 Cast Bronze Corner Brackets STRICTLY inside [0..32] & [328..360] x [0..32] & [64..96] -->
+  <path d="M2,18 L18,2 L30,2 L30,8 L20,8 L8,20 L8,30 L2,30 Z" fill="url(#ab_corner_tl)"/>
+  <polygon points="14,14 27,14 27,18 18,18 18,27 14,27" fill="#FFF0C2"/>
+  <circle cx="24" cy="24" r="2.4" fill="#FFF4CC" stroke="#4D120E" stroke-width="1"/>
+
+  <path d="M358,18 L342,2 L330,2 L330,8 L340,8 L352,20 L352,30 L358,30 Z" fill="#E6BE6C"/>
+  <polygon points="346,14 333,14 333,18 342,18 342,27 346,27" fill="#E6BE6C"/>
+  <circle cx="336" cy="24" r="2.4" fill="#F5DA96" stroke="#4D120E" stroke-width="1"/>
+
+  <path d="M2,78 L18,94 L30,94 L30,88 L20,88 L8,76 L8,66 L2,66 Z" fill="#B98836"/>
+  <polygon points="14,82 27,82 27,78 18,78 18,69 14,69" fill="#D4A653"/>
+  <circle cx="24" cy="72" r="2.4" fill="#DFB35B" stroke="#4D120E" stroke-width="1"/>
+
+  <path d="M358,78 L342,94 L330,94 L330,88 L340,88 L352,76 L352,66 L358,66 Z" fill="url(#ab_corner_br)"/>
+  <polygon points="346,82 333,82 333,78 342,78 342,69 346,69" fill="#B98836"/>
+  <circle cx="336" cy="72" r="2.4" fill="#C89B4B" stroke="#4D120E" stroke-width="1"/>
+</svg>

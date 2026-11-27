@@ -1,0 +1,1121 @@
+{
+  "project": "Cửu Châu Ẩn Kiếm (Blades of the Nine Realms)",
+  "phase": "U1 — Vertical Visual Slice",
+  "figmaFileName": "Cửu Châu Ẩn Kiếm — Unity 6 2.5D UI Kit",
+  "figmaFileUrl": null,
+  "canvasConfig": {
+    "uiSystem": "Unity 6 uGUI (Canvas + RectTransform + TextMeshPro SDF)",
+    "uiToolkitAllowedOnArena": false,
+    "renderMode": "ScreenSpaceCamera",
+    "planeDistance": 10,
+    "cameraTilt25DDegrees": 8,
+    "referenceResolution": {
+      "width": 1920,
+      "height": 1080
+    },
+    "screenMatchMode": "MatchWidthOrHeight",
+    "matchWidthOrHeight": 0.5,
+    "referencePixelsPerUnit": 100,
+    "lightingKeyDirection": "35deg Top-Left (#FFD9A0 warm key, #4A6B82 cool bottom-right rim)",
+    "borderOrderConvention": "[left, bottom, right, top] (Unity Sprite.border / SpriteMetaData.spriteBorder)"
+  },
+  "typographyFloor1080p": {
+    "strictMinFontSizePx": 15,
+    "fonts": {
+      "displaySerif": {
+        "family": "Noto Serif",
+        "weights": [
+          "Bold"
+        ],
+        "file": "art-studio/u1-slice/fonts/NotoSerif-Bold.ttf"
+      },
+      "uiSans": {
+        "family": "Be Vietnam Pro",
+        "weights": [
+          "Regular",
+          "SemiBold",
+          "Bold"
+        ],
+        "files": [
+          "art-studio/u1-slice/fonts/BeVietnamPro-Regular.ttf",
+          "art-studio/u1-slice/fonts/BeVietnamPro-SemiBold.ttf",
+          "art-studio/u1-slice/fonts/BeVietnamPro-Bold.ttf"
+        ]
+      },
+      "numericMono": {
+        "family": "JetBrains Mono",
+        "weights": [
+          "Bold"
+        ],
+        "file": "art-studio/u1-slice/fonts/JetBrainsMono-Bold.ttf"
+      }
+    },
+    "sdfMaterialTreatment": {
+      "outlineWidthPx": 2,
+      "outlineColor": "#090807",
+      "underlayOffset": [
+        1.5,
+        -1.5
+      ],
+      "underlaySoftness": 0.25
+    },
+    "scalePx": {
+      "primaryStats_Hp_Timer_DeckCount": 28,
+      "cardRankCorner": 24,
+      "hoveredCardTitle_PrimaryCta": 20,
+      "heroName_RestingCardTitle_TurnBanner": 18,
+      "tooltipDescription_SecondaryAction": 16,
+      "compactHudCaption_DistanceTag": 15
+    }
+  },
+  "colorTokens": {
+    "obsidianBackdrop": "#090807",
+    "ebonySurface": "#181B20",
+    "silkCardSurface": "#DEC79C",
+    "silkCardShade": "#C6A673",
+    "jadeWhiteText": "#EFE6D5",
+    "inkDarkText": "#1D150D",
+    "cinnabarPrimary": "#C83E37",
+    "cinnabarHeart": "#B8322A",
+    "imperialBronzeGold": "#C89B4B",
+    "factionThienKiem": "#3B82F6",
+    "factionHuyenThiet": "#C83E37",
+    "factionGiangNam": "#10B981",
+    "factionAnSat": "#94A3B8"
+  },
+  "sprites": {
+    "figmaExports": {
+      "suit_spade": {
+        "path": "art-studio/u1-slice/figma/exports/suit_spade.png",
+        "size": [
+          128,
+          128
+        ],
+        "imageType": "Simple",
+        "border": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "pivot": [
+          0.5,
+          0.5
+        ],
+        "requireAlpha": true
+      },
+      "suit_club": {
+        "path": "art-studio/u1-slice/figma/exports/suit_club.png",
+        "size": [
+          128,
+          128
+        ],
+        "imageType": "Simple",
+        "border": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "pivot": [
+          0.5,
+          0.5
+        ],
+        "requireAlpha": true
+      },
+      "suit_heart": {
+        "path": "art-studio/u1-slice/figma/exports/suit_heart.png",
+        "size": [
+          128,
+          128
+        ],
+        "imageType": "Simple",
+        "border": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "pivot": [
+          0.5,
+          0.5
+        ],
+        "requireAlpha": true
+      },
+      "suit_diamond": {
+        "path": "art-studio/u1-slice/figma/exports/suit_diamond.png",
+        "size": [
+          128,
+          128
+        ],
+        "imageType": "Simple",
+        "border": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "pivot": [
+          0.5,
+          0.5
+        ],
+        "requireAlpha": true
+      },
+      "faction_thien_kiem": {
+        "path": "art-studio/u1-slice/figma/exports/faction_thien_kiem.png",
+        "size": [
+          128,
+          128
+        ],
+        "imageType": "Simple",
+        "border": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "pivot": [
+          0.5,
+          0.5
+        ],
+        "requireAlpha": true
+      },
+      "faction_huyen_thiet": {
+        "path": "art-studio/u1-slice/figma/exports/faction_huyen_thiet.png",
+        "size": [
+          128,
+          128
+        ],
+        "imageType": "Simple",
+        "border": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "pivot": [
+          0.5,
+          0.5
+        ],
+        "requireAlpha": true
+      },
+      "faction_giang_nam": {
+        "path": "art-studio/u1-slice/figma/exports/faction_giang_nam.png",
+        "size": [
+          128,
+          128
+        ],
+        "imageType": "Simple",
+        "border": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "pivot": [
+          0.5,
+          0.5
+        ],
+        "requireAlpha": true
+      },
+      "faction_an_sat": {
+        "path": "art-studio/u1-slice/figma/exports/faction_an_sat.png",
+        "size": [
+          128,
+          128
+        ],
+        "imageType": "Simple",
+        "border": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "pivot": [
+          0.5,
+          0.5
+        ],
+        "requireAlpha": true
+      },
+      "target_reticle_ring": {
+        "path": "art-studio/u1-slice/figma/exports/target_reticle_ring.png",
+        "size": [
+          256,
+          256
+        ],
+        "imageType": "Simple",
+        "border": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "pivot": [
+          0.5,
+          0.5
+        ],
+        "requireAlpha": true
+      },
+      "arrow_head_silk": {
+        "path": "art-studio/u1-slice/figma/exports/arrow_head_silk.png",
+        "size": [
+          128,
+          128
+        ],
+        "imageType": "Simple",
+        "border": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "pivot": [
+          0.5,
+          0.85
+        ],
+        "forwardAxis": "+Y (Up)",
+        "requireAlpha": true
+      },
+      "action_button_primary_9slice": {
+        "path": "art-studio/u1-slice/figma/exports/action_button_primary_9slice.png",
+        "size": [
+          360,
+          96
+        ],
+        "imageType": "Sliced",
+        "border": [
+          32,
+          32,
+          32,
+          32
+        ],
+        "pivot": [
+          0.5,
+          0.5
+        ],
+        "requireAlpha": true
+      }
+    },
+    "blenderCompanionKit": {
+      "table_board_25d": {
+        "path": "art-studio/u1-slice/blender/renders/table_board_25d.png",
+        "size": [
+          1920,
+          1080
+        ],
+        "imageType": "Simple",
+        "border": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "pivot": [
+          0.5,
+          0.5
+        ],
+        "requireAlpha": false
+      },
+      "card_frame_9slice": {
+        "path": "art-studio/u1-slice/blender/renders/card_frame_9slice.png",
+        "size": [
+          512,
+          720
+        ],
+        "imageType": "Sliced",
+        "border": [
+          64,
+          64,
+          64,
+          64
+        ],
+        "pivot": [
+          0.5,
+          0.5
+        ],
+        "requireAlpha": true
+      },
+      "seat_frame_9slice": {
+        "path": "art-studio/u1-slice/blender/renders/seat_frame_9slice.png",
+        "size": [
+          640,
+          400
+        ],
+        "imageType": "Sliced",
+        "border": [
+          64,
+          64,
+          64,
+          64
+        ],
+        "pivot": [
+          0.5,
+          0.5
+        ],
+        "requireAlpha": true
+      },
+      "silk_scroll_tooltip_9slice": {
+        "path": "art-studio/u1-slice/blender/renders/silk_scroll_tooltip_9slice.png",
+        "size": [
+          640,
+          420
+        ],
+        "imageType": "Sliced",
+        "border": [
+          64,
+          64,
+          64,
+          64
+        ],
+        "pivot": [
+          0.5,
+          0.5
+        ],
+        "requireAlpha": true
+      },
+      "hp_orbs_and_seals": {
+        "hp_jade_full": {
+          "size": [
+            128,
+            128
+          ],
+          "border": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        "hp_amber_mid": {
+          "size": [
+            128,
+            128
+          ],
+          "border": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        "hp_crimson_low": {
+          "size": [
+            128,
+            128
+          ],
+          "border": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        "hp_socket_empty": {
+          "size": [
+            128,
+            128
+          ],
+          "border": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        "seal_battle_log": {
+          "size": [
+            128,
+            128
+          ],
+          "border": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        "seal_settings_gear": {
+          "size": [
+            128,
+            128
+          ],
+          "border": [
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      }
+    }
+  },
+  "masterLayout1920x1080": {
+    "tableBoard": {
+      "anchorMin": [
+        0,
+        0
+      ],
+      "anchorMax": [
+        1,
+        1
+      ],
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "offsetMin": [
+        0,
+        0
+      ],
+      "offsetMax": [
+        0,
+        0
+      ]
+    },
+    "topLeftMatchPlaque": {
+      "figmaTopLeft": {
+        "x": 32,
+        "y": 24,
+        "width": 432,
+        "height": 52
+      },
+      "anchorMin": [
+        0,
+        1
+      ],
+      "anchorMax": [
+        0,
+        1
+      ],
+      "pivot": [
+        0,
+        1
+      ],
+      "anchoredPosition": [
+        32,
+        -24
+      ],
+      "sizeDelta": [
+        432,
+        52
+      ]
+    },
+    "topRightHudSeals": {
+      "maxButtonCount": 2,
+      "minTouchSizePx": [
+        48,
+        48
+      ],
+      "sealBattleLog": {
+        "figmaTopLeft": {
+          "x": 1736,
+          "y": 20,
+          "width": 64,
+          "height": 64
+        },
+        "anchorMin": [
+          1,
+          1
+        ],
+        "anchorMax": [
+          1,
+          1
+        ],
+        "pivot": [
+          1,
+          1
+        ],
+        "anchoredPosition": [
+          -120,
+          -20
+        ],
+        "sizeDelta": [
+          64,
+          64
+        ]
+      },
+      "sealSettingsMenu": {
+        "figmaTopLeft": {
+          "x": 1816,
+          "y": 20,
+          "width": 64,
+          "height": 64
+        },
+        "anchorMin": [
+          1,
+          1
+        ],
+        "anchorMax": [
+          1,
+          1
+        ],
+        "pivot": [
+          1,
+          1
+        ],
+        "anchoredPosition": [
+          -40,
+          -20
+        ],
+        "sizeDelta": [
+          64,
+          64
+        ]
+      }
+    },
+    "seats8Player": {
+      "seat1_LocalHeroCluster": {
+        "role": "LocalPlayer (Bottom-Left Diegetic Hero & 2x2 Equipment)",
+        "figmaTopLeft": {
+          "x": 32,
+          "y": 740,
+          "width": 368,
+          "height": 308
+        },
+        "anchorMin": [
+          0,
+          0
+        ],
+        "anchorMax": [
+          0,
+          0
+        ],
+        "pivot": [
+          0,
+          0
+        ],
+        "anchoredPosition": [
+          32,
+          32
+        ],
+        "sizeDelta": [
+          368,
+          308
+        ],
+        "subZones": {
+          "portrait25DSlot": {
+            "width": 200,
+            "height": 260,
+            "parallaxOffsetMaxPx": 8
+          },
+          "factionSeal": {
+            "width": 48,
+            "height": 48
+          },
+          "equipmentMedallions2x2": {
+            "slotSize": [
+              52,
+              52
+            ],
+            "gap": 8
+          },
+          "hpJadeOrbs": {
+            "orbSize": [
+              28,
+              28
+            ],
+            "count": 4
+          }
+        }
+      },
+      "seat2_LeftLower": {
+        "figmaTopLeft": {
+          "x": 40,
+          "y": 508,
+          "width": 228,
+          "height": 142
+        },
+        "anchorMin": [
+          0,
+          0.5
+        ],
+        "anchorMax": [
+          0,
+          0.5
+        ],
+        "pivot": [
+          0,
+          0.5
+        ],
+        "anchoredPosition": [
+          40,
+          -39
+        ],
+        "sizeDelta": [
+          228,
+          142
+        ]
+      },
+      "seat3_LeftUpper": {
+        "figmaTopLeft": {
+          "x": 40,
+          "y": 264,
+          "width": 228,
+          "height": 142
+        },
+        "anchorMin": [
+          0,
+          0.5
+        ],
+        "anchorMax": [
+          0,
+          0.5
+        ],
+        "pivot": [
+          0,
+          0.5
+        ],
+        "anchoredPosition": [
+          40,
+          205
+        ],
+        "sizeDelta": [
+          228,
+          142
+        ]
+      },
+      "seat4_TopLeft": {
+        "figmaTopLeft": {
+          "x": 356,
+          "y": 48,
+          "width": 228,
+          "height": 142
+        },
+        "anchorMin": [
+          0.5,
+          1
+        ],
+        "anchorMax": [
+          0.5,
+          1
+        ],
+        "pivot": [
+          0.5,
+          1
+        ],
+        "anchoredPosition": [
+          -490,
+          -48
+        ],
+        "sizeDelta": [
+          228,
+          142
+        ]
+      },
+      "seat5_TopCenter_ValidTarget": {
+        "figmaTopLeft": {
+          "x": 846,
+          "y": 36,
+          "width": 228,
+          "height": 142
+        },
+        "anchorMin": [
+          0.5,
+          1
+        ],
+        "anchorMax": [
+          0.5,
+          1
+        ],
+        "pivot": [
+          0.5,
+          1
+        ],
+        "anchoredPosition": [
+          0,
+          -36
+        ],
+        "sizeDelta": [
+          228,
+          142
+        ],
+        "validTargetReticleOverlay": {
+          "figmaTopLeft": {
+            "x": 832,
+            "y": -21,
+            "width": 256,
+            "height": 256
+          },
+          "anchorMin": [
+            0.5,
+            1
+          ],
+          "anchorMax": [
+            0.5,
+            1
+          ],
+          "pivot": [
+            0.5,
+            0.5
+          ],
+          "anchoredPosition": [
+            0,
+            -107
+          ],
+          "sizeDelta": [
+            256,
+            256
+          ]
+        }
+      },
+      "seat6_TopRight": {
+        "figmaTopLeft": {
+          "x": 1336,
+          "y": 48,
+          "width": 228,
+          "height": 142
+        },
+        "anchorMin": [
+          0.5,
+          1
+        ],
+        "anchorMax": [
+          0.5,
+          1
+        ],
+        "pivot": [
+          0.5,
+          1
+        ],
+        "anchoredPosition": [
+          490,
+          -48
+        ],
+        "sizeDelta": [
+          228,
+          142
+        ]
+      },
+      "seat7_RightUpper": {
+        "figmaTopLeft": {
+          "x": 1652,
+          "y": 264,
+          "width": 228,
+          "height": 142
+        },
+        "anchorMin": [
+          1,
+          0.5
+        ],
+        "anchorMax": [
+          1,
+          0.5
+        ],
+        "pivot": [
+          1,
+          0.5
+        ],
+        "anchoredPosition": [
+          -40,
+          205
+        ],
+        "sizeDelta": [
+          228,
+          142
+        ]
+      },
+      "seat8_RightLower": {
+        "figmaTopLeft": {
+          "x": 1652,
+          "y": 508,
+          "width": 228,
+          "height": 142
+        },
+        "anchorMin": [
+          1,
+          0.5
+        ],
+        "anchorMax": [
+          1,
+          0.5
+        ],
+        "pivot": [
+          1,
+          0.5
+        ],
+        "anchoredPosition": [
+          -40,
+          -39
+        ],
+        "sizeDelta": [
+          228,
+          142
+        ]
+      }
+    },
+    "centerArenaStage": {
+      "turnPhasePlaque": {
+        "figmaTopLeft": {
+          "x": 696,
+          "y": 254,
+          "width": 528,
+          "height": 56
+        },
+        "anchorMin": [
+          0.5,
+          0.5
+        ],
+        "anchorMax": [
+          0.5,
+          0.5
+        ],
+        "pivot": [
+          0.5,
+          0.5
+        ],
+        "anchoredPosition": [
+          0,
+          258
+        ],
+        "sizeDelta": [
+          528,
+          56
+        ]
+      },
+      "drawPileStack": {
+        "figmaTopLeft": {
+          "x": 748,
+          "y": 352,
+          "width": 124,
+          "height": 172
+        },
+        "anchorMin": [
+          0.5,
+          0.5
+        ],
+        "anchorMax": [
+          0.5,
+          0.5
+        ],
+        "pivot": [
+          0.5,
+          0.5
+        ],
+        "anchoredPosition": [
+          -150,
+          102
+        ],
+        "sizeDelta": [
+          124,
+          172
+        ]
+      },
+      "playedCardCenter": {
+        "figmaTopLeft": {
+          "x": 924,
+          "y": 344,
+          "width": 136,
+          "height": 190
+        },
+        "anchorMin": [
+          0.5,
+          0.5
+        ],
+        "anchorMax": [
+          0.5,
+          0.5
+        ],
+        "pivot": [
+          0.5,
+          0.5
+        ],
+        "anchoredPosition": [
+          32,
+          101
+        ],
+        "sizeDelta": [
+          136,
+          190
+        ]
+      },
+      "silkTargetingArrowHead": {
+        "figmaTopLeft": {
+          "x": 912,
+          "y": 152,
+          "width": 96,
+          "height": 96
+        },
+        "anchorMin": [
+          0.5,
+          1
+        ],
+        "anchorMax": [
+          0.5,
+          1
+        ],
+        "pivot": [
+          0.5,
+          0.85
+        ],
+        "anchoredPosition": [
+          0,
+          -166.4
+        ],
+        "sizeDelta": [
+          96,
+          96
+        ]
+      }
+    },
+    "bottomHandArcAndHoverZoom": {
+      "handArcContainer": {
+        "figmaTopLeft": {
+          "x": 428,
+          "y": 856,
+          "width": 1024,
+          "height": 212
+        },
+        "anchorMin": [
+          0.5,
+          0
+        ],
+        "anchorMax": [
+          0.5,
+          0
+        ],
+        "pivot": [
+          0.5,
+          0
+        ],
+        "anchoredPosition": [
+          -20,
+          12
+        ],
+        "sizeDelta": [
+          1024,
+          212
+        ]
+      },
+      "splineArcParameters": {
+        "restingCardSize": [
+          130,
+          185
+        ],
+        "hoverScaleMultiplier": 1.75,
+        "hoveredCardSize": [
+          228,
+          324
+        ],
+        "arcRadiusPx": 1360,
+        "maxFanAngleDeg": 22,
+        "cardSpacingPx": 112,
+        "hoverLiftY": 74,
+        "tilt3DMaxDegrees": 9
+      },
+      "hoveredCardShowcaseSlot": {
+        "figmaTopLeft": {
+          "x": 768,
+          "y": 676,
+          "width": 228,
+          "height": 324
+        },
+        "anchorMin": [
+          0.5,
+          0
+        ],
+        "anchorMax": [
+          0.5,
+          0
+        ],
+        "pivot": [
+          0.5,
+          0
+        ],
+        "anchoredPosition": [
+          -78,
+          80
+        ],
+        "sizeDelta": [
+          228,
+          324
+        ]
+      },
+      "silkScrollTooltipRight": {
+        "figmaTopLeft": {
+          "x": 1016,
+          "y": 696,
+          "width": 432,
+          "height": 256
+        },
+        "anchorMin": [
+          0.5,
+          0
+        ],
+        "anchorMax": [
+          0.5,
+          0
+        ],
+        "pivot": [
+          0,
+          0
+        ],
+        "anchoredPosition": [
+          56,
+          128
+        ],
+        "sizeDelta": [
+          432,
+          256
+        ]
+      }
+    },
+    "bottomRightCommandCluster": {
+      "primaryActionButton9Slice": {
+        "figmaTopLeft": {
+          "x": 1528,
+          "y": 952,
+          "width": 360,
+          "height": 96
+        },
+        "anchorMin": [
+          1,
+          0
+        ],
+        "anchorMax": [
+          1,
+          0
+        ],
+        "pivot": [
+          1,
+          0
+        ],
+        "anchoredPosition": [
+          -32,
+          32
+        ],
+        "sizeDelta": [
+          360,
+          96
+        ]
+      },
+      "secondaryEndTurnButton": {
+        "figmaTopLeft": {
+          "x": 1624,
+          "y": 876,
+          "width": 264,
+          "height": 60
+        },
+        "anchorMin": [
+          1,
+          0
+        ],
+        "anchorMax": [
+          1,
+          0
+        ],
+        "pivot": [
+          1,
+          0
+        ],
+        "anchoredPosition": [
+          -32,
+          144
+        ],
+        "sizeDelta": [
+          264,
+          60
+        ]
+      }
+    }
+  }
+}

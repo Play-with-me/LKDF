@@ -1,0 +1,25 @@
+<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="dm_gold" x1="16" y1="10" x2="112" y2="118" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#F6DE9C"/>
+      <stop offset="0.5" stop-color="#C89B4B"/>
+      <stop offset="1" stop-color="#7D551A"/>
+    </linearGradient>
+    <linearGradient id="dm_table" x1="42" y1="36" x2="86" y2="92" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#E4574E"/>
+      <stop offset="0.5" stop-color="#C83E37"/>
+      <stop offset="1" stop-color="#8F221C"/>
+    </linearGradient>
+  </defs>
+  <path d="M64 10 Q84 42 114 64 Q84 86 64 118 Q44 86 14 64 Q44 42 64 10 Z" fill="#C83E37"/>
+  <path d="M64 10 Q44 42 14 64 L64 64 Z" fill="#EA6259"/>
+  <path d="M64 10 Q84 42 114 64 L64 64 Z" fill="#C83E37"/>
+  <path d="M14 64 Q44 86 64 118 L64 64 Z" fill="#A92C26"/>
+  <path d="M114 64 Q84 86 64 118 L64 64 Z" fill="#781A15"/>
+  <polygon points="64,34 90,64 64,94 38,64" fill="url(#dm_table)" stroke="url(#dm_gold)" stroke-width="2.2"/>
+  <path d="M64 10 Q84 42 114 64 Q84 86 64 118 Q44 86 14 64 Q44 42 64 10 Z" stroke="url(#dm_gold)" stroke-width="4" stroke-linejoin="miter"/>
+  <polygon points="64,6 69,15 64,20 59,15" fill="url(#dm_gold)"/>
+  <polygon points="64,122 69,113 64,108 59,113" fill="url(#dm_gold)"/>
+  <polygon points="10,64 19,59 24,64 19,69" fill="url(#dm_gold)"/>
+  <polygon points="118,64 109,59 104,64 109,69" fill="url(#dm_gold)"/>
+</svg>

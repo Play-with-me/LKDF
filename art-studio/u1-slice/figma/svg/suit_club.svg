@@ -1,0 +1,29 @@
+<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="cl_body" x1="20" y1="14" x2="108" y2="116" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#38291B"/>
+      <stop offset="0.5" stop-color="#1D150D"/>
+      <stop offset="1" stop-color="#0C0805"/>
+    </linearGradient>
+    <linearGradient id="cl_facet" x1="22" y1="14" x2="72" y2="82" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#523D2A" stop-opacity="0.72"/>
+      <stop offset="1" stop-color="#1D150D" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="cl_gold" x1="16" y1="10" x2="112" y2="118" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#F6DE9C"/>
+      <stop offset="0.5" stop-color="#C89B4B"/>
+      <stop offset="1" stop-color="#7C561B"/>
+    </linearGradient>
+  </defs>
+  <path d="M56 80 L72 80 L75 103 L88 114 L64 118 L40 114 L53 103 Z" fill="url(#cl_body)" stroke="url(#cl_gold)" stroke-width="3" stroke-linejoin="miter"/>
+  <path d="M64 12 C79 12 90 23 90 38 C90 44 88 49 84 53 C91 51 98 52 104 56 C113 63 116 76 110 86 C104 96 90 100 79 94 C73 91 68 86 66 80 L62 80 C60 86 55 91 49 94 C38 100 24 96 18 86 C12 76 15 63 24 56 C30 52 37 51 44 53 C40 49 38 44 38 38 C38 23 49 12 64 12 Z" fill="url(#cl_body)" stroke="url(#cl_gold)" stroke-width="3.2" stroke-linejoin="round"/>
+  <path d="M44 37 C44 26 53 18 64 18 C67 18 70 19 73 20 C62 20 51 28 49 40 Z" fill="url(#cl_facet)"/>
+  <path d="M22 76 C20 67 26 59 35 58 C38 58 41 59 43 60 C33 61 26 68 26 78 Z" fill="url(#cl_facet)"/>
+  <!-- Traditional Carved Wuxia Iron-Plum 3-Petal Gold Inlay -->
+  <path d="M64 42 C68 50 68 57 64 62 C60 57 60 50 64 42 Z" fill="url(#cl_gold)"/>
+  <path d="M44 74 C50 68 57 65 62 65 C59 70 53 74 44 74 Z" fill="url(#cl_gold)"/>
+  <path d="M84 74 C75 74 69 70 66 65 C71 65 78 68 84 74 Z" fill="url(#cl_gold)"/>
+  <circle cx="64" cy="64" r="7.5" fill="url(#cl_gold)" stroke="#140E09" stroke-width="2"/>
+  <circle cx="64" cy="64" r="2.8" fill="#1D150D"/>
+  <path d="M49 104 L64 98 L79 104" stroke="url(#cl_gold)" stroke-width="2.2" stroke-linecap="round"/>
+</svg>

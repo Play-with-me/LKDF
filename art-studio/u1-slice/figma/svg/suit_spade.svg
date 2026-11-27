@@ -1,0 +1,25 @@
+<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="sp_body" x1="22" y1="14" x2="104" y2="114" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#38291B"/>
+      <stop offset="0.48" stop-color="#1D150D"/>
+      <stop offset="1" stop-color="#0C0805"/>
+    </linearGradient>
+    <linearGradient id="sp_left_facet" x1="20" y1="12" x2="64" y2="92" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#523D2A" stop-opacity="0.72"/>
+      <stop offset="1" stop-color="#1D150D" stop-opacity="0.04"/>
+    </linearGradient>
+    <linearGradient id="sp_gold" x1="18" y1="10" x2="110" y2="118" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#F6DE9C"/>
+      <stop offset="0.52" stop-color="#C89B4B"/>
+      <stop offset="1" stop-color="#7C561B"/>
+    </linearGradient>
+  </defs>
+  <path d="M56 82 L72 82 L75 102 L88 114 L64 118 L40 114 L53 102 Z" fill="url(#sp_body)" stroke="url(#sp_gold)" stroke-width="3" stroke-linejoin="miter"/>
+  <path d="M64 10 C76 28 112 52 112 75 C112 91 98 101 83 98 C74 96 68 90 64 83 C60 90 54 96 45 98 C30 101 16 91 16 75 C16 52 52 28 64 10 Z" fill="url(#sp_body)" stroke="url(#sp_gold)" stroke-width="3.2" stroke-linejoin="round"/>
+  <path d="M64 14 C53 31 21 53 21 75 C21 87 32 95 44 93 C53 91 59 85 64 77 Z" fill="url(#sp_left_facet)"/>
+  <path d="M64 20 L69 66 L64 78 L59 66 Z" fill="#2B1F14" stroke="url(#sp_gold)" stroke-width="1.8"/>
+  <path d="M64 20 L64 80" stroke="#F6DE9C" stroke-width="1.6" stroke-opacity="0.8"/>
+  <path d="M48 103 L64 97 L80 103" stroke="url(#sp_gold)" stroke-width="2.2" stroke-linecap="round"/>
+  <polygon points="64,74 71,82 64,90 57,82" fill="url(#sp_gold)" stroke="#140E09" stroke-width="1.5"/>
+</svg>

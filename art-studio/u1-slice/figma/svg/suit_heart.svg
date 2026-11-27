@@ -1,0 +1,23 @@
+<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="ht_body" x1="20" y1="16" x2="106" y2="114" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#DC4A40"/>
+      <stop offset="0.46" stop-color="#B8322A"/>
+      <stop offset="1" stop-color="#6E1612"/>
+    </linearGradient>
+    <linearGradient id="ht_facet" x1="18" y1="16" x2="64" y2="86" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#F78279" stop-opacity="0.52"/>
+      <stop offset="1" stop-color="#B8322A" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="ht_gold" x1="14" y1="14" x2="114" y2="116" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#F6DE9C"/>
+      <stop offset="0.5" stop-color="#C89B4B"/>
+      <stop offset="1" stop-color="#7D551A"/>
+    </linearGradient>
+  </defs>
+  <path d="M64 31 C56 18 39 14 26 22 C12 31 10 51 21 68 C33 86 52 100 64 116 C76 100 95 86 107 68 C118 51 116 31 102 22 C89 14 72 18 64 31 Z" fill="url(#ht_body)" stroke="url(#ht_gold)" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M64 34 C56 22 40 19 29 26 C18 33 17 50 27 65 C37 80 53 93 64 108 Z" fill="url(#ht_facet)"/>
+  <path d="M64 41 C57 30 43 26 33 33 C24 39 23 52 31 65 C40 78 54 89 64 102 C74 89 88 78 97 65 C105 52 104 39 95 33 C85 26 71 30 64 41 Z" stroke="url(#ht_gold)" stroke-width="1.8" stroke-opacity="0.72"/>
+  <polygon points="64,23 70,32 64,41 58,32" fill="url(#ht_gold)" stroke="#59120E" stroke-width="1.4"/>
+  <polygon points="64,104 69,112 64,118 59,112" fill="url(#ht_gold)"/>
+</svg>

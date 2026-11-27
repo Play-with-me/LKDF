@@ -1,0 +1,401 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e19991f795326f64ba0765909b213993, type: 3}
+  m_Name: VisualCatalog
+  m_EditorClassIdentifier: Assembly-CSharp::CuuChau.Data.VisualCatalogSO
+  tableBoard25D: {fileID: 21300000, guid: f83c634f364ea2e4e98b6eee7b416dc9, type: 3}
+  lobbyHallBackdrop: {fileID: 21300000, guid: 7442ce9d2627e6842b4b3394ccf7c7d4, type: 3}
+  cardFrame9Slice: {fileID: 21300000, guid: 3977f1e696cbe5b48bfeff29ed5664ac, type: 3}
+  seatFrame9Slice: {fileID: 21300000, guid: b09ee5fab46907a40bc489148eade721, type: 3}
+  silkScrollTooltip9Slice: {fileID: 21300000, guid: ed06d4578dbb8314dac1acd8b2fd1ae0, type: 3}
+  cardBackCuuChau: {fileID: 21300000, guid: 6c9303a55d9f74e4081a1fe9447feb1f, type: 3}
+  hpJadeFull: {fileID: 21300000, guid: 30d7d4ac9bb2fd8429235225bbb62ddd, type: 3}
+  hpAmberMid: {fileID: 21300000, guid: 4026e3729f932d44e94a13f14c29aaf7, type: 3}
+  hpCrimsonLow: {fileID: 21300000, guid: 40fa58055bb2ee246883f0f5f6400534, type: 3}
+  hpSocketEmpty: {fileID: 21300000, guid: d4110adef5b71784f9be36efca2995dd, type: 3}
+  sealBattleLog: {fileID: 21300000, guid: 4e72deb04b2fb244c8c822ffc7b17c06, type: 3}
+  sealSettingsGear: {fileID: 21300000, guid: 3f8c20ac46c4a5148a3efc84de9fa998, type: 3}
+  suitSpade: {fileID: 21300000, guid: f2c1cb5f1e2675b449ea4e8ff971bc0d, type: 3}
+  suitClub: {fileID: 21300000, guid: ac1f19eb3bd378c47a4fb83897a4dc1b, type: 3}
+  suitHeart: {fileID: 21300000, guid: fbed9b0eb033f2043827321c5fe03e58, type: 3}
+  suitDiamond: {fileID: 21300000, guid: aff7ee8fff4d30e48a6e45522c9e8da1, type: 3}
+  factionThienKiem: {fileID: 21300000, guid: 0c266c4a4b3ed994fb8d7a765a5e8ab2, type: 3}
+  factionHuyenThiet: {fileID: 21300000, guid: d356ee66961d4fd40989fcfad591fb49, type: 3}
+  factionGiangNam: {fileID: 21300000, guid: fa694ed90421330498a3b760826d7e99, type: 3}
+  factionAnSat: {fileID: 21300000, guid: 6129d71289e24d046ab1f5acf3a7be3b, type: 3}
+  targetReticleRing: {fileID: 21300000, guid: 5ec2cd539ddd64e47b82488edc603982, type: 3}
+  arrowHeadSilk: {fileID: 21300000, guid: 45d6560062349ce4da4ac7c629c78765, type: 3}
+  actionButtonPrimary9Slice: {fileID: 21300000, guid: c25d15399c3440947a33777cbfbbcb4e, type: 3}
+  heroPortraits:
+  - heroId: lam_thanh_vu
+    legacyId: liu_bei
+    displayNameVi: "L\xE2m Thanh V\u0169"
+    backgroundLayer: {fileID: 21300000, guid: 8c70ae318ea29f54288b570a77e8bba0, type: 3}
+    foregroundLayer: {fileID: 21300000, guid: 51f46459635cc6846a4f2c18b0a9bf2d, type: 3}
+    fullComposite: {fileID: 21300000, guid: fc200e17e6d217445b2926847925bf0e, type: 3}
+  - heroId: trieu_thien_hanh
+    legacyId: guan_yu
+    displayNameVi: "Tri\u1EC7u Thi\xEAn H\xE0nh"
+    backgroundLayer: {fileID: 21300000, guid: 7a40f9174acfe424393ed540b2bb89e4, type: 3}
+    foregroundLayer: {fileID: 21300000, guid: c9668a8154d1b664e94f201fef037266, type: 3}
+    fullComposite: {fileID: 21300000, guid: c19b063a9bb1e1547a0e17c2bbe2a947, type: 3}
+  - heroId: loi_chan_son
+    legacyId: zhang_fei
+    displayNameVi: "L\xF4i Ch\u1EA5n S\u01A1n"
+    backgroundLayer: {fileID: 21300000, guid: da7630669907f264fa91b684aa4c0d63, type: 3}
+    foregroundLayer: {fileID: 21300000, guid: 7a0875bda035f2d46ab3455addd28da6, type: 3}
+    fullComposite: {fileID: 21300000, guid: a7a7522fc8d6a0a4f81ce7550b088712, type: 3}
+  - heroId: tham_tinh_ha
+    legacyId: zhuge_liang
+    displayNameVi: "Th\u1EA9m Tinh H\xE0"
+    backgroundLayer: {fileID: 21300000, guid: a58fc29af19f8f5459d4b7fb9355b8e4, type: 3}
+    foregroundLayer: {fileID: 21300000, guid: 90316be95b1b25f44b45fdef68d2486c, type: 3}
+    fullComposite: {fileID: 21300000, guid: b692a486ec529994785db77cbdf7caa3, type: 3}
+  - heroId: bach_ngoc_thanh
+    legacyId: zhao_yun
+    displayNameVi: "B\u1EA1ch Ng\u1ECDc Th\xE0nh"
+    backgroundLayer: {fileID: 21300000, guid: 7c6faf5112deb194dab2691c4ed13d2e, type: 3}
+    foregroundLayer: {fileID: 21300000, guid: e70148c180318784f97b84742ffd6335, type: 3}
+    fullComposite: {fileID: 21300000, guid: 1667de08c8aec0b46a8da1c46d41952c, type: 3}
+  - heroId: khuong_vo_ta
+    legacyId: ma_chao
+    displayNameVi: "Kh\u01B0\u01A1ng V\xF4 T\xE0"
+    backgroundLayer: {fileID: 21300000, guid: 0042e230edbaf5d4b8921851cb8b290e, type: 3}
+    foregroundLayer: {fileID: 21300000, guid: 252ef0e42b3bc8e4394ead38364cda10, type: 3}
+    fullComposite: {fileID: 21300000, guid: 3315f301932a60a43b4958041b720874, type: 3}
+  - heroId: to_mong_dao
+    legacyId: huang_yue_ying
+    displayNameVi: "T\xF4 M\u1ED9ng Dao"
+    backgroundLayer: {fileID: 21300000, guid: e3a01c5d9de143c4881bf944ce9c9907, type: 3}
+    foregroundLayer: {fileID: 21300000, guid: 32a9e00e1e22df54d9b8958c10c8de5c, type: 3}
+    fullComposite: {fileID: 21300000, guid: e7f767208b344e54aa45f328544d291a, type: 3}
+  - heroId: han_thiet_phong
+    legacyId: cao_cao
+    displayNameVi: "H\xE0n Thi\u1EBFt Phong"
+    backgroundLayer: {fileID: 21300000, guid: e53dbaf556f2a6c48bab28ca509f378e, type: 3}
+    foregroundLayer: {fileID: 21300000, guid: a2de9ca63c572ed4c81da635bae49f6f, type: 3}
+    fullComposite: {fileID: 21300000, guid: 4a6f898a28f9e5148bf35964bdcc5aad, type: 3}
+  - heroId: co_huyen_co
+    legacyId: si_ma_yi
+    displayNameVi: "C\u1ED1 Huy\u1EC1n C\u01A1"
+    backgroundLayer: {fileID: 21300000, guid: 15e2f7f2e48646f48bdb9fb0f8478ff0, type: 3}
+    foregroundLayer: {fileID: 21300000, guid: d02772dbe2c6e994a8d752f43dd8f883, type: 3}
+    fullComposite: {fileID: 21300000, guid: 48f6dc4ab9e12464e812e67ddcfbb8df, type: 3}
+  - heroId: nghiem_cuong
+    legacyId: xia_hou_dun
+    displayNameVi: "Nghi\xEAm C\u01B0\u01A1ng"
+    backgroundLayer: {fileID: 21300000, guid: c7b4933f2fa44364ca182dae0cde777f, type: 3}
+    foregroundLayer: {fileID: 21300000, guid: 846ffa8b0dc4f294eb38a6cc270053e4, type: 3}
+    fullComposite: {fileID: 21300000, guid: 81cf01c9958570744857e1c18acdc905, type: 3}
+  - heroId: truong_huy_dieu
+    legacyId: zhang_liao
+    displayNameVi: "Tr\u01B0\u01A1ng Huy Di\u1EC7u"
+    backgroundLayer: {fileID: 21300000, guid: 04d95a92aa35645469177872e7efe708, type: 3}
+    foregroundLayer: {fileID: 21300000, guid: e7be9a7da15ed0348a9580d1ef34fefb, type: 3}
+    fullComposite: {fileID: 21300000, guid: 052aa5b1a45f3214d95456a7cdccc412, type: 3}
+  - heroId: thach_pha_thien
+    legacyId: xu_chu
+    displayNameVi: "Th\u1EA1ch Ph\xE1 Thi\xEAn"
+    backgroundLayer: {fileID: 21300000, guid: fccc50650a4787e41aa67e73e0a9ed6a, type: 3}
+    foregroundLayer: {fileID: 21300000, guid: 880d2cd5bd9785c44aec54475ad2709a, type: 3}
+    fullComposite: {fileID: 21300000, guid: e100128ba9aa0b543bb031d7aef707b3, type: 3}
+  - heroId: ly_tri_vi
+    legacyId: guo_jia
+    displayNameVi: "L\xFD Tri Vi"
+    backgroundLayer: {fileID: 21300000, guid: 65e50015a472a9a4cbc3589b9bce692a, type: 3}
+    foregroundLayer: {fileID: 21300000, guid: ac85a50d0d7f0a14ba8747cc13e2c942, type: 3}
+    fullComposite: {fileID: 21300000, guid: d0e8fee4d61c8bc41969ce78951325bf, type: 3}
+  - heroId: thuy_u_linh
+    legacyId: zhen_ji
+    displayNameVi: "Th\u1EE7y U Linh"
+    backgroundLayer: {fileID: 21300000, guid: 4e58e7a70341b1f4eb0f0fcb93ec0cf6, type: 3}
+    foregroundLayer: {fileID: 21300000, guid: fee8fd84a84187c4299f996789da41c4, type: 3}
+    fullComposite: {fileID: 21300000, guid: 5b729d4c9c636394cab4881eb1692843, type: 3}
+  - heroId: viem_liet_vuong
+    legacyId: sun_quan
+    displayNameVi: "Vi\xEAm Li\u1EC7t V\u01B0\u01A1ng"
+    backgroundLayer: {fileID: 21300000, guid: dab35a43dcad83246bd56cf4b42efec1, type: 3}
+    foregroundLayer: {fileID: 21300000, guid: 5c8213af74a4d6f408e47650ba14f721, type: 3}
+    fullComposite: {fileID: 21300000, guid: f422164d38793d64f8f298dea3b45d02, type: 3}
+  - heroId: cam_da_sat
+    legacyId: gan_ning
+    displayNameVi: "Cam D\u1EA1 S\xE1t"
+    backgroundLayer: {fileID: 21300000, guid: d6284385e4b168f45bcd8b5bb66a0c9f, type: 3}
+    foregroundLayer: {fileID: 21300000, guid: a8c0ee981a2c00648bb48205cdcabaff, type: 3}
+    fullComposite: {fileID: 21300000, guid: eafed7cb50bdef24a8cfc38988be2308, type: 3}
+  - heroId: luc_tram_an
+    legacyId: lu_meng
+    displayNameVi: "L\u1EE5c Tr\u1EA7m \u1EA8n"
+    backgroundLayer: {fileID: 21300000, guid: c6b3a6caca0a489419777e18f01a4b9e, type: 3}
+    foregroundLayer: {fileID: 21300000, guid: 9ba2812430c83904cae5b96eeb83fb8e, type: 3}
+    fullComposite: {fileID: 21300000, guid: a187ad2ea9d2f84448872068daee2c26, type: 3}
+  - heroId: hoang_bat_dich
+    legacyId: huang_gai
+    displayNameVi: "Ho\xE0ng B\u1EA5t D\u1ECBch"
+    backgroundLayer: {fileID: 21300000, guid: d40b1c77c1a184543a876a56b949a1fc, type: 3}
+    foregroundLayer: {fileID: 21300000, guid: c8c5b6bd13419014db45c391664fbc97, type: 3}
+    fullComposite: {fileID: 21300000, guid: 8a4823f5c71182b47934f0a911d82a18, type: 3}
+  - heroId: tieu_viem_lang
+    legacyId: zhou_yu
+    displayNameVi: "Ti\xEAu Vi\xEAm L\xE3ng"
+    backgroundLayer: {fileID: 21300000, guid: 3c9a4d99ba7e35b41ad7a9c74f6e8e22, type: 3}
+    foregroundLayer: {fileID: 21300000, guid: 1f95bc230ba35104ebe7bb8e0cf71718, type: 3}
+    fullComposite: {fileID: 21300000, guid: a1f5c22b212152d44acbb8d5559ed930, type: 3}
+  - heroId: ha_tuyet_nghi
+    legacyId: da_qiao
+    displayNameVi: "H\u1EA1 Tuy\u1EBFt Nghi"
+    backgroundLayer: {fileID: 21300000, guid: 7140e2e1b2779d94f85c7fe2cd2fbf8b, type: 3}
+    foregroundLayer: {fileID: 21300000, guid: 2caa6c77d28158a4cb04a393fdeb0076, type: 3}
+    fullComposite: {fileID: 21300000, guid: acc50c696765c0040b25134fb061c304, type: 3}
+  - heroId: mo_dung_tuyet
+    legacyId: lu_xun
+    displayNameVi: "M\u1ED9 Dung Tuy\u1EBFt"
+    backgroundLayer: {fileID: 21300000, guid: 6005dce107d771948a7e652ee3af2d73, type: 3}
+    foregroundLayer: {fileID: 21300000, guid: 75cc4d28cd90377488e7a7d311276be3, type: 3}
+    fullComposite: {fileID: 21300000, guid: 8175ea4795932844385510255908e850, type: 3}
+  - heroId: bach_cam_y
+    legacyId: sun_shang_xiang
+    displayNameVi: "B\u1EA1ch C\u1EA9m Y"
+    backgroundLayer: {fileID: 21300000, guid: 6041fc2df3fa9ab4ba9f6c83ba911d78, type: 3}
+    foregroundLayer: {fileID: 21300000, guid: e416d4995cf05894394ce0dc0ea8d8bc, type: 3}
+    fullComposite: {fileID: 21300000, guid: 7dc9845d65e147c4eaef32babe4bfcb5, type: 3}
+  - heroId: duoc_vo_uu
+    legacyId: hua_tuo
+    displayNameVi: "D\u01B0\u1EE3c V\xF4 \u01AFu"
+    backgroundLayer: {fileID: 21300000, guid: 2494f8ddbc9ec8b459fb69cc5ff2952d, type: 3}
+    foregroundLayer: {fileID: 21300000, guid: e422ed5fd212e39468e210d3eece7489, type: 3}
+    fullComposite: {fileID: 21300000, guid: b50c5ce232a9c4a498bffddb42cc166f, type: 3}
+  - heroId: tham_mac_ngon
+    legacyId: lu_bu
+    displayNameVi: "Th\u1EA9m M\u1EB7c Ng\xF4n"
+    backgroundLayer: {fileID: 21300000, guid: 48c18442215f91d40a63662523293d97, type: 3}
+    foregroundLayer: {fileID: 21300000, guid: 58baff25ae6f2c447af1fd4c62ef0585, type: 3}
+    fullComposite: {fileID: 21300000, guid: 01ecd096d8196a54c87dbde244546b6e, type: 3}
+  - heroId: da_vo_ngan
+    legacyId: diao_chan
+    displayNameVi: "D\u1EA1 V\xF4 Ng\xE2n"
+    backgroundLayer: {fileID: 21300000, guid: d351ae20c7a7b264a9258fe76d17ea2f, type: 3}
+    foregroundLayer: {fileID: 21300000, guid: 96a34c107817e974c8cb6ddaa63a9cc1, type: 3}
+    fullComposite: {fileID: 21300000, guid: afa2475a9d86dac479425fdbf1c5f61c, type: 3}
+  cardArts:
+  - cardKey: sat
+    displayNameVi: "Ki\u1EBFm Tr\u1EA3m"
+    artSprite: {fileID: 21300000, guid: 05829e6223ce7404795a27125d96e0e5, type: 3}
+  - cardKey: pha_giap_tram
+    displayNameVi: "Ph\xE1 Gi\xE1p Tr\u1EA3m"
+    artSprite: {fileID: 21300000, guid: 3847eab3ab91fb74eb1b11e06c156200, type: 3}
+  - cardKey: thiem
+    displayNameVi: "Th\xE2n Ph\xE1p"
+    artSprite: {fileID: 21300000, guid: ec0e4595387fd184c8c95a01994a443a, type: 3}
+  - cardKey: dao
+    displayNameVi: "H\u1ED3i Xu\xE2n \u0110an"
+    artSprite: {fileID: 21300000, guid: 920a182656b940d49a9991e2baccfd4f, type: 3}
+  - cardKey: vo_trung_sinh_huu
+    displayNameVi: "T\u1EE5 Kh\xED Quy\u1EBFt"
+    artSprite: {fileID: 21300000, guid: 23d4245b901856c4ba0dcc390043b90d, type: 3}
+  - cardKey: thuan_thu_khien_duong
+    displayNameVi: "Th\xE1m Nang Th\u1EE7"
+    artSprite: {fileID: 21300000, guid: f57d1c4f54c285943b96b50a98016e8d, type: 3}
+  - cardKey: qua_ha_sai_cau
+    displayNameVi: "Ph\xE1 Tr\u1EADn Ch\u01B0\u1EDFng"
+    artSprite: {fileID: 21300000, guid: 7c9a76e1327b6da4db75ccea7907870f, type: 3}
+  - cardKey: kinh_loi_chan
+    displayNameVi: "Kinh L\xF4i Ch\u1EA5n"
+    artSprite: {fileID: 21300000, guid: cb38e26879ddef943b33fbc2dbf1afea, type: 3}
+  - cardKey: quyet_dau
+    displayNameVi: "Sinh T\u1EED L\xF4i \u0110\xE0i"
+    artSprite: {fileID: 21300000, guid: 09b3a5ae8f1596a44aa611cfc9ee7570, type: 3}
+  - cardKey: ta_dao_sat_nhan
+    displayNameVi: "T\xE1 Ki\u1EBFm Tr\u1EA3m Phong"
+    artSprite: {fileID: 21300000, guid: 8fb0e4ae390cd05428cc16ffd4d17383, type: 3}
+  - cardKey: nam_man_nhap_xam
+    displayNameVi: "V\u1EA1n Ki\u1EBFm Quy T\xF4ng"
+    artSprite: {fileID: 21300000, guid: 8250003ae3f37464db80a1f983477b59, type: 3}
+  - cardKey: van_tien_te_phat
+    displayNameVi: "Lo\u1EA1n Ti\u1EC5n Xuy\xEAn V\xE2n"
+    artSprite: {fileID: 21300000, guid: 0b8302752eac7dc42a9c1e702fdba3da, type: 3}
+  - cardKey: dao_vien_ket_nghia
+    displayNameVi: "H\u1ED9i Minh T\u1EE5 Ngh\u0129a"
+    artSprite: {fileID: 21300000, guid: c4f1c5d120c53ca42b8547fa203fe577, type: 3}
+  - cardKey: ngu_coc_phong_dang
+    displayNameVi: "Thi\xEAn B\u1EA3o Xu\u1EA5t Th\u1EBF"
+    artSprite: {fileID: 21300000, guid: 693e27abd1955694ebb9eee866b3e865, type: 3}
+  - cardKey: vo_giai_kha_kich
+    displayNameVi: "H\xF3a Gi\u1EA3i Ch\xE2n Kh\xED"
+    artSprite: {fileID: 21300000, guid: dbc01cd399a2d744683d09611d0ecccf, type: 3}
+  - cardKey: chan_khi_ho_the
+    displayNameVi: "Ch\xE2n Kh\xED H\u1ED9 Th\u1EC3"
+    artSprite: {fileID: 21300000, guid: 434692527d3ccb14bbe93b679ba0d72f, type: 3}
+  - cardKey: lac_bat_tu_thuc
+    displayNameVi: "\u0110i\u1EC3m Huy\u1EC7t Phong M\u1EA1ch"
+    artSprite: {fileID: 21300000, guid: 942844e8f0a602f40b174a89a21309e9, type: 3}
+  - cardKey: thiem_dien
+    displayNameVi: "Thi\xEAn L\xF4i Ki\u1EBFp"
+    artSprite: {fileID: 21300000, guid: be34a16715b54e74d9d2ca0e6bae5700, type: 3}
+  - cardKey: gia_cat_lien_no
+    displayNameVi: "Li\xEAn Ho\xE0n N\u1ECF"
+    artSprite: {fileID: 21300000, guid: bdf242e2d6f3fb64da35dac460e2d9ed, type: 3}
+  - cardKey: tu_hung_song_co_kiem
+    displayNameVi: "H\xE0n T\xE2m Song Ki\u1EBFm"
+    artSprite: {fileID: 21300000, guid: dbb2a48b824e4bf4293e615bf9cb5487, type: 3}
+  - cardKey: thanh_cong_kiem
+    displayNameVi: "Thanh Phong Ki\u1EBFm"
+    artSprite: {fileID: 21300000, guid: 7024da44be54dfd4db509dbf80a28fea, type: 3}
+  - cardKey: han_bang_kiem
+    displayNameVi: "B\u0103ng Ph\xE1ch Ki\u1EBFm"
+    artSprite: {fileID: 21300000, guid: f681b39a967e0c6459f23c52bdcd385f, type: 3}
+  - cardKey: tu_khi_hoan
+    displayNameVi: "T\u1EE5 Kh\xED Ho\xE0n"
+    artSprite: {fileID: 21300000, guid: fb918600ad412b941a0aae178f025f7c, type: 3}
+  - cardKey: thanh_long_yen_nguyet_dao
+    displayNameVi: "Huy\u1EC1n Long \u0110ao"
+    artSprite: {fileID: 21300000, guid: 9ee048bbdc942de4d939e2f18abd4e8b, type: 3}
+  - cardKey: truong_bat_xa_mau
+    displayNameVi: "X\xE0 \u1EA2nh M\xE2u"
+    artSprite: {fileID: 21300000, guid: 0cb3e7b9371a5fd408abe7936e54f00b, type: 3}
+  - cardKey: quan_thach_phu
+    displayNameVi: "Ph\xE1 S\u01A1n Ph\u1EE7"
+    artSprite: {fileID: 21300000, guid: be858a984e255094db628d24e71497f1, type: 3}
+  - cardKey: phuong_thien_hoa_kich
+    displayNameVi: "C\u1EEDu Thi\xEAn H\u1ECDa K\xEDch"
+    artSprite: {fileID: 21300000, guid: 4cac2f9d63219c2469be7a21f5f27e0c, type: 3}
+  - cardKey: ky_lan_cung
+    displayNameVi: "Linh \u0110i\u1EC3u Cung"
+    artSprite: {fileID: 21300000, guid: f66a5b4122e71f3448feedbe76c56cfc, type: 3}
+  - cardKey: bat_quai_tran
+    displayNameVi: "B\xE1t Qu\xE1i Y"
+    artSprite: {fileID: 21300000, guid: 296e450233748af44beb73bbd887dec3, type: 3}
+  - cardKey: hoan_anh_giap
+    displayNameVi: "Huy\u1EC5n \u1EA2nh Gi\xE1p"
+    artSprite: {fileID: 21300000, guid: 51a2e6c4aada1bf4b9500285916af7a9, type: 3}
+  - cardKey: tuyet_anh
+    displayNameVi: "\u0110\u1EA1p Tuy\u1EBFt V\xF4 Ng\xE2n"
+    artSprite: {fileID: 21300000, guid: 4a21f6e0fe496bf40b974f67e4190a0f, type: 3}
+  - cardKey: dich_lo
+    displayNameVi: "L\u0103ng Ba Vi B\u1ED9"
+    artSprite: {fileID: 21300000, guid: efb4cf1f43d1aa848b537d9e725899a1, type: 3}
+  - cardKey: trao_hoang_phi_dien
+    displayNameVi: "Ng\u1EF1 Phong H\xE0i"
+    artSprite: {fileID: 21300000, guid: 970b55b74e2496d4aa68f9e2cb9d1acb, type: 3}
+  - cardKey: xich_tho
+    displayNameVi: "Truy \u1EA2nh H\xE0i"
+    artSprite: {fileID: 21300000, guid: 760f0e58139f7b04881d02644ac700f8, type: 3}
+  - cardKey: dai_uyen
+    displayNameVi: "X\xEDch Di\u1EC5m C\xE2u"
+    artSprite: {fileID: 21300000, guid: 6bdeb4c89e53f5641a8c0da12f1bfd96, type: 3}
+  - cardKey: tu_tinh
+    displayNameVi: "Huy\u1EC1n L\xF4i Tu\u1EA5n"
+    artSprite: {fileID: 21300000, guid: ccb1bb987ea07bc46b5407825e66cfd8, type: 3}
+  bgmLobby: {fileID: 8300000, guid: 0c93864ed7157794d8960ed2d7d7d9b7, type: 3}
+  bgmBattle: {fileID: 8300000, guid: 4368d69063bfbd34494a19e32e03bd2c, type: 3}
+  bgmClimaxDrums: {fileID: 8300000, guid: 41cb2ddd817042949ae30d6ec3206fbb, type: 3}
+  sfxClips:
+  - key: sfx-action_prompt
+    clip: {fileID: 8300000, guid: 11bad3cf3e1915947ba7020f8b4f0cf7, type: 3}
+  - key: sfx-armor
+    clip: {fileID: 8300000, guid: a597d77da53c5d94bb015d6a19783087, type: 3}
+  - key: sfx-card_lift
+    clip: {fileID: 8300000, guid: a508bc84693e5ab4f9717d8f081d0015, type: 3}
+  - key: sfx-card_play-v2
+    clip: {fileID: 8300000, guid: 8a1c30ab7f091c94ab4073062e051a01, type: 3}
+  - key: sfx-card_play-v3
+    clip: {fileID: 8300000, guid: 7d321b27c86ce024a99f6870f6ba72d4, type: 3}
+  - key: sfx-card_play
+    clip: {fileID: 8300000, guid: ecd34727a3e28d84391a0fab8ac6bb84, type: 3}
+  - key: sfx-click
+    clip: {fileID: 8300000, guid: e2ac15275fb22444e8c40d02be2701c5, type: 3}
+  - key: sfx-control_scroll
+    clip: {fileID: 8300000, guid: 0e891f3643c2d8948a840e3cd33e52c0, type: 3}
+  - key: sfx-countdown_start
+    clip: {fileID: 8300000, guid: 60ff3e93966fd9742ab61c8326493007, type: 3}
+  - key: sfx-damage-v2
+    clip: {fileID: 8300000, guid: b81b07f92767caf4f9cd998c6e2acb6a, type: 3}
+  - key: sfx-damage-v3
+    clip: {fileID: 8300000, guid: a5febe63c00b8304b872d814ba20af5e, type: 3}
+  - key: sfx-damage
+    clip: {fileID: 8300000, guid: 7585974dc15faa54d9e1ca549699e56d, type: 3}
+  - key: sfx-dao
+    clip: {fileID: 8300000, guid: 026f232517f33e94389b947bacf52199, type: 3}
+  - key: sfx-deal-v2
+    clip: {fileID: 8300000, guid: 487391cb090bd124f8d3748558b1be97, type: 3}
+  - key: sfx-deal-v3
+    clip: {fileID: 8300000, guid: 7c6871446773c9243b198f60990fc4f4, type: 3}
+  - key: sfx-deal
+    clip: {fileID: 8300000, guid: dde669f4d692f4e4aba6cfaf786a9d80, type: 3}
+  - key: sfx-deal_opening
+    clip: {fileID: 8300000, guid: 7d5ef4bc0fbd6334d826b6f2f8bfaee3, type: 3}
+  - key: sfx-defeat
+    clip: {fileID: 8300000, guid: 84a82824530ac464cbdca6c3b6f5b8ac, type: 3}
+  - key: sfx-duel
+    clip: {fileID: 8300000, guid: 6106a3d6d7c4b64459ebf78d5f039929, type: 3}
+  - key: sfx-dying
+    clip: {fileID: 8300000, guid: b71ce513cfe95fc428d45136d926670f, type: 3}
+  - key: sfx-elimination
+    clip: {fileID: 8300000, guid: a45870731c2103d429eb2f1717d59c2f, type: 3}
+  - key: sfx-heal
+    clip: {fileID: 8300000, guid: 8b607fcf868863e4aa873d520fba7c7e, type: 3}
+  - key: sfx-hero_lock
+    clip: {fileID: 8300000, guid: c6815fbff5d82da49acf55317a455f00, type: 3}
+  - key: sfx-hero_skill
+    clip: {fileID: 8300000, guid: 05b56e965bed82642b30dd6198d9d6fc, type: 3}
+  - key: sfx-hover
+    clip: {fileID: 8300000, guid: 093b053275409934f977a7db290d6ec2, type: 3}
+  - key: sfx-judge
+    clip: {fileID: 8300000, guid: 729bac73e6b3fe04c9df572f1a1ed07e, type: 3}
+  - key: sfx-lightning
+    clip: {fileID: 8300000, guid: 64b8fa6eb0bd44c4da0fc8ec62e8662f, type: 3}
+  - key: sfx-mount_minus
+    clip: {fileID: 8300000, guid: ce2a703787ffa9745bea8f3cb8725a8a, type: 3}
+  - key: sfx-mount_plus
+    clip: {fileID: 8300000, guid: 31515e291573f3648804426a34f97ac8, type: 3}
+  - key: sfx-nullification
+    clip: {fileID: 8300000, guid: 90c78b70a774d204c92ff64316172c4c, type: 3}
+  - key: sfx-panel_close
+    clip: {fileID: 8300000, guid: 6fafd54b9196c86498c36923b98d79b5, type: 3}
+  - key: sfx-panel_open
+    clip: {fileID: 8300000, guid: 2cd9f60cac48f6f47b5db624d8771eac, type: 3}
+  - key: sfx-ready_on
+    clip: {fileID: 8300000, guid: c1799b8f23ca7374f892f1a67be3f4af, type: 3}
+  - key: sfx-room_join
+    clip: {fileID: 8300000, guid: 7797520f150f4f74faeee40ac693cd8b, type: 3}
+  - key: sfx-room_leave
+    clip: {fileID: 8300000, guid: df796d1fabe78594b9c152db2e0e1880, type: 3}
+  - key: sfx-sat-v2
+    clip: {fileID: 8300000, guid: f7e5309e134f54e42b8466deccf122ea, type: 3}
+  - key: sfx-sat-v3
+    clip: {fileID: 8300000, guid: 41415ff17c600f14faaaf4e0fb36d534, type: 3}
+  - key: sfx-sat
+    clip: {fileID: 8300000, guid: eaba6eb386bd583419f30d8d5f7f3472, type: 3}
+  - key: sfx-shuffle
+    clip: {fileID: 8300000, guid: c9272b3278a5fb443b85d1c556a00087, type: 3}
+  - key: sfx-steal_dismantle
+    clip: {fileID: 8300000, guid: 9d3c957cf83b44d438bbf5537415fd50, type: 3}
+  - key: sfx-table_skill
+    clip: {fileID: 8300000, guid: 313d4b9a5e5371546a06e05ef7005514, type: 3}
+  - key: sfx-target_lock
+    clip: {fileID: 8300000, guid: 764956eae1e243a449398e72cc83cc79, type: 3}
+  - key: sfx-thiem-v2
+    clip: {fileID: 8300000, guid: ff6ea3abda4f4db4f850ea3c84494116, type: 3}
+  - key: sfx-thiem-v3
+    clip: {fileID: 8300000, guid: 2709a9f8e5db8844bb4e77b6928b8699, type: 3}
+  - key: sfx-thiem
+    clip: {fileID: 8300000, guid: ee8d2eaefb567934585d51ff7960685e, type: 3}
+  - key: sfx-timer_tick
+    clip: {fileID: 8300000, guid: 81e659822ea854d438d0e7aaf4d78c5c, type: 3}
+  - key: sfx-turn_start
+    clip: {fileID: 8300000, guid: 20e5fb7ce282d0b47b301524f12da279, type: 3}
+  - key: sfx-ui_error
+    clip: {fileID: 8300000, guid: b6d665485ab83944d84407a86d068eda, type: 3}
+  - key: sfx-victory
+    clip: {fileID: 8300000, guid: 2ebe5606d6f8d1648a2cc9fec25ace01, type: 3}
+  - key: sfx-weapon
+    clip: {fileID: 8300000, guid: d8fe67797e1cf8546a86e5f93200a54a, type: 3}

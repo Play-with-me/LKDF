@@ -1,0 +1,34 @@
+<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="as_bronze" x1="12" y1="12" x2="116" y2="116" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#F6DE9C"/>
+      <stop offset="0.48" stop-color="#C89B4B"/>
+      <stop offset="1" stop-color="#6C4917"/>
+    </linearGradient>
+    <radialGradient id="as_slate" cx="46" cy="42" r="68" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#CBD5E1"/>
+      <stop offset="0.46" stop-color="#94A3B8"/>
+      <stop offset="1" stop-color="#252D3D"/>
+    </radialGradient>
+    <linearGradient id="as_relief" x1="30" y1="24" x2="96" y2="100" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFF2C6"/>
+      <stop offset="0.52" stop-color="#DFB45E"/>
+      <stop offset="1" stop-color="#875D1D"/>
+    </linearGradient>
+  </defs>
+  <polygon points="34,10 94,10 118,34 118,94 94,118 34,118 10,94 10,34" fill="url(#as_bronze)" stroke="#3A260B" stroke-width="2.5"/>
+  <polygon points="38,18 90,18 110,38 110,90 90,110 38,110 18,90 18,38" fill="url(#as_slate)" stroke="#F4D58C" stroke-width="2"/>
+  <circle cx="36" cy="14" r="2.2" fill="#FFF0C2"/><circle cx="92" cy="14" r="2.2" fill="#E6BE6C"/>
+  <circle cx="36" cy="114" r="2.2" fill="#9E7127"/><circle cx="92" cy="114" r="2.2" fill="#8C6120"/>
+  <!-- Primary Crescent Moon Assassin Blade (Nguyệt Nhận) -->
+  <path d="M76 24 C47 23 26 45 29 73 C32 95 53 106 80 99 C58 97 44 82 45 63 C46 44 60 31 76 24 Z" fill="url(#as_relief)" stroke="#1B2230" stroke-width="2.2" stroke-linejoin="round"/>
+  <!-- Willow-Leaf Assassin Throwing Dagger (Liễu Diệp Phi Đao) with Guard & Pommel Ring -->
+  <polygon points="99,27 81,59 71,49" fill="#FFF6D8"/>
+  <polygon points="99,27 71,49 69,43" fill="#C89B4B"/>
+  <polygon points="99,27 81,59 69,47" stroke="#1B2230" stroke-width="1.8" stroke-linejoin="round"/>
+  <polygon points="65,42 86,63 80,66 62,48" fill="url(#as_relief)" stroke="#1B2230" stroke-width="1.6"/>
+  <line x1="72" y1="56" x2="61" y2="67" stroke="url(#as_relief)" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="56" cy="72" r="5.5" fill="#252D3D" stroke="url(#as_relief)" stroke-width="2.6"/>
+  <!-- Cold Gold Shadow Star -->
+  <polygon points="85,72 88,79 95,82 88,85 85,92 82,85 75,82 82,79" fill="#FFF2C6" stroke="#1B2230" stroke-width="1.3"/>
+</svg>
