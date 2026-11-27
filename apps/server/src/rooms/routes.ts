@@ -32,6 +32,17 @@ const RefereeActionBodySchema = z.object({
   actionType: RefereeActionTypeSchema,
 });
 
+const FillBotsBodySchema = z.object({
+  targetPlayerCount: z
+    .union([z.literal(4), z.literal(5), z.literal(6), z.literal(7), z.literal(8)])
+    .optional(),
+});
+
+function isLoopbackAddress(ip: string | undefined): boolean {
+  if (!ip) return false;
+  return ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1';
+}
+
 const RoomCodeParamSchema = z
   .string()
   .trim()
@@ -294,6 +305,59 @@ export function registerRoomRoutes(
     return {
       ok: true,
       ...started.data,
+    };
+  });
+
+  app.post('/api/rooms/:roomCode/fill-bots', async (request, reply) => {
+    if (
+      !isLoopbackAddress(request.ip) &&
+      process.env.LKDF_ALLOW_LAN_FILL_BOTS !== '1'
+    ) {
+      return reply.status(403).send({
+        ok: false,
+        code: 'LOOPBACK_ONLY_ENDPOINT',
+        messageVi: 'Chế độ tự điền Hiệp Khách Máy chỉ cho phép từ máy chủ cục bộ.',
+      });
+    }
+
+    const auth = await authService.verifyAuthorizationHeader(
+      request.headers.authorization,
+    );
+    if (!auth.ok) {
+      return reply.status(auth.statusCode).send(auth);
+    }
+
+    const params = request.params as { roomCode?: string };
+    const codeParsed = RoomCodeParamSchema.safeParse(params.roomCode ?? '');
+    if (!codeParsed.success) {
+      return reply.status(400).send({
+        ok: false,
+        code: 'INVALID_ROOM_CODE',
+        messageVi: 'Mã phòng phải gồm đúng 6 ký tự.',
+      });
+    }
+
+    const bodyParsed = FillBotsBodySchema.safeParse(request.body ?? {});
+    if (!bodyParsed.success) {
+      return reply.status(400).send({
+        ok: false,
+        code: 'INVALID_TARGET_PLAYER_COUNT',
+        messageVi: 'Số ghế bàn đấu chỉ hỗ trợ từ 4 đến 8.',
+      });
+    }
+
+    const filled = await roomManager.fillRoomWithBots(
+      auth.profile.userId,
+      codeParsed.data,
+      bodyParsed.data.targetPlayerCount ?? 4,
+    );
+    if (!filled.ok) {
+      return reply.status(filled.statusCode).send(filled);
+    }
+
+    return {
+      ok: true,
+      ...filled.data,
     };
   });
 

@@ -113,6 +113,11 @@ export interface RoomManager {
     roomCode: string,
     options?: StartMatchOptions,
   ): Promise<RoomOperationResult<RoomViewerPayload>>;
+  fillRoomWithBots(
+    actorUserId: string,
+    roomCode: string,
+    targetPlayerCount?: PlayerCount,
+  ): Promise<RoomOperationResult<RoomViewerPayload>>;
   resetRoomToLobby(
     userId: string,
     roomCode: string,
@@ -170,6 +175,10 @@ export interface RoomManager {
 
 function normalizeRoomCode(raw: string): string {
   return raw.trim().toUpperCase();
+}
+
+function isPermanentBotUserId(userId: string): boolean {
+  return userId.startsWith('bot_');
 }
 
 function generateCandidateRoomCode(): string {
@@ -916,7 +925,13 @@ export function createRoomManager(deps: {
         roomCodeByUserId.delete(userId);
         await deps.persistence.setUserActiveRoom(userId, null);
 
-        if (remainingSeats.length === 0) {
+        const hasHumanRemaining = remainingSeats.some(
+          (s) => !isPermanentBotUserId(s.userId),
+        );
+        if (remainingSeats.length === 0 || !hasHumanRemaining) {
+          for (const leftover of remainingSeats) {
+            roomCodeByUserId.delete(leftover.userId);
+          }
           roomsByCode.delete(roomCode);
           await deps.persistence.deleteRoomSnapshot(roomCode);
           emitRoomUpdated(roomCode, 'ROOM_DELETED');
@@ -995,7 +1010,7 @@ export function createRoomManager(deps: {
             isTimerPaused: false,
             seats: record.roomState.seats.map((seat) => ({
               ...seat,
-              isBotTakeover: false,
+              isBotTakeover: isPermanentBotUserId(seat.userId),
               ...(seat.userId !== record.roomState.actingHostUserId
                 ? { isReady: seat.connectionStatus === 'ONLINE' }
                 : {}),
@@ -1036,7 +1051,7 @@ export function createRoomManager(deps: {
 
         const matchId = `match_${randomUUID().replace(/-/g, '').slice(0, 16)}`;
         const rng = options?.rng ?? fallbackRng;
-        const setupState = createInitialMatchSetup({
+        const rawSetupState = createInitialMatchSetup({
           matchId,
           manualDraw: true,
           enabledPacks: options?.enabledPacks ?? ['cuu_chau_core'],
@@ -1047,6 +1062,15 @@ export function createRoomManager(deps: {
           })),
           rng,
         });
+        const setupState: MasterGameState = {
+          ...rawSetupState,
+          players: rawSetupState.players.map((player, idx) => ({
+            ...player,
+            isBotTakeover:
+              record.roomState.seats[idx]?.isBotTakeover === true ||
+              isPermanentBotUserId(player.userId),
+          })),
+        };
 
         const nowMs = getNowMs();
         record.roomState = {
@@ -1063,6 +1087,69 @@ export function createRoomManager(deps: {
           event: 'MATCH_STARTED',
         });
         return { ok: true, data: buildViewerPayload(record, userId) };
+      });
+    },
+
+    async fillRoomWithBots(
+      actorUserId: string,
+      roomCodeRaw: string,
+      targetPlayerCount: PlayerCount = 4,
+    ): Promise<RoomOperationResult<RoomViewerPayload>> {
+      const roomCode = normalizeRoomCode(roomCodeRaw);
+      return runWithRoomLock(roomCode, async () => {
+        const record = roomsByCode.get(roomCode);
+        if (!record) {
+          return {
+            ok: false,
+            statusCode: 404,
+            code: 'ROOM_NOT_FOUND',
+            messageVi: 'Không tìm thấy phòng chơi này.',
+          };
+        }
+        if (record.roomState.actingHostUserId !== actorUserId) {
+          return {
+            ok: false,
+            statusCode: 403,
+            code: 'ONLY_HOST_CAN_FILL_BOTS',
+            messageVi: 'Chỉ Chủ phòng mới được thêm Hiệp Khách Máy vào ghế trống.',
+          };
+        }
+        if (record.roomState.status !== 'LOBBY') {
+          return {
+            ok: false,
+            statusCode: 409,
+            code: 'ROOM_NOT_IN_LOBBY',
+            messageVi: 'Chỉ được điền Hiệp Khách Máy khi phòng đang ở trạng thái chờ.',
+          };
+        }
+        if (record.roomState.seats.length >= targetPlayerCount) {
+          return { ok: true, data: buildViewerPayload(record, actorUserId) };
+        }
+
+        const nextSeats: RoomSeat[] = [...record.roomState.seats];
+        let botOrdinal = nextSeats.filter((s) => isPermanentBotUserId(s.userId)).length;
+        while (nextSeats.length < targetPlayerCount) {
+          botOrdinal += 1;
+          const botUserId = `bot_${roomCode.toLowerCase()}_${botOrdinal}`;
+          nextSeats.push({
+            userId: botUserId,
+            displayName: `Hiệp Khách Máy ${botOrdinal}`,
+            avatarUrl: '',
+            seatIndex: nextSeats.length,
+            isReady: true,
+            connectionStatus: 'ONLINE',
+            isBotTakeover: true,
+          });
+        }
+
+        record.roomState = {
+          ...record.roomState,
+          seats: nextSeats,
+        };
+        record.updatedAt = new Date(getNowMs()).toISOString();
+        await deps.persistence.saveRoomSnapshot(toSnapshotRecord(record));
+        emitRoomUpdated(roomCode, 'BOTS_FILLED');
+        return { ok: true, data: buildViewerPayload(record, actorUserId) };
       });
     },
 
@@ -2099,7 +2186,7 @@ export function createRoomManager(deps: {
             isTimerPaused: false,
             seats: record.roomState.seats.map((seat) => ({
               ...seat,
-              isBotTakeover: false,
+              isBotTakeover: isPermanentBotUserId(seat.userId),
               ...(seat.userId !== record.roomState.actingHostUserId
                 ? { isReady: seat.connectionStatus === 'ONLINE' }
                 : {}),
