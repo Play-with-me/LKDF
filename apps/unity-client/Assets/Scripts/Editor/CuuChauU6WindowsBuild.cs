@@ -6,6 +6,7 @@ using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
 using UnityEditor.U2D;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace CuuChau.Editor
 {
@@ -85,6 +86,13 @@ namespace CuuChau.Editor
             PlayerSettings.fullScreenMode = FullScreenMode.Windowed;
             PlayerSettings.resizableWindow = true;
             PlayerSettings.runInBackground = true;
+            // Tránh treo khởi động do dịch vụ Windows.Gaming.Input / GameInputRedistService trên Windows 11
+            PlayerSettings.windowsGamepadBackendHint = WindowsGamepadBackendHint.WindowsGamepadBackendHintXInput;
+            // Ưu tiên Direct3D 11 cho 2D URP uGUI giúp mở cửa sổ tức thì và tương thích các trình overlay
+            PlayerSettings.SetUseDefaultGraphicsAPIs(BuildTarget.StandaloneWindows64, false);
+            PlayerSettings.SetGraphicsAPIs(
+                BuildTarget.StandaloneWindows64,
+                new[] { GraphicsDeviceType.Direct3D11, GraphicsDeviceType.Direct3D12 });
             PlayerSettings.SetScriptingBackend(NamedBuildTarget.Standalone, ScriptingImplementation.Mono2x);
             PlayerSettings.SetManagedStrippingLevel(NamedBuildTarget.Standalone, ManagedStrippingLevel.Minimal);
         }

@@ -419,6 +419,41 @@ if ($null -eq $runningInstalled) {
     }
 
     $installedExe = Join-Path $localInstallDir "CuuChauAnKiem.exe"
+    $shortcutTargetExe = $installedExe
+    $cscPath = "C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe"
+    if (Test-Path $cscPath) {
+        $launcherSrc = Join-Path $env:TEMP ("LaunchCuuChau_" + [guid]::NewGuid().ToString("N") + ".cs")
+        $launcherExe = Join-Path $localInstallDir "LaunchCuuChau.exe"
+        $launcherCode = @'
+using System;
+using System.Diagnostics;
+using System.IO;
+static class Program {
+    [STAThread]
+    static void Main() {
+        string dir = AppDomain.CurrentDomain.BaseDirectory;
+        var psi = new ProcessStartInfo {
+            FileName = Path.Combine(dir, "CuuChauAnKiem.exe"),
+            WorkingDirectory = dir,
+            UseShellExecute = false
+        };
+        Process.Start(psi);
+    }
+}
+'@
+        [System.IO.File]::WriteAllText($launcherSrc, $launcherCode, [System.Text.UTF8Encoding]::new($false))
+        $iconArg = if (Test-Path $installedIcon) { "/win32icon:$installedIcon" } else { $null }
+        if ($null -ne $iconArg) {
+            & $cscPath /nologo /target:winexe /optimize+ "/out:$launcherExe" $iconArg $launcherSrc | Out-Null
+        } else {
+            & $cscPath /nologo /target:winexe /optimize+ "/out:$launcherExe" $launcherSrc | Out-Null
+        }
+        Remove-Item $launcherSrc -Force -ErrorAction SilentlyContinue
+        if (Test-Path $launcherExe) {
+            $shortcutTargetExe = $launcherExe
+        }
+    }
+
     $shortcutPaths = @(
         (Join-Path $desktopDir "Blades of the Nine Realms.lnk"),
         (Join-Path $env:APPDATA "Microsoft\Windows\Start Menu\Programs\Blades of the Nine Realms.lnk")
@@ -427,8 +462,11 @@ if ($null -eq $runningInstalled) {
     foreach ($lnkPath in $shortcutPaths) {
         $lnkParent = Split-Path -Parent $lnkPath
         if (Test-Path $lnkParent) {
+            if (Test-Path $lnkPath) {
+                Remove-Item -Path $lnkPath -Force
+            }
             $sc = $wsh.CreateShortcut($lnkPath)
-            $sc.TargetPath = $installedExe
+            $sc.TargetPath = $shortcutTargetExe
             $sc.WorkingDirectory = $localInstallDir
             $sc.Description = "Cửu Châu Ẩn Kiếm (Blades of the Nine Realms) — Unity 6.3"
             if (Test-Path $installedIcon) {

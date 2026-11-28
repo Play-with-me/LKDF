@@ -20,7 +20,7 @@ namespace CuuChau.Sidecar
         [SerializeField] private int preferredPort = 3001;
         [SerializeField] private int portScanCount = 10;
         [SerializeField] private bool allowLanConnections = true;
-        [SerializeField] private float healthTimeoutSeconds = 15f;
+        [SerializeField] private float healthTimeoutSeconds = 25f;
 
         private Process _serverProcess;
         private IntPtr _jobHandle = IntPtr.Zero;
