@@ -623,4 +623,85 @@ describe('Bước 3.2 — Bảng Trọng Tài 4 Nút (Audit Log) & Chuyển Quy�
     expect(snap.roomState.actingHostUserId).toBe(accounts[0]!.profile.userId);
     expect(snap.roomState.hostDisconnectedAt).toBeTruthy();
   });
+
+  it('khóa Seeded PRNG (rngState) qua UNDO_ONE_STEP để chống Hoàn tác đổi kết quả rút bài / phán xét', async () => {
+    const srv = await createServer({
+      config: {
+        databaseUrl: ':memory:',
+        jwtSessionSecret: 'seeded-prng-undo-anti-scum-32chars!',
+      },
+      googleProvider: createMockGoogleProvider(),
+    });
+    activeServers.push(srv);
+
+    const { roomCode, accounts } = await setupStartedRoom(srv);
+    const snap0 = srv.roomManager.getSnapshotRecord(roomCode)!;
+    expect(typeof snap0.masterGameState?.rngState).toBe('number');
+
+    const deck = createStandard108Deck(() => 0.42);
+    const bagua = deck.find((c) => c.cardKey === 'bat_quai_tran')!;
+    const sat = deck.find((c) => c.cardKey === 'sat')!;
+    const basePrepared = buildDeterministicPlayState(snap0.masterGameState!, {
+      0: [sat],
+      1: [],
+      2: [],
+      3: [],
+    });
+    const rngPlayState: MasterGameState = {
+      ...basePrepared,
+      rngState: 0x12345678,
+      roundNumber: 2,
+      peacefulFirstRound: false,
+      players: basePrepared.players.map((p, idx) =>
+        idx === 1
+          ? {
+              ...p,
+              equipments: {
+                ...p.equipments,
+                armor: bagua,
+              },
+            }
+          : p,
+      ),
+    };
+    await srv.roomManager.commitMatchStep(roomCode, rngPlayState);
+
+    // Ghế 0 chém Ghế 1 -> Ghế 1 phán xét Bát Quái lần 1
+    await srv.roomManager.applyPlayerAction(accounts[0]!.profile.userId, roomCode, {
+      type: 'PLAY_CARD',
+      seatIndex: 0,
+      cardIds: [sat.id],
+      targetSeats: [1],
+    });
+    const firstJudgeRes = await srv.roomManager.applyPlayerAction(accounts[1]!.profile.userId, roomCode, {
+      type: 'RESPOND_DODGE',
+      seatIndex: 1,
+      cardId: null,
+      useBagua: true,
+    });
+    expect(firstJudgeRes.ok).toBe(true);
+    const logFirst = srv.roomManager.getSnapshotRecord(roomCode)!.masterGameState!.actionLog.at(-1);
+    const rngAfterFirst = srv.roomManager.getSnapshotRecord(roomCode)!.masterGameState!.rngState;
+
+    // Chủ phòng bấm UNDO_ONE_STEP rồi Ghế 1 phán xét Bát Quái lại lần 2 -> kết quả & rngState phải giống hệt 100%!
+    const undoRes = await srv.roomManager.applyRefereeAction(
+      accounts[0]!.profile.userId,
+      roomCode,
+      'UNDO_ONE_STEP',
+    );
+    expect(undoRes.ok).toBe(true);
+
+    const secondJudgeRes = await srv.roomManager.applyPlayerAction(accounts[1]!.profile.userId, roomCode, {
+      type: 'RESPOND_DODGE',
+      seatIndex: 1,
+      cardId: null,
+      useBagua: true,
+    });
+    expect(secondJudgeRes.ok).toBe(true);
+    const logSecond = srv.roomManager.getSnapshotRecord(roomCode)!.masterGameState!.actionLog.at(-1);
+    const rngAfterSecond = srv.roomManager.getSnapshotRecord(roomCode)!.masterGameState!.rngState;
+
+    expect(logSecond).toBe(logFirst);
+    expect(rngAfterSecond).toBe(rngAfterFirst);
+  });
 });

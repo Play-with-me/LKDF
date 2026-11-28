@@ -459,10 +459,41 @@ export function createRoomManager(deps: {
   let globalOpQueue: Promise<unknown> = Promise.resolve();
   const getNowMs = deps.nowFn ?? (() => Date.now());
   const timerScale = deps.timerScale ?? 1;
-  const nullificationWindowMs = deps.nullificationWindowMs ?? 8000;
+  const nullificationWindowMs = deps.nullificationWindowMs ?? 3500;
   const hostFailoverDelayMs =
     deps.hostFailoverDelayMs ?? DEFAULT_HOST_FAILOVER_DELAY_MS;
   const fallbackRng = deps.defaultRng ?? Math.random;
+  const hasCustomDefaultRng = Boolean(deps.defaultRng);
+
+  const bindMatchRng = (
+    state: MasterGameState | null,
+    overrideRng?: () => number,
+  ): {
+    readonly rng: () => number;
+    readonly finalize: (s: MasterGameState) => MasterGameState;
+  } => {
+    if (overrideRng || hasCustomDefaultRng) {
+      return {
+        rng: overrideRng ?? fallbackRng,
+        finalize: (s) => s,
+      };
+    }
+    let cur =
+      (state?.rngState ??
+        (parseInt(randomUUID().replace(/-/g, '').slice(0, 8), 16) >>> 0 ||
+          0x9e3779b9)) >>>
+      0;
+    const rng = (): number => {
+      cur = (cur + 0x6d2b79f5) >>> 0;
+      let t = Math.imul(cur ^ (cur >>> 15), 1 | cur);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+    return {
+      rng,
+      finalize: (s) => ({ ...s, rngState: cur }),
+    };
+  };
 
   const emitRoomUpdated = (roomCode: string, reason: string): void => {
     for (const listener of updateListeners) {
@@ -1050,7 +1081,7 @@ export function createRoomManager(deps: {
         }
 
         const matchId = `match_${randomUUID().replace(/-/g, '').slice(0, 16)}`;
-        const rng = options?.rng ?? fallbackRng;
+        const { rng, finalize } = bindMatchRng(null, options?.rng);
         const rawSetupState = createInitialMatchSetup({
           matchId,
           manualDraw: true,
@@ -1062,7 +1093,7 @@ export function createRoomManager(deps: {
           })),
           rng,
         });
-        const setupState: MasterGameState = {
+        const setupState: MasterGameState = finalize({
           ...rawSetupState,
           players: rawSetupState.players.map((player, idx) => ({
             ...player,
@@ -1070,7 +1101,7 @@ export function createRoomManager(deps: {
               record.roomState.seats[idx]?.isBotTakeover === true ||
               isPermanentBotUserId(player.userId),
           })),
-        };
+        });
 
         const nowMs = getNowMs();
         record.roomState = {
@@ -1211,7 +1242,7 @@ export function createRoomManager(deps: {
           };
         }
 
-        const rng = options?.rng ?? fallbackRng;
+        const { rng, finalize } = bindMatchRng(record.masterGameState, options?.rng);
         let nextState: MasterGameState;
         try {
           if (draft.stage === 'LORD_SELECTING') {
@@ -1239,6 +1270,7 @@ export function createRoomManager(deps: {
           if (nextState.heroDraft?.stage === 'COMPLETED') {
             nextState = { ...nextState, turnPhase: 'HERO_SELECT' };
           }
+          nextState = finalize(nextState);
         } catch (err) {
           return {
             ok: false,
@@ -1365,7 +1397,7 @@ export function createRoomManager(deps: {
           }
         }
 
-        const rng = options?.rng ?? fallbackRng;
+        const { rng, finalize } = bindMatchRng(record.masterGameState, options?.rng);
         let nextState: MasterGameState;
         try {
           nextState = applyGameAction(record.masterGameState, action, rng, { deferNullificationPass: true });
@@ -1389,6 +1421,7 @@ export function createRoomManager(deps: {
               { deferNullificationPass: true },
             );
           }
+          nextState = finalize(nextState);
         } catch (err) {
           return {
             ok: false,
@@ -1460,10 +1493,16 @@ export function createRoomManager(deps: {
           };
         }
 
-        const nextState = applyGameAction(
+        const { rng: simRng, finalize: simFinalize } = bindMatchRng(
           record.masterGameState,
-          { type: 'RESOLVE_SIMULATED_NULLIFICATION' },
-          options?.rng ?? fallbackRng,
+          options?.rng,
+        );
+        const nextState = simFinalize(
+          applyGameAction(
+            record.masterGameState,
+            { type: 'RESOLVE_SIMULATED_NULLIFICATION' },
+            simRng,
+          ),
         );
 
         await persistAfterMasterTransition(record, nextState, getNowMs(), {
@@ -1659,7 +1698,7 @@ export function createRoomManager(deps: {
           return { acted: false, roomCode };
         }
 
-        const rng = options?.rng ?? fallbackRng;
+        const { rng, finalize } = bindMatchRng(master, options?.rng);
         const botView = projectStateForPlayer(master, actor.userId);
         let nextState: MasterGameState;
 
@@ -1676,6 +1715,7 @@ export function createRoomManager(deps: {
           const botAction = decideBotAction(botView, rng);
           nextState = applyGameAction(master, botAction, rng, { deferNullificationPass: true });
         }
+        nextState = finalize(nextState);
 
         await persistAfterMasterTransition(record, nextState, getNowMs(), {
           pushUndo: true,
@@ -1715,10 +1755,10 @@ export function createRoomManager(deps: {
           return { handled: false, roomCode };
         }
 
-        const rng = options?.rng ?? fallbackRng;
+        const { rng, finalize } = bindMatchRng(master, options?.rng);
 
         if (master.turnPhase === 'HERO_SELECT' && master.heroDraft?.stage === 'COMPLETED') {
-          await persistAfterMasterTransition(record, startMatchCombat(master, rng), nowMs, { event: 'COMBAT_STARTED' });
+          await persistAfterMasterTransition(record, finalize(startMatchCombat(master, rng)), nowMs, { event: 'COMBAT_STARTED' });
           return { handled: true, roomCode };
         }
 
@@ -1727,13 +1767,13 @@ export function createRoomManager(deps: {
           if (nextState.heroDraft?.stage === 'COMPLETED') {
             nextState = { ...nextState, turnPhase: 'HERO_SELECT' };
           }
-          nextState = {
+          nextState = finalize({
             ...nextState,
             actionLog: [
               ...nextState.actionLog,
               'Hết giờ chọn tướng — hệ thống tự chọn tướng đầu tiên cho người chưa chọn.',
             ],
-          };
+          });
           await persistAfterMasterTransition(record, nextState, nowMs, {
             event: 'HERO_SELECT_TIMEOUT',
           });
@@ -1741,7 +1781,7 @@ export function createRoomManager(deps: {
         }
 
         if (master.interruptStack.at(-1)?.kind === 'WAIT_NULLIFICATION') {
-          const nextState = advanceSkippedPhaseState(master, rng);
+          const nextState = finalize(advanceSkippedPhaseState(master, rng));
           await persistAfterMasterTransition(record, nextState, nowMs, {
             pushUndo: true,
             event: 'NULLIFICATION_WINDOW_CLOSED',
@@ -1765,7 +1805,7 @@ export function createRoomManager(deps: {
         const stateWithTakeover = record.masterGameState!;
         const botView = projectStateForPlayer(stateWithTakeover, actor.userId);
         const botAction = decideBotAction(botView, rng);
-        const nextState = applyGameAction(stateWithTakeover, botAction, rng);
+        const nextState = finalize(applyGameAction(stateWithTakeover, botAction, rng));
 
         await persistAfterMasterTransition(record, nextState, nowMs, {
           pushUndo: true,
@@ -1871,7 +1911,7 @@ export function createRoomManager(deps: {
         }
 
         const master = record.masterGameState;
-        const rng = options?.rng ?? fallbackRng;
+        const { rng, finalize: finalizeRefRng } = bindMatchRng(master, options?.rng);
 
         switch (actionType) {
           case 'PAUSE': {
@@ -2010,7 +2050,7 @@ export function createRoomManager(deps: {
               };
             }
 
-            const skippedState = advanceSkippedPhaseState(master, rng);
+            const skippedState = finalizeRefRng(advanceSkippedPhaseState(master, rng));
             const nextMaster: MasterGameState = {
               ...skippedState,
               refereeAuditLog: [...skippedState.refereeAuditLog, auditEntry],
