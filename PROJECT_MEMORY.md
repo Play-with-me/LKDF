@@ -1,8 +1,27 @@
 # PROJECT_MEMORY.md — Ghi Nhớ Dự Án và Bàn Giao Tiến Độ
 
 > **Dự án:** Cửu Châu Ẩn Kiếm / Blades of the Nine Realms (Unity 6 LTS 2.5D Tabletop Client + Lõi Luật 112 Lá Sidecar + Lộ trình lên Steam)
-> **Ngày cập nhật:** 2026-11-27
-> **Trạng thái hiện tại:** Đã hoàn thành **100% Lộ trình 7 Chặng Unity 6 (`U0–U6`) + 100% Tranh Công Bút Gongbi (`64/64`)**: Dự án `apps/unity-client` (`6000.3.29f1 LTS`), `64/64` tranh (`25/25` tướng + `36/36` lá bài + `3/3` đại cảnh + vẽ lại `nghiem_cuong`) đóng `3 SpriteAtlasV2`, kiểm định chống AI ([docs/U6_ANTI_SLOP_VISUAL_AUDIT.md](./docs/U6_ANTI_SLOP_VISUAL_AUDIT.md)), PlayMode E2E **`2/2` PASS (`17.54s`)** (gồm Solo Bots + **4 Người Thật LAN `0` Bot + Reconnect + Trọng Tài**), `623` tệp Unity **`0` lỗi / `0` cảnh báo**, `typecheck` **`0` lỗi**, và bản chơi độc lập tự chứa **`CuuChauAnKiem-Unity6-Win64-Portable-0.6.0.zip` (`113.56 MB`)** đã kiểm thử chạy `.exe` thật (`heroCount=25, deckTotal=108`) + xuất ra Desktop!
+> **Ngày cập nhật:** 2026-11-28
+> **Trạng thái hiện tại:** Đã hoàn thành **100% Lộ trình 8 Chặng Unity 6 (`U0–U7`) + 100% Tranh Công Bút Gongbi (`64/64`) + Gói Nâng Cấp Toàn Diện Hội Đồng Người Chơi (`P0 + P1`)**: Đồng bộ 100% Parity 25 hiệp khách / 36 mặt bài / 8 tuyệt kỹ chủ động / 7 phản ứng trang bị giữa `@lkdf/shared` & Unity 6, nâng cấp Bot AI (`-28.2%` bắn nhầm đồng đội trên 250 ván mô phỏng), khóa Seeded PRNG chống hoàn tác đổi kết quả rút bài/phán xét, vượt qua `155/155` unit + `34/34` server integration + **`2/2` PlayMode E2E (`15.15s`)** + `623` tệp Unity `0` lỗi, và đóng gói bản chơi mới **`CuuChauAnKiem-Unity6-Win64-Portable-0.6.0.zip` (`113.61 MB`)** ra Desktop!
+
+## 0-U7. Bằng Chứng Kiểm Chứng Chặng U7 — Hội Đồng 7 Người Chơi (`250` Ván) & Gói Nâng Cấp `P0 + P1` (`2026-11-28` · Swarm 3 Kỹ Sư Unity + Coordinator)
+- **Mô phỏng 250 ván đa lối chơi & Phản biện 7 Agent:** Mô phỏng 6 cá tính người chơi (`Newbie`, `Rusher`, `Tactical`, `Pro`, `Griefer`, `AFK`) qua `250` ván thật (`4P–8P`), tổng hợp qua 7 góc nhìn chuyên sâu (`full_stack_player_council_report.md`) và triển khai trọn gói Tiêu chuẩn (`P0 + P1`).
+- **Nhánh 1 — Đồng bộ SSOT & Lõi Luật (`packages/shared`, `apps/server`, `CuuChauCombatRules.cs`, `CuuChauMatchDirector.cs`):**
+  - Xuất `availableActions` (`describeAvailableActions`), `maxHandLimit` và `distanceFromViewer` trên mọi `PlayerViewState` (giấu tuyệt đối `rngState` khỏi client).
+  - Sửa `primitives.ts` & `GetInterruptActorSeat` cho 7 phản ứng ngược ghế thao tác (`WAIT_COLLATERAL_SAT`, `ASK_QUAN_THACH_PHU`, `ASK_THANH_LONG`, `ASK_HAN_BANG_KIEM`, `ASK_KY_LAN_CUNG`, `ASK_TIE_QI`, `PICK_TARGET_CARD`).
+  - Mở khóa đủ 8 tuyệt kỹ chủ động (`ACTIVATE_HERO_SKILL`) + chuyển hóa bài ảo (`asCardKey`), chọn vùng trang bị/ấn chú cụ thể, *Tinh Bàn / Di Sách / Lưu Chuyển / Ly Tâm 4 chất / Thiên Bảo / Tá Kiếm*, gỡ trần 12 lá trên `ArcFanHandLayout` (`13–22+` lá), sửa `SeatPlaqueView` không còn ẩn nhầm thân phận của chính mình (thêm `(Bạn)`, `Kc: X`, máu số, ghi chú nghi vấn chuột phải) và sửa `MatchSummaryModalView` bàn 8P không trao nhầm `THẮNG` cho *Ám Ảnh* đã tử trận.
+- **Nhánh 2 — Cảm giác đánh, Batching, Âm thanh & Thẩm mỹ (`CardView25D`, `SilkTargetArrow`, `VfxBurstOverlay`, `CuuChauAudioController`, `ArenaHudController`, `Lobby/`):**
+  - Không tạo `new Material` khi `_dissolveAmount == 0` (khôi phục gộp lô `SpriteAtlasV2`), hiển thị `A/J/Q/K`, co dải chữ giấy dó `146px` không chạm viền đồng & xòe quạt khai trận ngay từ frame đầu.
+  - Đường bay lá bài cong + cháy mực `CardBurnInkDissolve` không khóa thao tác (`SpawnCardFlight`), lắc từ chối `PlayRejectShake` + toast tiếng Việt rõ lý do, chỉ rung nền `TableBoard_25D` giữ đứng yên 100% khung bấm ghế, khôi phục trống Cao trào khi Unmute + tách BGM/SFX + dừng nhạc trận ở `GAME_OVER`, phím tắt `1–9/Space/Enter/E` và mở chọn đủ `4, 5, 6, 7, 8` ghế.
+- **Nhánh 3 — Bot AI, Cân bằng, Seeded PRNG & Mạng LAN (`bot/index.ts`, `setup.ts`, `cuuChauPack.ts`, `rooms/index.ts`, `RoomWsClient.cs`, `LkdfSidecarProcess.cs`):**
+  - Bot AI đọc lịch sử công khai suy luận thù địch/đồng minh -> chạy lại 250 ván: Friendly Fire giảm **`-28.2%`** (`684 -> 491`), `liu_bei` WR `27.9% -> 39.3%`, `zhang_fei` (`4 HP`) sống sót `16.9% -> 35.6%`, `sun_shang_xiang` (`1 lần/lượt` rút cẩm nang) về chuẩn `50.0%` WR.
+  - Rút `nullificationWindowMs` từ `8000ms` xuống `3500ms`; khóa `rngState` Mulberry32 trong `MasterGameState` chống `UNDO_ONE_STEP` đổi vận may; sinh `JWT_SESSION_SECRET` ngẫu nhiên mỗi lần bật Sidecar; nâng tự nối lại WS lên `12` nhịp (`55s`) và ưu tiên IP Radmin VPN (`26.*`) / Tailscale (`100.64..127.*`).
+- **Kết quả kiểm chứng thực tế sau lần sửa cuối (`2026-11-28`):**
+  - `npm.cmd run typecheck`: **`0` lỗi** · `npm.cmd run test:unit`: **`17/17` files · `155/155` PASS (`1.05s`)** · `@lkdf/server test:integration`: **`10/10` files · `34/34` PASS (`7.90s`)**.
+  - Unity PlayMode E2E (`Logs/u7-playmode-results.xml`): **`Passed` · `2/2` (`15.15s` — U4 `9.11s` + U6 4P LAN `6.03s`)**; soi mắt trực tiếp `u6_lan_4p_match_1080p.png` & `u5_live_sidecar_match_1080p.png` sạch 100%.
+  - `check_unity_project.py`: **`0 errors, 0 warnings in 623 files checked`**.
+  - Build & Smoke test `CuuChauAnKiem.exe` thật (`scripts/build-unity-windows.ps1`): Sidecar cổng `3001` `heroCount=25, deckTotal=108` (`PID: 24948`), Win32 Job Object dọn `node.exe` `<5s`, xuất `releases/CuuChauAnKiem-Unity6-Win64-Portable-0.6.0.zip` (**`113.61 MB`**) & chép ra Desktop!
+  - Đồng bộ GitHub sạch (`2026-11-28`): Quét `0` bí mật, `0` lỗi khoảng trắng, chia 4 commit nguyên tử (`ba2c07e` `@lkdf/shared`, `3a9fd2e` `@lkdf/server`, `1ee5ef7` `apps/unity-client` + `unity-u2-kit`, cùng commit đồng bộ 4 file tiến độ) đẩy thẳng lên `origin/main`.
 
 ## 0-U6. Bằng Chứng Kiểm Chứng Chặng U6 (`2026-11-28` · Swarm 4 Agent)
 - **Kiểm định chống Slop (`u6-slop-auditor`):**

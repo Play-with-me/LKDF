@@ -1,13 +1,13 @@
 # TASKS.md — Kế Hoạch Thực Hiện Chi Tiết Theo Từng Bước Kiểm Tra Được
 
 > **Dự án:** Cửu Châu Ẩn Kiếm / Blades of the Nine Realms (Unity 6 LTS 2.5D Tabletop Client + Lõi Luật 112 Lá Sidecar + Lộ trình lên Steam)
-> **Cập nhật lần cuối:** 2026-11-27
+> **Cập nhật lần cuối:** 2026-11-28
 > **Quy tắc bắt buộc:** Chỉ đánh dấu hoàn thành (`[x]`) khi đã có sản phẩm bàn giao và đã chạy kiểm tra đạt điều kiện nghiệm thu của bước đó. Không đánh dấu hoàn thành chỉ vì đã viết xong mã nguồn.
 > **Tài liệu liên quan:** [KE_HOACH_TONG_THE_CUU_CHAU_AN_KIEM.md](./KE_HOACH_TONG_THE_CUU_CHAU_AN_KIEM.md) · [REQUIREMENTS.md](./REQUIREMENTS.md) · [ARCHITECTURE.md](./ARCHITECTURE.md) · [TESTING.md](./TESTING.md) · [PROJECT_MEMORY.md](./PROJECT_MEMORY.md)
 
 ---
 
-## Lộ Trình Nâng Cấp Giao Diện Unity 6 2.5D & Xưởng Đồ Họa Thật (7 Chặng: U0–U6)
+## Lộ Trình Nâng Cấp Giao Diện Unity 6 2.5D & Xưởng Đồ Họa Thật (8 Chặng: U0–U7)
 
 | Chặng | Nội dung chính | Sản phẩm bàn giao | Trạng thái |
 | :---: | :--- | :---: | :---: |
@@ -18,6 +18,7 @@
 | **Chặng U4** | Sảnh Đại Điện 3 Lệnh Bài, Phòng chờ LAN 1 ô dán mã, Lật thẻ Chọn Hiệp Khách 3D, Trọng Tài 4 nút, Sổ Tay 3 ngăn & Chạy ván thật nối Sidecar | `Assets/Scenes/U4_FullGame_App.unity` + `u4_*.png` (`4` tấm) + PlayMode E2E PASS | ✅ Hoàn thành & Đã test PlayMode thật |
 | **Chặng U5** | Sản xuất đồng bộ 64 tranh 2.5D (`25` hiệp khách + `36` lá bài + `3` đại cảnh) đóng `3 SpriteAtlasV2`, sửa nhãn `Chủ Công`/`Minh Chủ` & kiểm chứng PlayMode E2E thật *(Đã hoàn tất 100% Gongbi U1 `64/64` + vẽ lại `nghiem_cuong`, `0` fallback Bước 5)* | `Assets/Art/Atlases/*.spriteatlasv2` + `u5_*.png` (`6` tấm) + PlayMode E2E PASS | ✅ Hoàn thành 100% Gongbi (64/64) & Đã test thật |
 | **Chặng U6** | Kiểm duyệt thẩm mỹ chống AI (`U6_ANTI_SLOP_VISUAL_AUDIT.md`), kiểm thử 4 người thật LAN (`CuuChauU6MultiClientLanPlayModeTests`), dựng bản chơi Windows x64 tự chứa `CuuChauAnKiem.exe` + smoke test chạy thật & xuất `.zip` ra Desktop (`113.56 MB`) | `CuuChauAnKiem-Unity6-Win64-Portable-0.6.0.zip` + `2/2` PlayMode PASS (`623` tệp `0` lỗi) | ✅ Hoàn thành & Đã đóng gói Desktop |
+| **Chặng U7** | Hội đồng 7 Agent mô phỏng `250` ván + Triển khai trọn gói `P0 + P1` (100% Parity 8 tuyệt kỹ & 7 interrupt, SSOT `availableActions`/`distanceFromViewer`, Bot AI `-28.2%` bắn nhầm, cân bằng `Lôi Chấn Sơn`/`Bạch Cẩm Y`, Seeded PRNG chống hoàn tác, Batching + VFX bay bài + Âm thanh + LAN VPN) | `CuuChauAnKiem-Unity6-Win64-Portable-0.6.0.zip` (`113.61 MB`) + `155` unit + `34` integration + `2/2` PlayMode PASS | ✅ Hoàn thành & Đã xuất gói mới ra Desktop |
 
 - [x] **Chặng U0 — Khóa Nền Tảng Unity 6 & 14 Kỹ Năng Chống AI-Slop:**
   - [x] Lưu mốc git sạch `1dec06c` bảo toàn 3 bản nhạc nền `-20.0 LUFS` & bản Electron dự phòng.
@@ -45,6 +46,11 @@
   - `u6-standalone-packer`: Tạo `Assets/link.xml`, `CuuChauU6WindowsBuild.cs` (`Mono2x`, Minimal stripping, `1280×720` Windowed, `PackAllAtlases`), và `scripts/build-unity-windows.ps1` đóng gói Sidecar tự chứa (`node.exe` + `@lkdf/server` + `@lkdf/shared` + `67` gói prod) vào `CuuChauAnKiem_Data/StreamingAssets/ServerSidecar`.
   - Kiểm chứng thực tế sau lần cập nhật cuối (`100% Gongbi 64/64`): Unity PlayMode E2E **`2/2` PASS (`17.54s` — U4 `11.49s` + U6 4P LAN `6.02s`)**, `scripts/build-unity-windows.ps1` xuất `CuuChauAnKiem.exe`, `npm install --omit=dev` (`67 packages in 8s`), chạy kiểm thử `.exe` thật cổng `3001` trả `/api/health heroCount=25, deckTotal=108` (`PID: 35248`) + Win32 Job Object tắt `node.exe` trong `<5s`, nén `releases/CuuChauAnKiem-Unity6-Win64-Portable-0.6.0.zip` (`113.56 MB`) & chép ra Desktop; `check_unity_project.py` **`0 errors, 0 warnings in 623 files checked`**, `npm.cmd run typecheck` **`0` lỗi**.
   - Rà soát `.gitignore` (loại `apps/unity-client/{Library,Temp,Builds,Logs,Screenshots,.vscode,*.csproj}`, `releases/`, `ServerSidecar/` nhị phân & ảnh trung gian `art-studio/`) + chạy `@lkdf/server` `10/10` files (`33/33` tests PASS) + chia 4 commit nguyên tử và đẩy sạch toàn bộ mốc Unity 6 `U0–U6` (`100% Gongbi 64/64`) lên GitHub `origin/main`.
+- [x] **Chặng U7 — Mô Phỏng Hội Đồng 7 Người Chơi (`250` Ván) & Triển Khai Gói Tiêu Chuẩn `P0 + P1` (Gameplay Parity, Game Feel, Bot AI & Seeded PRNG):**
+  - Xuất SSOT `availableActions`, `maxHandLimit` & `distanceFromViewer` từ `@lkdf/shared` xuống Unity (`projection/index.ts`, `primitives.ts`, `LkdfModels.cs`); mở khóa 8 tuyệt kỹ chủ động (`ACTIVATE_HERO_SKILL`) + chuyển hóa bài ảo (`asCardKey`), sửa 7 phản ứng ngược ghế thao tác, mở chọn vùng trang bị/ấn chú cụ thể, gỡ trần 12 lá trên `ArcFanHandLayout`, sửa ẩn thân phận bản thân (`SeatPlaqueView`) + thêm `(Bạn)` / `Kc: X` / máu số / ghi chú nghi vấn chuột phải, sửa kết ván 8P trao nhầm thắng cho Ám Ảnh tử trận (`MatchSummaryModalView`).
+  - Tối ưu gộp lô `SpriteAtlasV2` (`CardView25D`), hiển thị `A/J/Q/K`, lắc từ chối + toast tiếng Việt khi kéo bài chưa hợp lệ, đường bay lá bài + cháy mực `CardBurnInkDissolve` (`VfxBurstOverlay`), cố định khung bấm ghế khi rung bàn (`TableBoard_25D`), sửa mất trống Cao trào khi Unmute + tách BGM/SFX + ngắt nhạc trận ở `GAME_OVER` (`CuuChauAudioController`), phím tắt `1–9/Space/Enter/E`, mở chọn đủ `4–8P` (có `7P`).
+  - Sửa Bot AI suy luận thù địch từ nhật ký công khai (giảm Friendly Fire `-28.2%`), trả `Lôi Chấn Sơn` về `4 HP`, giới hạn rút cẩm nang `Bạch Cẩm Y` `1 lần/lượt`, hạ nhịp `nullificationWindowMs` còn `3500ms`, khóa `rngState` Mulberry32 trên `MasterGameState` chống `UNDO_ONE_STEP` đổi kết quả phán xét/rút bài, sinh `JWT_SESSION_SECRET` ngẫu nhiên mỗi phiên Sidecar và ưu tiên IP Radmin VPN / Tailscale + `55s` tự nối lại WS.
+  - Kiểm chứng thực tế & đồng bộ GitHub: `npm.cmd run typecheck` **`0` lỗi**, `test:unit` **`17/17` files · `155/155` PASS**, `@lkdf/server test:integration` **`10/10` files · `34/34` PASS**, Unity PlayMode E2E **`2/2` PASS (`15.15s`)**, `check_unity_project.py` **`0 errors, 0 warnings in 623 files checked`**, đóng gói & chạy kiểm thử `CuuChauAnKiem.exe` thật (`heroCount=25, deckTotal=108`, PID `24948`, Job Object tắt `<5s`) -> `CuuChauAnKiem-Unity6-Win64-Portable-0.6.0.zip` (`113.61 MB`) tại `releases/` & Desktop; chia 4 commit nguyên tử sạch (`ba2c07e`, `3a9fd2e`, `1ee5ef7` + `docs`) và đẩy lên `origin/main`.
 
 ---
 
