@@ -399,4 +399,48 @@ else {
     Write-Warning "Không tìm thấy thư mục Desktop: $desktopDir (bỏ qua bước sao chép Desktop)."
 }
 
-Write-Host "=== HOÀN TẤT CHẶNG U6 PORTABLE BUILD ($zipSizeMb MB) ===" -ForegroundColor Yellow
+# ---------------------------------------------------------------------------
+# Step G: Sync installed local copy (%LOCALAPPDATA%\Programs\CuuChauAnKiem) & Shortcuts
+# ---------------------------------------------------------------------------
+$localInstallDir = Join-Path $env:LOCALAPPDATA "Programs\CuuChauAnKiem"
+$runningInstalled = Get-Process -Name "CuuChauAnKiem" -ErrorAction SilentlyContinue
+if ($null -eq $runningInstalled) {
+    Write-Host "[Step G] Đồng bộ bản cài chính tại $localInstallDir..." -ForegroundColor Cyan
+    if (Test-Path $localInstallDir) {
+        Remove-Item -Path $localInstallDir -Recurse -Force
+    }
+    New-Item -ItemType Directory -Path $localInstallDir -Force | Out-Null
+    Copy-Item -Path (Join-Path $buildDir "*") -Destination $localInstallDir -Recurse -Force
+
+    $iconCandidate = Join-Path $repoRoot "apps\desktop\assets\icon.ico"
+    $installedIcon = Join-Path $localInstallDir "icon.ico"
+    if (Test-Path $iconCandidate) {
+        Copy-Item -Path $iconCandidate -Destination $installedIcon -Force
+    }
+
+    $installedExe = Join-Path $localInstallDir "CuuChauAnKiem.exe"
+    $shortcutPaths = @(
+        (Join-Path $desktopDir "Blades of the Nine Realms.lnk"),
+        (Join-Path $env:APPDATA "Microsoft\Windows\Start Menu\Programs\Blades of the Nine Realms.lnk")
+    )
+    $wsh = New-Object -ComObject WScript.Shell
+    foreach ($lnkPath in $shortcutPaths) {
+        $lnkParent = Split-Path -Parent $lnkPath
+        if (Test-Path $lnkParent) {
+            $sc = $wsh.CreateShortcut($lnkPath)
+            $sc.TargetPath = $installedExe
+            $sc.WorkingDirectory = $localInstallDir
+            $sc.Description = "Cửu Châu Ẩn Kiếm (Blades of the Nine Realms) — Unity 6.3"
+            if (Test-Path $installedIcon) {
+                $sc.IconLocation = "$installedIcon,0"
+            }
+            $sc.Save()
+        }
+    }
+    Write-Host "   Đã cập nhật bản cài chính & Shortcut Desktop/Start Menu -> $installedExe" -ForegroundColor Green
+}
+else {
+    Write-Warning "CuuChauAnKiem.exe đang mở, bỏ qua cập nhật trực tiếp $localInstallDir."
+}
+
+Write-Host "=== HOÀN TẤT PORTABLE & INSTALLED BUILD ($zipSizeMb MB) ===" -ForegroundColor Yellow

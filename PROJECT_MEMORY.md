@@ -21,7 +21,7 @@
   - Unity PlayMode E2E (`Logs/u7-playmode-results.xml`): **`Passed` · `2/2` (`15.15s` — U4 `9.11s` + U6 4P LAN `6.03s`)**; soi mắt trực tiếp `u6_lan_4p_match_1080p.png` & `u5_live_sidecar_match_1080p.png` sạch 100%.
   - `check_unity_project.py`: **`0 errors, 0 warnings in 623 files checked`**.
   - Build & Smoke test `CuuChauAnKiem.exe` thật (`scripts/build-unity-windows.ps1`): Sidecar cổng `3001` `heroCount=25, deckTotal=108` (`PID: 24948`), Win32 Job Object dọn `node.exe` `<5s`, xuất `releases/CuuChauAnKiem-Unity6-Win64-Portable-0.6.0.zip` (**`113.61 MB`**) & chép ra Desktop!
-  - Đồng bộ GitHub sạch (`2026-11-28`): Quét `0` bí mật, `0` lỗi khoảng trắng, chia 4 commit nguyên tử (`ba2c07e` `@lkdf/shared`, `3a9fd2e` `@lkdf/server`, `1ee5ef7` `apps/unity-client` + `unity-u2-kit`, cùng commit đồng bộ 4 file tiến độ) đẩy thẳng lên `origin/main`.
+  - Đồng bộ GitHub & Bản cài chính trên máy Sếp (`2026-11-28`): Quét `0` bí mật, `0` lỗi khoảng trắng, đẩy 4 commit nguyên tử (`ba2c07e`, `3a9fd2e`, `1ee5ef7`, `c470c07`) lên `origin/main`; gỡ sạch bản Electron cũ `@lkdfdesktop`, cài đặt bản chính Unity 6 Chặng U7 vào `%LOCALAPPDATA%\Programs\CuuChauAnKiem\CuuChauAnKiem.exe`, trỏ lại Shortcut `Blades of the Nine Realms.lnk` ngoài Desktop + Start Menu (kiểm thử chạy thật trả `heroCount=25, deckTotal=108`, tắt sạch `0` tiến trình sót) và tích hợp tự động vào `[Step G]` của `scripts/build-unity-windows.ps1`.
 
 ## 0-U6. Bằng Chứng Kiểm Chứng Chặng U6 (`2026-11-28` · Swarm 4 Agent)
 - **Kiểm định chống Slop (`u6-slop-auditor`):**
