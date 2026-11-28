@@ -241,16 +241,16 @@ export const CUU_CHAU_CARD_DISPLAY_BY_KEY: Readonly<
     descriptionVi:
       'Chiếm lấy 1 lá trên tay hoặc trang bị của mục tiêu ở khoảng cách 1.',
     descriptionEn:
-      'Take 1 card from the hand, gear, or judgment zone of a target at distance 1.',
+      'Take 1 card from the hand or gear of a target at distance 1.',
   },
   qua_ha_sai_cau: {
     cardKey: 'qua_ha_sai_cau',
     nameVi: 'Phá Trận Chưởng',
     nameEn: 'Break Formation',
     descriptionVi:
-      'Hủy 1 lá trên tay, trang bị hoặc ấn chú của bất kỳ đối thủ nào.',
+      'Hủy 1 lá trên tay hoặc trang bị của bất kỳ đối thủ nào.',
     descriptionEn:
-      'Discard 1 card from any opponent’s hand, gear, or judgment zone.',
+      'Discard 1 card from any opponent’s hand or gear.',
   },
   quyet_dau: {
     cardKey: 'quyet_dau',
@@ -604,7 +604,7 @@ export const CUU_CHAU_HEROES: readonly CuuChauHeroDefinition[] = [
     faction: 'THANH_VAN',
     factionLabelVi: 'Thanh Vân',
     factionLabelEn: 'Azure Cloud',
-    baseMaxHp: 3,
+    baseMaxHp: 4,
     gender: 'MALE',
     isLordCandidate: false,
     skills: [
@@ -613,9 +613,9 @@ export const CUU_CHAU_HEROES: readonly CuuChauHeroDefinition[] = [
         nameVi: 'Cuồng Lôi Bộ',
         nameEn: 'Thunder Rush',
         descriptionVi:
-          'Trong lượt đánh, xuất Kiếm Trảm không giới hạn và luôn giảm 1 khoảng cách tới mục tiêu (3 HP).',
+          'Trong lượt đánh, xuất Kiếm Trảm không giới hạn và luôn giảm 1 khoảng cách tới mục tiêu (4 HP).',
         descriptionEn:
-          'Play unlimited Blade Strikes and gain -1 offensive distance permanently (3 HP).',
+          'Play unlimited Blade Strikes and gain -1 offensive distance permanently (4 HP).',
       },
     ],
   },
@@ -1517,8 +1517,21 @@ export const CUU_CHAU_HERO_SKILLS: Readonly<
     heroId: 'bach_cam_y',
     onEquipLost: (state, seatIndex, _lostCount, rng, rt) =>
       rt.dealCardsToSeat(state, seatIndex, 2, rng).state,
-    onNormalScrollPlayed: (state, seatIndex, rng, rt) =>
-      rt.dealCardsToSeat(state, seatIndex, 1, rng).state,
+    onNormalScrollPlayed: (state, seatIndex, rng, rt) => {
+      if (state.turnFlags?.bachCamYScrollDrawnThisTurn) {
+        return state;
+      }
+      const dealt = rt.dealCardsToSeat(state, seatIndex, 1, rng);
+      return {
+        ...dealt.state,
+        turnFlags: {
+          satUsedThisTurn: dealt.state.turnFlags?.satUsedThisTurn ?? 0,
+          skipPlayPhase: dealt.state.turnFlags?.skipPlayPhase ?? false,
+          ...dealt.state.turnFlags,
+          bachCamYScrollDrawnThisTurn: true,
+        },
+      };
+    },
   },
   tham_mac_ngon: {
     heroId: 'tham_mac_ngon',

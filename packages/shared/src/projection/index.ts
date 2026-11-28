@@ -1,4 +1,6 @@
-import { turnDrawCount } from '../engine/combatCore.js';
+import { getPlayerMaxHandLimit, turnDrawCount } from '../engine/combatCore.js';
+import { describeAvailableActions } from '../engine/actionDescriptor.js';
+import { calculateDistance } from '../distance/index.js';
 import { DEFAULT_CONTENT_REGISTRY } from '../content/registry.js';
 import type {
   HeroDraftState,
@@ -292,6 +294,11 @@ export function projectStateForPlayer(
       },
       delayedScrolls: player.delayedScrolls.map((card) => ({ ...card })),
       isBotTakeover: player.isBotTakeover,
+      maxHandLimit: getPlayerMaxHandLimit(masterState, player),
+      distanceFromViewer:
+        isSelf || !player.alive || !viewerPlayer.alive
+          ? 0
+          : calculateDistance(masterState, viewerSeatIndex, player.seatIndex),
     };
   });
 
@@ -303,7 +310,7 @@ export function projectStateForPlayer(
     ? DEFAULT_CONTENT_REGISTRY.getCardTemplate(discardDisplayAs)
     : undefined;
 
-  return {
+  const baseView: PlayerViewState = {
     ...(masterState.rulesetVersion !== undefined
       ? { rulesetVersion: masterState.rulesetVersion }
       : {}),
@@ -351,5 +358,25 @@ export function projectStateForPlayer(
     refereeAuditLog: [...masterState.refereeAuditLog],
     winningFaction: masterState.winningFaction,
     winnerUserIds: [...masterState.winnerUserIds],
+  };
+
+  const desc = describeAvailableActions(baseView);
+  const actorSeats = desc.primitive
+    ? [...desc.primitive.actorSeats]
+    : desc.isViewerActor
+      ? [viewerSeatIndex]
+      : [masterState.currentTurnSeat];
+
+  return {
+    ...baseView,
+    availableActions: {
+      isViewerActor: desc.isViewerActor,
+      canDraw: desc.canDraw,
+      canEndPlayPhase: desc.canEndPlayPhase,
+      discardRequiredCount: desc.discardRequiredCount,
+      playableCardIds: desc.playableCardIds,
+      activatableSkillIds: desc.activatableSkillIds,
+      actorSeats,
+    },
   };
 }

@@ -34,11 +34,8 @@ export interface CreateMatchSetupOptions {
 
 function getEffectiveHeroBaseHp(
   heroId: HeroId,
-  state: { readonly enabledPacks?: readonly string[] },
+  _state: { readonly enabledPacks?: readonly string[] },
 ): number {
-  if (isCuuChauRuleset(state) && (heroId === 'zhang_fei' || heroId === 'loi_chan_son')) {
-    return 3;
-  }
   return getHeroDefinition(heroId).baseMaxHp;
 }
 

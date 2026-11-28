@@ -172,6 +172,8 @@ export interface PublicPlayerView {
   readonly equipments: PlayerEquipments;
   readonly delayedScrolls: readonly CardInstance[];
   readonly isBotTakeover: boolean;
+  readonly maxHandLimit?: number;
+  readonly distanceFromViewer?: number;
 }
 
 export interface HeroDraftState {
@@ -603,6 +605,7 @@ export interface TurnFlags {
   readonly kuRouBonusGrantedThisTurn?: boolean;
   readonly crimsonEdgeDrawnThisTurn?: boolean;
   readonly qiXiDrawnThisTurn?: boolean;
+  readonly bachCamYScrollDrawnThisTurn?: boolean;
 }
 
 export interface RefereeAuditEntry {
@@ -623,6 +626,7 @@ export interface MasterGameState {
   readonly rulesetVersion?: string;
   readonly enabledPacks?: readonly string[];
   readonly contentHash?: string;
+  readonly rngState?: number;
   readonly skillState?: Readonly<Record<string, unknown>>;
   readonly events?: readonly GameEvent[];
   readonly manualDraw?: boolean;
@@ -673,6 +677,15 @@ export interface PlayerViewState {
   readonly refereeAuditLog: readonly RefereeAuditEntry[];
   readonly winningFaction: WinningFaction | null;
   readonly winnerUserIds: readonly string[];
+  readonly availableActions?: {
+    readonly isViewerActor: boolean;
+    readonly canDraw: boolean;
+    readonly canEndPlayPhase: boolean;
+    readonly discardRequiredCount: number;
+    readonly playableCardIds: readonly string[];
+    readonly activatableSkillIds: readonly string[];
+    readonly actorSeats: readonly number[];
+  };
 }
 
 export interface RoomSeat {

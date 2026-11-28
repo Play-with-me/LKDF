@@ -210,4 +210,36 @@ describe('Generic Primitives, GameEvent Projection & ActionDescriptor', () => {
     expect(discardDesc.discardRequiredCount).toBe(2);
     expect(discardDesc.promptKey).toBe('match.prompt.discardPhase');
   });
+
+  it('projects SSOT availableActions, maxHandLimit, distanceFromViewer, and sourceSeat interrupt actors accurately', () => {
+    const master = makeSampleMasterState();
+    const withHanBang: MasterGameState = {
+      ...master,
+      enabledPacks: ['cuu_chau_core'],
+      interruptStack: [
+        {
+          id: 'hb_1',
+          kind: 'ASK_HAN_BANG_KIEM',
+          sourceSeat: 0,
+          targetSeat: 1,
+          sourceCards: [makeCard('c1', 'sat')],
+          remainingDiscards: 2,
+        },
+      ],
+    };
+
+    const p0View = projectStateForPlayer(withHanBang, 'u0');
+    const p1View = projectStateForPlayer(withHanBang, 'u1');
+
+    // Source seat (0) is the actor for ASK_HAN_BANG_KIEM, NOT victim seat (1)!
+    expect(p0View.availableActions?.isViewerActor).toBe(true);
+    expect(p0View.availableActions?.actorSeats).toEqual([0]);
+    expect(p1View.availableActions?.isViewerActor).toBe(false);
+    expect(p1View.availableActions?.actorSeats).toEqual([0]);
+
+    // maxHandLimit & distanceFromViewer are projected without leaking rngState
+    expect('rngState' in p0View).toBe(false);
+    expect(p0View.players[0]?.maxHandLimit).toBe(3);
+    expect(p0View.players[1]?.distanceFromViewer).toBe(1);
+  });
 });

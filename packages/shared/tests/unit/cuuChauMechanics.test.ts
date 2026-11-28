@@ -146,11 +146,11 @@ describe('Phase 2A Slice 1 — Cửu Châu Core Ruleset & 10 Remixed Hero Kits',
     expect(afterLord.handCards).toHaveLength(3);
   });
 
-  it('2. Lôi Chấn Sơn (zhang_fei): 3 baseMaxHp and permanent -1 offensive distance', () => {
+  it('2. Lôi Chấn Sơn (zhang_fei): 4 baseMaxHp and permanent -1 offensive distance', () => {
     const state = setupCuuChauMatch(['liu_bei', 'zhang_fei', 'sun_quan', 'cao_cao']);
     const zf = state.players.find((p) => p.heroId === 'zhang_fei')!;
-    expect(zf.maxHp).toBe(3);
-    expect(zf.hp).toBe(3);
+    expect(zf.maxHp).toBe(4);
+    expect(zf.hp).toBe(4);
     const oppositeSeat = (zf.seatIndex + 2) % 4;
     expect(calculateDistance(state, zf.seatIndex, oppositeSeat)).toBe(1);
   });

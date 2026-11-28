@@ -86,26 +86,88 @@ function getAliveOpponents(view: PlayerViewState): PublicPlayerView[] {
   );
 }
 
-/** Sắp xếp danh sách mục tiêu hợp lý dựa trên Thân Phận công khai & bản thân. */
+/**
+ * Suy luận thái độ công khai đối với Chủ Công chỉ từ nhật ký công khai (PlayerViewState.actionLog).
+ * Giá trị dương (+): nghi Phản Tặc (công kích Chủ Công); Giá trị âm (-): nghi Trung Thần (cứu Chủ Công).
+ */
+function inferHostilityTowardLord(view: PlayerViewState): Map<number, number> {
+  const scores = new Map<number, number>();
+  const lord = view.players.find((p) => p.identity === 'LORD');
+  if (!lord || !view.actionLog || view.actionLog.length === 0) {
+    return scores;
+  }
+  const lordName = lord.displayName;
+  if (!lordName) return scores;
+
+  const recentLogs = view.actionLog.slice(-60);
+  for (const line of recentLogs) {
+    if (!line.includes(lordName)) continue;
+    for (const p of view.players) {
+      if (p.seatIndex === lord.seatIndex || !p.displayName) continue;
+      if (!line.startsWith(p.displayName)) continue;
+      if (
+        line.includes('Đào cứu') ||
+        line.includes('Hồi Xuân') ||
+        line.includes('Nhân Đức') ||
+        line.includes('Thanh Nang') ||
+        line.includes('Kết Hôn')
+      ) {
+        scores.set(p.seatIndex, (scores.get(p.seatIndex) ?? 0) - 60);
+      } else if (
+        line.includes('Sát') ||
+        line.includes('Trảm') ||
+        line.includes('Quyết Đấu') ||
+        line.includes('Lôi Đài') ||
+        line.includes('Kinh Lôi') ||
+        line.includes('Thuận Thủ') ||
+        line.includes('Thám Nang') ||
+        line.includes('Quá Hà') ||
+        line.includes('Phá Trận') ||
+        line.includes('Lạc Bất')
+      ) {
+        scores.set(p.seatIndex, (scores.get(p.seatIndex) ?? 0) + 50);
+      }
+    }
+  }
+  return scores;
+}
+
+/** Sắp xếp danh sách mục tiêu hợp lý dựa trên Thân Phận công khai & suy luận hành vi công khai. */
 function rankEnemyTargets(
   view: PlayerViewState,
   candidates: readonly PublicPlayerView[],
 ): PublicPlayerView[] {
   const self = getViewerPlayer(view);
   const lordSeat = getLordSeat(view);
+  const lordPlayer = lordSeat !== null ? getPlayer(view, lordSeat) : undefined;
   const aliveCount = view.players.filter((p) => p.alive).length;
+  const hostility = inferHostilityTowardLord(view);
 
   const scoreTarget = (target: PublicPlayerView): number => {
     let score = (5 - target.hp) * 10 - target.handCount;
+    const sus = hostility.get(target.seatIndex) ?? 0;
+
     if (self.identity === 'REBEL') {
       if (target.seatIndex === lordSeat) score += 200;
+      else if (sus <= -40 || target.identity === 'LOYALIST') score += 90;
+      else if (sus >= 40 || target.identity === 'REBEL') score -= 400;
     } else if (self.identity === 'LOYALIST') {
       if (target.seatIndex === lordSeat) score -= 10000;
+      else if (sus >= 40 || target.identity === 'REBEL') score += 110;
+      else if (sus <= -40 || target.identity === 'LOYALIST') score -= 400;
+    } else if (self.identity === 'LORD') {
+      if (sus >= 40 || target.identity === 'REBEL') score += 120;
+      else if (sus <= -40 || target.identity === 'LOYALIST') score -= 500;
     } else if (self.identity === 'SPY') {
-      if (aliveCount > 2 && target.seatIndex === lordSeat) {
-        score -= 500;
-      } else if (aliveCount <= 2 && target.seatIndex === lordSeat) {
-        score += 200;
+      if (aliveCount <= 2 && target.seatIndex === lordSeat) {
+        score += 250;
+      } else if (aliveCount > 2) {
+        // Chiến lược Con Lắc Cân Bằng: bảo vệ Minh Chủ khi yếu (hp <= 2), gọt kẻ đang khỏe nhất khi Minh Chủ khỏe
+        if (target.seatIndex === lordSeat) {
+          score += lordPlayer && lordPlayer.hp <= 2 ? -600 : (lordPlayer && lordPlayer.hp >= 4 ? 15 : -200);
+        } else {
+          score += target.hp * 8 + (sus >= 40 && lordPlayer && lordPlayer.hp <= 3 ? 60 : 0);
+        }
       }
     }
     return score;
@@ -118,17 +180,9 @@ function isPreferredEnemy(
   view: PlayerViewState,
   targetSeat: number,
 ): boolean {
-  const self = getViewerPlayer(view);
-  const lordSeat = getLordSeat(view);
-  const aliveCount = view.players.filter((p) => p.alive).length;
-
-  if (self.identity === 'LOYALIST') {
-    return targetSeat !== lordSeat;
-  }
-  if (self.identity === 'SPY' && aliveCount > 2) {
-    return targetSeat !== lordSeat;
-  }
-  return targetSeat !== self.seatIndex;
+  if (targetSeat === view.viewerSeatIndex) return false;
+  if (isAllySeat(view, targetSeat)) return false;
+  return true;
 }
 
 function isAllySeat(
@@ -138,13 +192,32 @@ function isAllySeat(
   const self = getViewerPlayer(view);
   const lordSeat = getLordSeat(view);
   if (seatIndex === self.seatIndex) return true;
-  if (self.identity === 'LOYALIST' && seatIndex === lordSeat) return true;
-  if (self.identity === 'SPY' && view.players.filter((p) => p.alive).length > 2 && seatIndex === lordSeat) {
-    return true;
-  }
   const target = getPlayer(view, seatIndex);
-  if (self.identity === 'LORD' && target?.identity === 'LOYALIST') {
-    return true;
+  if (!target) return false;
+
+  const hostility = inferHostilityTowardLord(view);
+  const sus = hostility.get(seatIndex) ?? 0;
+
+  if (self.identity === 'LOYALIST') {
+    if (seatIndex === lordSeat || target.identity === 'LOYALIST') return true;
+    if (sus <= -50) return true;
+    return false;
+  }
+  if (self.identity === 'LORD') {
+    if (target.identity === 'LOYALIST' || sus <= -50) return true;
+    return false;
+  }
+  if (self.identity === 'REBEL') {
+    if (seatIndex === lordSeat) return false;
+    if (target.identity === 'REBEL' || sus >= 50) return true;
+    return false;
+  }
+  if (self.identity === 'SPY') {
+    const lordPlayer = lordSeat !== null ? getPlayer(view, lordSeat) : undefined;
+    const aliveCount = view.players.filter((p) => p.alive).length;
+    if (aliveCount > 2 && seatIndex === lordSeat && (lordPlayer?.hp ?? 0) <= 2) {
+      return true;
+    }
   }
   return false;
 }
@@ -391,12 +464,12 @@ function decidePlayPhaseAction(view: PlayerViewState): GameAction {
   if (
     self.heroId === 'hua_tuo' &&
     !flags?.qingNangUsedThisTurn &&
-    hand.length >= 2
+    hand.length >= 1
   ) {
     const injuredAlly = view.players
       .filter((p) => p.alive && p.hp < p.maxHp && isAllySeat(view, p.seatIndex))
-      .sort((a, b) => (a.seatIndex === seatIndex ? 1 : 0) - (b.seatIndex === seatIndex ? 1 : 0))[0];
-    if (injuredAlly) {
+      .sort((a, b) => a.hp - b.hp)[0];
+    if (injuredAlly && (hand.length >= 2 || injuredAlly.hp <= 2)) {
       const discard = sortCardsLowestFirst(hand)[0]!;
       return {
         type: 'ACTIVATE_HERO_SKILL',
@@ -435,7 +508,7 @@ function decidePlayPhaseAction(view: PlayerViewState): GameAction {
   if (
     self.heroId === 'zhou_yu' &&
     !flags?.fanJianUsedThisTurn &&
-    hand.length >= 1 &&
+    (hand.length >= 2 || (hand.length >= 1 && self.hp >= 3)) &&
     rankedEnemies.length > 0
   ) {
     return {
@@ -479,17 +552,17 @@ function decidePlayPhaseAction(view: PlayerViewState): GameAction {
     hand.length >= 2 &&
     aliveOpponents.length > 0
   ) {
-    const ally =
-      aliveOpponents.find((p) => isAllySeat(view, p.seatIndex)) ??
-      aliveOpponents[0]!;
-    const giveCards = sortCardsLowestFirst(hand).slice(0, 2);
-    return {
-      type: 'ACTIVATE_HERO_SKILL',
-      seatIndex,
-      skillId: 'ren_de',
-      cardIds: giveCards.map((c) => c.id),
-      targetSeats: [ally.seatIndex],
-    };
+    const ally = aliveOpponents.find((p) => isAllySeat(view, p.seatIndex));
+    if (ally) {
+      const giveCards = sortCardsLowestFirst(hand).slice(0, 2);
+      return {
+        type: 'ACTIVATE_HERO_SKILL',
+        seatIndex,
+        skillId: 'ren_de',
+        cardIds: giveCards.map((c) => c.id),
+        targetSeats: [ally.seatIndex],
+      };
+    }
   }
 
   const canUseKuRouForBonusStrike =
@@ -684,14 +757,7 @@ function decidePlayPhaseAction(view: PlayerViewState): GameAction {
         canTargetWithBasicCard(p, 'sat') &&
         isPreferredEnemy(view, p.seatIndex),
     );
-    const fallbackTargets =
-      attackTargets.length > 0
-        ? attackTargets
-        : rankedEnemies.filter(
-            (p) =>
-              isInAttackRange(view, seatIndex, p.seatIndex) &&
-              canTargetWithBasicCard(p, 'sat'),
-          );
+    const fallbackTargets = attackTargets;
 
     if (fallbackTargets.length > 0) {
       const singleSat = findSingleCardForSat(self);
@@ -1055,10 +1121,13 @@ export function decideBotAction(
 
       case 'WAIT_GUI_CAI': {
         const jCard = active.judgeCard;
-        if (hand.length > 0 && jCard) {
+        const ownerIsAlly =
+          active.sourceSeat !== undefined &&
+          active.sourceSeat !== null &&
+          isAllySeat(view, active.sourceSeat);
+        if (hand.length > 0 && jCard && ownerIsAlly) {
           if (
             active.judgePurpose === 'THIEM_DIEN' &&
-            active.sourceSeat === seatIndex &&
             jCard.suit === 'SPADE' &&
             jCard.rank >= 2 &&
             jCard.rank <= 9
@@ -1072,7 +1141,6 @@ export function decideBotAction(
           }
           if (
             active.judgePurpose === 'LAC_BAT_TU_THUC' &&
-            active.sourceSeat === seatIndex &&
             jCard.suit !== 'HEART'
           ) {
             const heart = hand.find((c) => c.suit === 'HEART');

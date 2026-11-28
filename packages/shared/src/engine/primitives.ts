@@ -41,8 +41,31 @@ function resolveActorSeats(interrupt: PublicInterruptView): number[] {
   ) {
     return [interrupt.responderSeat];
   }
-  if (interrupt.kind === 'ASK_TU_HUNG' || interrupt.kind === 'ASK_LIU_LI') {
-    return [interrupt.targetSeat];
+  if (interrupt.kind === 'WAIT_COLLATERAL_SAT') {
+    return [interrupt.attackerSeat ?? interrupt.targetSeat];
+  }
+  if (
+    interrupt.kind === 'ASK_QUAN_THACH_PHU' ||
+    interrupt.kind === 'ASK_THANH_LONG' ||
+    interrupt.kind === 'ASK_HAN_BANG_KIEM' ||
+    interrupt.kind === 'ASK_KY_LAN_CUNG' ||
+    interrupt.kind === 'ASK_TIE_QI'
+  ) {
+    return [
+      interrupt.sourceSeat !== undefined && interrupt.sourceSeat !== null
+        ? interrupt.sourceSeat
+        : interrupt.targetSeat,
+    ];
+  }
+  if (interrupt.kind === 'PICK_TARGET_CARD') {
+    if (interrupt.handPick === 'PREPARE') {
+      return [interrupt.targetSeat];
+    }
+    return [
+      interrupt.sourceSeat !== undefined && interrupt.sourceSeat !== null
+        ? interrupt.sourceSeat
+        : interrupt.targetSeat,
+    ];
   }
   return [interrupt.targetSeat];
 }
