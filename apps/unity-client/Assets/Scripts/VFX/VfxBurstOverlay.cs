@@ -7,13 +7,22 @@ namespace CuuChau.VFX
 {
     /// <summary>
     /// Lớp phủ VFX nhẹ chạy trực tiếp trên uGUI Canvas dùng Object Pool (0 cấp phát mỗi khung hình):
-    /// nổi chữ sát thương/hồi máu và vòng sóng xung kích đồng thau/tia mực.
+    /// nổi chữ sát thương/hồi máu, vòng sóng xung kích đồng thau/tia mực và đường bay lá bài cháy mực.
     /// </summary>
     public sealed class VfxBurstOverlay : MonoBehaviour
     {
+        private static readonly Vector2 MiniCardFlightSize = new Vector2(126f, 178f);
+        private static readonly Vector2 MiniCardArtSize = new Vector2(118f, 170f);
+        private static readonly Color MiniCardPlateColor = new Color(0.14f, 0.10f, 0.07f, 0.96f);
+        private static readonly int DissolveAmountShaderId = Shader.PropertyToID("_DissolveAmount");
+
+        private const float CardFlightApexLiftPx = 48f;
+        private const float CardDissolveDurationSec = 0.28f;
+
         [Header("Cấu Hình Pool & Kiểu Chữ")]
         [SerializeField, Range(4, 32)] private int numberPoolSize = 12;
         [SerializeField, Range(4, 24)] private int ringPoolSize = 10;
+        [SerializeField, Range(4, 16)] private int cardFlightPoolSize = 8;
         [SerializeField] private Sprite customRingSprite;
         [SerializeField] private bool reducedMotion;
 
@@ -45,8 +54,28 @@ namespace CuuChau.VFX
             public Color BaseColor;
         }
 
+        private sealed class CardFlightSlot
+        {
+            public RectTransform Rect;
+            public Image PlateImage;
+            public Image ArtImage;
+            public Material BurnMaterialTemplate;
+            public Material BurnMaterialInstance;
+            public bool Active;
+            public bool Dissolving;
+            public bool DissolveOnArrive;
+            public float Elapsed;
+            public float FlightDuration;
+            public float DissolveElapsed;
+            public Vector2 StartPos;
+            public Vector2 ControlPos;
+            public Vector2 EndPos;
+            public float StartTiltDeg;
+        }
+
         private readonly List<FloatingNumberSlot> _numberPool = new();
         private readonly List<ImpactRingSlot> _ringPool = new();
+        private readonly List<CardFlightSlot> _cardFlightPool = new();
 
         private RectTransform _overlayRoot;
         private TMP_FontAsset _serifFont;
@@ -79,6 +108,10 @@ namespace CuuChau.VFX
             if (_initialized)
             {
                 ApplyFontToPooledLabels();
+                if (_cardFlightPool.Count == 0)
+                {
+                    BuildCardFlightPool();
+                }
                 return;
             }
 
@@ -136,6 +169,60 @@ namespace CuuChau.VFX
             slot.Rect.gameObject.SetActive(true);
         }
 
+        public void SpawnCardFlight(
+            Sprite cardSprite,
+            Vector2 startAnchoredPos,
+            Vector2 endAnchoredPos,
+            Material burnMaterialTemplate = null,
+            bool dissolveOnArrive = false,
+            float duration = 0.22f)
+        {
+            if (!_initialized) InitializeOverlay(_serifFont, _monoFont);
+            if (_cardFlightPool.Count == 0) BuildCardFlightPool();
+
+            CardFlightSlot slot = AcquireCardFlightSlot();
+            if (slot == null) return;
+
+            DetachFlightSlotMaterials(slot);
+
+            slot.Active = true;
+            slot.Dissolving = false;
+            slot.DissolveOnArrive = dissolveOnArrive && burnMaterialTemplate != null;
+            slot.Elapsed = 0f;
+            slot.DissolveElapsed = 0f;
+            slot.FlightDuration = Mathf.Max(0.05f, reducedMotion ? Mathf.Min(duration, 0.14f) : duration);
+
+            if (slot.BurnMaterialTemplate != burnMaterialTemplate)
+            {
+                DestroySlotBurnInstance(slot);
+                slot.BurnMaterialTemplate = burnMaterialTemplate;
+            }
+
+            float apexLift = reducedMotion ? 12f : CardFlightApexLiftPx;
+            Vector2 mid = (startAnchoredPos + endAnchoredPos) * 0.5f;
+            slot.StartPos = startAnchoredPos;
+            slot.ControlPos = mid + new Vector2(0f, apexLift);
+            slot.EndPos = endAnchoredPos;
+
+            float dx = endAnchoredPos.x - startAnchoredPos.x;
+            slot.StartTiltDeg = reducedMotion ? 0f : Mathf.Clamp(-dx * 0.018f, -9f, 9f);
+
+            slot.PlateImage.color = MiniCardPlateColor;
+            if (slot.ArtImage != null)
+            {
+                slot.ArtImage.sprite = cardSprite;
+                slot.ArtImage.color = Color.white;
+                slot.ArtImage.enabled = cardSprite != null;
+            }
+
+            slot.Rect.sizeDelta = MiniCardFlightSize;
+            slot.Rect.anchoredPosition = startAnchoredPos;
+            slot.Rect.localRotation = Quaternion.Euler(0f, 0f, slot.StartTiltDeg);
+            slot.Rect.localScale = Vector3.one;
+            slot.Rect.SetAsLastSibling();
+            slot.Rect.gameObject.SetActive(true);
+        }
+
         public void ClearActiveEffects()
         {
             for (int i = 0; i < _numberPool.Count; i++)
@@ -149,6 +236,15 @@ namespace CuuChau.VFX
                 _ringPool[i].Active = false;
                 if (_ringPool[i].Rect != null) _ringPool[i].Rect.gameObject.SetActive(false);
             }
+
+            for (int i = 0; i < _cardFlightPool.Count; i++)
+            {
+                CardFlightSlot slot = _cardFlightPool[i];
+                slot.Active = false;
+                slot.Dissolving = false;
+                DetachFlightSlotMaterials(slot);
+                if (slot.Rect != null) slot.Rect.gameObject.SetActive(false);
+            }
         }
 
         private void Update()
@@ -160,6 +256,7 @@ namespace CuuChau.VFX
 
             UpdateFloatingNumbers(dt);
             UpdateImpactRings(dt);
+            UpdateCardFlights(dt);
         }
 
         private void UpdateFloatingNumbers(float dt)
@@ -252,6 +349,113 @@ namespace CuuChau.VFX
             }
         }
 
+        private void UpdateCardFlights(float dt)
+        {
+            for (int i = 0; i < _cardFlightPool.Count; i++)
+            {
+                CardFlightSlot slot = _cardFlightPool[i];
+                if (!slot.Active) continue;
+
+                if (!slot.Dissolving)
+                {
+                    slot.Elapsed += dt;
+                    float u = Mathf.Clamp01(slot.Elapsed / Mathf.Max(0.01f, slot.FlightDuration));
+                    float t = 1f - (1f - u) * (1f - u);
+
+                    float inv = 1f - t;
+                    Vector2 arcPos = (inv * inv) * slot.StartPos + (2f * inv * t) * slot.ControlPos + (t * t) * slot.EndPos;
+                    slot.Rect.anchoredPosition = arcPos;
+
+                    if (!reducedMotion)
+                    {
+                        float tilt = Mathf.Lerp(slot.StartTiltDeg, 0f, t);
+                        float scale = Mathf.Lerp(1.04f, 0.96f, t);
+                        slot.Rect.localRotation = Quaternion.Euler(0f, 0f, tilt);
+                        slot.Rect.localScale = new Vector3(scale, scale, 1f);
+                    }
+
+                    if (u >= 1f)
+                    {
+                        slot.Rect.anchoredPosition = slot.EndPos;
+                        slot.Rect.localRotation = Quaternion.identity;
+                        slot.Rect.localScale = Vector3.one;
+
+                        if (slot.DissolveOnArrive && slot.BurnMaterialTemplate != null)
+                        {
+                            BeginCardFlightDissolve(slot);
+                        }
+                        else
+                        {
+                            slot.Active = false;
+                            slot.Rect.gameObject.SetActive(false);
+                        }
+                    }
+                }
+                else
+                {
+                    slot.DissolveElapsed += dt;
+                    float d = Mathf.Clamp01(slot.DissolveElapsed / CardDissolveDurationSec);
+                    if (slot.BurnMaterialInstance != null && slot.BurnMaterialInstance.HasProperty(DissolveAmountShaderId))
+                    {
+                        slot.BurnMaterialInstance.SetFloat(DissolveAmountShaderId, d);
+                    }
+
+                    if (d >= 1f)
+                    {
+                        DetachFlightSlotMaterials(slot);
+                        slot.Dissolving = false;
+                        slot.Active = false;
+                        slot.Rect.gameObject.SetActive(false);
+                    }
+                }
+            }
+        }
+
+        private static void BeginCardFlightDissolve(CardFlightSlot slot)
+        {
+            slot.Dissolving = true;
+            slot.DissolveElapsed = 0f;
+
+            if (slot.BurnMaterialInstance == null && slot.BurnMaterialTemplate != null)
+            {
+                slot.BurnMaterialInstance = new Material(slot.BurnMaterialTemplate)
+                {
+                    hideFlags = HideFlags.DontSaveInEditor | HideFlags.DontSaveInBuild
+                };
+            }
+
+            if (slot.BurnMaterialInstance != null)
+            {
+                if (slot.BurnMaterialInstance.HasProperty(DissolveAmountShaderId))
+                {
+                    slot.BurnMaterialInstance.SetFloat(DissolveAmountShaderId, 0f);
+                }
+                if (slot.PlateImage != null) slot.PlateImage.material = slot.BurnMaterialInstance;
+                if (slot.ArtImage != null) slot.ArtImage.material = slot.BurnMaterialInstance;
+            }
+        }
+
+        private static void DetachFlightSlotMaterials(CardFlightSlot slot)
+        {
+            if (slot.PlateImage != null) slot.PlateImage.material = null;
+            if (slot.ArtImage != null) slot.ArtImage.material = null;
+        }
+
+        private static void DestroySlotBurnInstance(CardFlightSlot slot)
+        {
+            if (slot.BurnMaterialInstance == null) return;
+            DetachFlightSlotMaterials(slot);
+            if (Application.isPlaying)
+            {
+                Destroy(slot.BurnMaterialInstance);
+            }
+            else
+            {
+                DestroyImmediate(slot.BurnMaterialInstance);
+            }
+            slot.BurnMaterialInstance = null;
+        }
+
         private void BuildPools()
         {
             for (int i = 0; i < numberPoolSize; i++)
@@ -303,6 +507,48 @@ namespace CuuChau.VFX
                     Active = false
                 });
             }
+
+            BuildCardFlightPool();
+        }
+
+        private void BuildCardFlightPool()
+        {
+            for (int i = 0; i < cardFlightPoolSize; i++)
+            {
+                var go = new GameObject($"VfxCardFlight_{i}", typeof(RectTransform), typeof(Image));
+                var rect = go.GetComponent<RectTransform>();
+                rect.SetParent(_overlayRoot, false);
+                rect.anchorMin = new Vector2(0.5f, 0.5f);
+                rect.anchorMax = new Vector2(0.5f, 0.5f);
+                rect.pivot = new Vector2(0.5f, 0.5f);
+                rect.sizeDelta = MiniCardFlightSize;
+
+                var plateImg = go.GetComponent<Image>();
+                plateImg.color = MiniCardPlateColor;
+                plateImg.raycastTarget = false;
+
+                var artGo = new GameObject("FlightCardArt", typeof(RectTransform), typeof(Image));
+                var artRect = artGo.GetComponent<RectTransform>();
+                artRect.SetParent(rect, false);
+                artRect.anchorMin = new Vector2(0.5f, 0.5f);
+                artRect.anchorMax = new Vector2(0.5f, 0.5f);
+                artRect.pivot = new Vector2(0.5f, 0.5f);
+                artRect.sizeDelta = MiniCardArtSize;
+
+                var artImg = artGo.GetComponent<Image>();
+                artImg.preserveAspect = true;
+                artImg.raycastTarget = false;
+
+                go.SetActive(false);
+                _cardFlightPool.Add(new CardFlightSlot
+                {
+                    Rect = rect,
+                    PlateImage = plateImg,
+                    ArtImage = artImg,
+                    Active = false,
+                    Dissolving = false
+                });
+            }
         }
 
         private void ApplyFontToPooledLabels()
@@ -343,6 +589,24 @@ namespace CuuChau.VFX
                 {
                     maxElapsed = _ringPool[i].Elapsed;
                     oldest = _ringPool[i];
+                }
+            }
+            return oldest;
+        }
+
+        private CardFlightSlot AcquireCardFlightSlot()
+        {
+            CardFlightSlot oldest = null;
+            float maxAge = -1f;
+            for (int i = 0; i < _cardFlightPool.Count; i++)
+            {
+                CardFlightSlot slot = _cardFlightPool[i];
+                if (!slot.Active) return slot;
+                float age = slot.Elapsed + slot.DissolveElapsed;
+                if (age > maxAge)
+                {
+                    maxAge = age;
+                    oldest = slot;
                 }
             }
             return oldest;
@@ -413,6 +677,11 @@ namespace CuuChau.VFX
 
         private void OnDestroy()
         {
+            for (int i = 0; i < _cardFlightPool.Count; i++)
+            {
+                DestroySlotBurnInstance(_cardFlightPool[i]);
+            }
+
             if (_proceduralRingSprite != null)
             {
                 Destroy(_proceduralRingSprite);

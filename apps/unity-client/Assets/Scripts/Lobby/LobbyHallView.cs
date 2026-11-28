@@ -30,7 +30,7 @@ namespace CuuChau.Lobby
         private static readonly Color WaitingAmberColor = new(0.88f, 0.56f, 0.16f, 1f);
         private static readonly Color ErrorCrimsonColor = new(0.88f, 0.27f, 0.24f, 1f);
 
-        private static readonly int[] SoloSeatOptions = { 4, 5, 6, 8 };
+        private static readonly int[] SoloSeatOptions = { 4, 5, 6, 7, 8 };
 
         private VisualCatalogSO _catalog;
         private TMP_FontAsset _serifFont;
@@ -551,7 +551,7 @@ namespace CuuChau.Lobby
             seatRowRt.offsetMax = new Vector2(-28f, 0f);
 
             var seatHlg = seatRowGo.GetComponent<HorizontalLayoutGroup>();
-            seatHlg.spacing = 10f;
+            seatHlg.spacing = 8f;
             seatHlg.childControlWidth = true;
             seatHlg.childControlHeight = true;
             seatHlg.childForceExpandWidth = true;
@@ -564,7 +564,7 @@ namespace CuuChau.Lobby
                     $"SeatOption_{seats}",
                     seatRowRt,
                     $"{seats} Ghế",
-                    16f,
+                    15f,
                     out Image bgImg,
                     out Image borderImg,
                     out TextMeshProUGUI labelTmp,
@@ -579,15 +579,16 @@ namespace CuuChau.Lobby
             _soloSummaryText = CreateLabel(
                 "SoloSummaryText",
                 inner,
-                "Bàn 4 ghế · 1 Hiệp khách và 3 Máy AI",
+                "Bàn 4 ghế · 1 Hiệp khách và 3 Máy AI\n4P: 1 Chủ · 0 Hộ · 2 Nghĩa · 1 Ám",
                 15f,
                 FontStyles.Normal,
                 MutedGoldColor,
                 TextAlignmentOptions.MidlineLeft,
                 _sansFont);
+            _soloSummaryText.textWrappingMode = TextWrappingModes.Normal;
             var summaryRt = _soloSummaryText.rectTransform;
-            summaryRt.anchorMin = new Vector2(0f, 0.20f);
-            summaryRt.anchorMax = new Vector2(1f, 0.29f);
+            summaryRt.anchorMin = new Vector2(0f, 0.19f);
+            summaryRt.anchorMax = new Vector2(1f, 0.30f);
             summaryRt.offsetMin = new Vector2(28f, 0f);
             summaryRt.offsetMax = new Vector2(-28f, 0f);
 
@@ -621,7 +622,7 @@ namespace CuuChau.Lobby
             var infoTmp = CreateLabel(
                 "LanFeatureText",
                 infoRt,
-                "· Tự động cấp Mã phòng và Địa chỉ mời LAN (IP:Port#Mã).\n· Chủ phòng có quyền Thêm Máy Đủ Bàn 4, 5, 6 hoặc 8 ghế.\n· Toàn quyền Trọng Tài: Tạm dừng, Hoàn tác và Bỏ qua pha.",
+                "· Tự động cấp Mã phòng và Địa chỉ mời LAN (IP:Port#Mã).\n· Chủ phòng có quyền Thêm Máy Đủ Bàn 4, 5, 6, 7 hoặc 8 ghế.\n· Toàn quyền Trọng Tài: Tạm dừng, Hoàn tác và Bỏ qua pha.",
                 15f,
                 FontStyles.Normal,
                 GoldIvoryColor,
@@ -854,13 +855,27 @@ namespace CuuChau.Lobby
             if (_soloSummaryText != null)
             {
                 int botCount = Mathf.Max(1, seats - 1);
-                _soloSummaryText.text = $"Bàn {seats} ghế · 1 Hiệp khách và {botCount} Máy AI";
+                string dist = GetIdentityDistributionSummary(seats);
+                _soloSummaryText.text = $"Bàn {seats} ghế · 1 Hiệp khách và {botCount} Máy AI\n{dist}";
             }
 
             if (_playSoloLabel != null)
             {
                 _playSoloLabel.text = $"Vào Trận Với Máy · {seats}P";
             }
+        }
+
+        public static string GetIdentityDistributionSummary(int playerCount)
+        {
+            return playerCount switch
+            {
+                4 => "4P: 1 Chủ · 0 Hộ · 2 Nghĩa · 1 Ám",
+                5 => "5P: 1 Chủ · 1 Hộ · 2 Nghĩa · 1 Ám",
+                6 => "6P: 1 Chủ · 1 Hộ · 3 Nghĩa · 1 Ám",
+                7 => "7P: 1 Chủ · 2 Hộ · 3 Nghĩa · 1 Ám",
+                8 => "8P: 1 Chủ · 2 Hộ · 3 Nghĩa · 2 Ám",
+                _ => "4P: 1 Chủ · 0 Hộ · 2 Nghĩa · 1 Ám",
+            };
         }
 
         private void HandlePlaySoloClicked()

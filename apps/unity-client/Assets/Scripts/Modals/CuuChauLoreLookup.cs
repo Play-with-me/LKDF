@@ -112,8 +112,8 @@ namespace CuuChau.Modals
                 "Thanh Vân",
                 "SHU",
                 "Cuồng Lôi Bộ",
-                "• Cuồng Lôi Bộ: Trong lượt đánh, xuất Kiếm Trảm không giới hạn và luôn giảm 1 khoảng cách tới mục tiêu (3 Sinh Lực).",
-                3),
+                "• Cuồng Lôi Bộ: Trong lượt đánh, xuất Kiếm Trảm không giới hạn và luôn giảm 1 khoảng cách tới mục tiêu (4 HP).",
+                4),
             new(
                 "tham_tinh_ha",
                 "zhuge_liang",
@@ -394,7 +394,7 @@ namespace CuuChau.Modals
                 "qua_ha_sai_cau",
                 "Phá Trận Chưởng",
                 "Cẩm Nang Thường",
-                "Hủy 1 lá trên tay, trang bị hoặc ấn chú của bất kỳ đối thủ nào.",
+                "Hủy 1 lá trên tay hoặc trang bị của bất kỳ đối thủ nào.",
                 5),
             new(
                 "kinh_loi_chan",

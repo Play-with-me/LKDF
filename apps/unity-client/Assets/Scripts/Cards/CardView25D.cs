@@ -30,21 +30,25 @@ namespace CuuChau.Cards
         private static readonly Color ArtBackdropColor = new Color(0.06f, 0.05f, 0.045f, 1f);
         private static readonly Color RankLightColor = new Color(0.96f, 0.92f, 0.84f, 1f);
         private static readonly Color RankCrimsonColor = new Color(0.94f, 0.42f, 0.36f, 1f);
-        private static readonly Color GlowIdlePlayableColor = new Color(0.84f, 0.65f, 0.25f, 0f);
-        private static readonly Color GlowActiveColor = new Color(0.95f, 0.78f, 0.32f, 0.24f);
+        private static readonly Color GlowIdlePlayableColor = new Color(0.90f, 0.72f, 0.28f, 0.32f);
+        private static readonly Color GlowActiveColor = new Color(0.95f, 0.78f, 0.32f, 0.38f);
         private static readonly Color GlowCommitColor = new Color(0.92f, 0.30f, 0.18f, 0.55f);
-        private static readonly Color UnplayableTint = new Color(0.84f, 0.81f, 0.78f, 1f);
+        private static readonly Color UnplayableTint = new Color(0.60f, 0.57f, 0.54f, 1f);
+
+        private const float UnplayableDragMaxResistancePx = 14f;
+        private const float RejectShakeDurationSec = 0.13f;
+        private const float RejectShakeAmplitudePx = 9f;
 
         private static readonly int DissolveAmountId = Shader.PropertyToID("_DissolveAmount");
 
         [Header("Vật Lý Thẻ Bài")]
-        [SerializeField] private float hoverScale = 1.7f;
-        [SerializeField] private float hoverLiftY = 76f;
+        [SerializeField] private float hoverScale = 1.42f;
+        [SerializeField] private float hoverLiftY = 54f;
         [SerializeField] private float dragScale = 1.18f;
         [SerializeField] private float playThresholdY = 150f;
-        [SerializeField] private float positionSmoothTime = 0.085f;
-        [SerializeField] private float rotationSmoothTime = 0.085f;
-        [SerializeField] private float scaleSmoothTime = 0.075f;
+        [SerializeField] private float positionSmoothTime = 0.048f;
+        [SerializeField] private float rotationSmoothTime = 0.050f;
+        [SerializeField] private float scaleSmoothTime = 0.045f;
         [SerializeField] private float maxDragTiltDeg = 10f;
 
         private RectTransform _rectTransform;
@@ -64,8 +68,14 @@ namespace CuuChau.Cards
         private TMP_FontAsset _monoFont;
         private bool _hierarchyBuilt;
 
+        private Material _burnMaterialTemplate;
         private Material _burnMaterialInstance;
+        private bool _burnMaterialApplied;
         private float _dissolveAmount;
+
+        private bool _rejectShakeActive;
+        private float _rejectShakeElapsed;
+        private float _lastShakeOffsetX;
 
         private Vector2 _restAnchoredPos;
         private float _restRotationZ;
@@ -134,12 +144,36 @@ namespace CuuChau.Cards
             float dt = Mathf.Clamp(Time.unscaledDeltaTime, 0.0001f, 0.05f);
             RectTransform rt = RectTransform;
 
-            Vector2 currentPos = rt.anchoredPosition;
-            Vector2 nextPos = Vector2.SmoothDamp(currentPos, _targetAnchoredPos, ref _posVelocity, positionSmoothTime, Mathf.Infinity, dt);
-            rt.anchoredPosition = nextPos;
+            Vector2 unshakenPos = rt.anchoredPosition - new Vector2(_lastShakeOffsetX, 0f);
+            Vector2 nextPos = Vector2.SmoothDamp(unshakenPos, _targetAnchoredPos, ref _posVelocity, positionSmoothTime, Mathf.Infinity, dt);
+
+            float shakeOffsetX = 0f;
+            if (_rejectShakeActive)
+            {
+                _rejectShakeElapsed += Time.unscaledDeltaTime;
+                if (_rejectShakeElapsed >= RejectShakeDurationSec)
+                {
+                    _rejectShakeActive = false;
+                    _rejectShakeElapsed = 0f;
+                    if (!IsHovered && !IsDragging && (nextPos - _targetAnchoredPos).sqrMagnitude < 0.25f)
+                    {
+                        nextPos = _targetAnchoredPos;
+                        _posVelocity = Vector2.zero;
+                    }
+                }
+                else
+                {
+                    float progress = _rejectShakeElapsed / RejectShakeDurationSec;
+                    float damper = 1f - progress;
+                    shakeOffsetX = Mathf.Sin(progress * Mathf.PI * 5f) * RejectShakeAmplitudePx * damper;
+                }
+            }
+
+            _lastShakeOffsetX = shakeOffsetX;
+            rt.anchoredPosition = nextPos + new Vector2(shakeOffsetX, 0f);
 
             float desiredRot = _targetRotationZ;
-            if (IsDragging)
+            if (IsDragging && IsPlayable)
             {
                 desiredRot = Mathf.Clamp(-_posVelocity.x * 0.015f, -maxDragTiltDeg, maxDragTiltDeg);
             }
@@ -207,11 +241,17 @@ namespace CuuChau.Cards
             _suitImage = GetOrCreateImage("SuitIcon", _badgeImage.rectTransform, new Vector2(0f, -17f), new Vector2(26f, 26f), raycastTarget: false);
             _suitImage.preserveAspect = true;
 
-            // 6. Dải giấy dó đáy lá bài: chữ mực obsidian đậm #1C140F (tương phản > 10:1)
-            _titleText = GetOrCreateTmp("CardTitle", rt, new Vector2(0f, -88f), new Vector2(174f, 64f), 18f, TextAlignmentOptions.Center);
+            // 6. Dải giấy dó đáy lá bài: chữ mực obsidian đậm #1C140F (lọt gọn 146px trong cửa sổ giấy dó, không chạm viền đồng)
+            _titleText = GetOrCreateTmp("CardTitle", rt, new Vector2(0f, -86f), new Vector2(146f, 62f), 17f, TextAlignmentOptions.Center);
             _titleText.fontStyle = FontStyles.Bold;
             _titleText.color = InkObsidianColor;
+            _titleText.richText = true;
             _titleText.textWrappingMode = TextWrappingModes.Normal;
+            _titleText.overflowMode = TextOverflowModes.Truncate;
+            _titleText.enableAutoSizing = true;
+            _titleText.fontSizeMin = 12f;
+            _titleText.fontSizeMax = 17.5f;
+            _titleText.lineSpacing = -4f;
 
             // 7. Mặt lưng bài úp
             _cardBackImage = GetOrCreateImage("CardBackOverlay", rt, Vector2.zero, DefaultCardSize, raycastTarget: false);
@@ -259,13 +299,13 @@ namespace CuuChau.Cards
 
             if (_rankText != null)
             {
-                _rankText.text = string.IsNullOrEmpty(rank) ? "?" : rank;
+                _rankText.text = FormatCardRank(rank);
                 _rankText.color = IsRedSuit(suit) ? RankCrimsonColor : RankLightColor;
             }
 
             if (_titleText != null)
             {
-                _titleText.text = string.IsNullOrEmpty(titleVi) ? string.Empty : titleVi;
+                _titleText.text = FormatCardTitleDisplay(titleVi, cardKey);
                 _titleText.color = InkObsidianColor;
             }
 
@@ -274,29 +314,76 @@ namespace CuuChau.Cards
             RefreshGlowVisual();
         }
 
-        public void SetBurnMaterial(Material mat)
+        public static string FormatCardRank(string rank)
         {
-            ReleaseBurnMaterialInstance();
-
-            if (mat != null)
+            if (string.IsNullOrWhiteSpace(rank))
             {
-                _burnMaterialInstance = new Material(mat)
-                {
-                    hideFlags = HideFlags.DontSaveInEditor | HideFlags.DontSaveInBuild
-                };
+                return "?";
             }
 
-            ApplyMaterialToImages(_burnMaterialInstance);
-            SetDissolveAmount(_dissolveAmount);
+            return rank.Trim() switch
+            {
+                "1" => "A",
+                "11" => "J",
+                "12" => "Q",
+                "13" => "K",
+                var r => r,
+            };
+        }
+
+        public void SetBurnMaterial(Material mat)
+        {
+            if (_burnMaterialTemplate != mat)
+            {
+                ReleaseBurnMaterialInstance();
+                _burnMaterialTemplate = mat;
+            }
+
+            if (_dissolveAmount > 0.001f)
+            {
+                SetDissolveAmount(_dissolveAmount);
+            }
+            else if (_burnMaterialApplied)
+            {
+                ApplyMaterialToImages(null);
+            }
         }
 
         public void SetDissolveAmount(float t01)
         {
             _dissolveAmount = Mathf.Clamp01(t01);
-            if (_burnMaterialInstance != null && _burnMaterialInstance.HasProperty(DissolveAmountId))
+            if (_dissolveAmount <= 0.001f || _burnMaterialTemplate == null)
+            {
+                if (_burnMaterialApplied)
+                {
+                    ApplyMaterialToImages(null);
+                }
+                return;
+            }
+
+            if (_burnMaterialInstance == null)
+            {
+                _burnMaterialInstance = new Material(_burnMaterialTemplate)
+                {
+                    hideFlags = HideFlags.DontSaveInEditor | HideFlags.DontSaveInBuild
+                };
+            }
+
+            if (_burnMaterialInstance.HasProperty(DissolveAmountId))
             {
                 _burnMaterialInstance.SetFloat(DissolveAmountId, _dissolveAmount);
             }
+
+            if (!_burnMaterialApplied)
+            {
+                ApplyMaterialToImages(_burnMaterialInstance);
+            }
+        }
+
+        public void PlayRejectShake()
+        {
+            _rejectShakeActive = true;
+            _rejectShakeElapsed = 0f;
         }
 
         public void SetSelected(bool selected)
@@ -341,6 +428,9 @@ namespace CuuChau.Cards
             _posVelocity = Vector2.zero;
             _rotVelocity = 0f;
             _scaleVelocity = 0f;
+            _rejectShakeActive = false;
+            _rejectShakeElapsed = 0f;
+            _lastShakeOffsetX = 0f;
 
             RectTransform rt = RectTransform;
             rt.anchoredPosition = anchoredPos;
@@ -397,17 +487,25 @@ namespace CuuChau.Cards
             IsDragging = true;
             _draggedThisPress = true;
             _abovePlayThreshold = false;
-            transform.SetAsLastSibling();
 
             if (TryGetLocalPointInParent(eventData, out Vector2 localPoint))
             {
-                _dragOffsetLocal = RectTransform.anchoredPosition - localPoint;
+                _dragOffsetLocal = (RectTransform.anchoredPosition - new Vector2(_lastShakeOffsetX, 0f)) - localPoint;
             }
             else
             {
                 _dragOffsetLocal = Vector2.zero;
             }
 
+            if (!IsPlayable)
+            {
+                PlayRejectShake();
+                ApplyTargetPoseFromState();
+                RefreshGlowVisual();
+                return;
+            }
+
+            transform.SetAsLastSibling();
             _targetScale = dragScale;
             RefreshGlowVisual();
         }
@@ -416,6 +514,26 @@ namespace CuuChau.Cards
         {
             if (!IsDragging)
             {
+                return;
+            }
+
+            if (!IsPlayable)
+            {
+                Vector2 basePos = IsHovered
+                    ? _restAnchoredPos + new Vector2(0f, hoverLiftY)
+                    : _restAnchoredPos;
+                if (TryGetLocalPointInParent(eventData, out Vector2 unplayableLocalPoint))
+                {
+                    Vector2 rawDelta = (unplayableLocalPoint + _dragOffsetLocal) - basePos;
+                    _targetAnchoredPos = basePos + Vector2.ClampMagnitude(rawDelta, UnplayableDragMaxResistancePx);
+                }
+                else
+                {
+                    _targetAnchoredPos = basePos;
+                }
+
+                _abovePlayThreshold = false;
+                RefreshGlowVisual();
                 return;
             }
 
@@ -439,7 +557,8 @@ namespace CuuChau.Cards
                 return;
             }
 
-            bool releasedAboveThreshold = _abovePlayThreshold || (_targetAnchoredPos.y - _restAnchoredPos.y) >= playThresholdY;
+            bool releasedAboveThreshold = IsPlayable
+                && (_abovePlayThreshold || (_targetAnchoredPos.y - _restAnchoredPos.y) >= playThresholdY);
             IsDragging = false;
             _abovePlayThreshold = false;
 
@@ -459,6 +578,11 @@ namespace CuuChau.Cards
             {
                 _draggedThisPress = false;
                 return;
+            }
+
+            if (!IsPlayable)
+            {
+                PlayRejectShake();
             }
 
             OnClicked?.Invoke(this);
@@ -514,7 +638,10 @@ namespace CuuChau.Cards
             {
                 TMP_FontAsset resolvedSerif = _serifFont != null ? _serifFont : _sansFont;
                 if (resolvedSerif != null) _titleText.font = resolvedSerif;
-                _titleText.fontSize = Mathf.Max(18f, _titleText.fontSize);
+                _titleText.rectTransform.anchoredPosition = new Vector2(0f, -86f);
+                _titleText.rectTransform.sizeDelta = new Vector2(146f, 62f);
+                _titleText.fontSizeMax = 17.5f;
+                _titleText.fontSizeMin = 12f;
             }
         }
 
@@ -541,7 +668,7 @@ namespace CuuChau.Cards
                 return;
             }
 
-            if (IsDragging && _abovePlayThreshold)
+            if (IsDragging && IsPlayable && _abovePlayThreshold)
             {
                 _selectionGlowImage.color = GlowCommitColor;
             }
@@ -561,6 +688,7 @@ namespace CuuChau.Cards
 
         private void ApplyMaterialToImages(Material mat)
         {
+            _burnMaterialApplied = mat != null;
             if (_frameImage != null) _frameImage.material = mat;
             if (_artBackdropImage != null) _artBackdropImage.material = mat;
             if (_artImage != null) _artImage.material = mat;
@@ -613,6 +741,65 @@ namespace CuuChau.Cards
         {
             return string.Equals(suit, "HEART", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(suit, "DIAMOND", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static string FormatCardTitleDisplay(string titleVi, string cardKey)
+        {
+            if (string.IsNullOrWhiteSpace(titleVi))
+            {
+                return string.Empty;
+            }
+
+            string cleanTitle = titleVi.Trim();
+            if (cleanTitle.Length <= 10)
+            {
+                string subTag = ResolveMechanicTagVi(cardKey);
+                if (!string.IsNullOrEmpty(subTag))
+                {
+                    return $"{cleanTitle}\n<size=72%><color=#4A3525>{subTag}</color></size>";
+                }
+            }
+
+            return cleanTitle;
+        }
+
+        private static string ResolveMechanicTagVi(string cardKey)
+        {
+            if (string.IsNullOrWhiteSpace(cardKey))
+            {
+                return null;
+            }
+
+            return cardKey.Trim().ToLowerInvariant() switch
+            {
+                "sat" => "Công kích",
+                "pha_giap_tram" => "Xuyên giáp",
+                "thiem" => "Né đòn",
+                "dao" => "Hồi máu",
+                "vo_trung_sinh_huu" => "Rút 2 lá",
+                "thuan_thu_khien_duong" => "Đoạt 1 lá",
+                "qua_ha_sai_cau" => "Hủy 1 lá",
+                "kinh_loi_chan" => "Chấn thương",
+                "quyet_dau" => "Đấu kiếm",
+                "ta_dao_sat_nhan" => "Mượn đao",
+                "nam_man_nhap_xam" => "Toàn bàn",
+                "van_tien_te_phat" => "Mưa tên",
+                "dao_vien_ket_nghia" => "Hồi chung",
+                "ngu_coc_phong_dang" => "Chia bài",
+                "vo_giai_kha_kich" or "vo_ta" => "Khắc cẩm",
+                "chan_khi_ho_the" => "Dưỡng khí",
+                "lac_bat_tu_thuc" => "Phong mạch",
+                "thiem_dien" => "Lôi sát",
+                "gia_cat_lien_no" => "Đánh liên",
+                "tu_hung_song_co_kiem" or "thanh_cong_kiem" or "han_bang_kiem" or "tu_khi_hoan" => "Tầm đánh 2",
+                "thanh_long_yen_nguyet_dao" or "truong_bat_xa_mau" or "quan_thach_phu" => "Tầm đánh 3",
+                "phuong_thien_hoa_kich" => "Tầm đánh 4",
+                "ky_lan_cung" => "Tầm đánh 5",
+                "bat_quai_tran" or "hoan_anh_giap" or "nhan_vuong_thuan" => "Hộ giáp",
+                "tuyet_anh" or "dich_lo" or "trao_hoang_phi_dien" => "Phòng +1",
+                "xich_tho" or "dai_uyen" or "tu_tinh" => "Công -1",
+                _ => null,
+            };
         }
 
         private static float NormalizeSignedAngle(float deg)

@@ -233,7 +233,7 @@ namespace CuuChau.Modals
             AddRuleCard(
                 parent,
                 "1. Điều Kiện Thắng & Thân Phận (4–8 Người)",
-                "• Chủ Công (Lật công khai đầu ván, +1 Sinh Lực tối đa khi bàn từ 5 người trở lên): Hạ toàn bộ Nghĩa Quân & Ám Ảnh.\n" +
+                "• Chủ Công (Lật công khai đầu ván, Chủ Công luôn được +1 máu tối đa ở mọi bàn 4–8 người): Hạ toàn bộ Nghĩa Quân & Ám Ảnh.\n" +
                 "• Hộ Pháp (Ẩn): Bảo vệ Chủ Công sống sót và tiêu diệt hết Nghĩa Quân cùng Ám Ảnh.\n" +
                 "• Nghĩa Quân (Ẩn): Hạ gục Chủ Công (thắng ngay trừ khi Ám Ảnh là người duy nhất còn sống).\n" +
                 "• Ám Ảnh (Ẩn): Là cao thủ duy nhất sống sót cuối cùng trên bàn đấu.");

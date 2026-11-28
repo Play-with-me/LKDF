@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using CuuChau.Cards;
 using CuuChau.Data;
+using CuuChau.Modals;
 using CuuChau.Net;
 using TMPro;
 using UnityEngine;
@@ -12,19 +14,33 @@ namespace CuuChau.Arena
     /// <summary>
     /// Thẻ chỗ ngồi 2.5D cho mỗi hiệp khách trên bàn đấu Cửu Châu Ẩn Kiếm.
     /// Gồm: Khung 9-slice, vùng cắt chân dung 2 lớp parallax (BG + FG), bảng tên obsidian mờ
-    /// đảm bảo tương phản chữ, huy hiệu Thế lực & Thân phận, số lá, thanh Ngọc Sinh Lực,
-    /// lưới 4 ô trang bị ngửa, khay ấn chú trì hoãn và vòng ngắm mục tiêu.
+    /// đảm bảo tương phản chữ, huy hiệu Thế lực & Thân phận, số lá, thanh Ngọc Sinh Lực + số HP,
+    /// huy hiệu Khoảng cách, ghi chú nghi vấn chuột phải, lưới 4 ô trang bị ngửa, khay ấn chú trì hoãn và vòng ngắm mục tiêu.
     /// </summary>
     [DisallowMultipleComponent]
-    public sealed class SeatPlaqueView : MonoBehaviour, IPointerClickHandler
+    public sealed class SeatPlaqueView : MonoBehaviour,
+        IPointerClickHandler,
+        IPointerEnterHandler,
+        IPointerExitHandler
     {
         private static readonly Color ObsidianNameplateColor = new(0.05f, 0.04f, 0.035f, 0.86f);
         private static readonly Color ObsidianSubBadgeColor = new(0.07f, 0.06f, 0.05f, 0.88f);
         private static readonly Color PortraitBackdropColor = new(0.11f, 0.085f, 0.065f, 0.94f);
         private static readonly Color IvoryTextColor = new(0.96f, 0.92f, 0.84f, 1f);
         private static readonly Color MutedGoldColor = new(0.86f, 0.77f, 0.56f, 1f);
+        private static readonly Color DistanceGoldColor = new(0.96f, 0.89f, 0.67f, 1f);
+        private static readonly Color SuspectTagTextColor = new(0.96f, 0.82f, 0.46f, 1f);
+        private static readonly Color SuspectTagBgColor = new(0.16f, 0.11f, 0.06f, 0.92f);
         private static readonly Color TurnActiveBorderColor = new(0.95f, 0.78f, 0.34f, 0.92f);
         private static readonly Color ValidTargetBorderColor = new(0.88f, 0.34f, 0.24f, 0.92f);
+
+        private static readonly string[] SuspectCycleLabels =
+        {
+            "Ẩn",
+            "? Hộ Pháp",
+            "? Nghĩa Quân",
+            "? Ám Ảnh",
+        };
 
         private VisualCatalogSO _catalog;
         private TMP_FontAsset _serifFont;
@@ -51,11 +67,15 @@ namespace CuuChau.Arena
         private TextMeshProUGUI _identityBadgeText;
         private Image _identityBadgeBg;
         private TextMeshProUGUI _handCountText;
+        private GameObject _distanceBadgeObj;
+        private TextMeshProUGUI _distanceBadgeText;
         private TextMeshProUGUI _statusOverlayText;
         private GameObject _statusOverlayObj;
 
         private RectTransform _hpRowRect;
         private readonly List<Image> _hpBeads = new();
+        private RectTransform _hpNumericBadgeRect;
+        private TextMeshProUGUI _hpNumericText;
 
         private EquipmentSlotGrid _equipmentGrid;
         private SpecialCardTrayView _specialTray;
@@ -67,6 +87,7 @@ namespace CuuChau.Arena
         private Vector2 _targetParallax;
         private Vector2 _currentParallax;
 
+        private bool _isViewerSeat;
         private bool _isTargeted;
         private bool _isTurnActive;
         private bool _isValidTarget;
@@ -74,11 +95,24 @@ namespace CuuChau.Arena
         private bool _reducedMotion;
         private float _animClock;
 
+        private string _boundUserId = string.Empty;
+        private string _boundHeroId = string.Empty;
+        private int _boundSeatTrack = -1;
+        private string _rawIdentityLabel = "Ẩn";
+        private int _suspectNoteIndex;
+
+        private SilkScrollTooltipView _cachedTooltip;
+        private bool _showingFallbackTooltip;
+        private bool _isEquipmentSlotHovered;
+
         public int SeatIndex { get; private set; }
         public EquipmentSlotGrid EquipmentGrid => _equipmentGrid;
         public SpecialCardTrayView SpecialTray => _specialTray;
+        public string CurrentSuspectNote => SuspectCycleLabels[Mathf.Clamp(_suspectNoteIndex, 0, SuspectCycleLabels.Length - 1)];
 
         public event Action<int> OnSeatClicked;
+        public event Action<string, string> OnHeroInspectHovered;
+        public event Action OnHeroInspectHoverExited;
 
         public void BuildHierarchyIfNeeded(
             VisualCatalogSO catalog,
@@ -191,7 +225,7 @@ namespace CuuChau.Arena
             _factionSealImage.preserveAspect = true;
             _factionSealImage.raycastTarget = false;
 
-            // Hero Name (>= 17f)
+            // Hero Name (>= 15f..17f)
             var heroNameGo = new GameObject("HeroName", typeof(RectTransform), typeof(TextMeshProUGUI));
             heroNameGo.transform.SetParent(nameplateRt, false);
             var heroNameRt = heroNameGo.GetComponent<RectTransform>();
@@ -202,6 +236,9 @@ namespace CuuChau.Arena
             _heroNameText = heroNameGo.GetComponent<TextMeshProUGUI>();
             if (_serifFont != null) _heroNameText.font = _serifFont;
             _heroNameText.fontSize = 17f;
+            _heroNameText.enableAutoSizing = true;
+            _heroNameText.fontSizeMin = 15f;
+            _heroNameText.fontSizeMax = 17f;
             _heroNameText.fontStyle = FontStyles.Bold;
             _heroNameText.color = IvoryTextColor;
             _heroNameText.alignment = TextAlignmentOptions.MidlineLeft;
@@ -262,28 +299,55 @@ namespace CuuChau.Arena
             _handCountText.textWrappingMode = TextWrappingModes.NoWrap;
             _handCountText.raycastTarget = false;
 
-            // 5. HP Jade Beads Row
+            // 5. HP Jade Beads Row + Numeric HP Pill (WCAG 1.4.1 colorblind-safe)
             var hpRowGo = new GameObject("HpJadeBar", typeof(RectTransform), typeof(HorizontalLayoutGroup));
             hpRowGo.transform.SetParent(_rootRect, false);
             _hpRowRect = hpRowGo.GetComponent<RectTransform>();
             _hpRowRect.anchorMin = new Vector2(0.035f, 0.44f);
-            _hpRowRect.anchorMax = new Vector2(0.50f, 0.60f);
+            _hpRowRect.anchorMax = new Vector2(0.605f, 0.60f);
             _hpRowRect.offsetMin = Vector2.zero;
             _hpRowRect.offsetMax = Vector2.zero;
             var hpLayout = hpRowGo.GetComponent<HorizontalLayoutGroup>();
-            hpLayout.spacing = 4f;
+            hpLayout.spacing = 3.5f;
             hpLayout.childAlignment = TextAnchor.MiddleLeft;
             hpLayout.childControlWidth = false;
             hpLayout.childControlHeight = false;
             hpLayout.childForceExpandWidth = false;
             hpLayout.childForceExpandHeight = false;
 
+            var hpNumBadgeGo = new GameObject("HpNumericBadge", typeof(RectTransform), typeof(Image), typeof(LayoutElement));
+            hpNumBadgeGo.transform.SetParent(_hpRowRect, false);
+            _hpNumericBadgeRect = hpNumBadgeGo.GetComponent<RectTransform>();
+            _hpNumericBadgeRect.sizeDelta = new Vector2(48f, 22f);
+            var hpNumLe = hpNumBadgeGo.GetComponent<LayoutElement>();
+            hpNumLe.preferredWidth = 48f;
+            hpNumLe.preferredHeight = 22f;
+            var hpNumBg = hpNumBadgeGo.GetComponent<Image>();
+            hpNumBg.color = ObsidianSubBadgeColor;
+            hpNumBg.raycastTarget = false;
+
+            var hpNumTextGo = new GameObject("HpNumericText", typeof(RectTransform), typeof(TextMeshProUGUI));
+            hpNumTextGo.transform.SetParent(_hpNumericBadgeRect, false);
+            StretchFull(hpNumTextGo.GetComponent<RectTransform>(), 2f);
+            _hpNumericText = hpNumTextGo.GetComponent<TextMeshProUGUI>();
+            if (_monoFont != null) _hpNumericText.font = _monoFont;
+            else if (_sansFont != null) _hpNumericText.font = _sansFont;
+            _hpNumericText.fontSize = 15f;
+            _hpNumericText.enableAutoSizing = true;
+            _hpNumericText.fontSizeMin = 12f;
+            _hpNumericText.fontSizeMax = 15f;
+            _hpNumericText.fontStyle = FontStyles.Bold;
+            _hpNumericText.color = IvoryTextColor;
+            _hpNumericText.alignment = TextAlignmentOptions.Center;
+            _hpNumericText.textWrappingMode = TextWrappingModes.NoWrap;
+            _hpNumericText.raycastTarget = false;
+
             // 6. Special Card Tray (Delayed Judgment Scrolls)
             var trayGo = new GameObject("SpecialCardTray", typeof(RectTransform), typeof(SpecialCardTrayView));
             trayGo.transform.SetParent(_rootRect, false);
             var trayRt = trayGo.GetComponent<RectTransform>();
             trayRt.anchorMin = new Vector2(0.035f, 0.30f);
-            trayRt.anchorMax = new Vector2(0.55f, 0.43f);
+            trayRt.anchorMax = new Vector2(0.605f, 0.43f);
             trayRt.offsetMin = Vector2.zero;
             trayRt.offsetMax = Vector2.zero;
             _specialTray = trayGo.GetComponent<SpecialCardTrayView>();
@@ -299,6 +363,53 @@ namespace CuuChau.Arena
             equipRt.offsetMax = Vector2.zero;
             _equipmentGrid = equipGo.GetComponent<EquipmentSlotGrid>();
             _equipmentGrid.BuildHierarchyIfNeeded(_catalog, _sansFont, _monoFont);
+            _equipmentGrid.OnSlotHovered += (_, _, _) =>
+            {
+                _isEquipmentSlotHovered = true;
+                HideFallbackTooltipIfShown();
+            };
+            _equipmentGrid.OnSlotHoverExited += () =>
+            {
+                _isEquipmentSlotHovered = false;
+            };
+
+            // 7b. Distance Badge ("Kc: X" in top-right corner)
+            _distanceBadgeObj = new GameObject("DistanceBadge", typeof(RectTransform), typeof(Image));
+            _distanceBadgeObj.transform.SetParent(_rootRect, false);
+            var distRt = _distanceBadgeObj.GetComponent<RectTransform>();
+            distRt.anchorMin = new Vector2(1f, 1f);
+            distRt.anchorMax = new Vector2(1f, 1f);
+            distRt.pivot = new Vector2(1f, 1f);
+            distRt.anchoredPosition = new Vector2(-12f, -12f);
+            distRt.sizeDelta = new Vector2(68f, 25f);
+            var distBorder = _distanceBadgeObj.GetComponent<Image>();
+            distBorder.color = new Color(0.76f, 0.60f, 0.30f, 0.85f);
+            distBorder.raycastTarget = false;
+
+            var distInnerGo = new GameObject("DistanceInner", typeof(RectTransform), typeof(Image));
+            distInnerGo.transform.SetParent(distRt, false);
+            var distInnerRt = distInnerGo.GetComponent<RectTransform>();
+            StretchFull(distInnerRt, 1f);
+            var distInnerImg = distInnerGo.GetComponent<Image>();
+            distInnerImg.color = new Color(0.05f, 0.04f, 0.035f, 0.92f);
+            distInnerImg.raycastTarget = false;
+
+            var distTextGo = new GameObject("DistanceText", typeof(RectTransform), typeof(TextMeshProUGUI));
+            distTextGo.transform.SetParent(distInnerRt, false);
+            StretchFull(distTextGo.GetComponent<RectTransform>(), 3f);
+            _distanceBadgeText = distTextGo.GetComponent<TextMeshProUGUI>();
+            if (_monoFont != null) _distanceBadgeText.font = _monoFont;
+            else if (_sansFont != null) _distanceBadgeText.font = _sansFont;
+            _distanceBadgeText.fontSize = 15f;
+            _distanceBadgeText.enableAutoSizing = true;
+            _distanceBadgeText.fontSizeMin = 12f;
+            _distanceBadgeText.fontSizeMax = 15f;
+            _distanceBadgeText.fontStyle = FontStyles.Bold;
+            _distanceBadgeText.color = DistanceGoldColor;
+            _distanceBadgeText.alignment = TextAlignmentOptions.Center;
+            _distanceBadgeText.textWrappingMode = TextWrappingModes.NoWrap;
+            _distanceBadgeText.raycastTarget = false;
+            _distanceBadgeObj.SetActive(false);
 
             // 8. Target Reticle Ring (over portrait center)
             var reticleGo = new GameObject("TargetReticleRing", typeof(RectTransform), typeof(Image));
@@ -344,11 +455,18 @@ namespace CuuChau.Arena
 
         public void SetViewerLayoutScale(bool isViewerSeat)
         {
+            _isViewerSeat = isViewerSeat;
             if (!_built) return;
             if (_equipmentGrid != null)
             {
                 _equipmentGrid.SetCellSize(isViewerSeat ? new Vector2(182f, 25f) : new Vector2(166f, 23f));
             }
+        }
+
+        public void ClearSuspectNote()
+        {
+            _suspectNoteIndex = 0;
+            RefreshIdentityBadgeVisual();
         }
 
         public void BindPlayer(PublicPlayerViewDto player, VisualCatalogSO catalog, bool isCurrentTurn, bool isTargeted)
@@ -357,13 +475,50 @@ namespace CuuChau.Arena
             if (!_built) BuildHierarchyIfNeeded(_catalog, _serifFont, _sansFont, _monoFont);
             if (player == null) return;
 
+            string heroId = string.IsNullOrEmpty(player.HeroId) ? "unknown" : player.HeroId;
+            string incomingUserId = player.UserId ?? string.Empty;
+            bool seatOrOwnerChanged = _boundSeatTrack != player.SeatIndex ||
+                (!string.IsNullOrEmpty(incomingUserId) && !string.Equals(_boundUserId, incomingUserId, StringComparison.Ordinal)) ||
+                (!string.IsNullOrEmpty(_boundHeroId) && _boundHeroId != "unknown" && heroId != "unknown" &&
+                 !string.Equals(_boundHeroId, heroId, StringComparison.OrdinalIgnoreCase));
+
+            if (seatOrOwnerChanged)
+            {
+                _suspectNoteIndex = 0;
+            }
+
             SeatIndex = player.SeatIndex;
+            _boundSeatTrack = player.SeatIndex;
+            _boundUserId = incomingUserId;
+            _boundHeroId = heroId;
             _isAlive = player.Alive;
 
-            string heroId = string.IsNullOrEmpty(player.HeroId) ? "unknown" : player.HeroId;
+            bool isSelf = player.HandCards != null ||
+                          _isViewerSeat ||
+                          (player.DistanceFromViewer.HasValue && player.DistanceFromViewer.Value == 0);
+
             string heroNameVi = ResolveHeroDisplayName(heroId, player.DisplayName);
+            if (isSelf && !string.IsNullOrEmpty(heroNameVi) && !heroNameVi.EndsWith(" (Bạn)", StringComparison.Ordinal))
+            {
+                heroNameVi = $"{heroNameVi} (Bạn)";
+            }
+
             string faction = ResolveHeroFaction(heroId);
             string identityLabel = ResolveIdentityLabel(player.Identity, player.IsIdentityRevealed);
+            if (identityLabel != "Ẩn")
+            {
+                _suspectNoteIndex = 0;
+            }
+
+            bool showDistance = player.Alive && player.DistanceFromViewer.HasValue && player.DistanceFromViewer.Value > 0;
+            if (_distanceBadgeObj != null)
+            {
+                _distanceBadgeObj.SetActive(showDistance);
+                if (showDistance && _distanceBadgeText != null)
+                {
+                    _distanceBadgeText.text = $"Kc: {player.DistanceFromViewer.Value}";
+                }
+            }
 
             ApplyCommonData(
                 heroId,
@@ -400,11 +555,32 @@ namespace CuuChau.Arena
             if (!_built) BuildHierarchyIfNeeded(_catalog, _serifFont, _sansFont, _monoFont);
 
             SeatIndex = seatIndex;
+            _boundSeatTrack = seatIndex;
+            _boundUserId = string.Empty;
+            _boundHeroId = string.IsNullOrEmpty(heroId) ? "unknown" : heroId;
+            _suspectNoteIndex = 0;
             _isAlive = hp > 0;
+
+            if (_distanceBadgeObj != null)
+            {
+                if ( _isAlive && !_isViewerSeat && seatIndex > 0)
+                {
+                    _distanceBadgeObj.SetActive(true);
+                    if (_distanceBadgeText != null) _distanceBadgeText.text = $"Kc: {Mathf.Max(1, Mathf.Min(seatIndex, 4))}";
+                }
+                else
+                {
+                    _distanceBadgeObj.SetActive(false);
+                }
+            }
+
+            string displayHeader = (_isViewerSeat && !string.IsNullOrEmpty(heroNameVi) && !heroNameVi.EndsWith(" (Bạn)", StringComparison.Ordinal))
+                ? $"{heroNameVi} (Bạn)"
+                : heroNameVi;
 
             ApplyCommonData(
                 heroId,
-                heroNameVi,
+                displayHeader,
                 faction,
                 identityLabel,
                 hp,
@@ -480,7 +656,86 @@ namespace CuuChau.Arena
 
         public void OnPointerClick(PointerEventData eventData)
         {
-            OnSeatClicked?.Invoke(SeatIndex);
+            if (eventData != null && eventData.button == PointerEventData.InputButton.Right)
+            {
+                if (_rawIdentityLabel == "Ẩn")
+                {
+                    _suspectNoteIndex = (_suspectNoteIndex + 1) % SuspectCycleLabels.Length;
+                    RefreshIdentityBadgeVisual();
+                }
+                return;
+            }
+
+            if (eventData == null || eventData.button == PointerEventData.InputButton.Left)
+            {
+                OnSeatClicked?.Invoke(SeatIndex);
+            }
+        }
+
+        public void OnPointerEnter(PointerEventData eventData)
+        {
+            if (string.IsNullOrEmpty(_boundHeroId) || _boundHeroId == "unknown") return;
+
+            HeroLoreInfo lore = CuuChauLoreLookup.GetHeroInfo(_boundHeroId);
+            if (lore.SkillNameVi == "Chưa rõ") return;
+
+            string summary = $"{lore.NameVi} · {lore.SkillNameVi}\n{lore.SkillDescVi}";
+            if (OnHeroInspectHovered != null)
+            {
+                OnHeroInspectHovered.Invoke(_boundHeroId, summary);
+                return;
+            }
+
+            if (_isEquipmentSlotHovered) return;
+            ShowFallbackHeroTooltip(lore);
+        }
+
+        public void OnPointerExit(PointerEventData eventData)
+        {
+            OnHeroInspectHoverExited?.Invoke();
+            HideFallbackTooltipIfShown();
+        }
+
+        private void OnDisable()
+        {
+            _isEquipmentSlotHovered = false;
+            HideFallbackTooltipIfShown();
+        }
+
+        private void ShowFallbackHeroTooltip(HeroLoreInfo lore)
+        {
+            if (_cachedTooltip == null)
+            {
+                _cachedTooltip = FindAnyObjectByType<SilkScrollTooltipView>(FindObjectsInactive.Include);
+            }
+            if (_cachedTooltip == null) return;
+
+            RectTransform clampContainer = _cachedTooltip.transform.parent as RectTransform;
+            if (clampContainer == null) return;
+
+            string title = $"{lore.NameVi} · {lore.TitleVi}";
+            string subtitle = $"{lore.FactionVi} · {lore.SkillNameVi} · {lore.MaxHp} Máu";
+            string body = _rawIdentityLabel == "Ẩn"
+                ? $"{lore.SkillDescVi}\n• Ghi chú: Bấm chuột phải vào ghế để đánh dấu nghi vấn thân phận."
+                : lore.SkillDescVi;
+
+            Vector3 worldAnchor = _rootRect != null ? _rootRect.position : transform.position;
+            Vector3 local3 = clampContainer.InverseTransformPoint(worldAnchor);
+            float offsetX = local3.x >= 0f ? -360f : 360f;
+            float offsetY = local3.y > 180f ? -110f : 110f;
+
+            _cachedTooltip.ShowTooltip(title, subtitle, body, new Vector2(local3.x + offsetX, local3.y + offsetY), clampContainer);
+            _showingFallbackTooltip = true;
+        }
+
+        private void HideFallbackTooltipIfShown()
+        {
+            if (!_showingFallbackTooltip) return;
+            _showingFallbackTooltip = false;
+            if (_cachedTooltip != null)
+            {
+                _cachedTooltip.Hide();
+            }
         }
 
         private void Update()
@@ -535,21 +790,10 @@ namespace CuuChau.Arena
             bool alive,
             bool isBotTakeover)
         {
+            _rawIdentityLabel = string.IsNullOrEmpty(identityLabel) ? "Ẩn" : identityLabel;
             if (_heroNameText != null) _heroNameText.text = string.IsNullOrEmpty(heroNameVi) ? "Hiệp Khách" : heroNameVi;
-            if (_identityBadgeText != null) _identityBadgeText.text = string.IsNullOrEmpty(identityLabel) ? "Ẩn" : identityLabel;
             if (_handCountText != null) _handCountText.text = $"Bài: {Mathf.Max(0, handCount)}";
-
-            bool isLord = identityLabel == "Minh Chủ" || identityLabel == "Chủ Công";
-            if (_identityBadgeBg != null)
-            {
-                _identityBadgeBg.color = isLord
-                    ? new Color(0.45f, 0.14f, 0.12f, 0.92f)
-                    : ObsidianSubBadgeColor;
-            }
-            if (_identityBadgeText != null)
-            {
-                _identityBadgeText.color = isLord ? IvoryTextColor : MutedGoldColor;
-            }
+            RefreshIdentityBadgeVisual();
 
             if (_factionSealImage != null && _catalog != null)
             {
@@ -622,17 +866,47 @@ namespace CuuChau.Arena
             }
         }
 
+        private void RefreshIdentityBadgeVisual()
+        {
+            bool isHiddenWithSuspect = _rawIdentityLabel == "Ẩn" && _suspectNoteIndex > 0 && _suspectNoteIndex < SuspectCycleLabels.Length;
+            string effectiveText = isHiddenWithSuspect
+                ? SuspectCycleLabels[_suspectNoteIndex]
+                : _rawIdentityLabel;
+
+            if (_identityBadgeText != null)
+            {
+                _identityBadgeText.text = effectiveText;
+            }
+
+            bool isLord = _rawIdentityLabel == "Minh Chủ" || _rawIdentityLabel == "Chủ Công";
+            if (_identityBadgeBg != null)
+            {
+                _identityBadgeBg.color = isLord
+                    ? new Color(0.45f, 0.14f, 0.12f, 0.92f)
+                    : (isHiddenWithSuspect ? SuspectTagBgColor : ObsidianSubBadgeColor);
+            }
+            if (_identityBadgeText != null)
+            {
+                _identityBadgeText.color = isLord
+                    ? IvoryTextColor
+                    : (isHiddenWithSuspect ? SuspectTagTextColor : MutedGoldColor);
+            }
+        }
+
         private void BindHpBeads(int hp, int maxHp)
         {
-            int clampedMax = Mathf.Clamp(maxHp, 1, 8);
-            int clampedHp = Mathf.Clamp(hp, 0, clampedMax);
+            int safeMax = Mathf.Max(1, maxHp);
+            int safeHp = Mathf.Max(0, hp);
+            int clampedMax = Mathf.Clamp(safeMax, 1, 8);
+            int clampedHp = Mathf.Clamp(safeHp, 0, clampedMax);
+            float beadDim = clampedMax >= 5 ? 19f : 21f;
 
             while (_hpBeads.Count < clampedMax)
             {
                 var beadGo = new GameObject($"HpBead_{_hpBeads.Count}", typeof(RectTransform), typeof(Image));
                 beadGo.transform.SetParent(_hpRowRect, false);
                 var rt = beadGo.GetComponent<RectTransform>();
-                rt.sizeDelta = new Vector2(22f, 22f);
+                rt.sizeDelta = new Vector2(beadDim, beadDim);
                 var img = beadGo.GetComponent<Image>();
                 img.preserveAspect = true;
                 img.raycastTarget = false;
@@ -657,6 +931,7 @@ namespace CuuChau.Arena
                     continue;
                 }
 
+                bead.rectTransform.sizeDelta = new Vector2(beadDim, beadDim);
                 bead.gameObject.SetActive(true);
                 bool isFull = i < clampedHp;
                 Sprite targetSprite = isFull ? filledSprite : (_catalog != null ? _catalog.hpSocketEmpty : null);
@@ -671,6 +946,18 @@ namespace CuuChau.Arena
                         ? (clampedHp <= 1 ? new Color(0.84f, 0.22f, 0.20f, 1f) : new Color(0.24f, 0.78f, 0.54f, 1f))
                         : new Color(0.20f, 0.18f, 0.16f, 0.85f);
                 }
+            }
+
+            if (_hpNumericBadgeRect != null)
+            {
+                _hpNumericBadgeRect.SetAsLastSibling();
+            }
+            if (_hpNumericText != null)
+            {
+                _hpNumericText.text = $"{safeHp}/{safeMax}";
+                _hpNumericText.color = safeHp <= 1
+                    ? new Color(1.00f, 0.64f, 0.58f, 1f)
+                    : IvoryTextColor;
             }
         }
 
@@ -694,14 +981,13 @@ namespace CuuChau.Arena
 
         private static string ResolveIdentityLabel(string identity, bool isRevealed)
         {
-            if (string.IsNullOrEmpty(identity)) return "Ẩn";
-            if (!isRevealed && identity != "LORD") return "Ẩn";
-            return identity switch
+            if (string.IsNullOrWhiteSpace(identity)) return "Ẩn";
+            return identity.Trim().ToUpperInvariant() switch
             {
                 "LORD" => "Chủ Công",
-                "LOYALIST" => "Trung Thần",
-                "REBEL" => "Phản Tặc",
-                "SPY" => "Nội Gián",
+                "LOYALIST" => "Hộ Pháp",
+                "REBEL" => "Nghĩa Quân",
+                "SPY" => "Ám Ảnh",
                 "UNKNOWN" => "Ẩn",
                 _ => identity,
             };

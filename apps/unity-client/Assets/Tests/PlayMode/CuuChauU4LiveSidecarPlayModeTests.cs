@@ -125,19 +125,23 @@ namespace CuuChau.Tests.PlayMode
             }
             Assert.GreaterOrEqual(totalVisibleCards, 112, "Tổng bài trên bàn thật phải dùng đúng bộ 112 lá Cửu Châu.");
 
-            // 4. Bảo mật projection: đối thủ tuyệt đối không lộ handCards (chỉ có handCount)
+            // 4. Bảo mật projection & SSOT U7: đối thủ tuyệt đối không lộ handCards, có AvailableActions & DistanceFromViewer
+            Assert.IsNotNull(combatView.AvailableActions, "PlayerView phải đính kèm AvailableActions SSOT từ @lkdf/shared.");
             for (int i = 0; i < combatView.Players.Count; i++)
             {
                 PublicPlayerViewDto seat = combatView.Players[i];
+                Assert.IsTrue(seat.DistanceFromViewer.HasValue, $"Ghế {seat.SeatIndex} phải có DistanceFromViewer từ @lkdf/shared.");
                 if (seat.SeatIndex == combatView.ViewerSeatIndex)
                 {
                     Assert.IsNotNull(seat.HandCards, "Bài trên tay người xem phải hiển thị.");
                     Assert.GreaterOrEqual(seat.HandCards.Count, 4);
+                    Assert.AreEqual(0, seat.DistanceFromViewer.Value, "Khoảng cách tới chính bản thân phải bằng 0.");
                 }
                 else
                 {
                     Assert.IsNull(seat.HandCards, $"Bảo mật lộ bài: Ghế đối thủ {seat.SeatIndex} bị rò rỉ HandCards!");
                     Assert.GreaterOrEqual(seat.HandCount, 1, $"Ghế đối thủ {seat.SeatIndex} phải hiển thị số lượng lá.");
+                    Assert.GreaterOrEqual(seat.DistanceFromViewer.Value, 1, $"Khoảng cách tới đối thủ sống {seat.SeatIndex} phải >= 1.");
                 }
             }
 

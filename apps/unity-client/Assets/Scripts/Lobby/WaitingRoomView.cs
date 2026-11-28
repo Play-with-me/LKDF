@@ -31,7 +31,7 @@ namespace CuuChau.Lobby
         private static readonly Color BotCyanGoldColor = new(0.56f, 0.78f, 0.86f, 1f);
         private static readonly Color DisconnectedCrimsonColor = new(0.88f, 0.27f, 0.24f, 1f);
 
-        private static readonly int[] FillBotOptions = { 4, 5, 6, 8 };
+        private static readonly int[] FillBotOptions = { 4, 5, 6, 7, 8 };
 
         private sealed class SeatCardWidgets
         {
@@ -416,24 +416,32 @@ namespace CuuChau.Lobby
 
             if (_roomHintText != null)
             {
+                int previewCount = isMeHost && _selectedFillBotTarget > seatCount
+                    ? _selectedFillBotTarget
+                    : Mathf.Clamp(seatCount, 4, 8);
+                string distText = LobbyHallView.GetIdentityDistributionSummary(previewCount);
+
                 if (canStart)
                 {
-                    _roomHintText.text = $"Đã đủ {seatCount} ghế sẵn sàng · Chủ phòng có thể khởi tranh ngay.";
+                    string activeDist = LobbyHallView.GetIdentityDistributionSummary(seatCount);
+                    _roomHintText.text = _selectedFillBotTarget > seatCount
+                        ? $"Đã đủ {seatCount} ghế ({activeDist}) · Mốc Thêm Máy đang chọn: {distText}."
+                        : $"Đã đủ {seatCount} ghế sẵn sàng ({activeDist}) · Chủ phòng có thể khởi tranh ngay.";
                     _roomHintText.color = ReadyGreenColor;
                 }
                 else if (isMeHost && seatCount < 4)
                 {
-                    _roomHintText.text = "Gửi mã mời cho bạn bè hoặc bấm Thêm Máy Đủ Bàn để đạt tối thiểu 4 ghế.";
+                    _roomHintText.text = $"{distText} · Gửi mã mời bạn bè hoặc bấm Thêm Máy Đủ Bàn (tối thiểu 4 ghế).";
                     _roomHintText.color = MutedGoldColor;
                 }
                 else if (isMeHost && pendingGuests > 0)
                 {
-                    _roomHintText.text = $"Còn {pendingGuests} ghế chưa Sẵn sàng hoặc đang mất kết nối.";
+                    _roomHintText.text = $"{distText} · Còn {pendingGuests} ghế chưa Sẵn sàng hoặc đang mất kết nối.";
                     _roomHintText.color = WaitingAmberColor;
                 }
                 else
                 {
-                    _roomHintText.text = "Hãy bấm Sẵn sàng và chờ Chủ phòng phát lệnh Bắt Đầu Ván Đấu.";
+                    _roomHintText.text = $"{distText} · Hãy bấm Sẵn sàng và chờ Chủ phòng phát lệnh Bắt Đầu Ván Đấu.";
                     _roomHintText.color = MutedGoldColor;
                 }
             }
@@ -827,12 +835,12 @@ namespace CuuChau.Lobby
             chipsRowGo.transform.SetParent(botGroupRt, false);
             var chipsRowRt = chipsRowGo.GetComponent<RectTransform>();
             chipsRowRt.anchorMin = new Vector2(0f, 0f);
-            chipsRowRt.anchorMax = new Vector2(0.46f, 1f);
+            chipsRowRt.anchorMax = new Vector2(0.48f, 1f);
             chipsRowRt.offsetMin = Vector2.zero;
             chipsRowRt.offsetMax = Vector2.zero;
 
             var chipsHlg = chipsRowGo.GetComponent<HorizontalLayoutGroup>();
-            chipsHlg.spacing = 6f;
+            chipsHlg.spacing = 5f;
             chipsHlg.childControlWidth = true;
             chipsHlg.childControlHeight = true;
             chipsHlg.childForceExpandWidth = true;
@@ -845,7 +853,7 @@ namespace CuuChau.Lobby
                     $"BotTarget_{targetCount}",
                     chipsRowRt,
                     $"{targetCount}",
-                    16f,
+                    15f,
                     out _botTargetBgs[i],
                     out _botTargetBorders[i],
                     out _botTargetLabels[i],
@@ -860,7 +868,7 @@ namespace CuuChau.Lobby
                 out _fillBotsLabel,
                 () => OnFillBotsRequested?.Invoke(_selectedFillBotTarget));
             var fillBtnRt = _fillBotsBtn.GetComponent<RectTransform>();
-            fillBtnRt.anchorMin = new Vector2(0.48f, 0f);
+            fillBtnRt.anchorMin = new Vector2(0.50f, 0f);
             fillBtnRt.anchorMax = new Vector2(1f, 1f);
             fillBtnRt.offsetMin = Vector2.zero;
             fillBtnRt.offsetMax = Vector2.zero;

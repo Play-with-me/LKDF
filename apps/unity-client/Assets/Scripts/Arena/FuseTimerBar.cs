@@ -30,6 +30,9 @@ namespace CuuChau.Arena
 
         private float _progress = 1f;
         private string _phaseText = "Pha Xuất Chiêu";
+        private string _lastAppliedPhaseText;
+        private int _lastDisplayedSec = -1;
+        private int _lastDisplayedPct = -1;
         private float _durationSeconds;
         private float _remainingSeconds;
         private bool _autoCountdown;
@@ -141,6 +144,8 @@ namespace CuuChau.Arena
             _durationSeconds = Mathf.Max(0.1f, durationSeconds);
             _remainingSeconds = _durationSeconds;
             _autoCountdown = true;
+            _lastDisplayedSec = -1;
+            _lastDisplayedPct = -1;
             SetProgress(1f, phaseText);
         }
 
@@ -168,8 +173,9 @@ namespace CuuChau.Arena
                 _phaseText = phaseText;
             }
 
-            if (_phaseLabel != null)
+            if (_phaseLabel != null && !string.Equals(_lastAppliedPhaseText, _phaseText, System.StringComparison.Ordinal))
             {
+                _lastAppliedPhaseText = _phaseText;
                 _phaseLabel.text = _phaseText;
             }
 
@@ -191,12 +197,22 @@ namespace CuuChau.Arena
                 if (_autoCountdown)
                 {
                     int sec = Mathf.CeilToInt(Mathf.Max(0f, _remainingSeconds));
-                    _timeLabel.text = $"{sec}s";
+                    if (_lastDisplayedSec != sec || _lastDisplayedPct != -1)
+                    {
+                        _lastDisplayedSec = sec;
+                        _lastDisplayedPct = -1;
+                        _timeLabel.text = $"{sec}s";
+                    }
                 }
                 else
                 {
                     int pct = Mathf.RoundToInt(_progress * 100f);
-                    _timeLabel.text = $"{pct}%";
+                    if (_lastDisplayedPct != pct || _lastDisplayedSec != -1)
+                    {
+                        _lastDisplayedPct = pct;
+                        _lastDisplayedSec = -1;
+                        _timeLabel.text = $"{pct}%";
+                    }
                 }
             }
 

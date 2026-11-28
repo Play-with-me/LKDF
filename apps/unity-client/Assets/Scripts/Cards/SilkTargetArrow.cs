@@ -94,12 +94,23 @@ namespace CuuChau.Cards
             Vector2 ribbonEnd = localEnd - endDir * headSocketInsetPx;
 
             Color segColor = isValidTarget ? ValidRibbonColor : InvalidRibbonColor;
+            float overlapPx = isValidTarget ? segmentOverlapPx : 0f;
             int count = _segments.Count;
 
             for (int i = 0; i < count; i++)
             {
+                Image seg = _segments[i];
+
+                // WCAG 1.4.1: không chỉ dựa vào màu sắc — ẩn các đoạn lẻ khi mục tiêu không hợp lệ để tạo nét đứt rõ ràng
+                if (!isValidTarget && (i % 2 == 1))
+                {
+                    seg.gameObject.SetActive(false);
+                    continue;
+                }
+
                 float t0 = i / (float)count;
                 float t1 = (i + 1) / (float)count;
+                float tMid = (i + 0.5f) / count;
 
                 Vector2 p0 = EvaluateQuadraticBezier(localStart, controlPoint, ribbonEnd, t0);
                 Vector2 p1 = EvaluateQuadraticBezier(localStart, controlPoint, ribbonEnd, t1);
@@ -108,16 +119,18 @@ namespace CuuChau.Cards
                 float angleDeg = Mathf.Atan2(segVec.y, segVec.x) * Mathf.Rad2Deg;
 
                 // Thuôn nhẹ hai đầu dải lụa để đầu và đuôi hòa mượt vào lá bài & đầu mũi tên
-                float taper = Mathf.Lerp(0.72f, 1.08f, Mathf.Sin(((i + 0.5f) / count) * Mathf.PI));
+                float taper = Mathf.Lerp(0.72f, 1.08f, Mathf.Sin(tMid * Mathf.PI));
 
-                Image seg = _segments[i];
+                Color c = segColor;
+                c.a *= Mathf.Lerp(0.78f, 1f, tMid);
+
                 seg.gameObject.SetActive(true);
-                seg.color = segColor;
+                seg.color = c;
                 seg.material = _silkMaterial;
 
                 RectTransform segRt = seg.rectTransform;
                 segRt.anchoredPosition = (p0 + p1) * 0.5f;
-                segRt.sizeDelta = new Vector2(segLen + segmentOverlapPx, ribbonThickness * taper);
+                segRt.sizeDelta = new Vector2(segLen + overlapPx, ribbonThickness * taper);
                 segRt.localRotation = Quaternion.Euler(0f, 0f, angleDeg);
             }
 

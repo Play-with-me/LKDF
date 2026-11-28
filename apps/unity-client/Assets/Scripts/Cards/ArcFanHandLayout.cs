@@ -26,8 +26,8 @@ namespace CuuChau.Cards
         [SerializeField] private float maxHorizontalSpan = 1040f;
 
         [Header("Rẽ Quạt Né Lá (Neighbor Parting)")]
-        [SerializeField] private float hoverScale = 1.7f;
-        [SerializeField] private float hoverLiftY = 76f;
+        [SerializeField] private float hoverScale = 1.42f;
+        [SerializeField] private float hoverLiftY = 54f;
         [SerializeField] private float neighborMinPartPx = 34f;
         [SerializeField] private float neighborMaxPartPx = 56f;
 
@@ -90,7 +90,8 @@ namespace CuuChau.Cards
 
         public void SetCards(List<CardInstanceDto> cards, Func<CardInstanceDto, bool> playablePredicate)
         {
-            int targetCount = cards != null ? Mathf.Min(cards.Count, 12) : 0;
+            int prevCount = _activeCards.Count;
+            int targetCount = cards != null ? cards.Count : 0;
             EnsureActiveCardCount(targetCount);
             _hoveredIndex = -1;
 
@@ -123,7 +124,7 @@ namespace CuuChau.Cards
                 view.SetSelected(false);
             }
 
-            if (Application.isPlaying)
+            if (Application.isPlaying && prevCount > 0)
             {
                 ApplyRestPosesToActiveCards(_hoveredIndex);
             }
@@ -138,7 +139,7 @@ namespace CuuChau.Cards
             var demoCards = new List<CardInstanceDto>
             {
                 new() { Id = "demo_1", CardKey = "dao", NameVi = "Đào", Rank = "3", Suit = "HEART", Category = "BASIC" },
-                new() { Id = "demo_2", CardKey = "vo_ta", NameVi = "Vô Tạ", Rank = "10", Suit = "SPADE", Category = "SCROLL" },
+                new() { Id = "demo_2", CardKey = "vo_giai_kha_kich", NameVi = "Hóa Giải Chân Khí", Rank = "10", Suit = "SPADE", Category = "SCROLL" },
                 new() { Id = "demo_3", CardKey = "sat", NameVi = "Trảm", Rank = "7", Suit = "SPADE", Category = "BASIC" },
                 new() { Id = "demo_4", CardKey = "thiem", NameVi = "Thiểm", Rank = "2", Suit = "DIAMOND", Category = "BASIC" },
                 new() { Id = "demo_5", CardKey = "bat_quai_tran", NameVi = "Bát Quái Trận", Rank = "2", Suit = "CLUB", Category = "EQUIP" },
@@ -322,19 +323,41 @@ namespace CuuChau.Cards
                 ? Mathf.Min(maxHorizontalSpan, containerWidth - 240f)
                 : maxHorizontalSpan;
 
-            float tHand = Mathf.InverseLerp(5f, 12f, count);
-            restScale = Mathf.Lerp(baseCardScale, minCardScaleAtMaxHand, tHand);
+            if (count <= 12)
+            {
+                float tHand = Mathf.InverseLerp(5f, 12f, count);
+                restScale = Mathf.Lerp(baseCardScale, minCardScaleAtMaxHand, tHand);
+            }
+            else
+            {
+                restScale = Mathf.Max(0.56f, minCardScaleAtMaxHand - (count - 12) * 0.022f);
+                if (containerWidth > 320f)
+                {
+                    safeSpan = Mathf.Min(maxHorizontalSpan, Mathf.Max(safeSpan, containerWidth - 170f));
+                }
+            }
 
+            float effectiveRadius = GetEffectiveFanRadius(count);
             float cardScaledWidth = CardView25D.DefaultCardSize.x * restScale;
             float centerToCenterSpan = Mathf.Max(220f, safeSpan - cardScaledWidth);
-            float maxHalfRadFromSpan = Mathf.Asin(Mathf.Clamp((centerToCenterSpan * 0.5f) / Mathf.Max(200f, fanRadius), 0.05f, 0.92f));
+            float maxHalfRadFromSpan = Mathf.Asin(Mathf.Clamp((centerToCenterSpan * 0.5f) / Mathf.Max(200f, effectiveRadius), 0.05f, 0.92f));
             float maxTotalArcFromSpanDeg = maxHalfRadFromSpan * Mathf.Rad2Deg * 2f;
 
             float allowedTotalArc = Mathf.Min(maxTotalArcDeg, maxTotalArcFromSpanDeg);
-            float desiredTotalArc = (count - 1) * maxSingleStepDeg;
+            float effectiveSingleStep = count > 12
+                ? Mathf.Max(1.05f, maxSingleStepDeg * (12f / count))
+                : maxSingleStepDeg;
+            float desiredTotalArc = (count - 1) * effectiveSingleStep;
             float actualTotalArc = Mathf.Min(desiredTotalArc, allowedTotalArc);
 
             stepDeg = actualTotalArc / (count - 1);
+        }
+
+        private float GetEffectiveFanRadius(int count)
+        {
+            if (count <= 12) return fanRadius;
+            float extra = Mathf.Min(12, count - 12) * 0.035f;
+            return fanRadius * (1f + extra);
         }
 
         private void ComputeCardPose(
@@ -347,12 +370,13 @@ namespace CuuChau.Cards
             out float rotationZDeg,
             out float scale)
         {
+            float effectiveRadius = GetEffectiveFanRadius(count);
             float centeredIndex = index - (count - 1) * 0.5f;
             float angleFromUpDeg = centeredIndex * stepDeg;
             float angleRad = angleFromUpDeg * Mathf.Deg2Rad;
 
-            float x = fanRadius * Mathf.Sin(angleRad);
-            float yDrop = fanRadius * (1f - Mathf.Cos(angleRad));
+            float x = effectiveRadius * Mathf.Sin(angleRad);
+            float yDrop = effectiveRadius * (1f - Mathf.Cos(angleRad));
             float y = baseCardY - yDrop;
 
             x += ComputeNeighborPartingOffset(index, hoveredIdx);

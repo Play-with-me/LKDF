@@ -34,6 +34,10 @@ namespace CuuChau.VFX
         [SerializeField, Range(0.02f, 0.25f)] private float hitStopTimeScale = 0.05f;
         [SerializeField, Range(0.08f, 0.4f)] private float followThroughDuration = 0.18f;
 
+        private static readonly int ReducedMotionShaderId = Shader.PropertyToID("_ReducedMotion");
+        private static readonly int GlobalReducedMotionShaderId = Shader.PropertyToID("_GlobalReducedMotion");
+        private const float MaxCumulativeTrauma = 0.78f;
+
         private Vector2 _restAnchoredPos = Vector2.zero;
         private Vector3 _restScale = Vector3.one;
         private Quaternion _restRotation = Quaternion.identity;
@@ -49,6 +53,16 @@ namespace CuuChau.VFX
         private Coroutine _activeTintRoutine;
 
         public bool ReducedMotion => reducedMotion;
+
+        private void Awake()
+        {
+            ApplyGlobalReducedMotionShaderFlag(reducedMotion);
+        }
+
+        private void OnEnable()
+        {
+            ApplyGlobalReducedMotionShaderFlag(reducedMotion);
+        }
 
         public void SetShakeTarget(RectTransform targetRoot)
         {
@@ -80,6 +94,7 @@ namespace CuuChau.VFX
         public void SetReducedMotion(bool enabled)
         {
             reducedMotion = enabled;
+            ApplyGlobalReducedMotionShaderFlag(enabled);
             if (reducedMotion)
             {
                 _trauma = 0f;
@@ -87,6 +102,13 @@ namespace CuuChau.VFX
                 RestoreTimeScaleIfOwned();
                 ResetTargetTransform();
             }
+        }
+
+        private static void ApplyGlobalReducedMotionShaderFlag(bool enabled)
+        {
+            float val = enabled ? 1f : 0f;
+            Shader.SetGlobalFloat(ReducedMotionShaderId, val);
+            Shader.SetGlobalFloat(GlobalReducedMotionShaderId, val);
         }
 
         public void TriggerActionFeel(ActionFeelKind kind)
@@ -192,7 +214,7 @@ namespace CuuChau.VFX
             // Phase 3: Trauma-squared camera/tabletop shake + gentle color cue
             if (!reducedMotion)
             {
-                _trauma = Mathf.Clamp01(_trauma + traumaAmount);
+                _trauma = Mathf.Clamp(_trauma + traumaAmount, 0f, MaxCumulativeTrauma);
                 TriggerTintPulse(tintColor, tintPeakAlpha, followThroughDuration);
             }
             else
@@ -359,6 +381,7 @@ namespace CuuChau.VFX
             _punchScaleOffset = 0f;
             Time.timeScale = 1f;
             _ownsTimeScaleFreeze = false;
+            ApplyGlobalReducedMotionShaderFlag(false);
 
             if (shakeTarget != null)
             {

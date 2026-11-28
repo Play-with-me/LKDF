@@ -86,8 +86,9 @@ namespace CuuChau.Modals
             {
                 PublicPlayerViewDto p = players[i];
                 bool isMe = p.SeatIndex == state.ViewerSeatIndex;
-                bool isWinner = (!string.IsNullOrEmpty(p.UserId) && winnerSet.Contains(p.UserId))
-                    || IsIdentityInWinningFaction(p.Identity, winningFaction);
+                bool isWinner = winnerSet.Count > 0
+                    ? (!string.IsNullOrEmpty(p.UserId) && winnerSet.Contains(p.UserId))
+                    : (IsIdentityInWinningFaction(p.Identity, winningFaction) && (!string.Equals(winningFaction, "SPY", StringComparison.OrdinalIgnoreCase) || p.Alive));
                 CreatePlayerSummaryRow(p, isWinner, isMe);
             }
 

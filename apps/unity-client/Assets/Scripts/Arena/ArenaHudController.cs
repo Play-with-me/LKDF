@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using CuuChau.Audio;
+using CuuChau.Cards;
 using CuuChau.Data;
 using CuuChau.Net;
 using TMPro;
@@ -12,19 +13,24 @@ namespace CuuChau.Arena
     /// <summary>
     /// Điều phối HUD bàn đấu:
     /// - TopHeader góc trên-trái cách mép an toàn (>= 44px trái, >= 26px trên), cỡ chữ >= 19f.
-    /// - Đúng 2 Ấn Đồng Đúc ở góc trên-phải (sealBattleLog & sealSettingsGear).
+    /// - Góc trên-phải: Nút nhanh Trọng Tài, Sổ Tay & 2 Ấn Đồng Đúc (sealBattleLog & sealSettingsGear).
     /// - Khối Trung Tâm: Chồng Bài Rút (cardBackCuuChau + bộ đếm) & Lá Vừa Đánh (DiscardCardSlot).
-    /// - Thanh Hành Động Ghim Góc Dưới-Phải (Nút chính 9-slice Chu Sa + nút phụ Bỏ qua + FuseTimerBar).
-    /// - Ngăn kéo Nhật Ký Trận Đấu trượt từ phải & Cửa sổ Cài Đặt (Mute + ReducedMotion).
+    /// - Thanh Hành Động Ghim Góc Dưới-Phải (Nút chính 9-slice phân biệt trạng thái Kết Thúc Lượt, nút phụ Bỏ qua, chip Tự bỏ Vô Giải & FuseTimerBar).
+    /// - Ngăn kéo Nhật Ký Trận Đấu trượt từ phải (Ring Buffer 80 dòng) & Cửa sổ Cài Đặt (tách BGM/SFX Mute + Auto-Skip Vô Giải + ReducedMotion).
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class ArenaHudController : MonoBehaviour
     {
+        private const int MaxLogRingBufferSize = 80;
+
         private static readonly Color ObsidianPanelColor = new(0.055f, 0.045f, 0.038f, 0.92f);
         private static readonly Color HeaderBackdropColor = new(0.05f, 0.04f, 0.035f, 0.84f);
         private static readonly Color BronzeBorderColor = new(0.72f, 0.56f, 0.28f, 0.82f);
         private static readonly Color GoldIvoryColor = new(0.96f, 0.89f, 0.67f, 1f);
         private static readonly Color InkDarkColor = new(0.11f, 0.08f, 0.06f, 1f);
+        private static readonly Color EndTurnCardsRemainSpriteTint = new(0.76f, 0.66f, 0.50f, 0.96f);
+        private static readonly Color EndTurnCardsRemainFallbackColor = new(0.32f, 0.23f, 0.14f, 0.96f);
+        private static readonly Color PrimaryReadyFallbackColor = new(0.66f, 0.18f, 0.14f, 0.98f);
 
         private VisualCatalogSO _catalog;
         private TMP_FontAsset _serifFont;
@@ -33,8 +39,10 @@ namespace CuuChau.Arena
         private RectTransform _rootRect;
         private bool _initialized;
 
-        // Top Header + 2 Cast-Bronze Seals
+        // Top Header + Quick Buttons + 2 Cast-Bronze Seals
         private TextMeshProUGUI _topHeaderText;
+        private Button _quickRefereeBtn;
+        private Button _quickHandbookBtn;
         private Button _battleLogSealBtn;
         private Button _settingsSealBtn;
 
@@ -51,7 +59,7 @@ namespace CuuChau.Arena
         private TextMeshProUGUI _discardEmptyText;
         private TextMeshProUGUI _discardCountText;
 
-        // Bottom-Right Pinned Action Plaque + Secondary Skip + Fuse Timer
+        // Bottom-Right Pinned Action Plaque + Secondary Skip + Auto-Skip Chip + Fuse Timer
         private FuseTimerBar _fuseTimerBar;
         private Button _primaryActionBtn;
         private Image _primaryActionImage;
@@ -63,33 +71,58 @@ namespace CuuChau.Arena
         private TextMeshProUGUI _secondarySkipLabel;
         private Action _secondarySkipCallback;
 
-        // Right-Sliding Battle Log Drawer
+        private Button _quickAutoSkipNullBtn;
+        private Image _quickAutoSkipNullBg;
+        private TextMeshProUGUI _quickAutoSkipNullLabel;
+
+        // Right-Sliding Battle Log Drawer (Ring Buffer 80 items)
         private RectTransform _logDrawerRect;
         private CanvasGroup _logDrawerGroup;
         private ScrollRect _logScrollRect;
         private RectTransform _logContentRect;
         private readonly List<TextMeshProUGUI> _logLineViews = new();
         private readonly List<string> _logEntries = new();
+        private string _lastMatchId = string.Empty;
+        private int _processedActionLogCount;
+        private int _logRingCursor;
+        private bool _logScrollPending;
         private bool _logDrawerOpen;
         private float _logDrawerSlide01;
 
         // Settings Modal
         private GameObject _settingsModalObj;
-        private Toggle _muteToggle;
+        private Toggle _bgmMuteToggle;
+        private Toggle _sfxMuteToggle;
+        private Toggle _autoSkipNullToggle;
         private Toggle _reducedMotionToggle;
         private bool _isMuted;
+        private bool _isBgmMuted;
+        private bool _isSfxMuted;
+        private bool _isAutoSkipNullification;
         private bool _isReducedMotion;
+
+        private PlayerViewStateDto _lastState;
+        private ArcFanHandLayout _cachedHandLayout;
 
         public FuseTimerBar FuseTimer => _fuseTimerBar;
         public RectTransform DrawPileAnchor => _drawPileRect;
         public RectTransform DiscardPileAnchor => _discardCardRect;
         public bool IsMuted => _isMuted;
+        public bool IsBgmMuted => _isBgmMuted;
+        public bool IsSfxMuted => _isSfxMuted;
+        public bool IsAutoSkipNullification => _isAutoSkipNullification;
         public bool IsReducedMotion => _isReducedMotion;
 
         public event Action<bool> OnMuteChanged;
+        public event Action<bool> OnMuteToggled;
+        public event Action<bool> OnBgmMuteToggled;
+        public event Action<bool> OnSfxMuteToggled;
+        public event Action<bool> OnAutoSkipNullificationToggled;
         public event Action<bool> OnReducedMotionChanged;
         public event Action OnOpenRefereeRequested;
+        public event Action OnRefereeRequested;
         public event Action OnOpenHandbookRequested;
+        public event Action OnHandbookRequested;
 
         public void InitializeHud(
             VisualCatalogSO catalog,
@@ -125,6 +158,23 @@ namespace CuuChau.Arena
             if (!_initialized) InitializeHud(_catalog, _serifFont, _sansFont, _monoFont);
             if (state == null) return;
 
+            _lastState = state;
+
+            int incomingLogCount = state.ActionLog != null ? state.ActionLog.Count : 0;
+            bool matchReset = (!string.IsNullOrEmpty(state.MatchId) &&
+                               !string.Equals(_lastMatchId, state.MatchId, StringComparison.Ordinal)) ||
+                              incomingLogCount < _processedActionLogCount;
+
+            if (matchReset)
+            {
+                ClearBattleLog();
+                _lastMatchId = state.MatchId ?? string.Empty;
+            }
+            else if (string.IsNullOrEmpty(_lastMatchId) && !string.IsNullOrEmpty(state.MatchId))
+            {
+                _lastMatchId = state.MatchId;
+            }
+
             int roundNum = Mathf.Max(1, state.RoundNumber);
             int drawCount = Mathf.Max(0, state.DrawPileCount);
             if (_topHeaderText != null)
@@ -144,11 +194,30 @@ namespace CuuChau.Arena
 
             BindDiscardTop(state.DiscardPileTop);
 
-            if (state.ActionLog != null && state.ActionLog.Count > _logEntries.Count)
+            if (state.ActionLog != null && incomingLogCount > _processedActionLogCount)
             {
-                for (int i = _logEntries.Count; i < state.ActionLog.Count; i++)
+                int startIdx = Mathf.Max(_processedActionLogCount, incomingLogCount - MaxLogRingBufferSize);
+                for (int i = startIdx; i < incomingLogCount; i++)
                 {
                     AppendLogLine(state.ActionLog[i]);
+                }
+                _processedActionLogCount = incomingLogCount;
+            }
+        }
+
+        public void ClearBattleLog()
+        {
+            _logEntries.Clear();
+            _processedActionLogCount = 0;
+            _logRingCursor = 0;
+            _logScrollPending = false;
+
+            for (int i = 0; i < _logLineViews.Count; i++)
+            {
+                if (_logLineViews[i] != null)
+                {
+                    _logLineViews[i].text = string.Empty;
+                    _logLineViews[i].gameObject.SetActive(false);
                 }
             }
         }
@@ -158,9 +227,10 @@ namespace CuuChau.Arena
             if (!_initialized) InitializeHud(_catalog, _serifFont, _sansFont, _monoFont);
 
             _primaryActionCallback = onClick;
+            string effectiveLabel = string.IsNullOrEmpty(label) ? "Kết Thúc Lượt" : label;
             if (_primaryActionLabel != null)
             {
-                _primaryActionLabel.text = string.IsNullOrEmpty(label) ? "Kết Thúc Lượt" : label;
+                _primaryActionLabel.text = effectiveLabel;
             }
             if (_primaryActionBtn != null)
             {
@@ -170,6 +240,57 @@ namespace CuuChau.Arena
             {
                 _primaryActionGroup.alpha = interactable ? 1f : 0.54f;
             }
+
+            ApplyPrimaryActionTone(effectiveLabel, interactable);
+        }
+
+        private void ApplyPrimaryActionTone(string effectiveLabel, bool interactable)
+        {
+            if (_primaryActionImage == null) return;
+
+            bool hasSprite = _primaryActionImage.sprite != null;
+            bool isEndTurn = effectiveLabel != null &&
+                             effectiveLabel.StartsWith("Kết Thúc Lượt", StringComparison.OrdinalIgnoreCase);
+
+            if (isEndTurn && interactable && HasPlayableHandCards())
+            {
+                _primaryActionImage.color = hasSprite ? EndTurnCardsRemainSpriteTint : EndTurnCardsRemainFallbackColor;
+                if (_primaryActionLabel != null)
+                {
+                    _primaryActionLabel.color = GoldIvoryColor;
+                }
+                return;
+            }
+
+            _primaryActionImage.color = hasSprite ? Color.white : PrimaryReadyFallbackColor;
+            if (_primaryActionLabel != null)
+            {
+                _primaryActionLabel.color = new Color(1f, 0.96f, 0.87f, 1f);
+            }
+        }
+
+        private bool HasPlayableHandCards()
+        {
+            if (_cachedHandLayout == null)
+            {
+                _cachedHandLayout = FindAnyObjectByType<ArcFanHandLayout>(FindObjectsInactive.Include);
+            }
+
+            if (_cachedHandLayout != null && _cachedHandLayout.gameObject.activeInHierarchy && _cachedHandLayout.CardCount > 0)
+            {
+                for (int i = 0; i < _cachedHandLayout.CardCount; i++)
+                {
+                    CardView25D view = _cachedHandLayout.GetCardView(i);
+                    if (view != null && view.gameObject.activeSelf && view.IsPlayable)
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            return _lastState?.AvailableActions?.PlayableCardIds != null &&
+                   _lastState.AvailableActions.PlayableCardIds.Count > 0;
         }
 
         public void ShowSecondarySkip(bool visible, string label = "Bỏ qua", Action onClick = null)
@@ -192,14 +313,14 @@ namespace CuuChau.Arena
             if (string.IsNullOrWhiteSpace(text)) return;
             if (!_initialized) InitializeHud(_catalog, _serifFont, _sansFont, _monoFont);
 
-            _logEntries.Add(text);
-            CreateLogLineEntry(text);
-
-            if (_logScrollRect != null)
+            if (_logEntries.Count >= MaxLogRingBufferSize)
             {
-                Canvas.ForceUpdateCanvases();
-                _logScrollRect.verticalNormalizedPosition = 0f;
+                _logEntries.RemoveAt(0);
             }
+            _logEntries.Add(text);
+
+            PushLogLineToRingBuffer(text);
+            _logScrollPending = true;
         }
 
         public void PopulateDemoPreview()
@@ -249,16 +370,119 @@ namespace CuuChau.Arena
         public void SetMuted(bool muted)
         {
             _isMuted = muted;
-            if (_muteToggle != null && _muteToggle.isOn != muted)
-            {
-                _muteToggle.SetIsOnWithoutNotify(muted);
-            }
-            var audioCtrl = FindAnyObjectByType<CuuChauAudioController>();
-            if (audioCtrl != null)
-            {
-                audioCtrl.SetMuted(muted);
-            }
+            _isBgmMuted = muted;
+            _isSfxMuted = muted;
+            if (_bgmMuteToggle != null) _bgmMuteToggle.SetIsOnWithoutNotify(muted);
+            if (_sfxMuteToggle != null) _sfxMuteToggle.SetIsOnWithoutNotify(muted);
+
+            ApplyAudioChannelMuteToController(applyMasterSetMuted: true);
+            OnBgmMuteToggled?.Invoke(_isBgmMuted);
+            OnSfxMuteToggled?.Invoke(_isSfxMuted);
             OnMuteChanged?.Invoke(muted);
+            OnMuteToggled?.Invoke(muted);
+        }
+
+        public void SetBgmMuted(bool bgmMuted)
+        {
+            _isBgmMuted = bgmMuted;
+            if (_bgmMuteToggle != null && _bgmMuteToggle.isOn != bgmMuted)
+            {
+                _bgmMuteToggle.SetIsOnWithoutNotify(bgmMuted);
+            }
+
+            bool allMuted = _isBgmMuted && _isSfxMuted;
+            bool masterChanged = _isMuted != allMuted;
+            _isMuted = allMuted;
+
+            ApplyAudioChannelMuteToController(applyMasterSetMuted: false);
+            OnBgmMuteToggled?.Invoke(bgmMuted);
+            if (masterChanged)
+            {
+                OnMuteChanged?.Invoke(_isMuted);
+                OnMuteToggled?.Invoke(_isMuted);
+            }
+        }
+
+        public void SetSfxMuted(bool sfxMuted)
+        {
+            _isSfxMuted = sfxMuted;
+            if (_sfxMuteToggle != null && _sfxMuteToggle.isOn != sfxMuted)
+            {
+                _sfxMuteToggle.SetIsOnWithoutNotify(sfxMuted);
+            }
+
+            bool allMuted = _isBgmMuted && _isSfxMuted;
+            bool masterChanged = _isMuted != allMuted;
+            _isMuted = allMuted;
+
+            ApplyAudioChannelMuteToController(applyMasterSetMuted: false);
+            OnSfxMuteToggled?.Invoke(sfxMuted);
+            if (masterChanged)
+            {
+                OnMuteChanged?.Invoke(_isMuted);
+                OnMuteToggled?.Invoke(_isMuted);
+            }
+        }
+
+        public void SetAutoSkipNullification(bool autoSkip)
+        {
+            _isAutoSkipNullification = autoSkip;
+            if (_autoSkipNullToggle != null && _autoSkipNullToggle.isOn != autoSkip)
+            {
+                _autoSkipNullToggle.SetIsOnWithoutNotify(autoSkip);
+            }
+            RefreshAutoSkipNullVisuals();
+            OnAutoSkipNullificationToggled?.Invoke(autoSkip);
+        }
+
+        private void ApplyAudioChannelMuteToController(bool applyMasterSetMuted)
+        {
+            var audioCtrl = FindAnyObjectByType<CuuChauAudioController>();
+            if (audioCtrl == null) return;
+
+            if (applyMasterSetMuted)
+            {
+                audioCtrl.SetMuted(_isMuted);
+            }
+            else if (!_isMuted)
+            {
+                audioCtrl.SetMuted(false);
+            }
+
+            AudioSource[] sources = audioCtrl.GetComponentsInChildren<AudioSource>(includeInactive: true);
+            for (int i = 0; i < sources.Length; i++)
+            {
+                AudioSource src = sources[i];
+                if (src == null) continue;
+                string srcName = src.gameObject.name;
+                if (srcName.StartsWith("BGM_", StringComparison.OrdinalIgnoreCase))
+                {
+                    src.mute = _isBgmMuted;
+                }
+                else if (srcName.StartsWith("SFX_", StringComparison.OrdinalIgnoreCase))
+                {
+                    src.mute = _isSfxMuted;
+                }
+            }
+        }
+
+        private void RefreshAutoSkipNullVisuals()
+        {
+            if (_quickAutoSkipNullBg != null)
+            {
+                _quickAutoSkipNullBg.color = _isAutoSkipNullification
+                    ? new Color(0.46f, 0.24f, 0.12f, 0.96f)
+                    : ObsidianPanelColor;
+            }
+            if (_quickAutoSkipNullLabel != null)
+            {
+                _quickAutoSkipNullLabel.text = _isAutoSkipNullification
+                    ? "Bỏ Vô Giải: BẬT"
+                    : "Bỏ Vô Giải: TẮT";
+                _quickAutoSkipNullLabel.color = _isAutoSkipNullification
+                    ? GoldIvoryColor
+                    : new Color(0.80f, 0.75f, 0.64f, 0.92f);
+            }
         }
 
         public void SetReducedMotion(bool reducedMotion)
@@ -286,6 +510,12 @@ namespace CuuChau.Arena
             }
 
             UpdateDrawerSlide(dt);
+
+            if (_logScrollPending && _logDrawerOpen && _logScrollRect != null)
+            {
+                _logScrollRect.verticalNormalizedPosition = 0f;
+                _logScrollPending = false;
+            }
         }
 
         private void UpdateDrawerSlide(float dt)
@@ -342,11 +572,25 @@ namespace CuuChau.Arena
             _topHeaderText.text = "CỬU CHÂU ẨN KIẾM · Vòng 1 · Rút: 0";
             _topHeaderText.raycastTarget = false;
 
-            // Strictly 2 Cast-Bronze Seals Top-Right (sealBattleLog, sealSettingsGear)
+            // Top-Right Quick Buttons (Trọng Tài & Sổ Tay) + 2 Cast-Bronze Seals
+            _quickRefereeBtn = CreateQuickTopPillButton(
+                "HUD_Quick_Referee",
+                "Trọng Tài",
+                new Vector2(-284f, -34f),
+                new Vector2(102f, 38f),
+                RequestOpenReferee);
+
+            _quickHandbookBtn = CreateQuickTopPillButton(
+                "HUD_Quick_Handbook",
+                "Sổ Tay",
+                new Vector2(-180f, -34f),
+                new Vector2(92f, 38f),
+                RequestOpenHandbook);
+
             _battleLogSealBtn = CreateSealButton(
                 "HUD_Seal_BattleLog",
                 _catalog != null ? _catalog.sealBattleLog : null,
-                new Vector2(-118f, -28f),
+                new Vector2(-112f, -28f),
                 ToggleBattleLogDrawer);
 
             _settingsSealBtn = CreateSealButton(
@@ -354,6 +598,47 @@ namespace CuuChau.Arena
                 _catalog != null ? _catalog.sealSettingsGear : null,
                 new Vector2(-48f, -28f),
                 ToggleSettingsModal);
+        }
+
+        private Button CreateQuickTopPillButton(string name, string label, Vector2 anchoredPos, Vector2 size, Action onClick)
+        {
+            var go = new GameObject(name, typeof(RectTransform), typeof(Image), typeof(Button));
+            go.transform.SetParent(_rootRect, false);
+            var rt = go.GetComponent<RectTransform>();
+            rt.anchorMin = new Vector2(1f, 1f);
+            rt.anchorMax = new Vector2(1f, 1f);
+            rt.pivot = new Vector2(1f, 1f);
+            rt.anchoredPosition = anchoredPos;
+            rt.sizeDelta = size;
+
+            var border = go.GetComponent<Image>();
+            border.color = BronzeBorderColor;
+
+            var innerGo = new GameObject("Inner", typeof(RectTransform), typeof(Image));
+            innerGo.transform.SetParent(rt, false);
+            StretchFull(innerGo.GetComponent<RectTransform>(), 1.5f, 1.5f);
+            var innerBg = innerGo.GetComponent<Image>();
+            innerBg.color = ObsidianPanelColor;
+            innerBg.raycastTarget = false;
+
+            var textGo = new GameObject("Label", typeof(RectTransform), typeof(TextMeshProUGUI));
+            textGo.transform.SetParent(innerGo.transform, false);
+            StretchFull(textGo.GetComponent<RectTransform>(), 6f, 2f);
+            var tmp = textGo.GetComponent<TextMeshProUGUI>();
+            if (_sansFont != null) tmp.font = _sansFont;
+            tmp.fontSize = 15f;
+            tmp.fontStyle = FontStyles.Bold;
+            tmp.color = GoldIvoryColor;
+            tmp.alignment = TextAlignmentOptions.Center;
+            tmp.textWrappingMode = TextWrappingModes.NoWrap;
+            tmp.overflowMode = TextOverflowModes.Truncate;
+            tmp.text = label;
+            tmp.raycastTarget = false;
+
+            var btn = go.GetComponent<Button>();
+            btn.targetGraphic = border;
+            btn.onClick.AddListener(() => onClick?.Invoke());
+            return btn;
         }
 
         private Button CreateSealButton(string name, Sprite sprite, Vector2 anchoredPos, Action onClick)
@@ -576,7 +861,12 @@ namespace CuuChau.Arena
                 _discardSuitImage.enabled = suit != null;
             }
 
-            if (_discardRankText != null) _discardRankText.text = string.IsNullOrEmpty(top.Rank) ? string.Empty : top.Rank;
+            if (_discardRankText != null)
+            {
+                _discardRankText.text = string.IsNullOrEmpty(top.Rank)
+                    ? string.Empty
+                    : EquipmentSlotGrid.FormatCardRank(top.Rank);
+            }
             if (_discardTitleText != null)
             {
                 string title = !string.IsNullOrEmpty(top.NameVi)
@@ -596,6 +886,37 @@ namespace CuuChau.Arena
             dockRt.pivot = new Vector2(1f, 0f);
             dockRt.anchoredPosition = new Vector2(-34f, 28f);
             dockRt.sizeDelta = new Vector2(360f, 194f);
+
+            // Quick Auto-Skip Nullification Toggle Chip (left of SecondarySkipButton)
+            var autoSkipGo = new GameObject("QuickAutoSkipNullChip", typeof(RectTransform), typeof(Image), typeof(Button));
+            autoSkipGo.transform.SetParent(dockRt, false);
+            var autoSkipRt = autoSkipGo.GetComponent<RectTransform>();
+            autoSkipRt.anchorMin = new Vector2(0f, 1f);
+            autoSkipRt.anchorMax = new Vector2(0f, 1f);
+            autoSkipRt.pivot = new Vector2(0f, 1f);
+            autoSkipRt.anchoredPosition = new Vector2(0f, -3f);
+            autoSkipRt.sizeDelta = new Vector2(156f, 38f);
+            _quickAutoSkipNullBg = autoSkipGo.GetComponent<Image>();
+            _quickAutoSkipNullBg.color = ObsidianPanelColor;
+            _quickAutoSkipNullBtn = autoSkipGo.GetComponent<Button>();
+            _quickAutoSkipNullBtn.targetGraphic = _quickAutoSkipNullBg;
+            _quickAutoSkipNullBtn.onClick.AddListener(() => SetAutoSkipNullification(!_isAutoSkipNullification));
+
+            var autoSkipTextGo = new GameObject("AutoSkipLabel", typeof(RectTransform), typeof(TextMeshProUGUI));
+            autoSkipTextGo.transform.SetParent(autoSkipRt, false);
+            StretchFull(autoSkipTextGo.GetComponent<RectTransform>(), 6f, 2f);
+            _quickAutoSkipNullLabel = autoSkipTextGo.GetComponent<TextMeshProUGUI>();
+            if (_sansFont != null) _quickAutoSkipNullLabel.font = _sansFont;
+            _quickAutoSkipNullLabel.fontSize = 15f;
+            _quickAutoSkipNullLabel.enableAutoSizing = true;
+            _quickAutoSkipNullLabel.fontSizeMin = 12.5f;
+            _quickAutoSkipNullLabel.fontSizeMax = 15f;
+            _quickAutoSkipNullLabel.fontStyle = FontStyles.Bold;
+            _quickAutoSkipNullLabel.alignment = TextAlignmentOptions.Center;
+            _quickAutoSkipNullLabel.textWrappingMode = TextWrappingModes.NoWrap;
+            _quickAutoSkipNullLabel.overflowMode = TextOverflowModes.Truncate;
+            _quickAutoSkipNullLabel.raycastTarget = false;
+            RefreshAutoSkipNullVisuals();
 
             // Secondary Skip Button (above fuse timer, visible only when reacting/discarding)
             var skipGo = new GameObject("SecondarySkipButton", typeof(RectTransform), typeof(Image), typeof(Button));
@@ -762,22 +1083,49 @@ namespace CuuChau.Arena
             _logScrollRect.scrollSensitivity = 28f;
         }
 
-        private void CreateLogLineEntry(string text)
+        private void PushLogLineToRingBuffer(string text)
         {
             if (_logContentRect == null) return;
-            var lineGo = new GameObject($"LogLine_{_logLineViews.Count}", typeof(RectTransform), typeof(TextMeshProUGUI));
-            lineGo.transform.SetParent(_logContentRect, false);
 
-            var tmp = lineGo.GetComponent<TextMeshProUGUI>();
-            if (_sansFont != null) tmp.font = _sansFont;
-            tmp.fontSize = 15f;
-            tmp.color = new Color(0.92f, 0.88f, 0.78f, 1f);
-            tmp.alignment = TextAlignmentOptions.TopLeft;
-            tmp.textWrappingMode = TextWrappingModes.Normal;
-            tmp.text = text;
-            tmp.raycastTarget = false;
+            for (int i = 0; i < _logLineViews.Count; i++)
+            {
+                TextMeshProUGUI pooled = _logLineViews[i];
+                if (pooled != null && !pooled.gameObject.activeSelf)
+                {
+                    pooled.text = text;
+                    pooled.gameObject.SetActive(true);
+                    pooled.transform.SetAsLastSibling();
+                    return;
+                }
+            }
 
-            _logLineViews.Add(tmp);
+            if (_logLineViews.Count < MaxLogRingBufferSize)
+            {
+                var lineGo = new GameObject($"LogLine_{_logLineViews.Count}", typeof(RectTransform), typeof(TextMeshProUGUI));
+                lineGo.transform.SetParent(_logContentRect, false);
+
+                var tmp = lineGo.GetComponent<TextMeshProUGUI>();
+                if (_sansFont != null) tmp.font = _sansFont;
+                tmp.fontSize = 15f;
+                tmp.color = new Color(0.92f, 0.88f, 0.78f, 1f);
+                tmp.alignment = TextAlignmentOptions.TopLeft;
+                tmp.textWrappingMode = TextWrappingModes.Normal;
+                tmp.text = text;
+                tmp.raycastTarget = false;
+
+                _logLineViews.Add(tmp);
+                return;
+            }
+
+            int idx = _logRingCursor % _logLineViews.Count;
+            _logRingCursor = (_logRingCursor + 1) % _logLineViews.Count;
+            TextMeshProUGUI recycled = _logLineViews[idx];
+            if (recycled != null)
+            {
+                recycled.text = text;
+                recycled.gameObject.SetActive(true);
+                recycled.transform.SetAsLastSibling();
+            }
         }
 
         private void BuildSettingsModal()
@@ -794,7 +1142,7 @@ namespace CuuChau.Arena
             var panelRt = panelGo.GetComponent<RectTransform>();
             panelRt.anchorMin = new Vector2(0.5f, 0.5f);
             panelRt.anchorMax = new Vector2(0.5f, 0.5f);
-            panelRt.sizeDelta = new Vector2(460f, 354f);
+            panelRt.sizeDelta = new Vector2(490f, 468f);
             panelGo.GetComponent<Image>().color = BronzeBorderColor;
 
             var innerGo = new GameObject("SettingsInner", typeof(RectTransform), typeof(Image));
@@ -819,41 +1167,55 @@ namespace CuuChau.Arena
             titleTmp.alignment = TextAlignmentOptions.MidlineLeft;
             titleTmp.text = "Cài Đặt Âm Thanh & Tiện Ích";
 
-            _muteToggle = CreateOptionToggle(
-                "MuteToggle",
+            _bgmMuteToggle = CreateOptionToggle(
+                "BgmMuteToggle",
                 innerRt,
-                "Tắt toàn bộ âm thanh (Nhạc nền & Hiệu ứng)",
-                new Vector2(0f, 70f),
-                SetMuted);
+                "Tắt nhạc nền (BGM)",
+                new Vector2(0f, 128f),
+                SetBgmMuted);
+
+            _sfxMuteToggle = CreateOptionToggle(
+                "SfxMuteToggle",
+                innerRt,
+                "Tắt hiệu ứng âm thanh (SFX)",
+                new Vector2(0f, 78f),
+                SetSfxMuted);
+
+            _autoSkipNullToggle = CreateOptionToggle(
+                "AutoSkipNullToggle",
+                innerRt,
+                "Tự bỏ qua Hóa Giải Chân Khí (Vô Giải)",
+                new Vector2(0f, 28f),
+                SetAutoSkipNullification);
 
             _reducedMotionToggle = CreateOptionToggle(
                 "ReducedMotionToggle",
                 innerRt,
                 "Giảm chuyển động (Tắt rung bàn & xoay vòng ngắm)",
-                new Vector2(0f, 14f),
+                new Vector2(0f, -22f),
                 SetReducedMotion);
 
             var refBtn = CreateTextButton("OpenRefereeBtn", innerRt, "Bảng Trọng Tài (F2)", 15f, () =>
             {
                 _settingsModalObj.SetActive(false);
-                OnOpenRefereeRequested?.Invoke();
+                RequestOpenReferee();
             });
             var refRt = refBtn.GetComponent<RectTransform>();
             refRt.anchorMin = new Vector2(0.5f, 0.5f);
             refRt.anchorMax = new Vector2(0.5f, 0.5f);
-            refRt.anchoredPosition = new Vector2(-104f, -48f);
-            refRt.sizeDelta = new Vector2(196f, 42f);
+            refRt.anchoredPosition = new Vector2(-108f, -92f);
+            refRt.sizeDelta = new Vector2(204f, 42f);
 
             var bookBtn = CreateTextButton("OpenHandbookBtn", innerRt, "Sổ Tay Cửu Châu (Tab)", 15f, () =>
             {
                 _settingsModalObj.SetActive(false);
-                OnOpenHandbookRequested?.Invoke();
+                RequestOpenHandbook();
             });
             var bookRt = bookBtn.GetComponent<RectTransform>();
             bookRt.anchorMin = new Vector2(0.5f, 0.5f);
             bookRt.anchorMax = new Vector2(0.5f, 0.5f);
-            bookRt.anchoredPosition = new Vector2(104f, -48f);
-            bookRt.sizeDelta = new Vector2(196f, 42f);
+            bookRt.anchoredPosition = new Vector2(108f, -92f);
+            bookRt.sizeDelta = new Vector2(204f, 42f);
 
             var closeBtn = CreateTextButton("CloseSettingsBtn", innerRt, "Đóng Cài Đặt", 16f, () =>
             {
@@ -944,9 +1306,25 @@ namespace CuuChau.Arena
             return btn;
         }
 
+        private void RequestOpenReferee()
+        {
+            OnOpenRefereeRequested?.Invoke();
+            OnRefereeRequested?.Invoke();
+        }
+
+        private void RequestOpenHandbook()
+        {
+            OnOpenHandbookRequested?.Invoke();
+            OnHandbookRequested?.Invoke();
+        }
+
         private void ToggleBattleLogDrawer()
         {
             _logDrawerOpen = !_logDrawerOpen;
+            if (_logDrawerOpen)
+            {
+                _logScrollPending = true;
+            }
         }
 
         private void ToggleSettingsModal()

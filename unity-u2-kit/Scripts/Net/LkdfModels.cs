@@ -106,6 +106,8 @@ namespace CuuChau.Net
         [JsonProperty("equipments")] public PlayerEquipmentsDto Equipments { get; set; }
         [JsonProperty("delayedScrolls")] public List<CardInstanceDto> DelayedScrolls { get; set; } = new();
         [JsonProperty("isBotTakeover")] public bool IsBotTakeover { get; set; }
+        [JsonProperty("maxHandLimit")] public int? MaxHandLimit { get; set; }
+        [JsonProperty("distanceFromViewer")] public int? DistanceFromViewer { get; set; }
     }
 
     [Serializable]
@@ -124,10 +126,49 @@ namespace CuuChau.Net
         [JsonProperty("id")] public string Id { get; set; }
         [JsonProperty("kind")] public string Kind { get; set; }
         [JsonProperty("targetSeat")] public int TargetSeat { get; set; }
-        [JsonProperty("sourceSeat")] public int SourceSeat { get; set; }
+        [JsonProperty("sourceSeat")] public int? SourceSeat { get; set; }
+        [JsonProperty("responderSeat")] public int? ResponderSeat { get; set; }
+        [JsonProperty("attackerSeat")] public int? AttackerSeat { get; set; }
         [JsonProperty("scrollNameVi")] public string ScrollNameVi { get; set; }
         [JsonProperty("canRespondNullification")] public bool? CanRespondNullification { get; set; }
+        [JsonProperty("handPick")] public string HandPick { get; set; }
+        [JsonProperty("stealing")] public bool? Stealing { get; set; }
+        [JsonProperty("allowDelayed")] public bool? AllowDelayed { get; set; }
+        [JsonProperty("allowBagua")] public bool? AllowBagua { get; set; }
+        [JsonProperty("baguaTried")] public bool? BaguaTried { get; set; }
+        [JsonProperty("remainingDiscards")] public int? RemainingDiscards { get; set; }
+        [JsonProperty("guanXingCards")] public List<CardInstanceDto> GuanXingCards { get; set; }
+        [JsonProperty("yiJiCards")] public List<CardInstanceDto> YiJiCards { get; set; }
+        [JsonProperty("excludedSeats")] public List<int> ExcludedSeats { get; set; }
         [JsonExtensionData] public IDictionary<string, JToken> ExtraFields { get; set; }
+    }
+
+    [Serializable]
+    public sealed class TurnFlagsDto
+    {
+        [JsonProperty("satUsedThisTurn")] public int SatUsedThisTurn { get; set; }
+        [JsonProperty("bonusSatLimitThisTurn")] public int? BonusSatLimitThisTurn { get; set; }
+        [JsonProperty("skipPlayPhase")] public bool SkipPlayPhase { get; set; }
+        [JsonProperty("zhiHengUsedThisTurn")] public bool? ZhiHengUsedThisTurn { get; set; }
+        [JsonProperty("fanJianUsedThisTurn")] public bool? FanJianUsedThisTurn { get; set; }
+        [JsonProperty("jieYinUsedThisTurn")] public bool? JieYinUsedThisTurn { get; set; }
+        [JsonProperty("qingNangUsedThisTurn")] public bool? QingNangUsedThisTurn { get; set; }
+        [JsonProperty("liJianUsedThisTurn")] public bool? LiJianUsedThisTurn { get; set; }
+        [JsonProperty("renDeHealedThisTurn")] public bool? RenDeHealedThisTurn { get; set; }
+        [JsonProperty("jiJiangDeclinedThisTurn")] public bool? JiJiangDeclinedThisTurn { get; set; }
+        [JsonExtensionData] public IDictionary<string, JToken> ExtraFields { get; set; }
+    }
+
+    [Serializable]
+    public sealed class AvailableActionsDto
+    {
+        [JsonProperty("isViewerActor")] public bool IsViewerActor { get; set; }
+        [JsonProperty("canDraw")] public bool CanDraw { get; set; }
+        [JsonProperty("canEndPlayPhase")] public bool CanEndPlayPhase { get; set; }
+        [JsonProperty("discardRequiredCount")] public int DiscardRequiredCount { get; set; }
+        [JsonProperty("playableCardIds")] public List<string> PlayableCardIds { get; set; } = new();
+        [JsonProperty("activatableSkillIds")] public List<string> ActivatableSkillIds { get; set; } = new();
+        [JsonProperty("actorSeats")] public List<int> ActorSeats { get; set; } = new();
     }
 
     [Serializable]
@@ -138,6 +179,7 @@ namespace CuuChau.Net
         [JsonProperty("roundNumber")] public int RoundNumber { get; set; }
         [JsonProperty("currentTurnSeat")] public int CurrentTurnSeat { get; set; }
         [JsonProperty("turnPhase")] public string TurnPhase { get; set; }
+        [JsonProperty("peacefulFirstRound")] public bool PeacefulFirstRound { get; set; }
         [JsonProperty("drawPileCount")] public int DrawPileCount { get; set; }
         [JsonProperty("discardPileCount")] public int DiscardPileCount { get; set; }
         [JsonProperty("discardPileTop")] public CardInstanceDto DiscardPileTop { get; set; }
@@ -146,6 +188,8 @@ namespace CuuChau.Net
         [JsonProperty("harvestPool")] public List<CardInstanceDto> HarvestPool { get; set; } = new();
         [JsonProperty("heroDraft")] public HeroDraftViewDto HeroDraft { get; set; }
         [JsonProperty("activeInterrupt")] public PublicInterruptViewDto ActiveInterrupt { get; set; }
+        [JsonProperty("turnFlags")] public TurnFlagsDto TurnFlags { get; set; }
+        [JsonProperty("availableActions")] public AvailableActionsDto AvailableActions { get; set; }
         [JsonProperty("actionLog")] public List<string> ActionLog { get; set; } = new();
         [JsonProperty("winningFaction")] public string WinningFaction { get; set; }
         [JsonProperty("winnerUserIds")] public List<string> WinnerUserIds { get; set; } = new();

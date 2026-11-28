@@ -19,6 +19,7 @@ Shader "CuuChau/SilkRibbonGlow"
         _CoreColor ("Gold Core", Color) = (0.98, 0.84, 0.42, 1)
         _EdgeColor ("Crimson Silk", Color) = (0.82, 0.14, 0.12, 1)
         _PulseFreq ("Pulse Freq", Float) = 3.0
+        [Toggle] _ReducedMotion ("Reduced Motion", Float) = 0
     }
 
     SubShader
@@ -95,6 +96,8 @@ Shader "CuuChau/SilkRibbonGlow"
             fixed4 _CoreColor;
             fixed4 _EdgeColor;
             float _PulseFreq;
+            float _ReducedMotion;
+            float _GlobalReducedMotion;
 
             float hash21(float2 p)
             {
@@ -155,11 +158,12 @@ Shader "CuuChau/SilkRibbonGlow"
                 float softEdge = pow(edgeSine, 0.75);
                 float coreProfile = pow(edgeSine, 2.8);
 
-                // Flowing highlight along uv.x - _Time.y * _FlowSpeed.
-                float flowCoord = IN.texcoord.x - _Time.y * _FlowSpeed;
-                float flowWave = 0.5 + 0.5 * sin(flowCoord * 12.56637);
+                // Flowing highlight along uv.x - _Time.y * _FlowSpeed (WCAG 2.3.3 Reduced Motion safe).
+                float motionScale = 1.0 - saturate(max(_ReducedMotion, _GlobalReducedMotion));
+                float flowCoord = IN.texcoord.x - (_Time.y * _FlowSpeed * motionScale);
+                float flowWave = 0.5 + (0.5 * sin(flowCoord * 12.56637)) * motionScale;
                 float silkWeave = valueNoise(float2(flowCoord * 9.0, IN.texcoord.y * 5.0));
-                float pulse = 0.88 + 0.12 * sin(_Time.y * _PulseFreq);
+                float pulse = (1.0 - 0.12 * motionScale) + (0.12 * sin(_Time.y * _PulseFreq)) * motionScale;
 
                 float coreMix = saturate(coreProfile * 0.85 + flowWave * coreProfile * 0.35);
                 float3 ribbonRgb = lerp(_EdgeColor.rgb, _CoreColor.rgb, coreMix);

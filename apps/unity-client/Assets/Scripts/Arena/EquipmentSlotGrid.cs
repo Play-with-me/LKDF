@@ -30,6 +30,7 @@ namespace CuuChau.Arena
             public SlotKind Kind;
             public RectTransform Root;
             public Image Background;
+            public Image InnerFill;
             public Image Border;
             public Image SuitIcon;
             public TextMeshProUGUI Label;
@@ -37,11 +38,13 @@ namespace CuuChau.Arena
             public string TooltipSummary;
         }
 
-        private static readonly Color EmptyBgColor = new(0.055f, 0.050f, 0.045f, 0.72f);
-        private static readonly Color EmptyBorderColor = new(0.36f, 0.30f, 0.22f, 0.45f);
-        private static readonly Color EmptyTextColor = new(0.62f, 0.58f, 0.51f, 0.76f);
+        private static readonly Color EmptyBgColor = new(0.045f, 0.040f, 0.035f, 0.26f);
+        private static readonly Color EmptyInnerColor = new(0.045f, 0.040f, 0.035f, 0.32f);
+        private static readonly Color EmptyBorderColor = new(0.36f, 0.30f, 0.22f, 0.20f);
+        private static readonly Color EmptyTextColor = new(0.68f, 0.63f, 0.54f, 0.42f);
 
         private static readonly Color EquippedBgColor = new(0.085f, 0.075f, 0.062f, 0.90f);
+        private static readonly Color EquippedInnerColor = new(0.050f, 0.045f, 0.040f, 0.92f);
         private static readonly Color WeaponBorderColor = new(0.84f, 0.66f, 0.30f, 0.85f);
         private static readonly Color ArmorBorderColor = new(0.42f, 0.72f, 0.84f, 0.85f);
         private static readonly Color PlusHorseBorderColor = new(0.36f, 0.78f, 0.56f, 0.85f);
@@ -119,16 +122,23 @@ namespace CuuChau.Arena
             if (card == null || string.IsNullOrEmpty(card.CardKey))
             {
                 slot.Background.color = EmptyBgColor;
+                if (slot.InnerFill != null) slot.InnerFill.color = EmptyInnerColor;
                 slot.Border.color = EmptyBorderColor;
                 slot.SuitIcon.enabled = false;
                 slot.Label.color = EmptyTextColor;
+                slot.Label.rectTransform.offsetMin = new Vector2(8f, 0f);
                 slot.Label.text = GetEmptyLabel(slot.Kind);
                 slot.TooltipSummary = string.Empty;
                 return;
             }
 
-            string displayName = ResolveDisplayName(card.CardKey, card.NameVi);
+            string fullDisplayName = ResolveDisplayName(card.CardKey, card.NameVi);
+            string compactName = ResolveCompactName(card.CardKey, card.NameVi);
+            string formattedRank = FormatCardRank(card.Rank);
+            string rankPrefix = string.IsNullOrEmpty(formattedRank) ? string.Empty : $"{formattedRank} ";
+
             slot.Background.color = EquippedBgColor;
+            if (slot.InnerFill != null) slot.InnerFill.color = EquippedInnerColor;
             slot.Border.color = GetActiveBorderColor(slot.Kind);
             slot.Label.color = GetActiveTextColor(slot.Kind);
 
@@ -138,32 +148,34 @@ namespace CuuChau.Arena
                 slot.SuitIcon.sprite = suitSprite;
                 slot.SuitIcon.color = GetSuitTint(card.Suit);
                 slot.SuitIcon.enabled = true;
+                slot.Label.rectTransform.offsetMin = new Vector2(21f, 0f);
             }
             else
             {
                 slot.SuitIcon.enabled = false;
+                slot.Label.rectTransform.offsetMin = new Vector2(8f, 0f);
             }
 
             if (slot.Kind == SlotKind.Weapon)
             {
                 int range = GetWeaponRange(card.CardKey);
-                slot.Label.text = $"Tầm {range} · {displayName}";
-                slot.TooltipSummary = BuildTooltipText(card, $"Vũ khí · Tầm đánh {range} · {displayName}");
+                slot.Label.text = $"{rankPrefix}T{range} · {compactName}";
+                slot.TooltipSummary = BuildTooltipText(card, $"Vũ khí · Tầm đánh {range} · {rankPrefix}{fullDisplayName}");
             }
             else if (slot.Kind == SlotKind.Armor)
             {
-                slot.Label.text = $"Giáp · {displayName}";
-                slot.TooltipSummary = BuildTooltipText(card, $"Phòng cụ · {displayName}");
+                slot.Label.text = $"{rankPrefix}Giáp · {compactName}";
+                slot.TooltipSummary = BuildTooltipText(card, $"Phòng cụ · {rankPrefix}{fullDisplayName}");
             }
             else if (slot.Kind == SlotKind.PlusOneHorse)
             {
-                slot.Label.text = $"+1 · {displayName}";
-                slot.TooltipSummary = BuildTooltipText(card, $"Khinh công +1 · {displayName}");
+                slot.Label.text = $"{rankPrefix}+1 · {compactName}";
+                slot.TooltipSummary = BuildTooltipText(card, $"Khinh công +1 · {rankPrefix}{fullDisplayName}");
             }
             else
             {
-                slot.Label.text = $"-1 · {displayName}";
-                slot.TooltipSummary = BuildTooltipText(card, $"Thân pháp -1 · {displayName}");
+                slot.Label.text = $"{rankPrefix}-1 · {compactName}";
+                slot.TooltipSummary = BuildTooltipText(card, $"Thân pháp -1 · {rankPrefix}{fullDisplayName}");
             }
         }
 
@@ -199,7 +211,7 @@ namespace CuuChau.Arena
             var innerRt = innerGo.GetComponent<RectTransform>();
             StretchFull(innerRt, 1f);
             var innerImg = innerGo.GetComponent<Image>();
-            innerImg.color = new Color(0.05f, 0.045f, 0.04f, 0.92f);
+            innerImg.color = EmptyInnerColor;
             innerImg.raycastTarget = false;
 
             var suitGo = new GameObject("SuitIcon", typeof(RectTransform), typeof(Image));
@@ -220,12 +232,15 @@ namespace CuuChau.Arena
             var labelRt = labelGo.GetComponent<RectTransform>();
             labelRt.anchorMin = Vector2.zero;
             labelRt.anchorMax = Vector2.one;
-            labelRt.offsetMin = new Vector2(21f, 0f);
+            labelRt.offsetMin = new Vector2(8f, 0f);
             labelRt.offsetMax = new Vector2(-4f, 0f);
 
             var labelTmp = labelGo.GetComponent<TextMeshProUGUI>();
             if (_sansFont != null) labelTmp.font = _sansFont;
             labelTmp.fontSize = 15f;
+            labelTmp.enableAutoSizing = true;
+            labelTmp.fontSizeMin = 12.5f;
+            labelTmp.fontSizeMax = 15f;
             labelTmp.fontStyle = FontStyles.Bold;
             labelTmp.color = EmptyTextColor;
             labelTmp.alignment = TextAlignmentOptions.MidlineLeft;
@@ -238,6 +253,7 @@ namespace CuuChau.Arena
                 Kind = kind,
                 Root = cellRt,
                 Background = bg,
+                InnerFill = innerImg,
                 Border = borderImg,
                 SuitIcon = suitImg,
                 Label = labelTmp,
@@ -267,11 +283,51 @@ namespace CuuChau.Arena
         {
             return kind switch
             {
-                SlotKind.Weapon => "VK · Trống",
-                SlotKind.Armor => "Giáp · Trống",
-                SlotKind.PlusOneHorse => "+1 · Trống",
-                SlotKind.MinusOneHorse => "-1 · Trống",
-                _ => "Trống",
+                SlotKind.Weapon => "VK",
+                SlotKind.Armor => "Giáp",
+                SlotKind.PlusOneHorse => "+1",
+                SlotKind.MinusOneHorse => "-1",
+                _ => "—",
+            };
+        }
+
+        public static string FormatCardRank(string rank)
+        {
+            if (string.IsNullOrWhiteSpace(rank)) return string.Empty;
+            return rank.Trim().ToUpperInvariant() switch
+            {
+                "1" => "A",
+                "11" => "J",
+                "12" => "Q",
+                "13" => "K",
+                var r => r,
+            };
+        }
+
+        public static string ResolveCompactName(string cardKey, string fallbackNameVi)
+        {
+            return cardKey switch
+            {
+                "gia_cat_lien_no" => "Liên Nỏ",
+                "tu_hung_song_co_kiem" => "Song Kiếm",
+                "thanh_cong_kiem" => "Thanh Phong",
+                "han_bang_kiem" => "Băng Phách",
+                "tu_khi_hoan" => "Tụ Khí",
+                "thanh_long_yen_nguyet_dao" => "Huyền Long",
+                "truong_bat_xa_mau" => "Xà Mâu",
+                "quan_thach_phu" => "Phá Sơn",
+                "phuong_thien_hoa_kich" => "Họa Kích",
+                "ky_lan_cung" => "Linh Cung",
+                "bat_quai_tran" => "Bát Quái",
+                "nhan_vuong_thuan" => "Thiết Thuẫn",
+                "hoan_anh_giap" => "Huyễn Ảnh",
+                "tuyet_anh" => "Đạp Tuyết",
+                "dich_lo" => "Lăng Ba",
+                "trao_hoang_phi_dien" => "Ngự Phong",
+                "xich_tho" => "Truy Ảnh",
+                "dai_uyen" => "Xích Diễm",
+                "tu_tinh" => "Huyền Lôi",
+                _ => !string.IsNullOrWhiteSpace(fallbackNameVi) ? fallbackNameVi : (cardKey ?? "Trang bị"),
             };
         }
 

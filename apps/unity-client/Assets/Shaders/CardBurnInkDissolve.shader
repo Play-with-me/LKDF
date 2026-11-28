@@ -20,6 +20,7 @@ Shader "CuuChau/CardBurnInkDissolve"
         _InkEdgeColor ("Ink Scorch Color", Color) = (0.07, 0.05, 0.04, 1)
         _NoiseScale ("Noise Scale", Float) = 14.0
         _SheenStrength ("Gold Sheen", Range(0, 1)) = 0.25
+        [Toggle] _ReducedMotion ("Reduced Motion", Float) = 0
     }
 
     SubShader
@@ -97,6 +98,8 @@ Shader "CuuChau/CardBurnInkDissolve"
             fixed4 _InkEdgeColor;
             float _NoiseScale;
             float _SheenStrength;
+            float _ReducedMotion;
+            float _GlobalReducedMotion;
 
             float hash21(float2 p)
             {
@@ -182,11 +185,12 @@ Shader "CuuChau/CardBurnInkDissolve"
                 float emberMask = smoothstep(edgeSoft + inkWidth * 0.25, edgeSoft + inkWidth * 0.85, dist)
                                 * (1.0 - smoothstep(edgeSoft + inkWidth + emberWidth * 0.45, totalBand, dist));
 
-                // Gentle diagonal gold-foil sheen across intact card surface.
-                float sheenSweep = frac(_Time.y * 0.22) * 2.4 - 0.7;
+                // Gentle diagonal gold-foil sheen across intact card surface (WCAG 2.3.3 Reduced Motion safe).
+                float motionScale = 1.0 - saturate(max(_ReducedMotion, _GlobalReducedMotion));
+                float sheenSweep = frac(_Time.y * 0.22 * motionScale) * 2.4 - 0.7;
                 float sheenCoord = (IN.texcoord.x * 0.72 + IN.texcoord.y * 0.45) - sheenSweep;
                 float sheenBand = exp(-pow(sheenCoord * 6.0, 2.0));
-                float3 goldSheen = float3(0.98, 0.84, 0.42) * (sheenBand * _SheenStrength * 0.26 * (1.0 - inkMask));
+                float3 goldSheen = float3(0.98, 0.84, 0.42) * (sheenBand * _SheenStrength * 0.26 * (1.0 - inkMask) * motionScale);
 
                 color.rgb += goldSheen;
                 color.rgb = lerp(color.rgb, _BurnEdgeColor.rgb * 1.45, saturate(emberMask * _BurnEdgeColor.a));

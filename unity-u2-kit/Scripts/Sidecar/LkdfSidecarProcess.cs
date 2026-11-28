@@ -12,7 +12,7 @@ namespace CuuChau.Sidecar
 {
     /// <summary>
     /// Khởi chạy và quản lý vòng đời máy chủ Node @lkdf/server ngầm gắn Windows Job Object,
-    /// bảo đảm tắt hoặc crash cửa sổ Unity luôn giải phóng cổng 3001 tức thì.
+    /// sinh khóa JWT ngẫu nhiên theo từng phiên thực thi và bảo đảm tắt hoặc crash cửa sổ Unity luôn giải phóng cổng tức thì.
     /// </summary>
     public class LkdfSidecarProcess : MonoBehaviour
     {
@@ -24,6 +24,7 @@ namespace CuuChau.Sidecar
 
         private Process _serverProcess;
         private IntPtr _jobHandle = IntPtr.Zero;
+        private string _runtimeJwtSecret = Guid.NewGuid().ToString("N") + Guid.NewGuid().ToString("N");
 
         public int ActivePort { get; private set; }
         public string BaseHttpUrl { get; private set; } = string.Empty;
@@ -60,6 +61,11 @@ namespace CuuChau.Sidecar
             BaseHttpUrl = $"http://127.0.0.1:{ActivePort}";
             BaseWsUrl = $"ws://127.0.0.1:{ActivePort}/ws";
 
+            if (string.IsNullOrEmpty(_runtimeJwtSecret))
+            {
+                _runtimeJwtSecret = Guid.NewGuid().ToString("N") + Guid.NewGuid().ToString("N");
+            }
+
             string dbPath = Path.Combine(Application.persistentDataPath, "lkdf-sidecar.json").Replace('\\', '/');
             var startInfo = new ProcessStartInfo
             {
@@ -74,7 +80,7 @@ namespace CuuChau.Sidecar
             startInfo.Environment["HOST"] = allowLanConnections ? "0.0.0.0" : "127.0.0.1";
             startInfo.Environment["PORT"] = ActivePort.ToString();
             startInfo.Environment["DATABASE_URL"] = $"json:{dbPath}";
-            startInfo.Environment["JWT_SESSION_SECRET"] = "cuu_chau_local_sidecar_secret_key_v1";
+            startInfo.Environment["JWT_SESSION_SECRET"] = _runtimeJwtSecret;
             startInfo.Environment["LKDF_ALLOW_LAN_FILL_BOTS"] = "1";
             startInfo.Environment["NODE_ENV"] = "production";
 
@@ -231,6 +237,12 @@ namespace CuuChau.Sidecar
         private void AttachKillOnCloseJobObject(Process process)
         {
 #if UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN
+            if (_jobHandle != IntPtr.Zero)
+            {
+                CloseWin32Handle(_jobHandle);
+                _jobHandle = IntPtr.Zero;
+            }
+
             _jobHandle = CreateJobObject(IntPtr.Zero, null);
             if (_jobHandle == IntPtr.Zero) return;
 

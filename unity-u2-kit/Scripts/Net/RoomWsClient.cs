@@ -12,10 +12,16 @@ namespace CuuChau.Net
 {
     /// <summary>
     /// Kết nối WebSocket thời gian thực với @lkdf/server trên luồng nền, đẩy gói tin về Unity Main Thread,
-    /// tự giữ nhịp ping 25 giây và nối lại tự động khi rớt mạng LAN/VPN.
+    /// tự giữ nhịp ping 25 giây và nối lại tự động 12 đợt (~55 giây, vượt cửa sổ failover 30s) khi rớt mạng LAN/VPN.
     /// </summary>
     public sealed class RoomWsClient : MonoBehaviour
     {
+        private static readonly float[] ReconnectBackoffSeconds =
+        {
+            1.0f, 1.5f, 2.0f, 3.0f, 5.0f, 5.0f,
+            5.5f, 6.0f, 6.0f, 6.5f, 6.5f, 7.0f
+        };
+
         [SerializeField] private float keepAliveSeconds = 25f;
 
         public event Action<string, string> OnAuthOk;
@@ -25,7 +31,9 @@ namespace CuuChau.Net
         public event Action<string> OnDisconnected;
 
         private readonly ConcurrentQueue<string> _incomingQueue = new();
+        private readonly List<WsIncomingEnvelope> _frameEnvelopeBatch = new(16);
         private readonly List<string> _accumulatedActionLog = new();
+        private List<string> _cachedActionLogSnapshot = new(0);
 
         private ClientWebSocket _socket;
         private CancellationTokenSource _cts;
@@ -36,8 +44,10 @@ namespace CuuChau.Net
         private float _nextPingAt;
         private bool _intentionalClose;
         private bool _isConnecting;
+        private bool _isReconnecting;
 
         public bool IsConnected => _socket != null && _socket.State == WebSocketState.Open;
+        public bool IsReconnecting => _isReconnecting;
 
         public async Awaitable ConnectAndAuthenticateAsync(string wsUrl, string sessionToken, bool takeover = true)
         {
@@ -45,6 +55,26 @@ namespace CuuChau.Net
             _sessionToken = sessionToken;
             _intentionalClose = false;
             await ConnectInternalAsync(takeover);
+        }
+
+        public async Awaitable ForceReconnectAsync()
+        {
+            if (string.IsNullOrEmpty(_wsUrl) || string.IsNullOrEmpty(_sessionToken))
+            {
+                return;
+            }
+
+            _intentionalClose = false;
+            if (_isConnecting)
+            {
+                CleanupSocket();
+            }
+
+            await ConnectInternalAsync(takeover: true);
+            if (!IsConnected && !_intentionalClose && !_isReconnecting)
+            {
+                _ = ReconnectWithBackoffAsync();
+            }
         }
 
         public Awaitable SendSubscribeRoomAsync(string roomCode)
@@ -70,10 +100,9 @@ namespace CuuChau.Net
 
         private void Update()
         {
-            while (_incomingQueue.TryDequeue(out string raw))
+            if (!_incomingQueue.IsEmpty)
             {
-                if (raw == "pong") continue;
-                HandleJsonMessage(raw);
+                DrainIncomingQueue();
             }
 
             if (IsConnected && Time.unscaledTime >= _nextPingAt)
@@ -81,6 +110,51 @@ namespace CuuChau.Net
                 _nextPingAt = Time.unscaledTime + keepAliveSeconds;
                 _ = SendRawTextAsync("ping");
             }
+        }
+
+        private void DrainIncomingQueue()
+        {
+            _frameEnvelopeBatch.Clear();
+            while (_incomingQueue.TryDequeue(out string raw))
+            {
+                if (raw == "pong" || string.IsNullOrEmpty(raw)) continue;
+
+                WsIncomingEnvelope msg;
+                try
+                {
+                    msg = JsonConvert.DeserializeObject<WsIncomingEnvelope>(raw);
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogWarning($"[RoomWsClient] Lỗi giải mã WS JSON: {ex.Message}\nRaw: {raw}");
+                    continue;
+                }
+
+                if (msg != null)
+                {
+                    _frameEnvelopeBatch.Add(msg);
+                }
+            }
+
+            int batchCount = _frameEnvelopeBatch.Count;
+            for (int i = 0; i < batchCount; i++)
+            {
+                WsIncomingEnvelope msg = _frameEnvelopeBatch[i];
+
+                // Gộp mượt nhiều gói ROOM_STATE toàn phần (không dùng actionLogOffset) dồn trong cùng 1 frame
+                if (msg.Type == "ROOM_STATE" &&
+                    !msg.ActionLogOffset.HasValue &&
+                    i + 1 < batchCount &&
+                    _frameEnvelopeBatch[i + 1].Type == "ROOM_STATE" &&
+                    !_frameEnvelopeBatch[i + 1].ActionLogOffset.HasValue)
+                {
+                    continue;
+                }
+
+                DispatchEnvelope(msg);
+            }
+
+            _frameEnvelopeBatch.Clear();
         }
 
         private void OnDestroy() => Disconnect();
@@ -164,22 +238,13 @@ namespace CuuChau.Net
 
         private async Awaitable SendRawTextAsync(string text)
         {
-            if (_socket == null || _socket.State != WebSocketState.Open) return;
+            if (_socket == null || _socket.State != WebSocketState.Open || _cts == null) return;
             byte[] bytes = Encoding.UTF8.GetBytes(text);
             await _socket.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true, _cts.Token);
         }
 
-        private void HandleJsonMessage(string raw)
+        private void DispatchEnvelope(WsIncomingEnvelope msg)
         {
-            WsIncomingEnvelope msg;
-            try
-            {
-                msg = JsonConvert.DeserializeObject<WsIncomingEnvelope>(raw);
-            }
-            catch
-            {
-                return;
-            }
             if (msg == null) return;
 
             switch (msg.Type)
@@ -229,36 +294,120 @@ namespace CuuChau.Net
         {
             if (pv == null)
             {
-                _currentMatchId = null;
-                _accumulatedActionLog.Clear();
+                if (_currentMatchId != null || _accumulatedActionLog.Count > 0)
+                {
+                    _currentMatchId = null;
+                    _accumulatedActionLog.Clear();
+                    _cachedActionLogSnapshot = new List<string>(0);
+                }
                 return null;
             }
 
             if (_currentMatchId != pv.MatchId || !offset.HasValue || offset.Value == 0)
             {
+                List<string> incoming = pv.ActionLog;
+                bool matchChanged = _currentMatchId != pv.MatchId;
                 _currentMatchId = pv.MatchId;
-                _accumulatedActionLog.Clear();
-                if (pv.ActionLog != null) _accumulatedActionLog.AddRange(pv.ActionLog);
-            }
-            else if (offset.Value <= _accumulatedActionLog.Count && pv.ActionLog != null)
-            {
-                _accumulatedActionLog.RemoveRange(offset.Value, _accumulatedActionLog.Count - offset.Value);
-                _accumulatedActionLog.AddRange(pv.ActionLog);
+
+                if (matchChanged || !ActionLogListEquals(_accumulatedActionLog, incoming))
+                {
+                    _accumulatedActionLog.Clear();
+                    if (incoming != null && incoming.Count > 0)
+                    {
+                        _accumulatedActionLog.AddRange(incoming);
+                    }
+                    _cachedActionLogSnapshot = incoming ?? new List<string>(0);
+                }
+
+                pv.ActionLog = _cachedActionLogSnapshot;
+                return pv;
             }
 
-            pv.ActionLog = new List<string>(_accumulatedActionLog);
+            if (offset.Value <= _accumulatedActionLog.Count)
+            {
+                int removeCount = _accumulatedActionLog.Count - offset.Value;
+                int addCount = pv.ActionLog != null ? pv.ActionLog.Count : 0;
+
+                if (removeCount == 0 && addCount == 0 && _cachedActionLogSnapshot != null)
+                {
+                    pv.ActionLog = _cachedActionLogSnapshot;
+                    return pv;
+                }
+
+                if (removeCount > 0)
+                {
+                    _accumulatedActionLog.RemoveRange(offset.Value, removeCount);
+                }
+                if (addCount > 0)
+                {
+                    _accumulatedActionLog.AddRange(pv.ActionLog);
+                }
+
+                _cachedActionLogSnapshot = new List<string>(_accumulatedActionLog);
+                pv.ActionLog = _cachedActionLogSnapshot;
+                return pv;
+            }
+
+            if (pv.ActionLog != null && pv.ActionLog.Count > 0)
+            {
+                _accumulatedActionLog.AddRange(pv.ActionLog);
+                _cachedActionLogSnapshot = new List<string>(_accumulatedActionLog);
+            }
+
+            pv.ActionLog = _cachedActionLogSnapshot;
             return pv;
+        }
+
+        private static bool ActionLogListEquals(List<string> a, List<string> b)
+        {
+            int countA = a != null ? a.Count : 0;
+            int countB = b != null ? b.Count : 0;
+            if (countA != countB) return false;
+            if (countA == 0) return true;
+
+            for (int i = countA - 1; i >= 0; i--)
+            {
+                if (!string.Equals(a[i], b[i], StringComparison.Ordinal))
+                {
+                    return false;
+                }
+            }
+            return true;
         }
 
         private async Awaitable ReconnectWithBackoffAsync()
         {
-            int[] delaysMs = { 1000, 2000, 4000, 8000 };
-            foreach (int delay in delaysMs)
+            if (_isReconnecting || _intentionalClose || string.IsNullOrEmpty(_wsUrl) || string.IsNullOrEmpty(_sessionToken))
             {
-                if (_intentionalClose || destroyCancellationToken.IsCancellationRequested) return;
-                await Awaitable.WaitForSecondsAsync(delay / 1000f, destroyCancellationToken);
-                await ConnectInternalAsync(takeover: true);
-                if (IsConnected) return;
+                return;
+            }
+
+            _isReconnecting = true;
+            try
+            {
+                for (int i = 0; i < ReconnectBackoffSeconds.Length; i++)
+                {
+                    if (_intentionalClose || destroyCancellationToken.IsCancellationRequested) return;
+
+                    try
+                    {
+                        await Awaitable.WaitForSecondsAsync(ReconnectBackoffSeconds[i], destroyCancellationToken);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        return;
+                    }
+
+                    if (_intentionalClose || destroyCancellationToken.IsCancellationRequested) return;
+                    if (IsConnected) return;
+
+                    await ConnectInternalAsync(takeover: true);
+                    if (IsConnected) return;
+                }
+            }
+            finally
+            {
+                _isReconnecting = false;
             }
         }
 

@@ -284,8 +284,8 @@ namespace CuuChau.Modals
             {
                 "SHU" => new Color(0.20f, 0.74f, 0.52f, 1f),
                 "WEI" => new Color(0.26f, 0.62f, 0.94f, 1f),
-                "WU" => new Color(0.86f, 0.28f, 0.24f, 1f),
-                _ => new Color(0.66f, 0.44f, 0.88f, 1f),
+                "WU" => new Color(0.98f, 0.52f, 0.48f, 1f),
+                _ => new Color(0.76f, 0.58f, 0.96f, 1f),
             };
         }
 
@@ -359,7 +359,9 @@ namespace CuuChau.Modals
         private float _remainingSeconds;
         private int _readyCount;
         private int _totalSeatCount;
+        private int _explicitTotalSeatCount;
         private bool _countdownActive;
+        private CuuChau.Match.CuuChauMatchDirector _cachedDirector;
 
         public event Action<string> OnHeroSelected;
 
@@ -399,7 +401,24 @@ namespace CuuChau.Modals
             }
         }
 
+        public void SetTotalSeatCount(int totalSeats)
+        {
+            _explicitTotalSeatCount = Mathf.Clamp(totalSeats, 4, 8);
+            _totalSeatCount = Mathf.Max(_readyCount, _explicitTotalSeatCount);
+            UpdateTimerAndProgressText();
+        }
+
         public void BindDraft(HeroDraftViewDto draft, PublicPlayerViewDto mySeat, float remainingSeconds)
+        {
+            BindDraftInternal(draft, mySeat, remainingSeconds, explicitTotalSeats: 0);
+        }
+
+        public void BindDraft(HeroDraftViewDto draft, PublicPlayerViewDto mySeat, float remainingSeconds, int totalSeatCount)
+        {
+            BindDraftInternal(draft, mySeat, remainingSeconds, Mathf.Max(0, totalSeatCount));
+        }
+
+        private void BindDraftInternal(HeroDraftViewDto draft, PublicPlayerViewDto mySeat, float remainingSeconds, int explicitTotalSeats)
         {
             if (!_initialized) InitializeView(_catalog, _serifFont, _sansFont, _monoFont);
 
@@ -417,12 +436,7 @@ namespace CuuChau.Modals
             }
 
             _readyCount = draft != null && draft.ReadySeats != null ? draft.ReadySeats.Count : 0;
-            // Tổng số ghế tối thiểu lấy từ LordSeatIndex / ReadySeats nếu caller chưa truyền đủ ngữ cảnh
-            _totalSeatCount = Mathf.Max(_readyCount, 4);
-            if (draft != null && draft.Stage == "LORD_SELECTING")
-            {
-                _totalSeatCount = Mathf.Max(_totalSeatCount, draft.LordSeatIndex + 1);
-            }
+            _totalSeatCount = ResolveTrueSeatCount(draft, mySeat, explicitTotalSeats);
             UpdateTimerAndProgressText();
 
             _confirmedHeroId = draft != null ? draft.MySelectedHero : null;
@@ -431,6 +445,60 @@ namespace CuuChau.Modals
                 : new List<string>();
 
             RebuildCandidateCards(candidates, draft != null ? draft.Stage : string.Empty);
+        }
+
+        private int ResolveTrueSeatCount(HeroDraftViewDto draft, PublicPlayerViewDto mySeat, int explicitTotalSeats)
+        {
+            if (explicitTotalSeats > 0)
+            {
+                _explicitTotalSeatCount = explicitTotalSeats;
+                return Mathf.Max(_readyCount, explicitTotalSeats);
+            }
+
+            if (_cachedDirector == null)
+            {
+                _cachedDirector = FindAnyObjectByType<CuuChau.Match.CuuChauMatchDirector>(FindObjectsInactive.Include);
+            }
+
+            int liveCount = 0;
+            RoomViewerPayload latest = _cachedDirector != null ? _cachedDirector.LatestPayload : null;
+            if (latest?.PlayerView?.Players != null && latest.PlayerView.Players.Count > 0)
+            {
+                liveCount = latest.PlayerView.Players.Count;
+            }
+            else if (latest?.RoomState?.Seats != null && latest.RoomState.Seats.Count > 0)
+            {
+                liveCount = latest.RoomState.Seats.Count;
+            }
+
+            if (liveCount > 0)
+            {
+                _explicitTotalSeatCount = 0;
+                return Mathf.Max(_readyCount, liveCount);
+            }
+
+            if (_explicitTotalSeatCount > 0)
+            {
+                return Mathf.Max(_readyCount, _explicitTotalSeatCount);
+            }
+
+            int inferred = Mathf.Max(_readyCount, 4);
+            if (mySeat != null)
+            {
+                inferred = Mathf.Max(inferred, mySeat.SeatIndex + 1);
+            }
+            if (draft != null)
+            {
+                inferred = Mathf.Max(inferred, draft.LordSeatIndex + 1);
+                if (draft.ReadySeats != null)
+                {
+                    for (int i = 0; i < draft.ReadySeats.Count; i++)
+                    {
+                        inferred = Mathf.Max(inferred, draft.ReadySeats[i] + 1);
+                    }
+                }
+            }
+            return inferred;
         }
 
         public void PopulateDemoPreview()

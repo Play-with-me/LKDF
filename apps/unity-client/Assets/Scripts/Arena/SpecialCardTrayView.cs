@@ -39,9 +39,14 @@ namespace CuuChau.Arena
             var rect = transform as RectTransform;
             if (rect == null) rect = gameObject.AddComponent<RectTransform>();
 
+            if (GetComponent<RectMask2D>() == null)
+            {
+                gameObject.AddComponent<RectMask2D>();
+            }
+
             _layout = GetComponent<HorizontalLayoutGroup>();
             if (_layout == null) _layout = gameObject.AddComponent<HorizontalLayoutGroup>();
-            _layout.spacing = 6f;
+            _layout.spacing = 4f;
             _layout.childAlignment = TextAnchor.MiddleLeft;
             _layout.childControlWidth = false;
             _layout.childControlHeight = false;
@@ -101,7 +106,8 @@ namespace CuuChau.Arena
                 }
 
                 string shortTitle = ResolveShortScrollName(card.CardKey, card.NameVi);
-                string rankText = string.IsNullOrEmpty(card.Rank) ? string.Empty : $"{card.Rank} ";
+                string formattedRank = EquipmentSlotGrid.FormatCardRank(card.Rank);
+                string rankText = string.IsNullOrEmpty(formattedRank) ? string.Empty : $"{formattedRank} ";
                 pill.Label.text = $"{rankText}{shortTitle}";
             }
         }
@@ -125,10 +131,10 @@ namespace CuuChau.Arena
 
         private PillView CreatePill(int index)
         {
-            var go = new GameObject($"DelayedPill_{index}", typeof(RectTransform), typeof(Image));
+            var go = new GameObject($"DelayedPill_{index}", typeof(RectTransform), typeof(Image), typeof(RectMask2D));
             go.transform.SetParent(transform, false);
             var rt = go.GetComponent<RectTransform>();
-            rt.sizeDelta = new Vector2(118f, 24f);
+            rt.sizeDelta = new Vector2(92f, 24f);
 
             var bg = go.GetComponent<Image>();
             bg.color = new Color(0.32f, 0.11f, 0.11f, 0.92f);
@@ -140,8 +146,8 @@ namespace CuuChau.Arena
             suitRt.anchorMin = new Vector2(0f, 0.5f);
             suitRt.anchorMax = new Vector2(0f, 0.5f);
             suitRt.pivot = new Vector2(0f, 0.5f);
-            suitRt.anchoredPosition = new Vector2(5f, 0f);
-            suitRt.sizeDelta = new Vector2(14f, 14f);
+            suitRt.anchoredPosition = new Vector2(4f, 0f);
+            suitRt.sizeDelta = new Vector2(13f, 13f);
             var suitImg = suitGo.GetComponent<Image>();
             suitImg.preserveAspect = true;
             suitImg.raycastTarget = false;
@@ -151,14 +157,16 @@ namespace CuuChau.Arena
             var textRt = textGo.GetComponent<RectTransform>();
             textRt.anchorMin = Vector2.zero;
             textRt.anchorMax = Vector2.one;
-            textRt.offsetMin = new Vector2(21f, 0f);
-            textRt.offsetMax = new Vector2(-4f, 0f);
+            textRt.offsetMin = new Vector2(19f, 0f);
+            textRt.offsetMax = new Vector2(-3f, 0f);
 
             var tmp = textGo.GetComponent<TextMeshProUGUI>();
-            TMP_FontAsset font = _monoFont != null ? _monoFont : _sansFont;
-            if (_sansFont != null) font = _sansFont;
+            TMP_FontAsset font = _sansFont != null ? _sansFont : _monoFont;
             if (font != null) tmp.font = font;
-            tmp.fontSize = 15f;
+            tmp.fontSize = 14f;
+            tmp.enableAutoSizing = true;
+            tmp.fontSizeMin = 11.5f;
+            tmp.fontSizeMax = 14.5f;
             tmp.fontStyle = FontStyles.Bold;
             tmp.color = new Color(0.98f, 0.93f, 0.80f, 1f);
             tmp.alignment = TextAlignmentOptions.MidlineLeft;
@@ -179,10 +187,10 @@ namespace CuuChau.Arena
         {
             return cardKey switch
             {
-                "lac_bat_tu_thuc" => "Lạc",
-                "thiem_dien" => "Sét",
-                "binh_luong_thon_doan" => "Lương",
-                _ => string.IsNullOrEmpty(fallbackNameVi) ? "Ấn" : fallbackNameVi,
+                "lac_bat_tu_thuc" => "Phong Mạch",
+                "thiem_dien" => "Lôi Kiếp",
+                "binh_luong_thon_doan" => "Đoạn Lương",
+                _ => string.IsNullOrEmpty(fallbackNameVi) ? "Ấn Chú" : fallbackNameVi,
             };
         }
     }
